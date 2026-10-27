@@ -1,5 +1,6 @@
 // Gutenberg ingest: strip the license wrapper, drop front matter, split
 // chapters into paragraphs with global ordinals.
+import { paragraphId } from "./ids";
 import type { Book, Chapter, Paragraph } from "./types";
 
 const START_MARKER = "*** START OF THE PROJECT GUTENBERG EBOOK";
@@ -91,7 +92,7 @@ export function buildBook(input: {
     const start_n = n + 1;
     draft.paragraphs.forEach((text, k) => {
       n += 1;
-      paragraphs.push({ id: `c${ch}p${k + 1}`, ch, n, text });
+      paragraphs.push({ id: paragraphId(ch, k + 1), ch, n, text });
     });
     chapters.push({ ch, title: draft.title, start_n, end_n: n });
   });
