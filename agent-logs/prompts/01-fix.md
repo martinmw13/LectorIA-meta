@@ -1,0 +1,5 @@
+Apply the review in `docs/reviews/01.md` for task 1 of LectorIA-meta. Fix all three findings exactly as described:
+1. Blocker: `scripts/check-file-size.mjs` binary detection misparses `git diff --cached --numstat -z`. Parse NUL-separated records correctly (`added\tdeleted\tpath`, and for renames `added\tdeleted\t` followed by old path and new path chunks; key on the new path). Export the parser as a pure function and add unit tests in `scripts/check-file-size.test.mjs` for a binary record, a rename record, and a path with a space. Also extend `scripts/hooks.integration.test.mjs` with an end-to-end case: a staged 21 KB random binary file commits.
+2. Reformat `package.json` as 2-space JSON with a trailing newline (keep the same keys).
+3. `scripts/check-secrets.mjs --all`: label lines of deleted files correctly (use the `--- a/` path when `+++ /dev/null`).
+Do not edit `.agents/skills/`, docs other than those needed, or add app code. Keep ponytail full rules (smallest complete change). Run `npm run test:hooks` and make it pass. Do not commit. End with a short summary.
