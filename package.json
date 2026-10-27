@@ -1,0 +1,14 @@
+{
+  "engines": {
+    "node": ">=20.9"
+  },
+  "name": "lectoria-meta",
+  "private": true,
+  "scripts": {
+    "check:secrets": "node scripts/check-secrets.mjs",
+    "check:size": "node scripts/check-file-size.mjs",
+    "prepare": "git config core.hooksPath .githooks",
+    "test:hooks": "node --test scripts/"
+  },
+  "type": "module"
+}

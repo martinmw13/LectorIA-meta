@@ -1,0 +1,12 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Known test placeholders from check-secrets.test.mjs (also echoed in agent-logs)"
+regexTarget = "secret"
+regexes = [
+  '''xxx-replace-me''',
+  '''your-key-here''',
+  '''changeme-please''',
+  '''paste-your-salt-here''',
+]

@@ -1,0 +1,21 @@
+# Build output and caches
+node_modules/
+.next/
+out/
+dist/
+coverage/
+.vercel/
+
+# Secrets (never commit these; see .env.example for names)
+.env
+.env.local
+.env.*.local
+*.pem
+
+# Local noise
+.DS_Store
+*.log
+
+# Book sources (only processed public-domain JSON is committed)
+*.epub
+data/raw/

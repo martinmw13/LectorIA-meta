@@ -1,0 +1,18 @@
+#!/bin/sh
+# Prepare-commit-msg: add the Muse Code co-author trailer idempotently.
+# Works for plain commits, -m, merge, squash and amend.
+# Note: the address must not be a users.noreply.github.com one, because a
+# GitHub user named muse-code exists and the trailer would credit a stranger.
+TRAILER='Co-authored-by: Muse Code (Meta) <muse-code@agents.noreply.invalid>'
+
+msg_file="$1"
+
+tmp_file="${msg_file}.trailer-tmp"
+if git interpret-trailers --if-exists doNothing --trailer "$TRAILER" <"$msg_file" >"$tmp_file" 2>/dev/null; then
+  mv "$tmp_file" "$msg_file"
+else
+  rm -f "$tmp_file"
+  if ! grep -qF "$TRAILER" "$msg_file"; then
+    printf '\n%s\n' "$TRAILER" >>"$msg_file"
+  fi
+fi

@@ -1,0 +1,14 @@
+#!/bin/sh
+# Pre-commit: file-size check, then secret scanning (gitleaks when present,
+# the built-in scanner always). Any failure blocks the commit.
+fail=0
+
+node scripts/check-file-size.mjs || fail=1
+
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks git --staged --redact --no-banner || fail=1
+fi
+
+node scripts/check-secrets.mjs || fail=1
+
+exit "$fail"
