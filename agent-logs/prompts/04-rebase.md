@@ -1,0 +1,10 @@
+Integration step for task 4 (Contributor). Branch `pipeline-oz` has one commit with the Oz pipeline. Meanwhile origin/main merged the Next.js skeleton (task 3: app/, server/, core/ids.ts, its own package.json, package-lock.json, tsconfig.json, vitest.config.ts, CI with `npx next typegen`, typecheck, tests and `npm run build`). Rebase `pipeline-oz` onto origin/main and resolve the conflicts. Read AGENTS.md first. Apply ponytail (full) and typescript-best-practices (read `.agents/skills/<name>/SKILL.md` directly; the skill tool reports some as disabled, that is expected; do not stop to ask).
+
+Rules for the resolution:
+- Main's files win as the base: keep main's tsconfig.json (do not change target or include unless a real type error needs it; if so, the smallest change), main's vitest.config.ts with `pipeline/**/*.test.ts` and `data/**/*.test.ts` added to `include`, main's package.json and dependency versions. From this branch add only the `tsx` devDependency and the `build:book` script. Regenerate package-lock.json with `npm install` (never hand-edit it).
+- BUILT_DURING_HACKATHON.md: keep main's row 3 and add the task 4 row after it.
+- core/ids.ts exists on main with `paragraphId(chapter, para)`. Use it in core/gutenberg.ts instead of building `c{ch}p{k}` strings by hand. book.json ids must stay byte-identical (check textVersion is unchanged after `npm run build:book -- oz --step ingest`).
+- Keep core/ pure. Do not touch app/ or server/ except if the build breaks because of this branch.
+- Continue with `git rebase --continue` using the existing commit message (`GIT_EDITOR=true`). If the gutenberg.ts change comes after the rebase, put it in a second commit with an imperative subject under 72 chars. Never use --no-verify. Do not push.
+
+Then run, all green: `npx next typegen`, `npm run typecheck`, `npm test`, `npm run test:hooks`, `npm run build`, `npm run check:size`, `node scripts/check-secrets.mjs --all`, `~/.local/bin/gitleaks git . --redact --no-banner --exit-code 1`. Final message: conflicts and how you resolved them, commits created, check results.

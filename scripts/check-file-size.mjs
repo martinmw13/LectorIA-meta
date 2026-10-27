@@ -33,6 +33,8 @@ export const IGNORE_PATTERNS = [
   // Processed book data, and all of public/.
   'public/',
   'data/processed/',
+  // Processed book data (book.json is generated, about 230 KB).
+  'data/books/',
   'pipeline/out/',
   // Agent and session logs (the project log dir is agent-logs/).
   'agent-logs/',

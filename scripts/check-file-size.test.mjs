@@ -54,6 +54,7 @@ test('ignored paths pass even when huge', () => {
     'public/books/oz.json',
     'public/favicon.ico',
     'data/processed/scenes.json',
+    'data/books/oz/book.json',
     'pipeline/out/music.json',
     'agent-logs/01-plan.jsonl',
     '.agents/skills/unslop/SKILL.md',

@@ -15,6 +15,12 @@ export default defineConfig({
   },
   test: {
     // Only app tests live here; scripts/ are owned by `node --test`.
-    include: ['core/**/*.test.ts', 'server/**/*.test.ts', 'app/**/*.test.{ts,tsx}'],
+    include: [
+      'core/**/*.test.ts',
+      'server/**/*.test.ts',
+      'app/**/*.test.{ts,tsx}',
+      'pipeline/**/*.test.ts',
+      'data/**/*.test.ts',
+    ],
   },
 });
