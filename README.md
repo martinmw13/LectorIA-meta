@@ -8,6 +8,16 @@ Status: repo setup. App code starts after the architecture review.
 
 `npm install` installs the git hooks (or run `npm run prepare` directly). The hooks check staged file size and secrets and add the co-author trailer.
 
+## Run it
+
+```sh
+npm ci
+npm run dev     # local server at http://localhost:3000
+npm test        # vitest suite
+npm run typecheck
+npm run build
+```
+
 ## Docs
 
 - [AGENTS.md](AGENTS.md): agent instructions

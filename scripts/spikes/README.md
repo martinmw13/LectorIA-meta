@@ -1,0 +1,3 @@
+# Spikes
+
+Throwaway measurement scripts. Each calls its real API once per case with built-in `fetch` only (no SDK, no dependencies) and prints a short measured summary. `passages.mjs` holds three verbatim public-domain Oz excerpts (cyclone, Kalidahs, poppy field) shared by the other scripts. `meta-image.mjs` tests Denslow-style generation in `url` and `b64_json` modes plus a low-reasoning run behind a counter file (`out/image-count.txt`) that refuses past 3 images total. `meta-structured.mjs` tests scene splitting with a strict JSON schema three times plus one deliberately recursive schema to record the rejection. `jev.mjs` scores each passage for emotion, intensity, and tempo with the pinned Jev model. Run with `node scripts/spikes/<name>.mjs`.
