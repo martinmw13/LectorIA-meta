@@ -1,13 +1,13 @@
 {
   "engines": {
-    "node": ">=20.9"
+    "node": "22.x"
   },
   "name": "lectoria-meta",
   "private": true,
   "scripts": {
     "check:secrets": "node scripts/check-secrets.mjs",
     "check:size": "node scripts/check-file-size.mjs",
-    "prepare": "git config core.hooksPath .githooks",
+    "prepare": "git rev-parse --git-dir >/dev/null 2>&1 && git config core.hooksPath .githooks || true",
     "test:hooks": "node --test scripts/"
   },
   "type": "module"

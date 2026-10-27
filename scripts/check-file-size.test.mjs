@@ -56,7 +56,6 @@ test('ignored paths pass even when huge', () => {
     'data/processed/scenes.json',
     'pipeline/out/music.json',
     'agent-logs/01-plan.jsonl',
-    'docs/muse-code-sessions/01.md',
     '.agents/skills/unslop/SKILL.md',
   ];
   for (const path of paths) assert.equal(isIgnored(path), true, `${path} should be ignored`);
@@ -65,7 +64,7 @@ test('ignored paths pass even when huge', () => {
 });
 
 test('non-ignored paths are not ignored', () => {
-  for (const path of ['src/app.ts', 'scripts/check-size.mjs', 'README.md', 'data/raw/oz.epub']) {
+  for (const path of ['src/app.ts', 'scripts/check-size.mjs', 'README.md', 'data/raw/oz.epub', 'docs/muse-code-sessions/01.md']) {
     assert.equal(isIgnored(path), false, `${path} should be checked`);
   }
 });

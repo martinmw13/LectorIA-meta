@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  historyFileFinding,
   isForbiddenFilename,
+  isSecretSkipped,
   redact,
   scanContent,
   shannonEntropy,
@@ -137,6 +139,46 @@ test('refuses .env and .pem file names', () => {
 
 test('redact keeps four chars', () => {
   assert.equal(redact('abcdefgh'), 'abcd…');
+});
+
+test('history headers flag a forbidden filename once per path', () => {
+  const flagged = new Set();
+  const first = historyFileFinding('.env.local', flagged);
+  assert.equal(first?.rule, 'forbidden-filename');
+  assert.equal(first?.path, '.env.local (history)');
+  assert.equal(historyFileFinding('.env.local', flagged), null);
+  assert.equal(historyFileFinding('src/app.ts', new Set()), null);
+});
+
+test('only lockfiles skip the secret scan', () => {
+  for (const path of [
+    'package-lock.json',
+    'sub/package-lock.json',
+    'pnpm-lock.yaml',
+    'yarn.lock',
+    'bun.lockb',
+    'uv.lock',
+    'poetry.lock',
+    'sub/dir/odd.lock',
+  ]) {
+    assert.equal(isSecretSkipped(path), true, `${path} should be skipped`);
+  }
+  for (const path of [
+    'src/app.ts',
+    'agent-logs/01-impl.jsonl',
+    'public/books/oz.json',
+    '.agents/skills/unslop/SKILL.md',
+    'docs/muse-code-sessions/01.md',
+  ]) {
+    assert.equal(isSecretSkipped(path), false, `${path} should be scanned`);
+  }
+});
+
+test('secrets flag inside the newly scanned dirs', () => {
+  const token = 'jv_' + 'live_' + 't0k'.repeat(8);
+  for (const path of ['agent-logs/x.jsonl', 'public/x.json', '.agents/skills/x/SKILL.md']) {
+    assert.deepEqual(rulesFor(path, `key = "${token}"`), ['jev']);
+  }
 });
 
 test('entropy math is sane', () => {

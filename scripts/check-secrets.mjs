@@ -3,9 +3,33 @@
 // Plain Node, no dependencies. Findings never print the secret itself.
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { isIgnored } from './check-file-size.mjs';
 
 export const ALLOW_MARKER = 'secret-scan:allow';
+// Paths the secret scan skips: lockfiles only, which we do not author.
+// Binary blobs are skipped separately via isBinaryBuffer. Everything else
+// is scanned, including agent-logs/, public/ and .agents/skills/.
+export const SECRET_IGNORE_PATTERNS = [
+  'package-lock.json',
+  'pnpm-lock.yaml',
+  'yarn.lock',
+  'bun.lockb',
+  'uv.lock',
+  'poetry.lock',
+  '*.lock',
+];
+
+export function isSecretSkipped(path) {
+  const slash = path.lastIndexOf('/');
+  const name = slash === -1 ? path : path.slice(slash + 1);
+  for (const pattern of SECRET_IGNORE_PATTERNS) {
+    if (pattern.includes('*')) {
+      if (name.endsWith(pattern.slice(1))) return true;
+    } else if (name === pattern) {
+      return true;
+    }
+  }
+  return false;
+}
 export const ENTROPY_THRESHOLD = 3.5;
 export const ENTROPY_MIN_LENGTH = 20;
 
@@ -136,7 +160,7 @@ function scanBlob(revision, path, findings) {
     findings.push({ path, line: 0, rule: 'forbidden-filename', preview: '(blocked file name)' });
     return;
   }
-  if (isIgnored(path)) return;
+  if (isSecretSkipped(path)) return;
   let blob;
   try {
     blob = showBlob(revision, path);
@@ -146,6 +170,15 @@ function scanBlob(revision, path, findings) {
   }
   if (isBinaryBuffer(blob)) return;
   findings.push(...scanContent(path, blob.toString('utf8')));
+}
+
+// One finding per forbidden path seen in history headers, even when its content matches nothing.
+export function historyFileFinding(file, flagged) {
+  if (isForbiddenFilename(file) && !flagged.has(file)) {
+    flagged.add(file);
+    return { path: `${file} (history)`, line: 0, rule: 'forbidden-filename', preview: '(blocked file name)' };
+  }
+  return null;
 }
 
 function scanHistory(findings) {
@@ -161,15 +194,18 @@ function scanHistory(findings) {
   }
   let file = '<history>';
   let removed = null;
+  const flagged = new Set();
   for (const line of output.toString('utf8').split('\n')) {
     if (line.startsWith('--- a/')) {
       removed = line.slice('--- a/'.length);
     } else if (line.startsWith('+++ b/')) {
       file = line.slice('+++ b/'.length);
+      const finding = historyFileFinding(file, flagged);
+      if (finding) findings.push(finding);
     } else if (line === '+++ /dev/null') {
       file = removed ?? '<deleted>'; // Deleted file: label with its old path.
     } else if (line.startsWith('+') && !line.startsWith('+++')) {
-      findings.push(...scanContent(`${file} (history)`, line.slice(1)));
+      if (!isSecretSkipped(file)) findings.push(...scanContent(`${file} (history)`, line.slice(1)));
     }
   }
 }

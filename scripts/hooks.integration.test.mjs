@@ -77,3 +77,17 @@ test('the co-author trailer appears exactly once, even after amend', () => {
   git(['commit', '--amend', '--no-edit', '-q']);
   assert.equal(trailerCount(), 1);
 });
+
+test('a rescue commit gets no co-author trailer', () => {
+  fs.writeFileSync(path.join(repo, 'rescue.txt'), 'rescue\n');
+  git(['add', 'rescue.txt']);
+  git(['commit', '-q', '-m', 'fix', '-m', 'Rescue: cursor']);
+  assert.equal(trailerCount(), 0);
+});
+
+test('a normal commit still gets exactly one trailer', () => {
+  fs.writeFileSync(path.join(repo, 'normal.txt'), 'normal\n');
+  git(['add', 'normal.txt']);
+  git(['commit', '-q', '-m', 'add normal file']);
+  assert.equal(trailerCount(), 1);
+});

@@ -7,6 +7,13 @@ TRAILER='Co-authored-by: Muse Code (Meta) <muse-code@agents.noreply.invalid>'
 
 msg_file="$1"
 
+# Rescue commits carry a `Rescue: <tool>` trailer instead of the co-author one.
+if git interpret-trailers --parse <"$msg_file" 2>/dev/null | grep -q '^Rescue:'; then
+  exit 0
+elif grep -q '^Rescue:' "$msg_file"; then
+  exit 0
+fi
+
 tmp_file="${msg_file}.trailer-tmp"
 if git interpret-trailers --if-exists doNothing --trailer "$TRAILER" <"$msg_file" >"$tmp_file" 2>/dev/null; then
   mv "$tmp_file" "$msg_file"

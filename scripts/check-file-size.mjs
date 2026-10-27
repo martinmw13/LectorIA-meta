@@ -34,9 +34,8 @@ export const IGNORE_PATTERNS = [
   'public/',
   'data/processed/',
   'pipeline/out/',
-  // Agent and session logs.
+  // Agent and session logs (the project log dir is agent-logs/).
   'agent-logs/',
-  'docs/muse-code-sessions/',
   // Vendored third-party skills.
   '.agents/skills/',
 ];
