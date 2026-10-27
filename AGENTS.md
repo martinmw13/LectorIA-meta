@@ -133,7 +133,7 @@ The palette comes from Meta's brand. Meta blue `#0866FF` is the single accent, `
 
 The layout is typography-first. The book sits centered with a comfortable measure, about 60 to 70 chars per line. The companion chat lives in a quiet side panel. Whitespace is generous, the accent color is single, motion is subtle: under 200 ms, and it respects `prefers-reduced-motion`.
 
-When the scaffold exists, these values become CSS custom properties in one tokens file. Until then this section is the source of truth.
+These values live as CSS custom properties in [app/tokens.css](app/tokens.css), which is the source of truth.
 
 ## Hooks
 

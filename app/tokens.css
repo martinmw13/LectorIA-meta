@@ -1,0 +1,45 @@
+:root {
+  color-scheme: light dark;
+
+  --color-accent: #0866ff;
+  --color-accent-hover: #0064e0;
+  --color-text: #1c2b33;
+  --color-text-muted: #5b6b76;
+  --color-surface: #ffffff;
+  --color-surface-soft: #f1f4f7;
+  --color-border: #d9e0e7;
+
+  --font-ui: -apple-system, blinkmacsystemfont, "Segoe UI", system-ui, sans-serif;
+  --font-book: georgia, "Times New Roman", charter, serif;
+
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-title: 1.75rem;
+  --line-height-body: 1.7;
+
+  --measure-reading: 65ch;
+
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1.25rem;
+  --space-lg: 2rem;
+
+  --motion-duration: 150ms;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-text: #e4e6eb;
+    --color-text-muted: #9aa5b1;
+    --color-surface: #0b1215;
+    --color-surface-soft: #151c21;
+    --color-border: #232d34;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-duration: 0ms;
+  }
+}

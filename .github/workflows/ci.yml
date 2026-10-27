@@ -20,15 +20,18 @@ jobs:
         with:
           node-version: 22
       - name: Install dependencies
-        if: hashFiles('package-lock.json') != ''
         run: npm ci
+      - name: Generate Next.js types
+        # Recreates gitignored next-env.d.ts (and route types) before typecheck.
+        run: npx next typegen
       - name: Typecheck
-        if: hashFiles('tsconfig.json') != ''
-        run: npx tsc --noEmit
+        run: npm run typecheck
       - name: Hook tests
         run: npm run test:hooks
       - name: Unit tests
-        run: npm test --if-present
+        run: npm test
+      - name: Build
+        run: npm run build
       - name: Built-in secret scan
         run: node scripts/check-secrets.mjs --all
       - name: Install pinned gitleaks
