@@ -19,6 +19,7 @@ import type { InlineFigure } from "../folio/use-pictures";
 import { PictureVault } from "../folio/vault";
 import {
   chapterSetAside,
+  coverTitleLong,
   markChapterEndReached,
   markChapterSetAside,
   markPanelsShownAnyway,
@@ -78,6 +79,7 @@ export function ScenePage({
   const index = useMemo(() => buildNavIndex(views), [views]);
   const cover = view.isChapterFirst;
   const end = view.isChapterLast;
+  const coverLong = coverTitleLong(view.chapterTitle);
   const total = subPageCount(view.pages.length, cover, end);
   const lastPage = total - 1;
   const [page, setPage] = useState(() => {
@@ -256,10 +258,16 @@ export function ScenePage({
         {kind === "cover" ? (
           <>
             <div className="kicker">Chapter</div>
-            <p className="cover-num" aria-label={`Chapter ${view.ch}`}>
+            <p className="cover-num" data-long={coverLong} aria-label={`Chapter ${view.ch}`}>
               {view.ch}
             </p>
-            <h1 className="chapter-title" id="scene-heading" ref={headingRef} tabIndex={-1}>
+            <h1
+              className="chapter-title cover-title"
+              data-long={coverLong}
+              id="scene-heading"
+              ref={headingRef}
+              tabIndex={-1}
+            >
               {view.chapterTitle}
             </h1>
             <hr className="cover-rule" />

@@ -30,13 +30,11 @@ export function BlurredThumbs({ panels, unblurredCount }: { panels: ChapterPanel
   const show = unblurredCount === undefined ? panels : panels.slice(0, unblurredCount);
   return (
     <div className={unblurredCount === undefined ? "thumb-strip" : "thumb-strip open"} aria-hidden="true">
-      {show.map((p) =>
-        p.art ? (
-          <img key={p.sceneId} src={p.art} alt="" />
-        ) : (
-          <span key={p.sceneId} className="thumb-empty" />
-        ),
-      )}
+      {show.map((p) => (
+        <span key={p.sceneId} className="thumb-tile">
+          {p.art ? <img src={p.art} alt="" /> : <span className="thumb-empty" />}
+        </span>
+      ))}
     </div>
   );
 }

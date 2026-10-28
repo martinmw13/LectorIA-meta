@@ -14,6 +14,14 @@ export interface ChapterPanel {
   art: string | null;
 }
 
+// Cover title step: long titles shrink so the cover fits with no scroll.
+// Short titles return undefined and keep the full-size look.
+export function coverTitleLong(title: string): "1" | "2" | undefined {
+  if (title.length > 36) return "2";
+  if (title.length > 24) return "1";
+  return undefined;
+}
+
 // Session memory: which chapters the reader has finished, opened
 // anyway, or set aside. Plain sets, so a reload starts unspoiled.
 const reachedEnd = new Set<number>();
