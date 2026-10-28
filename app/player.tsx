@@ -154,7 +154,13 @@ export function Player({
       audibleRef.current = dstIdx;
       srcEl.pause();
       applyLevels();
-      if (playingRef.current) void dst.play().catch(() => undefined);
+      if (playingRef.current)
+        void dst.play().catch((err: unknown) => {
+          // A refused start (autoplay policy, bad src) leaves nothing audible: show Play.
+          if ((err as { name?: string })?.name === "AbortError" || audibleRef.current !== dstIdx) return;
+          playingRef.current = false;
+          setPlaying(false);
+        });
       return;
     }
     if (playingRef.current) void dst.play().catch(() => undefined);
