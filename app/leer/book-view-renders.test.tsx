@@ -122,7 +122,7 @@ test("narration updates never re-render the book", async () => {
   const root = mountRoot(host);
   await act(async () => {
     root.render(
-      <NarrationProvider entries={ENTRIES} scenes={SCENES} musicLevel={0.5}>
+      <NarrationProvider entries={ENTRIES} scenes={SCENES}>
         <Probe />
         <BookView model={MODEL} initialSceneId="c1s1" panelsByChapter={[]} />
       </NarrationProvider>,
@@ -185,7 +185,7 @@ test("each scene section carries its number and its chapter's scene count, past 
   const root = mountRoot(host);
   await act(async () => {
     root.render(
-      <NarrationProvider entries={ENTRIES} scenes={SCENES} musicLevel={0.5}>
+      <NarrationProvider entries={ENTRIES} scenes={SCENES}>
         <BookView model={model} initialSceneId="c1s1" panelsByChapter={[]} />
       </NarrationProvider>,
     );
@@ -204,7 +204,7 @@ test("chapter text shows at once and the pane opens the panels on demand", async
   const panels = [{ ch: 1, panels: [{ sceneId: "c1s1", caption: "The cyclone", art: null }] }];
   await act(async () => {
     root.render(
-      <NarrationProvider entries={[]} scenes={SCENES} musicLevel={0.5}>
+      <NarrationProvider entries={[]} scenes={SCENES}>
         <BookView model={MODEL} initialSceneId="c1s1" panelsByChapter={panels} />
       </NarrationProvider>,
     );

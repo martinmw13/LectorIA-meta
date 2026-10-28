@@ -35,11 +35,13 @@ export function prefersReducedMotion(): boolean {
 // Scroll the scroller so the scene section sits at its top; a chapter's
 // first scene lands on the chapter heading instead. Instant when
 // smooth is false or the user prefers reduced motion. False when the
-// section is missing. scrollIntoView also renders content-visibility
+// section is missing. A jump pauses narration follow so the glide
+// never fights it. scrollIntoView also renders content-visibility
 // sections on the way there.
 export function scrollToSceneId(scroller: HTMLElement, sceneId: string, smooth = true): boolean {
   const el = scroller.querySelector(`[data-scene-id="${sceneId}"]`);
   if (!el || typeof el.scrollIntoView !== "function") return false;
+  noteUserScroll(scroller);
   const block = el.closest?.(".chapter-block");
   const target = block && block.querySelector("[data-scene-id]") === el ? block : el;
   target.scrollIntoView({
@@ -61,12 +63,17 @@ export function noteUserScroll(scroller: object, now: number = Date.now()): void
 
 export function attachFollowPause(scroller: HTMLElement): () => void {
   const mark = () => noteUserScroll(scroller);
+  const onPointerDown = (event: Event) => {
+    if (event.target === scroller) noteUserScroll(scroller);
+  };
   scroller.addEventListener("wheel", mark, { passive: true });
   scroller.addEventListener("touchstart", mark, { passive: true });
+  scroller.addEventListener("pointerdown", onPointerDown, { passive: true });
   window.addEventListener("keydown", mark);
   return () => {
     scroller.removeEventListener("wheel", mark);
     scroller.removeEventListener("touchstart", mark);
+    scroller.removeEventListener("pointerdown", onPointerDown);
     window.removeEventListener("keydown", mark);
   };
 }
