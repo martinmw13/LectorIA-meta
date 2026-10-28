@@ -29,7 +29,9 @@ export function TopLine({
 }) {
   return (
     <header className="top-line">
-      <span className="wordmark">LECTORIA</span>
+      <span className="wordmark">
+        Lector<em>IA</em>
+      </span>
       <div className="top-center">
         {bookTitle} · {author} ·{" "}
         <span className="chapter-jump">

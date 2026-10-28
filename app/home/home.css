@@ -37,6 +37,7 @@
   font-size: var(--font-size-sm);
   letter-spacing: 0.35em;
   font-weight: 600;
+  text-transform: uppercase;
 }
 
 .home-rule {
