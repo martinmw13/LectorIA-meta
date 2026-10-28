@@ -32,19 +32,19 @@ export function ByokStep({
 
   return (
     <div>
-      <h3 className="home-section-title">Bring your own key!</h3>
-      <p className="home-muted">{REASONS[reason](freePages)}</p>
-      <div className="home-radio-row" role="radiogroup" aria-label="Key provider">
-        <label className="home-radio">
+      <h3 className="ob-byok-t">Bring your own key!</h3>
+      <p className="ob-note">{REASONS[reason](freePages)}</p>
+      <div className="ob-radio-row" role="radiogroup" aria-label="Key provider">
+        <label className="ob-radio">
           <input
             type="radio"
             name="byok-provider"
             checked={provider === "meta"}
             onChange={() => setProvider("meta")}
           />
-          Meta <span className="home-tag">Recommended</span>
+          Meta <span className="ob-tag">Recommended</span>
         </label>
-        <label className="home-radio">
+        <label className="ob-radio">
           <input
             type="radio"
             name="byok-provider"
@@ -56,11 +56,11 @@ export function ByokStep({
       </div>
       {provider === "openai" && (
         <>
-          <label className="home-field" htmlFor={urlId}>
+          <label className="ob-field" htmlFor={urlId}>
             Base URL
             <input
               id={urlId}
-              className="home-input"
+              className="ob-input"
               type="url"
               value={baseUrl}
               onChange={(event) => setBaseUrl(event.target.value)}
@@ -70,24 +70,24 @@ export function ByokStep({
             />
           </label>
           {!urlOk && (
-            <p className="home-error" id={urlErrorId}>
+            <p className="ob-error" id={urlErrorId}>
               The base URL needs to start with https://.
             </p>
           )}
-          <label className="home-field">
+          <label className="ob-field">
             Model
             <input
-              className="home-input"
+              className="ob-input"
               value={model}
               onChange={(event) => setModel(event.target.value)}
             />
           </label>
         </>
       )}
-      <label className="home-field">
+      <label className="ob-field">
         Key
         <input
-          className="home-input"
+          className="ob-input"
           type="password"
           name="transient-key"
           autoComplete="off"
@@ -97,13 +97,13 @@ export function ByokStep({
           aria-describedby={privacyId}
         />
       </label>
-      <p className="home-muted" id={privacyId}>
+      <p className="ob-note" id={privacyId}>
         Your key stays in this browser tab. It&apos;s never stored on our servers, and it&apos;s
         only used to process this book.
       </p>
-      <div className="home-actions">
+      <div className="ob-actions">
         <button
-          className="home-button"
+          className="ob-action"
           type="button"
           disabled={!ready}
           onClick={() => {

@@ -1,21 +1,18 @@
 import type { Metadata } from "next";
-import { Hero } from "./home/hero";
-import { UploadSection } from "./home/upload";
+import { HomeDefs } from "./home/home-defs";
+import { homeFontClass } from "./home/fonts";
+import { HomeSpread } from "./home/spread";
 import "./home/home.css";
+import "./home/home-bring.css";
+import "./home/home-plate.css";
 
 export const metadata: Metadata = { title: "Lectoria" };
 
 export default function Home() {
   return (
-    <main className="home-root">
-      <div className="home-wrap">
-        <header>
-          <span className="home-brand">LECTORIA</span>
-          <hr className="home-rule" />
-        </header>
-        <Hero />
-        <UploadSection />
-      </div>
+    <main className={`ob-desk ${homeFontClass}`}>
+      <HomeDefs />
+      <HomeSpread />
     </main>
   );
 }

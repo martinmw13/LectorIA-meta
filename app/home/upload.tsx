@@ -7,6 +7,7 @@ import { approxPages, FREE_BOOK_MAX_WORDS, uploadRoute } from "@/core/upload-pol
 import { BookCard } from "./book-card";
 import { ByokStep } from "./byok";
 import { getFreeBookUsed, setFreeBookUsed } from "./free-book";
+import { HomeIcon } from "./home-icons";
 
 type Status =
   | { step: "idle" }
@@ -21,6 +22,7 @@ export function UploadSection() {
   const [dragging, setDragging] = useState(false);
   const [freeUsed, setFreeUsed] = useState(false);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [keyOpen, setKeyOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const freePages = approxPages(FREE_BOOK_MAX_WORDS);
@@ -63,18 +65,17 @@ export function UploadSection() {
   const route = status.step === "parsed" ? uploadRoute(status.book.words, freeUsed) : null;
 
   return (
-    <section className="home-section" aria-label="Bring your own book">
-      <h2 className="home-section-title">Bring your own book</h2>
+    <section className="ob-bring" aria-label="Bring your own book">
       {status.step === "processing" ? (
         <div ref={resultRef} tabIndex={-1}>
-          <p className="home-muted">
+          <p className="ob-note">
             Soundtracks for your own books are coming soon. For now, Oz shows how it works.
           </p>
-          <div className="home-actions">
-            <Link className="home-button" href="/read/oz">
+          <div className="ob-actions">
+            <Link className="ob-action" href="/read/oz">
               Read Oz instead
             </Link>
-            <button className="home-text-button" type="button" onClick={reset}>
+            <button className="ob-quiet" type="button" onClick={reset}>
               Choose another book
             </button>
           </div>
@@ -83,9 +84,9 @@ export function UploadSection() {
         <div ref={resultRef} tabIndex={-1}>
           <BookCard book={status.book} coverUrl={coverUrl} />
           {route.kind === "free" ? (
-            <div className="home-actions">
+            <div className="ob-actions">
               <button
-                className="home-button"
+                className="ob-action"
                 type="button"
                 onClick={() => {
                   setFreeBookUsed();
@@ -95,18 +96,18 @@ export function UploadSection() {
               >
                 Read with soundtrack
               </button>
-              <button className="home-text-button" type="button" onClick={reset}>
+              <button className="ob-quiet" type="button" onClick={reset}>
                 Choose another book
               </button>
             </div>
           ) : (
-            <div className="home-byok">
+            <div>
               <ByokStep
                 reason={route.reason}
                 onSubmit={() => setStatus({ step: "processing", book: status.book })}
               />
-              <div className="home-actions">
-                <button className="home-text-button" type="button" onClick={reset}>
+              <div className="ob-actions">
+                <button className="ob-quiet" type="button" onClick={reset}>
                   Choose another book
                 </button>
               </div>
@@ -116,7 +117,7 @@ export function UploadSection() {
       ) : (
         <div>
           <div
-            className={dragging ? "home-drop home-drop-over" : "home-drop"}
+            className={dragging ? "ob-drop over" : "ob-drop"}
             role="button"
             tabIndex={0}
             aria-label="Drop an EPUB here, or choose a file"
@@ -140,9 +141,11 @@ export function UploadSection() {
               if (file) void openFile(file);
             }}
           >
-            <p className="home-drop-label">
-              Drop an EPUB here, or <span className="home-drop-choose">choose a file</span>
+            <HomeIcon name="upload" />
+            <p>
+              Drop an EPUB here, or <span className="ob-pick">choose a file</span>
             </p>
+            <small>EPUB only, up to 20 MB. Nothing leaves your computer until you choose to read it.</small>
             <input
               ref={inputRef}
               type="file"
@@ -157,34 +160,51 @@ export function UploadSection() {
             />
           </div>
           <div aria-live="polite">
-            {status.step === "reading" && <p className="home-muted">Opening your book…</p>}
+            {status.step === "reading" && <p className="ob-file">Opening your book…</p>}
             {status.step === "error" && (
-              <div>
-                <p className="home-muted">{status.message}</p>
-                <button className="home-text-button" type="button" onClick={reset}>
+              <div className="ob-file-row">
+                <p className="ob-file ob-err">{status.message}</p>
+                <button className="ob-quiet" type="button" onClick={reset}>
                   Try another file
                 </button>
               </div>
             )}
           </div>
-          <div className="home-fineprint">
-            <p className="home-muted">
-              Your first book is on us, up to about {freePages} pages. Longer books or more of them?
-              Bring your own key!
-            </p>
-            <p className="home-muted">
-              EPUB only, up to 20 MB. Nothing leaves your computer until you choose to read it.
-            </p>
-            <p className="home-muted">
-              Want more? Find free classics at{" "}
-              <a href="https://www.gutenberg.org/" target="_blank" rel="noopener noreferrer">
-                Project Gutenberg ↗
-              </a>{" "}
-              and{" "}
-              <a href="https://standardebooks.org/" target="_blank" rel="noopener noreferrer">
-                Standard Ebooks ↗
-              </a>
-              , then bring them here.
+          <div className="ob-picks" role="group" aria-label="How much reading to take">
+            <button
+              type="button"
+              className="ob-pickbtn"
+              aria-pressed={!keyOpen}
+              onClick={() => setKeyOpen(false)}
+            >
+              <span className="ob-box" aria-hidden="true">
+                <HomeIcon name="check-box" />
+              </span>
+              <span>
+                <b>Free</b>
+                <small>Your first book is on us, up to about {freePages} pages.</small>
+              </span>
+            </button>
+            <button
+              type="button"
+              className="ob-pickbtn"
+              aria-pressed={keyOpen}
+              aria-expanded={keyOpen}
+              aria-controls="obKeybox"
+              onClick={() => setKeyOpen((open) => !open)}
+            >
+              <span className="ob-keydoodle" aria-hidden="true">
+                <HomeIcon name="key" />
+              </span>
+              <span>
+                <b>Bring your own key!</b>
+                <small>Longer books, or more of them? Use your own Meta key.</small>
+              </span>
+            </button>
+          </div>
+          <div className="ob-keybox" id="obKeybox" hidden={!keyOpen}>
+            <p className="ob-fine">
+              After your book opens, longer ones ask for your own Meta key. It stays in this tab only.
             </p>
           </div>
         </div>
