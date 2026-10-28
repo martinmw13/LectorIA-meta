@@ -179,7 +179,8 @@
 .pane-chapter:focus-visible,
 .pic-half:focus-visible,
 .panels-x:focus-visible,
-.panel:focus-visible {
+.panel:focus-visible,
+.read-on:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
@@ -498,4 +499,49 @@ html[data-theme="dark"] .panel img {
   .panel-num {
     transition: none;
   }
+}
+
+/* Task 36: the charming continue cue under each text page. A text button
+   with no box; on hover the arrow nudges down and the text underlines. */
+.read-on {
+  display: block;
+  border: 0;
+  background: none;
+  padding: 18px 0 6px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-accent);
+  cursor: pointer;
+}
+
+.read-on:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.read-on-arrow {
+  display: inline-block;
+  transition: transform 160ms;
+}
+
+.read-on:hover .read-on-arrow {
+  transform: translateY(3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .read-on-arrow {
+    transition: none;
+  }
+
+  .read-on:hover .read-on-arrow {
+    transform: none;
+  }
+}
+
+.read-on-hint {
+  display: block;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+  margin-top: -8px;
 }

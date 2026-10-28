@@ -1,0 +1,26 @@
+Task 36: wheel and trackpad scrolling must move the reader forward. URGENT production bug.
+
+Bug, reproduced on prod at 1440x900 and 1280x800 (Oz, /leer/c1s1): the reader is a fixed-viewport paged layout. Each scene is a route (/leer/<sceneId>) split into sub-pages (cover, text pages, end page), moved by navReducer via goNext/goPrev in app/leer/scene-page.tsx. ArrowRight/ArrowLeft work. Mouse wheel and trackpad scrolling do nothing: the document does not scroll (scrollHeight == innerHeight), .read-col (overflow-y: auto) only scrolls when its own page overflows, and no wheel handler turns pages. Space, PageDown and ArrowDown do nothing either. The only visible forward control is a tiny "›" in the bottom-left .band-pager. The user scrolls and is stuck.
+
+Root-cause fix (keep the paged architecture, keep ArrowLeft/ArrowRight exactly as they are):
+
+1. New file app/folio/scroll-turn.ts exporting a pure function, no React:
+   `wheelTurn(state: { acc: number; lockedUntil: number; lastAt: number }, e: { deltaY: number; deltaMode: number; now: number; atTop: boolean; atBottom: boolean }): { state: ...; turn: "next" | "prev" | null }`
+   - deltaMode 1 (lines) multiplies deltaY by 16; mode 2 (pages) by 800.
+   - Scrolling down only counts when atBottom; up only when atTop. Otherwise reset acc to 0 and return turn null, so the column scrolls natively first.
+   - Accumulate deltaY in the scroll direction (reset acc when direction flips or when more than 200 ms passed since lastAt). Turn when |acc| >= 60.
+   - After a turn, lock: ignore events until a quiet gap. Every event while locked pushes lockedUntil to now + 250 (so trackpad inertia after one swipe never turns twice); the lock ends only after 250 ms with no wheel events. Always update lastAt.
+   - Export a tiny helper `edges(el: HTMLElement): { atTop: boolean; atBottom: boolean }` with a 2 px tolerance.
+   Add app/folio/scroll-turn.test.ts (vitest): a down wheel at the bottom turns next once; a long inertia train of small deltas 16 ms apart after a turn produces no second turn; after a 300 ms gap a new swipe turns again; a down wheel when not at the bottom never turns and leaves acc at 0; an up wheel at the top turns prev; deltaMode 1 with deltaY 3 or more turns (3*16 = 48 is under 60, so use 4 lines). Test behaviour only.
+
+2. In app/leer/scene-page.tsx:
+   - Add a non-passive "wheel" listener on window (useEffect, deps like the existing keydown effect). Skip when a modal is open (panelsOpen, gateOpen, or the lightbox item is set), when event.ctrlKey (pinch zoom), or when |deltaX| > |deltaY|. Use edges(readColRef.current) (if no read-col, treat as both edges true). If the event target is inside an element that itself can scroll (e.g. the picture vault or the player bar), do not turn: only turn when the target is inside .read-col, the image pane, or otherwise not inside any scrollable ancestor other than .read-col. Simplest correct rule: ignore when the target has a scrollable ancestor (overflow-y auto/scroll with scrollHeight > clientHeight) that is not .read-col. Keep the state in a useRef. On turn call goNext()/goPrev(); call preventDefault only when a turn happens.
+   - Extend the existing keydown handler: Space, PageDown, ArrowDown go forward; Shift+Space, PageUp, ArrowUp go back. If .read-col can still scroll in that direction, scroll it by 85% of its clientHeight (behavior "smooth") instead of turning; otherwise goNext()/goPrev(). preventDefault in both cases. Do not change ArrowLeft/ArrowRight. Ignore when the target is a button (Space activates buttons) as well as inputs.
+   - Charming continue cue at the bottom of every text page, inside the .body-text column after the paragraphs: a single <button type="button" className="read-on" onClick={goNext}> with no box. Copy, in English: "Turn the page ↓" when more text pages follow in this scene; "Next scene ↓" when this is the scene's last text page and another scene in this chapter follows; "Finish Chapter {ch} ↓" when the next sub-page is the chapter end page. Hide it at the very end of the book. Put the label choice in a pure function `readOnLabel(...)` in scroll-turn.ts and test it.
+   - Also show a small muted hint under "Begin the chapter →" on the cover: "or just scroll" (a span, class read-on-hint).
+
+3. CSS in app/styles/chapters.css (append): .read-on is a text button, no border, no background, no box, font var(--font-ui) 14px weight 600, color var(--color-accent) (Meta blue tokens, never purple), padding 18px 0 6px, cursor pointer, display block. On hover the arrow nudges down 3px (wrap the arrow in a span; transition transform 160ms) and the text gets an underline offset 4px. No idle animation. Respect prefers-reduced-motion (no transform). Add :focus-visible to the existing focus-visible outline group. .read-on-hint: 12.5px, color var(--color-text-muted), display block, margin-top -8px.
+
+4. Docs: append a short "Task 36" row to BUILT_DURING_HACKATHON.md following the existing format, and write docs/tasks/36-wheel-turn.md (10 lines max: bug, cause, fix).
+
+Rules: every file under 5000 tokens (bytes/4). Keep changes minimal. Run `npx vitest run app/folio` and `npm run typecheck` (run `npx next typegen` first if types are missing) and fix failures. Do not commit; leave changes in the working tree. Do not touch any other repo.

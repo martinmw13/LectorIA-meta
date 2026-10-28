@@ -15,6 +15,8 @@ import { figuresAfter, groupFiguresByEndN, pageOfOrdinal } from "../folio/figure
 import { ImagePane } from "../folio/image-pane";
 import { InlineFigureView, SelectionPopover } from "../folio/inline-figures";
 import { Lightbox } from "../folio/lightbox";
+import { edges, readOnLabel, wheelTurn } from "../folio/scroll-turn";
+import type { WheelTurnState } from "../folio/scroll-turn";
 import { usePictures } from "../folio/use-pictures";
 import type { InlineFigure } from "../folio/use-pictures";
 import { PictureVault } from "../folio/vault";
@@ -41,9 +43,29 @@ import {
 // always starts at page 0.
 let enterAtEnd = false;
 
+// Survives scene remounts so one swipe never turns twice.
+let wheelState: WheelTurnState = { acc: 0, lockedUntil: 0, lastAt: 0 };
+
 // Set on every in-app scene push. The heading takes focus only when this
 // is set, so first load shows no focus ring.
 let hasNavigated = false;
+
+// True when the wheel target sits inside a nested scroller (picture
+// vault, player bar, modal grids): those scroll natively and never turn
+// pages. The reading column itself is not a nested scroller.
+function inNestedScroller(target: HTMLElement | null, readCol: HTMLElement | null): boolean {
+  let el: HTMLElement | null = target;
+  while (el !== null) {
+    if (el !== readCol) {
+      const overflowY = window.getComputedStyle(el).overflowY;
+      if ((overflowY === "auto" || overflowY === "scroll") && el.scrollHeight > el.clientHeight) {
+        return true;
+      }
+    }
+    el = el.parentElement;
+  }
+  return false;
+}
 
 function pulse(el: HTMLElement | null) {
   if (!el) return;
@@ -102,6 +124,16 @@ export function ScenePage({
   const textIndex = textPageAt(page, cover);
   const atStart = view.prevSceneId === null && page === 0;
   const atBookEnd = view.nextSceneId === null && page === lastPage;
+  const readOn =
+    kind === "text"
+      ? readOnLabel({
+          textIndex,
+          textCount: view.pages.length,
+          hasEndPage: end,
+          hasNextSceneInChapter: view.k < view.n,
+          ch: view.ch,
+        })
+      : null;
 
   useEffect(() => {
     setPref(loadImageStylePref());
@@ -220,11 +252,64 @@ export function ScenePage({
       } else if (event.key === "ArrowLeft") {
         event.preventDefault();
         goPrev();
+      } else if (
+        event.key === " " ||
+        event.key === "PageDown" ||
+        event.key === "ArrowDown" ||
+        event.key === "PageUp" ||
+        event.key === "ArrowUp"
+      ) {
+        if (target !== null && target.tagName === "BUTTON") return;
+        const forward =
+          event.key === "PageDown" || event.key === "ArrowDown" || (event.key === " " && !event.shiftKey);
+        event.preventDefault();
+        const col = readColRef.current;
+        if (col !== null) {
+          const at = edges(col);
+          if ((forward && !at.atBottom) || (!forward && !at.atTop)) {
+            col.scrollBy({ top: (forward ? 1 : -1) * col.clientHeight * 0.85, behavior: "smooth" });
+            return;
+          }
+        }
+        if (forward) goNext();
+        else goPrev();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [page, view.sceneId, index, router]);
+
+  // Wheel and trackpad turn pages: at a column edge, an accumulated swipe
+  // calls goNext/goPrev. preventDefault only on a turn, so the column
+  // keeps scrolling natively until it rests on its edge.
+  useEffect(() => {
+    const onWheel = (event: WheelEvent) => {
+      if (panelsOpen || gateOpen || pic.lightbox.item !== null) return;
+      if (event.ctrlKey) return;
+      if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
+      const target = event.target instanceof HTMLElement ? event.target : null;
+      const readCol = readColRef.current;
+      if (inNestedScroller(target, readCol)) return;
+      const at = readCol === null ? { atTop: true, atBottom: true } : edges(readCol);
+      const result = wheelTurn(wheelState, {
+        deltaY: event.deltaY,
+        deltaMode: event.deltaMode,
+        now: performance.now(),
+        atTop: at.atTop,
+        atBottom: at.atBottom,
+      });
+      wheelState = result.state;
+      if (result.turn === "next") {
+        event.preventDefault();
+        goNext();
+      } else if (result.turn === "prev") {
+        event.preventDefault();
+        goPrev();
+      }
+    };
+    window.addEventListener("wheel", onWheel, { passive: false });
+    return () => window.removeEventListener("wheel", onWheel);
+  }, [page, view.sceneId, index, router, panelsOpen, gateOpen, pic.lightbox.item]);
 
   return (
     <>
@@ -267,6 +352,7 @@ export function ScenePage({
             <button type="button" className="cover-begin" onClick={goNext}>
               Begin the chapter →
             </button>
+            <span className="read-on-hint">or just scroll</span>
           </>
         ) : kind === "end" ? (
           <>
@@ -328,6 +414,15 @@ export function ScenePage({
                   popRef={pic.popRef}
                   onPick={() => pic.illustratePassage()}
                 />
+              ) : null}
+              {/* Every read-on label ends with " ↓"; the arrow gets its own span for the hover nudge. */}
+              {readOn !== null ? (
+                <button type="button" className="read-on" onClick={goNext}>
+                  {readOn.slice(0, -1)}
+                  <span className="read-on-arrow" aria-hidden="true">
+                    ↓
+                  </span>
+                </button>
               ) : null}
             </div>
           </>
