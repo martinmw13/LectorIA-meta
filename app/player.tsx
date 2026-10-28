@@ -123,6 +123,17 @@ export function Player({
     }
   }
 
+  // A refused start (autoplay policy, bad src) on the audible element stops
+  // everything and shows Play; aborts and superseded elements are ignored.
+  function startEl(el: HTMLAudioElement, idx: number) {
+    void el.play().catch((err: unknown) => {
+      if ((err as { name?: string })?.name === "AbortError" || audibleRef.current !== idx) return;
+      playingRef.current = false;
+      setPlaying(false);
+      for (const other of [firstRef.current, secondRef.current]) other?.pause();
+    });
+  }
+
   // Assigned each render so handlers always see fresh refs. Fades from
   // the currently louder element to the newest track; a mid-fade request
   // cancels the pending fade and starts from current levels.
@@ -154,16 +165,11 @@ export function Player({
       audibleRef.current = dstIdx;
       srcEl.pause();
       applyLevels();
-      if (playingRef.current)
-        void dst.play().catch((err: unknown) => {
-          // A refused start (autoplay policy, bad src) leaves nothing audible: show Play.
-          if ((err as { name?: string })?.name === "AbortError" || audibleRef.current !== dstIdx) return;
-          playingRef.current = false;
-          setPlaying(false);
-        });
+      if (playingRef.current) startEl(dst, dstIdx);
       return;
     }
-    if (playingRef.current) void dst.play().catch(() => undefined);
+    audibleRef.current = dstIdx;
+    if (playingRef.current) startEl(dst, dstIdx);
     const startSrc = levelRef.current[srcIdx] ?? 0;
     const startDst = levelRef.current[dstIdx] ?? 0;
     let t0 = performance.now();
@@ -286,7 +292,7 @@ export function Player({
     both.forEach((el, i) => {
       if (el && (levelRef.current[i] ?? 0) > 0.02) {
         heard = true;
-        void el.play().catch(() => undefined);
+        startEl(el, i);
       }
     });
     const next = trackRef.current;
