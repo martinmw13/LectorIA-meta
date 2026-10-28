@@ -453,19 +453,22 @@ html[data-theme="dark"] .expand-img {
 }
 
 /* Selection popover: boxless like the Picture this button. Meta-blue
-   text and icon over a soft paper halo, so it reads over book text.
-   Motion only on press; hover just underlines. */
+   text and icon over a feathered paper glow (no edge, so no box), so it
+   reads over the line above the selection. Motion only on press; hover
+   just underlines. */
 .picture-float {
   position: absolute;
   z-index: 60;
-  transform: translate(-50%, -100%);
+  isolation: isolate;
+  transform: translate(-50%, calc(-100% - 4px));
   background: none;
   border: 0;
   border-radius: 4px;
   padding: 6px 8px;
   color: var(--color-accent);
   font-family: var(--font-ui);
-  font-size: 12.5px;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
   display: inline-flex;
@@ -475,6 +478,20 @@ html[data-theme="dark"] .expand-img {
     0 0 6px var(--color-surface),
     0 0 2px var(--color-surface),
     0 1px 2px var(--color-surface);
+}
+
+.picture-float::before {
+  content: "";
+  position: absolute;
+  inset: -8px -18px;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    closest-side,
+    var(--color-surface) 62%,
+    color-mix(in srgb, var(--color-surface) 70%, transparent) 82%,
+    transparent 100%
+  );
 }
 
 .picture-float-lbl {
@@ -502,7 +519,7 @@ html[data-theme="dark"] .expand-img {
 
 @keyframes picfloat-press {
   35% {
-    transform: translate(-50%, -100%) scale(0.94);
+    transform: translate(-50%, calc(-100% - 4px)) scale(0.94);
   }
 }
 
