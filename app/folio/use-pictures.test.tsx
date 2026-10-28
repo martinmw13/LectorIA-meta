@@ -130,3 +130,46 @@ test("selection popover portals to the body and hides on resize", () => {
     root.unmount();
   });
 });
+
+let lastRescan: (() => void) | null = null;
+
+function SceneHarness({ sceneId }: { sceneId: string }) {
+  const pic = usePictures({ bookId: "oz", textVersion: "v", sceneId, pref: { kind: "preset", id: "denslow" } });
+  lastPopover = pic.popover;
+  lastRescan = pic.rescan;
+  return (
+    <div ref={pic.viewRef}>
+      <p id="c2p1" data-n="1">
+        The house whirled around two or three times.
+      </p>
+    </div>
+  );
+}
+
+// Continuous scroll: a selection that starts in another scene switches the
+// current scene, then rescans. The switch must not drop the popover.
+test("rescan after a scene switch shows the popover at document coordinates", () => {
+  Range.prototype.getBoundingClientRect = () => new DOMRect(10, 20, 100, 16);
+  vi.stubGlobal("scrollY", 300);
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  const root = createRoot(host);
+  act(() => {
+    root.render(<SceneHarness sceneId="c2s1" />);
+  });
+  const range = document.createRange();
+  range.selectNodeContents(host.querySelector("p")!.firstChild!);
+  const sel = window.getSelection()!;
+  sel.removeAllRanges();
+  sel.addRange(range);
+  act(() => {
+    root.render(<SceneHarness sceneId="c2s2" />);
+  });
+  act(() => {
+    lastRescan?.();
+  });
+  expect(lastPopover).toEqual({ top: 312, left: 60 });
+  act(() => {
+    root.unmount();
+  });
+});

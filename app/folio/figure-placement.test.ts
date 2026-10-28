@@ -6,7 +6,6 @@ import {
   figuresAfter,
   finish,
   groupFiguresByEndN,
-  pageOfOrdinal,
   tryStart,
 } from "./figure-placement";
 
@@ -62,17 +61,6 @@ describe("figuresAfter", () => {
     ]);
     expect(figuresAfter([p(1, "x")], 0, grouped).map((f) => f.id)).toEqual(["a", "b"]);
     expect(figuresAfter([p(9, "z")], 0, grouped)).toEqual([]);
-  });
-});
-
-describe("pageOfOrdinal", () => {
-  const pages = [{ paragraphs: [p(1, "a")] }, { paragraphs: [p(2, "b"), p(3, "c")] }];
-  it("finds the page holding the ordinal", () => {
-    expect(pageOfOrdinal(pages, 1)).toBe(0);
-    expect(pageOfOrdinal(pages, 3)).toBe(1);
-  });
-  it("returns -1 for a missing ordinal", () => {
-    expect(pageOfOrdinal(pages, 9)).toBe(-1);
   });
 });
 

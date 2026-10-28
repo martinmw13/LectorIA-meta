@@ -84,8 +84,11 @@ and `picture-draw.test.tsx`), `npm run check:secrets`,
   (`popoverPos`: rect plus page scroll) and renders through a
   portal into `document.body`, so it stays on the selection in
   paged or continuous layouts. Each scene's hook instance still
-  owns its popover; resize also hides it, and a scene change
-  clears it.
+  owns its popover; resize also hides it. After the continuous
+  reader (#53) the reader hides it on scene jumps and calls
+  `rescan()` when a selection moves the current scene, so the hook
+  no longer clears it on every scene id change (that would race
+  the rescan).
 - The popover is boxless: Meta-blue text and icon over a paper
   halo, underline on hover, press nudge, focus ring, still under
   reduced motion.

@@ -94,6 +94,8 @@ export function InlineFigureView({
           className={loaded ? `rv-${skin} gen-ready` : "gen-ready pic-waiting"}
           src={url}
           alt={captioned}
+          loading="lazy"
+          decoding="async"
           tabIndex={0}
         onClick={(e) => onOpen(url, captioned, e.currentTarget)}
         onKeyDown={(e) => {

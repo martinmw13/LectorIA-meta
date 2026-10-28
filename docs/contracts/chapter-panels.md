@@ -1,37 +1,28 @@
-# Chapter covers, end pages, panels
+# Chapter headers, panels
 
-Where this differs from another contract file (for example the
-scene reader's "no other scenes' summaries" rule), this file wins.
+Where this differs from another contract file, this file wins.
 
-## Cover and end sub-pages
+## Inline chapter headers
 
-The first scene of every chapter carries one extra leading sub-page,
-the cover (index 0; text pages shift by one). The last scene of every
-chapter carries one extra trailing sub-page, the chapter end. Both
-belong to their scene: `core/reader.ts` (`subPageCount`,
-`subPageKind`, `textPageAt`, flags on `SceneView`) shifts indexes only.
-The route builds pager counts with the extras, so `navReducer` crosses
-them with no new rules: Back from text page 1 returns to the cover,
-Back from the cover lands on the previous chapter's last page, and
-`enterAtEnd` lands on the real last page.
+Every chapter opens inline: kicker, number, title, then the Chapter in
+panels strip (offer card until read, quiet link after), then its text
+at once. No Begin gate. A light "Relive this chapter in panels" entry
+closes each chapter; "The end." closes the book. Reading past a
+chapter unlocks its panels, like the old end page did.
 
-Music entry still fires once per scene route id (`nextSceneEntry`),
-so the cover and the end page never trigger a music change of their
-own. The chapter jump lands on the chapter's first scene id, which
-opens on its cover (page 0).
+Music entry still fires once per scene in view (`nextSceneEntry`), so
+headers and strip views never trigger a music change of their own. The
+chapter jump scrolls to the chapter's first scene.
 
 ## Panels data
 
-The route passes the current chapter's panels only: per scene,
-`sceneId`, a short caption (`panelCaption` over the scene summary,
-first clause, 90 chars max), and bundled art url or null. Panel art
-resolves client-side in this order: the session scene-picture cache
-(read-only getter over `app/folio/use-pictures.ts`), bundled
-`PANEL_ART` (`c1s2`, `c1s3`), else a text-free placeholder.
+The route passes every chapter's panels: per scene, `sceneId`, a short
+caption (`panelCaption` over the scene summary, first clause, 90 chars
+max), and bundled art url or null. Panel art resolves client-side in
+this order: the session scene-picture cache (read-only getter over
+`app/folio/use-pictures.ts`), bundled `PANEL_ART` (`c1s2`, `c1s3`),
+else a text-free placeholder.
 
-This relaxes one line of the scene-reader contract: the client
-receives the current chapter's short panel captions only, shown behind
-the spoiler gate (or after the end page), and never other chapters' or
-full summaries. No other scene text, titles, or summaries ship. The
-isolation scan still holds: captions come from summaries, never from
-neighbor paragraphs.
+Captions stay behind the spoiler gate until read or shown-anyway.
+Every route ships the whole book, so the isolation scan checks each
+route carries its own scene text rather than checking for leaks.
