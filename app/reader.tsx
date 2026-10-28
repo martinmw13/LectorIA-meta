@@ -11,6 +11,7 @@ import { nextSceneEntry } from "@/core/reader";
 import { DEFAULT_VOLUME, loadMusicPrefs, saveMusicPrefs } from "./music-prefs";
 import { Player } from "./player";
 import { THEME_KEY, TopLine } from "./folio/chrome";
+import { initialTheme } from "./theme";
 import { DevPanel } from "./folio/dev-panel";
 
 export interface SlimScene {
@@ -120,12 +121,7 @@ export function Reader({
       setMuted(prefs.muted);
     }
     try {
-      const stored = window.localStorage.getItem(THEME_KEY);
-      if (stored === "light" || stored === "dark") {
-        setTheme(stored);
-      } else {
-        setTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light");
-      }
+      setTheme(initialTheme(window.localStorage.getItem(THEME_KEY)));
     } catch {
       // The inline script already set a theme; keep the default.
     }
