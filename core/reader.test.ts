@@ -113,6 +113,29 @@ describe("buildReaderModel", () => {
     expect(paginateScene([], 3)).toEqual([{ paragraphs: [], startN: 0, endN: 0, words: 0 }]);
   });
 
+  it("closes a page by lines for short dialogue paragraphs", () => {
+    const paras = Array.from({ length: 20 }, (_, i) => ({ id: `d${i}`, n: i + 1, text: '"Yes."' }));
+    const pages = paginateScene(paras);
+    expect(pages.map((p) => p.paragraphs.length)).toEqual([16, 4]);
+    expect(pages.flatMap((p) => p.paragraphs.map((q) => q.n))).toEqual(paras.map((p) => p.n));
+  });
+
+  it("gives a single over-long paragraph its own page", () => {
+    const paras = [
+      { id: "a", n: 1, text: "short one" },
+      { id: "b", n: 2, text: "x".repeat(68 * 18) },
+      { id: "c", n: 3, text: "short two" },
+    ];
+    const pages = paginateScene(paras);
+    expect(pages.map((p) => p.paragraphs.map((q) => q.id))).toEqual([["a"], ["b"], ["c"]]);
+  });
+
+  it("paginates deterministically", () => {
+    const paras = Array.from({ length: 40 }, (_, i) => ({ id: `e${i}`, n: i + 1, text: '"Well?"' }));
+    expect(paginateScene(paras)).toEqual(paginateScene(paras));
+    expect(paginateScene(paras).length).toBe(3);
+  });
+
   it("counts words on whitespace", () => {
     expect(countWords("  hola   mundo\n")).toBe(2);
   });
