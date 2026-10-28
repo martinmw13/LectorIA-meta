@@ -11,6 +11,7 @@ import type { NavAction, SceneView } from "@/core/reader";
 import { loadImageStylePref, saveImageStylePref } from "../image-style";
 import type { ImageStylePref } from "../image-style";
 import { BandPager, Divider } from "../folio/chrome";
+import { figuresAfter, groupFiguresByEndN, pageOfOrdinal } from "../folio/figure-placement";
 import { ImagePane } from "../folio/image-pane";
 import { InlineFigureView, SelectionPopover } from "../folio/inline-figures";
 import { Lightbox } from "../folio/lightbox";
@@ -73,8 +74,8 @@ export function ScenePage({
   panels: ChapterPanel[];
   nextChapter: { ch: number; firstSceneId: string } | null;
 }) {
-  const pic = usePictures({ bookId, textVersion, sceneId: view.sceneId });
   const [pref, setPref] = useState<ImageStylePref>({ kind: "preset", id: "denslow" });
+  const pic = usePictures({ bookId, textVersion, sceneId: view.sceneId, pref });
   const router = useRouter();
   const index = useMemo(() => buildNavIndex(views), [views]);
   const cover = view.isChapterFirst;
@@ -148,23 +149,10 @@ export function ScenePage({
     router.push(`/leer/${nextChapter.firstSceneId}`);
   }
 
-  const figsByN = useMemo(() => {
-    const grouped = new Map<number, InlineFigure[]>();
-    for (const fig of pic.figures) {
-      const list = grouped.get(fig.endN) ?? [];
-      list.push(fig);
-      grouped.set(fig.endN, list);
-    }
-    return grouped;
-  }, [pic.figures]);
-
-  function pageOf(n: number): number {
-    const found = view.pages.findIndex((p) => p.paragraphs.some((para) => para.n === n));
-    return found;
-  }
+  const figsByN = useMemo(() => groupFiguresByEndN(pic.figures), [pic.figures]);
 
   function gotoFigure(fig: InlineFigure) {
-    const at = pageOf(fig.endN);
+    const at = pageOfOrdinal(view.pages, fig.endN);
     if (at < 0) return;
     setPage(at + (cover ? 1 : 0));
     readColRef.current?.scrollTo(0, 0);
@@ -244,10 +232,10 @@ export function ScenePage({
         // The cover always shows the placeholder: nothing to picture yet,
         // and a cached scene picture would spoil the chapter.
         card={kind === "cover" ? { phase: "idle" } : pic.card}
-        onPicture={() => pic.illustrateScene(pref)}
-        onRetry={() => pic.illustrateScene(pref)}
+        onPicture={() => pic.illustrateScene()}
+        onRetry={() => pic.illustrateScene()}
         onClear={pic.clearScene}
-        onOpen={pic.openLightbox}
+        onOpen={pic.lightbox.open}
         bare={kind === "cover"}
         onPictureChapter={
           kind === "cover" ? null : kind === "end" ? () => setPanelsOpen(true) : requestPanels
@@ -319,13 +307,13 @@ export function ScenePage({
                     {p.text}
                   </p>
                   {/* A figure for n lands after its last visible fragment. */}
-                  {(arr[i + 1]?.n !== p.n ? (figsByN.get(p.n) ?? []) : []).map((fig) => (
+                  {figuresAfter(arr, i, figsByN).map((fig) => (
                     <InlineFigureView
                       key={fig.id}
                       figure={fig}
                       onRemove={() => pic.removeFigure(fig.id)}
-                      onRetry={() => pic.retryFigure(fig.id, pref)}
-                      onOpen={pic.openLightbox}
+                      onRetry={() => pic.retryFigure(fig.id)}
+                      onOpen={pic.lightbox.open}
                       refCb={(el) => {
                         if (el) figEls.current.set(fig.id, el);
                         else figEls.current.delete(fig.id);
@@ -338,7 +326,7 @@ export function ScenePage({
                 <SelectionPopover
                   pos={pic.popover}
                   popRef={pic.popRef}
-                  onPick={() => pic.illustratePassage(pref)}
+                  onPick={() => pic.illustratePassage()}
                 />
               ) : null}
             </div>
@@ -350,7 +338,7 @@ export function ScenePage({
         figures={pic.figures}
         onGotoScene={gotoScenePicture}
         onGotoFigure={gotoFigure}
-        onOpen={pic.openLightbox}
+        onOpen={pic.lightbox.open}
         pref={pref}
         onPrefChange={changePref}
       />
@@ -364,7 +352,7 @@ export function ScenePage({
         atStart={atStart}
         atBookEnd={atBookEnd}
       />
-      <Lightbox item={pic.lightbox} onClose={pic.closeLightbox} />
+      <Lightbox item={pic.lightbox.item} onClose={pic.lightbox.close} />
       {gateOpen ? <SpoilerGateDialog onShow={showAnyway} onNotYet={notYet} /> : null}
       {panelsOpen ? (
         <PanelsModal
@@ -372,7 +360,7 @@ export function ScenePage({
           chapterTitle={view.chapterTitle}
           panels={panels}
           onClose={() => setPanelsOpen(false)}
-          onOpenArt={pic.openLightbox}
+          onOpenArt={pic.lightbox.open}
         />
       ) : null}
     </>

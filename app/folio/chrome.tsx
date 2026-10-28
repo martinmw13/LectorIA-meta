@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import { clampSplitWidth, SPLIT_MIN_PX } from "./helpers";
 
-export const THEME_KEY = "lectoria.theme";
+export { THEME_KEY } from "../theme";
 export const SPLIT_KEY = "lectoria.split";
 
 function MoonIcon() {
