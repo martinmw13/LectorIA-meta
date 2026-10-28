@@ -9,13 +9,18 @@ describe("heroArt", () => {
     expect(heroArt("engraving")).not.toBeNull();
   });
 
-  it("points every skin's art at a real, well-formed SVG in public/", () => {
+  it("points every skin's art at a real, well-formed SVG or PNG in public/", () => {
     for (const skin of SKINS) {
       const art = heroArt(skin);
       if (!art) continue;
       for (const src of Object.values(art)) {
         const file = join(process.cwd(), "public", src);
         expect(existsSync(file), src).toBe(true);
+        if (src.endsWith(".png")) {
+          // Raster art (pencil drawings): a real PNG, nothing that can run.
+          expect(readFileSync(file).subarray(0, 8).toString("hex"), src).toBe("89504e470d0a1a0a");
+          continue;
+        }
         const svg = readFileSync(file, "utf8");
         expect(svg.trimStart().startsWith("<svg"), src).toBe(true);
         expect(svg).not.toMatch(/<script|on\w+=/i);
