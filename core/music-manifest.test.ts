@@ -64,7 +64,11 @@ describe("committed music manifest", () => {
     }
     const chopin = manifest.playlists.find((p) => p.id === "just-play-chopin");
     expect(chopin?.label).toBe("Just play Chopin");
-    expect(chopin?.trackIds).toHaveLength(4);
+    // The four Ballades plus 18 of the best-known works, each id a
+    // playlist-only track in the manifest.
+    expect(chopin?.trackIds).toHaveLength(22);
+    const playlistOnly = new Set(manifest.tracks.filter((t) => t.playlistOnly).map((t) => t.id));
+    for (const id of chopin?.trackIds ?? []) expect(playlistOnly.has(id)).toBe(true);
   });
 });
 
