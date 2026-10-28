@@ -89,7 +89,6 @@
   overflow: hidden;
   white-space: nowrap;
   font-variant: small-caps;
-  letter-spacing: 0.04em;
   font-weight: 600;
   background: var(--narration-mark);
   color: var(--color-text);
