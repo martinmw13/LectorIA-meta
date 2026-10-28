@@ -1,18 +1,24 @@
-"""Opt-in end-to-end check for wheel/trackpad/keyboard page turns (not run in CI).
+"""Opt-in end-to-end check for the continuous scroll reader (not run in CI).
 
 Usage: python3 scripts/e2e-scroll.py [base_url]  (default http://localhost:3000)
 Browser: $CHROME_PATH when set, else Playwright's bundled Chromium.
+Screenshots: saved to $SHOTS_DIR when set.
 Needs Python Playwright; when it is not importable this prints a skip and exits 0.
 Exits 1 with a clear message on the first failed assertion.
 
 At 1440x900 and 1280x800 it asserts:
-(a) trackpad-style swipes from /leer/c1s1 advance exactly one page each
-    (every swipe yields a new, never-repeated label) and reach c2s1
-    within 20 swipes;
-(b) Space, PageDown and ArrowDown each advance a page and PageUp goes back;
-(c) no page errors;
-(d) after arriving at c2s1 by wheel, #scene-heading has computed
-    outline-style "none" (or outline-width 0px).
+(a) on /leer/c1s1 there is NO "Begin the chapter" button and chapter-1
+    paragraph text is visible in the viewport right away;
+(b) trackpad-like wheel input alone (no clicks) scrolls continuously and
+    reaches chapter 2+ (URL becomes /leer/c2s... and a c2 paragraph is in
+    view) and keeps going to chapter 3, with the URL scene id changing
+    monotonically;
+(c) frame timing is smooth while wheel-scrolling: requestAnimationFrame
+    deltas measured in-page during the scroll have p95 <= 34 ms and no
+    frame > 100 ms in headless Chromium;
+(d) Space and PageDown scroll down (scrollTop increases), PageUp scrolls back;
+(e) no page errors;
+(f) chapter headings show no focus ring.
 """
 
 import os
@@ -25,7 +31,7 @@ except ImportError:
     sys.exit(0)
 
 VIEWPORTS = [(1440, 900), (1280, 800)]
-MAX_SWIPES = 20
+WHEEL_ROUNDS = 60
 
 
 def fail(msg):
@@ -37,34 +43,58 @@ def scene_of(page):
     return page.url.rstrip("/").split("/")[-1].split("?")[0].split("#")[0]
 
 
-def label(page):
-    if page.locator(".scene-line").count():
-        text = page.locator(".scene-line").first.inner_text()
-    elif page.locator(".kicker").count():
-        text = page.locator(".kicker").first.inner_text()
-    else:
-        text = ""
-    return (scene_of(page), " ".join(text.split()))
+def shot(page, tag, name):
+    shots = os.environ.get("SHOTS_DIR")
+    if not shots:
+        return
+    os.makedirs(shots, exist_ok=True)
+    page.screenshot(path=os.path.join(shots, f"{tag}-{name}.png"))
 
 
-def swipe(page):
-    # Trackpad-like swipe: 40 decaying wheel events, 16ms apart (inertia).
-    for i in range(40):
-        page.mouse.wheel(0, max(2, int(60 * (0.92**i))))
+def scroll_top(page):
+    return page.evaluate("() => document.querySelector('.read-col').scrollTop")
+
+
+def order_of(page):
+    return page.evaluate("() => [...document.querySelectorAll('[data-scene-id]')].map(s => s.dataset.sceneId)")
+
+
+def chapter_of(scene_id):
+    try:
+        return int(scene_id[1:].split("s")[0])
+    except (ValueError, IndexError):
+        return -1
+
+
+def para_in_view(page, prefix):
+    return page.evaluate(
+        """(prefix) => {
+            const col = document.querySelector('.read-col');
+            if (!col) return false;
+            const top = col.getBoundingClientRect().top;
+            const bottom = top + col.clientHeight;
+            for (const p of document.querySelectorAll(`p[id^="${prefix}"]`)) {
+                const r = p.getBoundingClientRect();
+                if (r.bottom > top + 1 && r.top < bottom - 1) return true;
+            }
+            return false;
+        }""",
+        prefix,
+    )
+
+
+def wheel_down(page, rounds, step=420):
+    for _ in range(rounds):
+        page.mouse.wheel(0, step)
         page.wait_for_timeout(16)
-    page.wait_for_timeout(500)
 
 
-def press_advance(page, key, prev, tag):
-    # Space/Page/arrow keys scroll tall columns before turning, so allow
-    # a few presses; the key must still move to a new page.
-    for _ in range(3):
-        page.keyboard.press(key)
-        page.wait_for_timeout(700)
-        now = label(page)
-        if now != prev:
-            return now
-    fail(f"[{tag}] {key} did not advance after 3 presses (stuck at {prev})")
+def summarize(deltas):
+    xs = sorted(deltas)
+    if not xs:
+        return {"n": 0, "p50": 0, "p95": 0, "max": 0}
+    pick = lambda q: xs[min(len(xs) - 1, int(q * len(xs)))]
+    return {"n": len(xs), "p50": round(pick(0.50), 1), "p95": round(pick(0.95), 1), "max": round(max(xs), 1)}
 
 
 def check_viewport(browser, base, w, h):
@@ -73,58 +103,116 @@ def check_viewport(browser, base, w, h):
     errors = []
     page.on("pageerror", lambda e: errors.append(str(e)))
     try:
-        # (a) wheel sweep from the chapter-1 cover to chapter 2.
+        # (a) chapter 1 text is already on screen; no Begin gate.
         page.goto(f"{base}/leer/c1s1", wait_until="networkidle")
-        page.wait_for_timeout(1000)
+        page.wait_for_timeout(1200)
         if scene_of(page) != "c1s1":
             fail(f"[{tag}] expected to start at /leer/c1s1, got {page.url}")
-        seen = [label(page)]
+        if page.get_by_text("Begin the chapter").count():
+            fail(f"[{tag}] found a 'Begin the chapter' button")
+        if not para_in_view(page, "c1p"):
+            fail(f"[{tag}] no chapter-1 paragraph visible on load")
+        print(f"[{tag}] load ok: chapter-1 text visible, no Begin gate")
+        shot(page, tag, "load")
+
+        # Order of scenes down the column, for the monotonicity check.
+        order = order_of(page)
+        if not order or order[0] != "c1s1":
+            fail(f"[{tag}] no scene sections found (first={order[:1]})")
+
+        # (b) wheel-only scroll to chapter 3, URL moving monotonically.
+        seen = ["c1s1"]
+        reached_c2 = False
         page.mouse.move(w * 0.55, h * 0.4)
-        for n in range(1, MAX_SWIPES + 1):
-            swipe(page)
-            now = label(page)
-            if now == seen[-1]:
-                fail(f"[{tag}] swipe {n}: page did not change (stuck at {now})")
-            if now in seen:
-                fail(f"[{tag}] swipe {n}: label repeated {now} (one new page per swipe)")
-            seen.append(now)
-            if scene_of(page) == "c2s1":
+        for _ in range(12):
+            wheel_down(page, 8)
+            page.wait_for_timeout(400)
+            now = scene_of(page)
+            if now != seen[-1]:
+                if now not in order:
+                    fail(f"[{tag}] URL scene {now} is not a known section")
+                if order.index(now) < order.index(seen[-1]):
+                    fail(f"[{tag}] URL scene went backwards: {seen[-1]} -> {now}")
+                seen.append(now)
+            if not reached_c2 and chapter_of(now) >= 2:
+                if not para_in_view(page, "c2p"):
+                    fail(f"[{tag}] URL says {now} but no c2 paragraph is in view")
+                reached_c2 = True
+                print(f"[{tag}] reached chapter 2 at {now}")
+                shot(page, tag, "chapter2")
+            if chapter_of(now) >= 3:
                 break
-        else:
-            fail(f"[{tag}] did not reach c2s1 within {MAX_SWIPES} swipes (at {seen[-1]})")
-        print(f"[{tag}] swipes ok: {len(seen) - 1} swipes from c1s1 to c2s1")
+        if chapter_of(scene_of(page)) < 3:
+            fail(f"[{tag}] wheel scrolling did not reach chapter 3 (at {scene_of(page)})")
+        print(f"[{tag}] scroll ok: {' -> '.join(seen)}")
+        shot(page, tag, "chapter3")
 
-        # (d) heading shows no focus ring after wheel arrival.
-        outline = page.evaluate(
-            "() => { const el = document.querySelector('#scene-heading');"
-            " if (!el) return null;"
-            " const s = getComputedStyle(el);"
-            " return { style: s.outlineStyle, width: s.outlineWidth }; }"
-        )
-        if outline is None:
-            fail(f"[{tag}] #scene-heading missing after arriving at c2s1")
-        if outline["style"] != "none" and outline["width"] != "0px":
-            fail(f"[{tag}] #scene-heading outline not removed: {outline}")
-        print(f"[{tag}] heading outline ok: {outline}")
-
-        # (b) keys on a fresh load.
+        # (c) frame timing during a fresh wheel scroll: start the rAF
+        # sampler in-page, wheel alongside it, then read the deltas.
         page.goto(f"{base}/leer/c1s1", wait_until="networkidle")
-        page.wait_for_timeout(800)
-        start = label(page)
-        after_space = press_advance(page, "Space", start, tag)
-        after_pgdn = press_advance(page, "PageDown", after_space, tag)
-        after_down = press_advance(page, "ArrowDown", after_pgdn, tag)
-        back = after_pgdn
-        for _ in range(3):
-            page.keyboard.press("PageUp")
-            page.wait_for_timeout(700)
-            if label(page) == back:
-                break
-        else:
-            fail(f"[{tag}] PageUp did not go back to {back} (at {label(page)})")
-        print(f"[{tag}] keys ok: Space/PageDown/ArrowDown advance, PageUp goes back")
+        page.wait_for_timeout(1000)
+        page.mouse.move(w * 0.55, h * 0.4)
+        page.evaluate(
+            """() => {
+                window.__deltas = [];
+                window.__last = 0;
+                window.__t0 = performance.now();
+                window.__tick = (t) => {
+                    if (window.__last) window.__deltas.push(t - window.__last);
+                    window.__last = t;
+                    if (t - window.__t0 < 2500) requestAnimationFrame(window.__tick);
+                };
+                requestAnimationFrame(window.__tick);
+            }"""
+        )
+        wheel_down(page, WHEEL_ROUNDS, step=300)
+        page.wait_for_timeout(2900)
+        deltas = page.evaluate("() => window.__deltas || []")
+        stats = summarize(deltas)
+        print(f"[{tag}] frames: n={stats['n']} p50={stats['p50']}ms p95={stats['p95']}ms max={stats['max']}ms")
+        if stats["n"] < 30:
+            fail(f"[{tag}] too few frames sampled ({stats['n']})")
+        if stats["p95"] > 34:
+            fail(f"[{tag}] p95 frame delta {stats['p95']}ms > 34ms")
+        if stats["max"] > 100:
+            fail(f"[{tag}] max frame delta {stats['max']}ms > 100ms")
 
-        # (c) no page errors across both loads.
+        # (d) native keys move the column.
+        page.goto(f"{base}/leer/c1s1", wait_until="networkidle")
+        page.wait_for_timeout(1000)
+        before = scroll_top(page)
+        page.keyboard.press("Space")
+        page.wait_for_timeout(600)
+        after_space = scroll_top(page)
+        if after_space <= before:
+            fail(f"[{tag}] Space did not scroll down ({before} -> {after_space})")
+        page.keyboard.press("PageDown")
+        page.wait_for_timeout(600)
+        after_pgdn = scroll_top(page)
+        if after_pgdn <= after_space:
+            fail(f"[{tag}] PageDown did not scroll down ({after_space} -> {after_pgdn})")
+        page.keyboard.press("PageUp")
+        page.wait_for_timeout(600)
+        back = scroll_top(page)
+        if back >= after_pgdn:
+            fail(f"[{tag}] PageUp did not scroll back ({after_pgdn} -> {back})")
+        print(f"[{tag}] keys ok: Space/PageDown down, PageUp back")
+
+        # (f) headings show no focus ring.
+        rings = page.evaluate(
+            """() => [...document.querySelectorAll('h1.chapter-title')].map((el) => {
+                const s = getComputedStyle(el);
+                return { style: s.outlineStyle, width: s.outlineWidth };
+            })"""
+        )
+        if not rings:
+            fail(f"[{tag}] no chapter headings found")
+        for ring in rings:
+            if ring["style"] != "none" and ring["width"] != "0px":
+                fail(f"[{tag}] chapter heading outline not removed: {ring}")
+        print(f"[{tag}] headings ok: {len(rings)} titles, no focus ring")
+
+        # (e) no page errors across all three loads.
         if errors:
             fail(f"[{tag}] {len(errors)} page error(s), first: {errors[0]}")
         print(f"[{tag}] no page errors")

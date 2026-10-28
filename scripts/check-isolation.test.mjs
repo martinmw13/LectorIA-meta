@@ -3,27 +3,25 @@ import assert from "node:assert/strict";
 import { checkIsolation, excerpt, normalize } from "./check-isolation.mjs";
 
 const own = "Dorothy lived in the midst of the great Kansas prairies, with Uncle Henry.";
-const neighbor = "She was awakened by a shock, so sudden and severe that she was thrown.";
+const other = "She was awakened by a shock, so sudden and severe that she was thrown.";
 
 function scenes() {
   return [
     { id: "s1", texts: [own] },
-    { id: "s2", texts: [neighbor] },
+    { id: "s2", texts: [other] },
   ];
 }
 
 describe("checkIsolation", () => {
-  it("passes when each route carries only its own text", () => {
-    const readFile = (path) => (path.includes("s1") ? `<p>${own}</p>` : `<p>${neighbor}</p>`);
-    const filesFor = (id) => [`/out/${id}.html`];
-    assert.deepEqual(checkIsolation({ scenes: scenes(), readFile, filesFor }), []);
+  it("passes when each route carries the whole book", () => {
+    const both = `<p>${own}</p><p>${other}</p>`;
+    assert.deepEqual(checkIsolation({ scenes: scenes(), readFile: () => both, filesFor: (id) => [`/out/${id}.html`] }), []);
   });
 
-  it("fails when a route carries neighbor text, and on blind scans", () => {
-    const leaked = `<p>${own}</p><p>${neighbor}</p>`;
+  it("fails when the scene's own text is missing, and on blind scans", () => {
     assert.match(
-      checkIsolation({ scenes: scenes(), readFile: () => leaked, filesFor: (id) => [`/out/${id}.html`] }).join("\n"),
-      /s1: leaks text of neighbor s2/,
+      checkIsolation({ scenes: scenes(), readFile: () => `<p>${other}</p>`, filesFor: (id) => [`/out/${id}.html`] }).join("\n"),
+      /s1: own text missing/,
     );
     assert.match(
       checkIsolation({ scenes: scenes(), readFile: () => "<p>other words entirely here</p>", filesFor: (id) => [`/out/${id}.html`] }).join("\n"),

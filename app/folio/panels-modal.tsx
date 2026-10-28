@@ -17,7 +17,7 @@ export function BlurredThumbs({ panels, unblurredCount }: { panels: ChapterPanel
     <div className={unblurredCount === undefined ? "thumb-strip" : "thumb-strip open"} aria-hidden="true">
       {show.map((p) => (
         <span key={p.sceneId} className="thumb-tile">
-          {p.art ? <img src={p.art} alt="" /> : <span className="thumb-empty" />}
+          {p.art ? <img src={p.art} alt="" loading="lazy" decoding="async" /> : <span className="thumb-empty" />}
         </span>
       ))}
     </div>
@@ -166,7 +166,7 @@ export function PanelsModal({
                 <span className="panel-num" aria-hidden="true">
                   {i + 1}
                 </span>
-                <img src={p.url} alt="" />
+                <img src={p.url} alt="" loading="lazy" decoding="async" />
                 <span className="panel-cap">{p.caption}</span>
               </button>
             ) : (
