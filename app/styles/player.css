@@ -87,6 +87,7 @@
 
 .player-track[data-overflow="1"] .player-track-inner {
   animation: player-marquee var(--marquee-duration, 6000ms) linear infinite alternate;
+  padding-right: 16px;
 }
 
 @keyframes player-marquee {
@@ -101,10 +102,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .player-track[data-overflow="1"] {
+  .player-track {
     mask-image: none;
   }
-  .player-track[data-overflow="1"] .player-track-inner {
+  .player-track .player-track-inner {
     animation: none;
     transform: none;
     display: block;
@@ -113,11 +114,11 @@
   }
 }
 
-.player[data-reduced-motion="true"] .player-track[data-overflow="1"] {
+.player[data-reduced-motion="true"] .player-track {
   mask-image: none;
 }
 
-.player[data-reduced-motion="true"] .player-track[data-overflow="1"] .player-track-inner {
+.player[data-reduced-motion="true"] .player-track .player-track-inner {
   animation: none;
   transform: none;
   display: block;
