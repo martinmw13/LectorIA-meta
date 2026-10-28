@@ -200,6 +200,42 @@ export interface SceneView {
   nextSceneId: string | null;
   k: number;
   n: number;
+  isChapterFirst: boolean;
+  isChapterLast: boolean;
+}
+
+// The chapter cover (page 0 of the first scene) and the chapter-end
+// page (trailing page of the last scene) belong to their scene: they
+// shift sub-page indexes only, so music entry still fires per route id.
+export type SubPageKind = "cover" | "text" | "end";
+
+export function subPageCount(textPages: number, cover: boolean, end: boolean): number {
+  return textPages + (cover ? 1 : 0) + (end ? 1 : 0);
+}
+
+export function subPageKind(page: number, textPages: number, cover: boolean, end: boolean): SubPageKind {
+  if (cover && page === 0) return "cover";
+  if (end && page === subPageCount(textPages, cover, end) - 1) return "end";
+  return "text";
+}
+
+// Sub-page index to text-page index (the cover shifts text by one).
+export function textPageAt(page: number, cover: boolean): number {
+  return page - (cover ? 1 : 0);
+}
+
+// One short caption per panel: the first clause of the scene summary,
+// cut at a word boundary to 90 chars with an ellipsis when longer.
+export const PANEL_CAPTION_MAX = 90;
+
+export function panelCaption(summary: string): string {
+  const clean = summary.replace(/\s+/g, " ").trim();
+  if (clean.length <= PANEL_CAPTION_MAX) return clean;
+  const end = clean.search(/[.!?;]["'”’)\]]?\s/);
+  const first = end > 0 && end < PANEL_CAPTION_MAX ? clean.slice(0, end + 1) : null;
+  if (first) return first;
+  const cut = clean.slice(0, PANEL_CAPTION_MAX - 1);
+  return `${cut.slice(0, Math.max(1, cut.lastIndexOf(" "))).trimEnd()}…`;
 }
 
 // The only text a scene route ships: this scene, its chapter, its pages,
@@ -214,6 +250,7 @@ export function buildSceneView(
   if (at < 0 || !flat[at]) throw new Error(`unknown scene ${sceneId}`);
   const entry = flat[at] as { ch: number; chapterTitle: string; scene: ReaderScene };
   const chapterScenes = flat.filter((e) => e.ch === entry.ch);
+  const atInChapter = chapterScenes.findIndex((e) => e.scene.id === sceneId);
   const prev = at > 0 ? flat[at - 1] : null;
   const next = at < flat.length - 1 ? flat[at + 1] : null;
   return {
@@ -225,8 +262,10 @@ export function buildSceneView(
     pages: paginateScene(entry.scene.paragraphs, budgetWords, entry.chapterTitle),
     prevSceneId: prev?.scene.id ?? null,
     nextSceneId: next?.scene.id ?? null,
-    k: chapterScenes.findIndex((e) => e.scene.id === sceneId) + 1,
+    k: atInChapter + 1,
     n: chapterScenes.length,
+    isChapterFirst: atInChapter === 0,
+    isChapterLast: atInChapter === chapterScenes.length - 1,
   };
 }
 

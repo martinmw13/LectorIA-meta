@@ -4,6 +4,7 @@
 @import "./styles/player.css";
 @import "./styles/music-style-control.css";
 @import "./styles/ambience.css";
+@import "./styles/chapters.css";
 
 * {
   box-sizing: border-box;

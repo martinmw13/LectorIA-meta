@@ -1,0 +1,18 @@
+# Task 30: resplit must not store a split whose part re-classified to null
+
+Repo martinmw13/LectorIA-meta, worktree /workspace/wt-30, branch `resplit-null-final` (checked out, from main). Read AGENTS.md first and follow every repo rule (co-author trailer via the hook, file-size hook, check:secrets). Only touch pipeline/resplit.ts, pipeline/resplit*.test.ts, pipeline/resplit.fixtures.ts, docs/contracts.md (one line), docs/tasks/30-resplit-null-final.md and BUILT_DURING_HACKATHON.md. Do NOT run the real pipeline, do NOT call any paid API, do NOT regenerate or edit anything under data/. Do not run `next start`.
+
+## Problem (from architecture review 5, candidate 4)
+In `runResplit` (pipeline/resplit.ts), after the titles call, each part is re-classified with `classifyScene`, which never throws: on a Jev failure or failed override it returns `{ final: null, error }`. Today a part (or a merged group re-classify) with `final: null` is stored anyway, with `final_left`/`final_right: null` and no failure entry. That is the only success-with-null path and it is untested.
+
+## Decision (binding)
+If ANY stored part of a split scene ends with `emotion.final === null` (single-part group or a merged-group re-classify), keep the original scene whole, store nothing from that split, and record `{ from: scene.id, reason: "null-final" }` in a new provenance list `provenance.resplit.reclassify_failures` (same `{from, reason}` shape as `window_failures` / `muse_failures`; reuse the `ResplitWindowFailure` type or rename it to a shared failure type if trivial). One entry per scene at most. Usage/spend already incurred must still be counted (keep the existing usage accounting). Do not push `merged_back` entries for a scene that is then kept whole: collect them locally and append only when the split is kept. Keep everything else byte-identical in behavior. Update the docs/contracts.md line that lists `window_failures` and `muse_failures` to mention `reclassify_failures` (part re-classified to null, scene left whole).
+
+## Tests (vitest, through `runResplit` with fake clients like pipeline/resplit-failures.test.ts and pipeline/resplit.fixtures.ts)
+1. A split where one part re-classifies to null: scene ids stay the original ones, `splits` is `[]`, `merged_back` has no entry for that scene, `reclassify_failures` is `[{from, reason: "null-final"}]`.
+2. Several failures at once in one run: build a fixture with at least two candidate scenes (or use the existing fixture plus extra scenes) where one scene hits a window Jev throw and another hits a Muse titles/decision failure (and, if cheap, a third with null-final); assert each list gets exactly its own entry and the untouched scenes are unchanged.
+3. Direct unit tests for the error-message cleaning function `museFailureReason` (export it): URLs (`https://…`, `www.…`) become `[url]`; `api_key=…`, `Bearer: …`, `token=…`, `password: …` are redacted; any 24+ char token-like run becomes `[redacted]`; whitespace collapses; output is capped at 200 chars; empty message and non-Error values (e.g. a string, `undefined`) give a sane result (`unknown-error` for empty). Use obviously fake values, never anything that looks like a real key prefix (no `sk-`, `ghp_`, etc.), so the secret scanners stay green.
+Keep each test file under the size hook; put new tests in a new file if needed (e.g. pipeline/resplit-reasons.test.ts).
+
+## Done when
+`npm test`, `npm run typecheck` (or tsc), `npm run check:size`, `npm run check:secrets`, `npm run check:isolation` all pass (look at package.json for the exact script names). Write a short docs/tasks/30-resplit-null-final.md (what and why), add a row to BUILT_DURING_HACKATHON.md following the existing format. Commit in one or two focused commits. Do not push.
