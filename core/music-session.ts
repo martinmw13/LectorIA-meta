@@ -254,7 +254,13 @@ export function dispatch(session: MusicSession, intent: MusicIntent, ctx: Sessio
         return settle(session, { ...baseOf(session), replayNonce: session.replayNonce + 1 }, ctx);
       }
       const base = { ...baseOf(session), history: popped.hist };
-      const decision = requestManualTrack(session.scheduler, ctx.manifest, popped.id, ctx.nowSec);
+      const decision = requestManualTrack(
+        session.scheduler,
+        ctx.manifest,
+        popped.id,
+        ctx.nowSec,
+        session.selection,
+      );
       return settle(session, foldSwitch(base, decision, false), ctx);
     }
     case "styleChanged": {

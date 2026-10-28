@@ -136,7 +136,7 @@ export function requestStyleChange(
   scene: SceneSignal | null,
   override?: Partial<MusicConfig>,
 ): { track: Track } | null {
-  const scoped = audibleTracks(manifest).filter((t) => t.style === style);
+  const scoped = candidatesFor({ style }, manifest);
   if (scoped.length === 0) return null;
   const track = bestRanked(scene, scoped, null, override);
   return track ? { track } : null;

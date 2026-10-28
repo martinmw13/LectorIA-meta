@@ -189,7 +189,7 @@ describe("requestNext", () => {
 describe("requestManualTrack", () => {
   it("switches at once to the named track and holds it like a Next", () => {
     let d = observeScene(initScheduler(), "s1", signal("calma"), manifest, 0, orch);
-    d = requestManualTrack(d.state, manifest, "b-calma", 5);
+    d = requestManualTrack(d.state, manifest, "b-calma", 5, orch.selection);
     expect(d.switchToId).toBe("b-calma");
     expect(d.state.currentId).toBe("b-calma");
     expect(d.state.overrideId).toBe("b-calma");
@@ -200,7 +200,16 @@ describe("requestManualTrack", () => {
 
   it("changes nothing for an unknown id", () => {
     const d = observeScene(initScheduler(), "s1", signal("calma"), manifest, 0, orch);
-    const kept = requestManualTrack(d.state, manifest, "gone", 5);
+    const kept = requestManualTrack(d.state, manifest, "gone", 5, orch.selection);
+    expect(kept.switchToId).toBeNull();
+    expect(kept.state).toBe(d.state);
+  });
+
+  it("rejects a playlist-only id in emotion mode", () => {
+    const ghost: Track = { ...track("ghost", "calma", "orch-a", "orchestral"), playlistOnly: true };
+    const withGhost: MusicManifest = { ...manifest, tracks: [...manifest.tracks, ghost] };
+    const d = observeScene(initScheduler(), "s1", signal("calma"), withGhost, 0, orch);
+    const kept = requestManualTrack(d.state, withGhost, "ghost", 5, orch.selection);
     expect(kept.switchToId).toBeNull();
     expect(kept.state).toBe(d.state);
   });

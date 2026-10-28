@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MUSIC_CONFIG, rankTracks, scoreTrack } from "./music";
+import { MUSIC_CONFIG, rankScored, scoreTrack } from "./music";
 import type { SceneSignal, Track } from "./music";
 import type { Vector8 } from "./types";
 import { EMOTIONS } from "./types";
@@ -75,7 +75,7 @@ function midSignal(): SceneSignal {
   const current = manifest.tracks[0] as Track;
   for (let w = 0; w <= 1; w += 0.005) {
     const s = mix(w);
-    const best = rankTracks(s, manifest)[0] as Track;
+    const best = rankScored(s, manifest.tracks).map((e) => e.track)[0] as Track;
     const gap = scoreTrack(s, best) - scoreTrack(s, current);
     if (gap >= 0.12) {
       return s;
@@ -102,7 +102,7 @@ describe("observeScene and tickScheduler", () => {
     expect(early.switchToId).toBeNull();
     const late = tickScheduler(d.state, mid, manifest, 70, env);
     expect(late.state.activeSceneId).toBe("s2");
-    expect(late.switchToId).toBe(rankTracks(mid, manifest)[0]?.id);
+    expect(late.switchToId).toBe(rankScored(mid, manifest.tracks).map((e) => e.track)[0]?.id);
     expect(late.crossfadeSec).toBe(MUSIC_CONFIG.crossfadeSec);
   });
 
@@ -131,7 +131,7 @@ describe("observeScene and tickScheduler", () => {
     const at = (intensity: number): SceneSignal => ({ vector: vec("tristeza"), intensity, tempo: 0.5 });
     const gapOf = (intensity: number) => {
       const s = at(intensity);
-      const best = rankTracks(s, two)[0] as Track;
+      const best = rankScored(s, two.tracks).map((e) => e.track)[0] as Track;
       return scoreTrack(s, best) - scoreTrack(s, two.tracks[0] as Track);
     };
     let cross = 1;
@@ -163,7 +163,7 @@ describe("observeScene and tickScheduler", () => {
     expect(early.state.activeSceneId).toBe("s2");
     expect(early.switchToId).toBeNull();
     const late = tickScheduler(early.state, mid, manifest, 56, env);
-    expect(late.switchToId).toBe(rankTracks(mid, manifest)[0]?.id);
+    expect(late.switchToId).toBe(rankScored(mid, manifest.tracks).map((e) => e.track)[0]?.id);
     expect(late.crossfadeSec).toBe(MUSIC_CONFIG.crossfadeSec);
   });
 
@@ -215,7 +215,7 @@ describe("requestNext", () => {
     d = requestNext(d.state, signal("tristeza"), manifest, 5, env);
     expect(d.state.overrideId).toBe("sad-b");
     const calm = signal("calma");
-    const best = rankTracks(calm, manifest)[0] as Track;
+    const best = rankScored(calm, manifest.tracks).map((e) => e.track)[0] as Track;
     const gap =
       scoreTrack(calm, best) - scoreTrack(calm, manifest.tracks[1] as Track);
     expect(gap).toBeGreaterThanOrEqual(MUSIC_CONFIG.randomTolerance);
@@ -227,7 +227,7 @@ describe("requestNext", () => {
 
   it("holds the override against a mid gap past minTrackSec", () => {
     const mid = midSignal();
-    const best = rankTracks(mid, manifest)[0] as Track;
+    const best = rankScored(mid, manifest.tracks).map((e) => e.track)[0] as Track;
     expect(
       scoreTrack(mid, best) - scoreTrack(mid, manifest.tracks[1] as Track),
     ).toBeGreaterThanOrEqual(MUSIC_CONFIG.randomTolerance);
