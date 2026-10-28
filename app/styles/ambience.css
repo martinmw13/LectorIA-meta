@@ -25,6 +25,12 @@
   overflow: visible;
 }
 
+/* player.css strokes every player svg currentColor; filled-only rain shapes
+   opt out (inline style strokes still win over this rule). */
+.player .skip.rain svg [fill]:not([stroke]) {
+  stroke: none;
+}
+
 .player .skip.rain .face {
   display: inline-flex;
   transform-origin: 50% 50%;

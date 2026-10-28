@@ -30,6 +30,7 @@ describe("rain button still and frameless", () => {
     expect(css).toMatch(/\.skip\.rain \{[^}]*box-shadow: none/);
     expect(css).toMatch(/\.skip\.rain svg \{[^}]*width: 30px/);
     expect(css).toMatch(/\.skip\.rain svg \{[^}]*overflow: visible/);
+    expect(css).toMatch(/svg \[fill\]:not\(\[stroke\]\) \{\s*stroke: none;\s*\}/);
     expect(css).toMatch(
       /\.player \.skip\.rain:focus-visible \{\s*outline: 2px solid var\(--color-accent\);\s*outline-offset: 2px;\s*border-radius: 6px;\s*\}/,
     );

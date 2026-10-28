@@ -264,27 +264,27 @@ function ink(s: RainState): IconDef["body"] {
   );
 }
 
-function rainDef(state: RainState, body: IconDef["body"]): IconDef {
+function rainDef(body: IconDef["body"]): IconDef {
   return { width: 30, height: 30, viewBox: "0 0 100 100", body };
 }
 
 export const RAIN_ICONS = {
   engraving: {
-    "rain-off": rainDef(0, engraving(0)),
-    "rain-drizzle": rainDef(1, engraving(1)),
-    "rain-moderate": rainDef(2, engraving(2)),
-    "rain-storm": rainDef(3, engraving(3)),
+    "rain-off": rainDef(engraving(0)),
+    "rain-drizzle": rainDef(engraving(1)),
+    "rain-moderate": rainDef(engraving(2)),
+    "rain-storm": rainDef(engraving(3)),
   },
   watercolor: {
-    "rain-off": rainDef(0, watercolor(0)),
-    "rain-drizzle": rainDef(1, watercolor(1)),
-    "rain-moderate": rainDef(2, watercolor(2)),
-    "rain-storm": rainDef(3, watercolor(3)),
+    "rain-off": rainDef(watercolor(0)),
+    "rain-drizzle": rainDef(watercolor(1)),
+    "rain-moderate": rainDef(watercolor(2)),
+    "rain-storm": rainDef(watercolor(3)),
   },
   ink: {
-    "rain-off": rainDef(0, ink(0)),
-    "rain-drizzle": rainDef(1, ink(1)),
-    "rain-moderate": rainDef(2, ink(2)),
-    "rain-storm": rainDef(3, ink(3)),
+    "rain-off": rainDef(ink(0)),
+    "rain-drizzle": rainDef(ink(1)),
+    "rain-moderate": rainDef(ink(2)),
+    "rain-storm": rainDef(ink(3)),
   },
 } satisfies Record<SkinId, Record<RainIconName, IconDef>>;

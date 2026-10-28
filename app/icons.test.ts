@@ -56,6 +56,18 @@ describe("icon registry", () => {
     }
   });
 
+  it("carries the class hooks the rain CSS animates", () => {
+    for (const skin of SKINS) {
+      const storm = renderToStaticMarkup(createElement(Icon, { name: "rain-storm", skin }));
+      for (const cls of ["halo", "drop", "bolt"]) {
+        expect(storm).toContain(cls);
+      }
+      expect(storm).toContain("--i");
+      const off = renderToStaticMarkup(createElement(Icon, { name: "rain-off", skin }));
+      expect(off).not.toContain("bolt");
+    }
+  });
+
   it("keeps inline SVGs only in the registry and the allowlist", () => {
     const probe = "<" + "svg";
     const bad: string[] = [];
