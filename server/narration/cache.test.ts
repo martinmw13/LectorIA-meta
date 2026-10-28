@@ -1,0 +1,76 @@
+import { describe, expect, it } from "vitest";
+import { createMemoryKV, dailySpendKey, spendKey } from "@/core/images";
+import { NARRATION_FORMAT, NARRATION_MODEL, NARRATION_SPEED, NARRATION_VOICE } from "@/core/narration";
+import type { ChapterNarration } from "@/core/narration";
+import { createNarrationDeps } from "./cache";
+
+const ENV = { spendCapMicro: 1_000_000, dailySpendCapMicro: 1_000_000 };
+
+function manifest(key: string): ChapterNarration {
+  return {
+    format: 1,
+    key,
+    src: `https://blob.example.com/${key}.mp3`,
+    durationSec: 10,
+    voice: NARRATION_VOICE,
+    model: NARRATION_MODEL,
+    speed: NARRATION_SPEED,
+    chunks: [{ n: 1, start: 0, end: 5, t0: 0, t1: 4 }],
+  };
+}
+
+describe("narration server adapters", () => {
+  it("round-trips the index and rejects corrupt entries", async () => {
+    const kv = createMemoryKV();
+    const deps = createNarrationDeps({ kv, env: ENV, synthesize: async () => { throw new Error("unused"); } });
+    expect(await deps.index.get("narration/v1/x")).toBeNull();
+    const value = manifest("narration/v1/x");
+    await deps.index.set("narration/v1/x", value);
+    expect(await deps.index.get("narration/v1/x")).toEqual(value);
+    await kv.set("narr:idx:narration/v1/x", "{bad json");
+    expect(await deps.index.get("narration/v1/x")).toBeNull();
+  });
+
+  it("hands the lock to one holder and frees it on release", async () => {
+    const kv = createMemoryKV();
+    const deps = createNarrationDeps({ kv, env: ENV, synthesize: async () => { throw new Error("unused"); } });
+    const first = await deps.lock?.acquire("k");
+    expect(typeof first).toBe("string");
+    expect(await deps.lock?.acquire("k")).toBeNull();
+    await deps.lock?.release("k", "wrong-token");
+    expect(await deps.lock?.acquire("k")).toBeNull();
+    await deps.lock?.release("k", first as string);
+    expect(typeof (await deps.lock?.acquire("k"))).toBe("string");
+  });
+
+  it("reserves on both spend keys and refunds both past either cap", async () => {
+    const kv = createMemoryKV();
+    const deps = createNarrationDeps({ kv, env: ENV, synthesize: async () => { throw new Error("unused"); } });
+    expect(await deps.budget?.reserve(100)).toBe(true);
+    expect(await kv.get(spendKey())).toBe("100");
+    const day = new Date().toISOString().slice(0, 10);
+    expect(await kv.get(dailySpendKey(day))).toBe("100");
+    await deps.budget?.refund(100);
+    expect(await kv.get(spendKey())).toBe("0");
+    expect(await kv.get(dailySpendKey(day))).toBe("0");
+
+    const tight = createNarrationDeps({ kv, env: { spendCapMicro: 50, dailySpendCapMicro: 1_000_000 }, synthesize: async () => { throw new Error("unused"); } });
+    expect(await tight.budget?.reserve(100)).toBe(false);
+    expect(await kv.get(spendKey())).toBe("0");
+
+    const dailyTight = createNarrationDeps({ kv, env: { spendCapMicro: 1_000_000, dailySpendCapMicro: 50 }, synthesize: async () => { throw new Error("unused"); } });
+    expect(await dailyTight.budget?.reserve(100)).toBe(false);
+    expect(await kv.get(spendKey())).toBe("0");
+    expect(await kv.get(dailySpendKey(day))).toBe("0");
+  });
+
+  it("hashes with SHA-256", async () => {
+    const kv = createMemoryKV();
+    const deps = createNarrationDeps({ kv, env: ENV, synthesize: async () => { throw new Error("unused"); } });
+    expect(await deps.sha256Hex("abc")).toBe("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+  });
+
+  it("keeps the manifest format at 1", () => {
+    expect(NARRATION_FORMAT).toBe(1);
+  });
+});
