@@ -302,8 +302,13 @@ Responses (typed in `core/types.ts`): `{ status: "ready", url, cached,
 caption }` with a Vercel Blob URL, never bytes; `{ status: "pending" }`
 when another request holds the lock, in which case the client reposts
 every 3 s up to about 2 minutes; `{ status: "error", code, message }`
-where code is `quota`, `budget`, `unavailable`, or `bad_request` with a
-friendly English message. Caption is the scene title for scenes and the
+where code is `quota`, `budget`, `daily_budget`, `unavailable`, or
+`bad_request` with a friendly English message. The total cap answers
+`budget`: "Our free credits for the hackathon are used up. Thanks for
+reading with us! You can keep going by bringing your own key." The
+daily cap answers `daily_budget`: "So many readers today that our free
+credits for today are used up. Come back tomorrow, or bring your own
+key." Caption is the scene title for scenes and the
 first words of the paragraph for passages, built server-side.
 
 The passage cache key is book plus start paragraph plus `textVersion`
@@ -316,8 +321,11 @@ and backfills the index.
 A Redis lock per key returns `pending` to concurrent requests. Quota is
 5 new images per person per day by hashed IP and signed cookie,
 whichever runs out first; a shared spend counter in integer
-micro-dollars sits under `SPEND_CAP_USD` (default 10). Failures refund
-quota and budget and release the lock.
+micro-dollars sits under `SPEND_CAP_USD` (default 10), plus a daily
+counter per UTC day under `DAILY_SPEND_CAP_USD` (default 1.5, 48 h key
+TTL, resets on UTC rollover). Failures refund quota and both counters
+and release the lock. Both caps apply only to requests paid with our
+key; a future bring-your-own-key path skips them.
 
 ## Chat api
 

@@ -77,6 +77,30 @@ describe("readImageEnv redis fallback", () => {
     );
   });
 
+  it("defaults the daily spend cap to 1.5 USD", () => {
+    delete process.env.DAILY_SPEND_CAP_USD;
+    process.env.UPSTASH_REDIS_REST_URL = "https://upstash-url";
+    process.env.UPSTASH_REDIS_REST_TOKEN = "upstash-token";
+    expect(readImageEnv().dailySpendCapMicro).toBe(1_500_000);
+  });
+
+  it("honors a finite non-negative DAILY_SPEND_CAP_USD", () => {
+    process.env.UPSTASH_REDIS_REST_URL = "https://upstash-url";
+    process.env.UPSTASH_REDIS_REST_TOKEN = "upstash-token";
+    process.env.DAILY_SPEND_CAP_USD = "2";
+    expect(readImageEnv().dailySpendCapMicro).toBe(2_000_000);
+  });
+
+  it.each(["abc", "-3", "Infinity"])(
+    "falls back to 1.5 USD for %s",
+    (value) => {
+      process.env.UPSTASH_REDIS_REST_URL = "https://upstash-url";
+      process.env.UPSTASH_REDIS_REST_TOKEN = "upstash-token";
+      process.env.DAILY_SPEND_CAP_USD = value;
+      expect(readImageEnv().dailySpendCapMicro).toBe(1_500_000);
+    },
+  );
+
   it("missing-env error lists names only, never values", () => {
     process.env.UPSTASH_REDIS_REST_URL = "https://secret-url-value";
     let message = "";

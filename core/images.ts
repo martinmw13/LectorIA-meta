@@ -14,7 +14,12 @@ export const MAX_SCENE_CLIP_CHARS = 1200;
 
 export const MSG_BAD_REQUEST = "That request was not valid. Try again.";
 export const MSG_QUOTA = "You reached your limit of 5 images per day. Come back tomorrow.";
-export const MSG_BUDGET = "The generation limit was reached. Try again later.";
+export const MSG_BUDGET_TOTAL =
+  "Our free credits for the hackathon are used up. Thanks for reading with us! " +
+  "You can keep going by bringing your own key.";
+export const MSG_BUDGET_DAILY =
+  "So many readers today that our free credits for today are used up. " +
+  "Come back tomorrow, or bring your own key.";
 export const MSG_UNAVAILABLE = "Images are unavailable right now.";
 export const MSG_FAILED = "Could not generate the image. Try again.";
 export const MSG_RETRY = "The image is taking longer than expected. Try again.";
@@ -125,6 +130,15 @@ export function quotaKeys(args: { day: string; ipHash: string; anonId: string })
 
 export function spendKey(): string {
   return "img:spend:micro";
+}
+
+// Daily spend counter for our key. The day is the UTC day string
+// YYYY-MM-DD the caller already uses for quota keys, so the daily
+// cap resets on UTC rollover together with per-person quota.
+export const DAILY_SPEND_TTL_SEC = 48 * 3600;
+
+export function dailySpendKey(day: string): string {
+  return `img:spend:daily:${day}`;
 }
 
 export function overQuota(count: number): boolean {
