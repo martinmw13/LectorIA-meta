@@ -199,29 +199,37 @@ frozen point. Audio starts once, on the first press, with fade 0.
 Audio starts only after the user presses play. Reduced motion is read in
 state with a change listener and affects visuals only, never the fade.
 
-The bar is one row: Previous, Play/Pause, Next, the now-playing line
-(flexible, truncated with an ellipsis), Volume, a style selector labelled
-`Orchestra / Piano` listing only styles that have tracks (hidden while
-fewer than two qualify), then `Just play Chopin`. The three transport
-buttons are icon-only inline SVGs (`currentColor`, 32 px hit area), quiet
+The bar is one contained row (reader column width, centered with
+margins): Previous, Play/Pause, Next, the now-playing line
+(flexible, truncated with an ellipsis), a speaker-icon volume slider with
+`aria-label` `Volume`, a style selector with `aria-label`
+`Orchestra / Piano` and no visible label text listing only styles that
+have tracks (hidden while fewer than two qualify), then
+`Just play Chopin`. The three transport buttons and the source icon link
+are icon-only inline SVGs (`currentColor`, 32 px hit area), quiet
 and neutral, Meta blue on hover and focus-visible, each with `aria-label`
-and `title`. Previous walks the session history and restarts the current
-track with no history; Next cycles same-emotion tracks in the style.
+and `title` (the source link reads `Source`). Previous walks the session
+history and restarts the current track with no history, including the
+current playlist piece in playlist mode; Next cycles same-emotion tracks
+in the style.
 A `Just play Chopin` toggle appears only when
 the manifest defines that playlist with tracks; its text comes from the
 playlist label, it carries `aria-pressed`, and it shows the Meta blue
-accent while pressed. The now-playing line shows `title · composer ·
-source`: the track title as given, the composer or artist, and the short
-source credit (artist), dropped when it would repeat the performer. The
-line plus the license and full attribution sits in the
-`title` tooltip. A source link stays compact when the manifest provides
-one. On manifest failure the reader still renders and
+accent while pressed. The now-playing line shows `display title · composer
+· source`: `displayTitle` drops quoted nicknames, key phrases, and
+opus/catalogue suffixes from the track title, and the source is the
+artist plus ` / <platform>` when the attribution names Musopen or
+Jamendo and the artist does not already say it, dropped when it would
+repeat the performer. The full manifest title plus the license and full
+attribution sits in the `title` tooltip. A source icon link stays compact
+when the manifest provides one. On manifest failure the reader still renders and
 the bar shows a short neutral note. UI motion stays under 200 ms.
 Controls are real buttons and inputs with labels, visible focus, and
 keyboard use. `app/player.tsx` keeps the audio engine, transport, and
 bar layout; `app/player-controls.tsx` holds the style selector and the
 playlist toggle; `app/music-prefs.ts` owns the storage helper.
-`core/music-credit.ts` builds the line as a pure function with tests.
+`core/music-credit.ts` builds the line as a pure function with tests,
+including the pure `displayTitle`.
 `core/music-history.ts` is the bounded history stack and
 `requestManualTrack` in `core/music-schedule.ts` holds a manual pick.
 
