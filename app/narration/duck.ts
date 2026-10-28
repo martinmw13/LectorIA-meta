@@ -15,13 +15,14 @@ export function duckMultiplier(musicLevel: number, voiceVolume: number, duckDb =
   return Math.min(1, (voiceVolume * 10 ** (-duckDb / 20)) / musicLevel);
 }
 
-// One ramp step toward target: an exponential approach that lands
-// exactly when the elapsed slice covers the duration. Pure, so the
-// controller and the tests share the curve.
+// One ramp step toward target: a linear slide of the multiplier (full
+// 0..1 range per duration), so frame-by-frame steps land within the
+// duration instead of easing for seconds. Pure, so the controller and
+// the tests share the curve.
 export function rampDuck(current: number, target: number, dtMs: number, durationMs: number): number {
   if (!(dtMs > 0)) return current;
   if (!(durationMs > 0)) return target;
-  const next = current + (target - current) * Math.min(1, dtMs / durationMs);
-  // Snap when close so the ramp settles instead of easing forever.
-  return Math.abs(next - target) < 1e-4 ? target : next;
+  const step = Math.min(1, dtMs / durationMs);
+  const diff = target - current;
+  return Math.abs(diff) <= step ? target : current + Math.sign(diff) * step;
 }

@@ -33,7 +33,6 @@ export function useNarrationController(opts: {
   entries: NarrationChapterEntry[];
   scenes: NarrationSceneRef[];
   musicLevel: number;
-  onAdvanceScene: (nextSceneId: string) => void;
 }) {
   const [prefs, setPrefs] = useState<NarrationPrefs>(DEFAULT_NARRATION_PREFS);
   const [status, setStatus] = useState<NarrationStatus>("idle");
@@ -44,8 +43,6 @@ export function useNarrationController(opts: {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const cacheRef = useRef(new Map<number, ChapterNarration>());
-  const advanceRef = useRef(opts.onAdvanceScene);
-  advanceRef.current = opts.onAdvanceScene;
   const entriesRef = useRef(opts.entries);
   entriesRef.current = opts.entries;
   const scenesRef = useRef(opts.scenes);
@@ -213,7 +210,8 @@ export function useNarrationController(opts: {
           advancingRef.current = false;
           return;
         }
-        advanceRef.current(next.id);
+        // The voice moves on by itself; the reader's scroll never steers it.
+        setScene(next);
       }
     };
     const onEnded = () => {
@@ -228,7 +226,7 @@ export function useNarrationController(opts: {
         advancingRef.current = false;
         return;
       }
-      advanceRef.current(next.id);
+      setScene(next);
     };
     const onError = () => {
       setStatus("error");

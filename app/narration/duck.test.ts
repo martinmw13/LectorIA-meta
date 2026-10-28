@@ -50,4 +50,10 @@ describe("duck ramp", () => {
     expect(rampDuck(0.9, level, 0, NARRATION_DUCK_DOWN_MS)).toBe(0.9);
     expect(rampDuck(0.9, level, 10, 0)).toBe(level);
   });
+
+  it("lands within the duration when stepped frame by frame", () => {
+    let v = level;
+    for (let t = 0; t < NARRATION_DUCK_UP_MS; t += 16) v = rampDuck(v, 1, 16, NARRATION_DUCK_UP_MS);
+    expect(v).toBe(1);
+  });
 });

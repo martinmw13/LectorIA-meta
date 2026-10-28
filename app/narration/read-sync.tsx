@@ -167,8 +167,9 @@ export function useReadSync(opts: {
       padX = 3;
     }
     setMark({
-      left: left - box.left - padX,
-      top: top - box.top - padY,
+      // The mark lives inside the scrolling column, so add its scroll.
+      left: left - box.left + column.scrollLeft - padX,
+      top: top - box.top + column.scrollTop - padY,
       width: right - left + padX * 2,
       height: bottom - top + padY * 2,
       word: wordText,

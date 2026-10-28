@@ -77,7 +77,7 @@ html[data-theme="dark"] {
 /* Read-along narration. The word mark and sentence tint are tokens so
  * skins switch them without touching components. The default skin (and
  * any skin outside the three treatments) uses the engraving values in
- * the theme blocks; watercolor and ink-doodle skins override them.
+ * the theme blocks; watercolor/chihiro and ink/comic skins override them.
  * Geometry (hairline rule, bleed radius, hand-drawn circle) lives in
  * app/styles/narration.css and keys off the treatment attribute. */
 :root,
@@ -98,7 +98,8 @@ html[data-theme="dark"] {
 }
 
 /* Watercolor: warm sienna bleed with a darker pooled edge. */
-html[data-skin="watercolor"] {
+html[data-skin="watercolor"],
+html[data-skin="chihiro"] {
   --narration-mark: rgba(214, 134, 96, 0.3);
   --narration-mark-edge: rgba(184, 98, 62, 0.35);
   --narration-glow: rgba(214, 134, 96, 0.25);
@@ -106,7 +107,8 @@ html[data-skin="watercolor"] {
   --narration-rule: rgba(184, 98, 62, 0.5);
 }
 
-html[data-skin="watercolor"][data-theme="dark"] {
+html[data-skin="watercolor"][data-theme="dark"],
+html[data-skin="chihiro"][data-theme="dark"] {
   --narration-mark: rgba(214, 134, 96, 0.32);
   --narration-mark-edge: rgba(214, 134, 96, 0.5);
   --narration-glow: rgba(214, 134, 96, 0.28);
@@ -115,7 +117,8 @@ html[data-skin="watercolor"][data-theme="dark"] {
 }
 
 /* Ink doodle: the circle stroke is the mark; the tint stays faint. */
-html[data-skin="ink-doodle"] {
+html[data-skin="ink"],
+html[data-skin="comic"] {
   --narration-mark: rgba(43, 52, 66, 0.85);
   --narration-mark-edge: rgba(43, 52, 66, 0.5);
   --narration-glow: rgba(43, 52, 66, 0.12);
@@ -123,7 +126,8 @@ html[data-skin="ink-doodle"] {
   --narration-rule: rgba(43, 52, 66, 0.7);
 }
 
-html[data-skin="ink-doodle"][data-theme="dark"] {
+html[data-skin="ink"][data-theme="dark"],
+html[data-skin="comic"][data-theme="dark"] {
   --narration-mark: rgba(228, 230, 235, 0.8);
   --narration-mark-edge: rgba(228, 230, 235, 0.45);
   --narration-glow: rgba(0, 0, 0, 0.4);
