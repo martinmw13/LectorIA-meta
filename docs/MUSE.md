@@ -6,21 +6,21 @@ A Muse commit is a non-merge commit on main that carries the trailer `Co-authore
 
 ## Commits
 
-- Muse commits: 327 of 381 non-merge commits (86%).
+- Muse commits: 328 of 382 non-merge commits (86%).
 - Date range (UTC-3): 2026-10-27 to 2026-10-28.
 
 ## Lines
 
 | Scope | Muse added | Muse removed | Other added | Other removed | Muse share of added |
 | --- | --- | --- | --- | --- | --- |
-| Source code (`app/`, `core/`, `pipeline/`, `server/`, `scripts/`) | 40,345 | 8,491 | 6,571 | 2,016 | 86% |
-| All files | 233,647 | 12,511 | 26,848 | 2,238 | 90% |
+| Source code (`app/`, `core/`, `pipeline/`, `server/`, `scripts/`) | 40,362 | 8,502 | 6,571 | 2,016 | 86% |
+| All files | 233,664 | 12,522 | 26,848 | 2,238 | 90% |
 
 All files includes the Muse Code session transcripts in `agent-logs/`, the vendored skills in `.agents/` and `package-lock.json`.
 
 ## Pull requests
 
-52 merged PRs contain Muse commits. Each carries the `Muse Code` label.
+53 merged PRs contain Muse commits. Each carries the `Muse Code` label.
 
 | PR | Title | Merged (UTC-3) | Muse commits |
 | --- | --- | --- | --- |
@@ -76,3 +76,4 @@ All files includes the Muse Code session transcripts in `agent-logs/`, the vendo
 | [#64](https://github.com/martinmw13/LectorIA-meta/pull/64) | Add a style switcher stamp to the home and reader | 2026-10-28 | 5 of 7 |
 | [#74](https://github.com/martinmw13/LectorIA-meta/pull/74) | Open-book home library (task 65) | 2026-10-28 | 6 of 11 |
 | [#75](https://github.com/martinmw13/LectorIA-meta/pull/75) | Pencil skin from the approved prototype | 2026-10-28 | 1 of 2 |
+| [#89](https://github.com/martinmw13/LectorIA-meta/pull/89) | refactor(skins): single source for muted text color under warmth | 2026-10-28 | 1 of 1 |
