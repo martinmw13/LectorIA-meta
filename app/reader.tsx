@@ -1,14 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { parseManifest, styleHasTracks } from "@/core/music";
 import type { MusicManifest, PersistedMusicPrefs, SceneSignal } from "@/core/music";
+import { EMOTIONS } from "@/core/types";
 import { dispatch, findChopinPlaylist, startSession } from "@/core/music-session";
 import type { MusicIntent, MusicSession, SessionView } from "@/core/music-session";
 import { nextSceneEntry } from "@/core/reader";
 import { DEFAULT_VOLUME, loadMusicPrefs, saveMusicPrefs } from "./music-prefs";
 import { Player } from "./player";
+import { THEME_KEY, TopLine } from "./folio/chrome";
+import { DevPanel } from "./folio/dev-panel";
 
 export interface SlimScene {
   id: string;
@@ -16,12 +19,42 @@ export interface SlimScene {
   emotion: SceneSignal | null;
 }
 
+export interface ChapterJump {
+  ch: number;
+  title: string;
+  firstSceneId: string;
+}
+
+const DEV_LABELS: Record<(typeof EMOTIONS)[number], string> = {
+  calma: "calm",
+  alegria: "joy",
+  tristeza: "sadness",
+  suspenso: "suspense",
+  misterio: "mystery",
+  aventura: "adventure",
+  combate: "combat",
+  asombro: "wonder",
+};
+
 // Client container: bridges the music session to React state. It cues
 // music on scene entry only, from the route id. Sub-page moves never
 // reach the session. Params can lag a render, so the last observed id
 // is compared before every scene entry.
-export function Reader({ scenes, children }: { scenes: SlimScene[]; children: React.ReactNode }) {
+export function Reader({
+  scenes,
+  chapters,
+  bookTitle,
+  bookAuthor,
+  children,
+}: {
+  scenes: SlimScene[];
+  chapters: ChapterJump[];
+  bookTitle: string;
+  bookAuthor: string;
+  children: React.ReactNode;
+}) {
   const routeParams = useParams();
+  const router = useRouter();
   const param = routeParams?.sceneId;
   const routeSceneId = typeof param === "string" ? param : null;
   const [manifest, setManifest] = useState<MusicManifest | null>(null);
@@ -33,6 +66,8 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
   // prefs (parsed once) to volume, muted, and style via prefsRef.
   const [volume, setVolume] = useState(DEFAULT_VOLUME);
   const [muted, setMuted] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [devOpen, setDevOpen] = useState(false);
   const prefsRef = useRef<PersistedMusicPrefs | null>(null);
   // Ref mirrors so send and persist handlers always read fresh values.
   const volumeRef = useRef(volume);
@@ -84,6 +119,17 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
       if (prefs.volume !== null) setVolume(prefs.volume);
       setMuted(prefs.muted);
     }
+    try {
+      const stored = window.localStorage.getItem(THEME_KEY);
+      if (stored === "light" || stored === "dark") {
+        setTheme(stored);
+      } else {
+        setTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light");
+      }
+    } catch {
+      // The inline script already set a theme; keep the default.
+    }
+    if (window.location.search.includes("dev")) setDevOpen(true);
   }, []);
 
   useEffect(() => {
@@ -129,6 +175,30 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
     return () => window.clearInterval(timer);
   }, [send]);
 
+  // Developer view: Shift+D outside inputs, Escape closes.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const typing =
+        !!target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "SELECT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable);
+      if (event.key === "Escape") {
+        setDevOpen(false);
+        return;
+      }
+      if (typing) return;
+      if (event.shiftKey && (event.key === "D" || event.key === "d")) {
+        event.preventDefault();
+        setDevOpen((open) => !open);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   function skip() {
     send({ type: "skip" });
   }
@@ -172,6 +242,24 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
     send({ type: "trackEnded", trackId });
   }
 
+  function toggleTheme() {
+    setTheme((current) => {
+      const next = current === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", next);
+      try {
+        window.localStorage.setItem(THEME_KEY, next);
+      } catch {
+        // The attribute already applies for the session.
+      }
+      return next;
+    });
+  }
+
+  function jumpChapter(ch: number) {
+    const found = chapters.find((c) => c.ch === ch);
+    if (found) router.push(`/leer/${found.firstSceneId}`);
+  }
+
   const currentId = view?.currentId ?? null;
   const track = manifest?.tracks.find((t) => t.id === currentId) ?? null;
   const empty = manifest !== null && manifest.tracks.length === 0;
@@ -186,39 +274,61 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
   const canPrev = view?.canPrev ?? false;
   const canSkip = view?.canSkip ?? false;
 
+  const bookIndex = routeSceneId ? scenes.findIndex((s) => s.id === routeSceneId) : -1;
+  const current = routeSceneId ? byId.get(routeSceneId) ?? null : null;
+  const devBars = current
+    ? EMOTIONS.map((id) => ({ label: DEV_LABELS[id], value: current.vector[id] ?? 0 }))
+    : [];
+
   return (
-    <>
-      <header className="topbar">
-        <div className="bar-inner">
-          <span className="wordmark">Lectoria</span>
-          {musicFailed || empty ? (
-            <p className="player-note">Music unavailable. The reader works without it.</p>
-          ) : (
-            <Player
-              track={track}
-              replayNonce={view?.replayNonce ?? 0}
-              fadeSec={view?.fadeSec ?? 0}
-              canPrev={canPrev}
-              onPrev={goPrev}
-              canSkip={canSkip}
-              onSkip={skip}
-              volume={volume}
-              muted={muted}
-              onVolumeChange={changeVolume}
-              onMutedChange={changeMuted}
-              styles={stylesWithTracks}
-              styleId={view?.style ?? null}
-              onStyleChange={changeStyle}
-              onEnded={ended}
-              playlistOn={playlistOn}
-              playlistLabel={activePlaylist?.label ?? null}
-              onTogglePlaylist={togglePlaylist}
-              controlsDisabled={playlistOn}
-            />
-          )}
-        </div>
-      </header>
+    <div className="folio">
+      <TopLine
+        bookTitle={bookTitle}
+        author={bookAuthor}
+        ch={routeSceneId ? (scenes[bookIndex]?.ch ?? chapters[0]?.ch ?? 1) : 1}
+        chaptersTotal={chapters.length}
+        chapters={chapters}
+        onJumpChapter={jumpChapter}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+      />
       {children}
-    </>
+      <div className="band-play">
+        {musicFailed || empty ? (
+          <p className="player-note">The music is resting. The book is all yours.</p>
+        ) : (
+          <Player
+            track={track}
+            replayNonce={view?.replayNonce ?? 0}
+            fadeSec={view?.fadeSec ?? 0}
+            canPrev={canPrev}
+            onPrev={goPrev}
+            canSkip={canSkip}
+            onSkip={skip}
+            volume={volume}
+            muted={muted}
+            onVolumeChange={changeVolume}
+            onMutedChange={changeMuted}
+            styles={stylesWithTracks}
+            styleId={view?.style ?? null}
+            onStyleChange={changeStyle}
+            onEnded={ended}
+            playlistOn={playlistOn}
+            playlistLabel={activePlaylist?.label ?? null}
+            onTogglePlaylist={togglePlaylist}
+            controlsDisabled={playlistOn}
+          />
+        )}
+      </div>
+      <DevPanel
+        open={devOpen}
+        onClose={() => setDevOpen(false)}
+        sceneLabel={bookIndex >= 0 ? `scene ${bookIndex + 1} of ${scenes.length}` : "no scene"}
+        bars={devBars}
+        intensity={current?.intensity ?? null}
+        tempo={current?.tempo ?? null}
+        trackTitle={track?.title ?? "No track cued"}
+      />
+    </div>
   );
 }
