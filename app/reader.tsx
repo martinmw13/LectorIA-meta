@@ -22,7 +22,7 @@ import {
   tickScheduler,
 } from "@/core/music-schedule";
 import type { SchedulerState } from "@/core/music-schedule";
-import { isSceneEntry } from "@/core/reader";
+import { nextSceneEntry } from "@/core/reader";
 import { loadMusicPrefs, saveMusicPrefs } from "./music-prefs";
 import { mixOffSelection, styleSelection } from "./music-transitions";
 import { Player } from "./player";
@@ -137,9 +137,13 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
   // Scene entry: exactly one observe call per scene id, once the manifest
   // lands. The first scene cues at once, so it plays on the first press.
   useEffect(() => {
-    if (!routeSceneId || !manifest || !isSceneEntry(observedRef.current, routeSceneId)) return;
-    observedRef.current = routeSceneId;
-    observe(routeSceneId);
+    const gate = nextSceneEntry({
+      observedId: observedRef.current,
+      routeId: routeSceneId,
+      manifestReady: manifest !== null,
+    });
+    observedRef.current = gate.nextObservedId;
+    if (gate.shouldObserve && routeSceneId) observe(routeSceneId);
   }, [routeSceneId, manifest, observe]);
 
   useEffect(() => {

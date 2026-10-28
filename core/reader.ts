@@ -85,7 +85,6 @@ export interface SceneView {
   pages: SubPage[];
   prevSceneId: string | null;
   nextSceneId: string | null;
-  prevPages: number;
   k: number;
   n: number;
 }
@@ -113,7 +112,6 @@ export function buildSceneView(
     pages: paginateScene(entry.scene.paragraphs, budgetWords),
     prevSceneId: prev?.scene.id ?? null,
     nextSceneId: next?.scene.id ?? null,
-    prevPages: prev ? paginateScene(prev.scene.paragraphs, budgetWords).length : 0,
     k: chapterScenes.findIndex((e) => e.scene.id === sceneId) + 1,
     n: chapterScenes.length,
   };
@@ -170,12 +168,23 @@ export function isSceneEntry(prevSceneId: string | null, nextSceneId: string): b
   return prevSceneId !== nextSceneId;
 }
 
-export function observeSceneEntry(
-  prevSceneId: string | null,
-  nextSceneId: string,
-  observe: (sceneId: string) => void,
-): void {
-  if (isSceneEntry(prevSceneId, nextSceneId)) observe(nextSceneId);
+export interface SceneEntryGate {
+  observedId: string | null;
+  routeId: string | null;
+  manifestReady: boolean;
+}
+
+// The container's effect gate in one testable place: observe exactly once
+// per route id, only after the manifest lands. Route params can lag a
+// render, so the last observed id is compared before every observe call.
+export function nextSceneEntry(gate: SceneEntryGate): {
+  shouldObserve: boolean;
+  nextObservedId: string | null;
+} {
+  if (!gate.routeId || !gate.manifestReady || !isSceneEntry(gate.observedId, gate.routeId)) {
+    return { shouldObserve: false, nextObservedId: gate.observedId };
+  }
+  return { shouldObserve: true, nextObservedId: gate.routeId };
 }
 
 // Throws on unordered scenes and on paragraphs covered zero or two times.

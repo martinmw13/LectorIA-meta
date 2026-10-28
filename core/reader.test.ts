@@ -6,10 +6,14 @@ import {
   countWords,
   isSceneEntry,
   navReducer,
-  observeSceneEntry,
+  nextSceneEntry,
   paginateScene,
 } from "./reader";
-import type { AnalyzedScene, Book } from "./types";
+import type { AnalyzedScene, Book, Vector8 } from "./types";
+import { EMOTIONS } from "./types";
+import type { MusicManifest, SelectEnv } from "./music";
+import type { SceneSignal, Track } from "./music";
+import { initScheduler, observeScene, tickScheduler } from "./music-schedule";
 import type { NavIndex } from "./reader";
 
 const book: Pick<Book, "id" | "title" | "author" | "chapters" | "paragraphs" | "textVersion"> = {
@@ -130,7 +134,6 @@ describe("buildReaderModel", () => {
     const last = buildSceneView(model, "c2s1", 3);
     expect(last.nextSceneId).toBeNull();
     expect(last.prevSceneId).toBe("c1s2");
-    expect(last.prevPages).toBe(1);
     expect(() => buildSceneView(model, "nope", 3)).toThrow();
   });
 
@@ -201,19 +204,72 @@ describe("navReducer", () => {
 });
 
 describe("scene entry", () => {
-  it("fires exactly once per scene entry and never on sub-page moves", () => {
+  it("observes once per route id, only after the manifest lands", () => {
     const calls: string[] = [];
-    const observe = (id: string) => {
-      calls.push(id);
+    let observed: string | null = null;
+    const run = (routeId: string | null, manifestReady: boolean) => {
+      const gate = nextSceneEntry({ observedId: observed, routeId, manifestReady });
+      observed = gate.nextObservedId;
+      if (gate.shouldObserve && routeId) calls.push(routeId);
     };
-    let prev: string | null = null;
-    for (const id of ["c1s1", "c1s1", "c1s2", "c1s2", "c2s1"]) {
-      observeSceneEntry(prev, id, observe);
-      prev = id;
-    }
-    expect(calls).toEqual(["c1s1", "c1s2", "c2s1"]);
+    run("c1s1", false);
+    run("c1s1", true);
+    run("c1s1", true);
+    run("c1s1", true);
+    run("c1s2", true);
+    run("c1s2", true);
+    run("c1s1", true);
+    expect(calls).toEqual(["c1s1", "c1s2", "c1s1"]);
     expect(isSceneEntry("c1s1", "c1s1")).toBe(false);
     expect(isSceneEntry("c1s1", "c1s2")).toBe(true);
     expect(isSceneEntry(null, "c1s1")).toBe(true);
+  });
+
+  it("moves the track after entry plus dwell, then holds across ticks", () => {
+    const schedEnv: SelectEnv = {
+      selection: { mode: "soundtrack", soundtrackId: "snd", style: "orchestral" },
+      rng: () => 0,
+    };
+    const vec = (top: string): Vector8 => {
+      const v = Object.fromEntries(EMOTIONS.map((id) => [id, 0.01])) as Record<string, number>;
+      v[top] = 0.93;
+      return v as Vector8;
+    };
+    const track = (id: string, top: string): Track => ({
+      id,
+      src: `/music/${id}.mp3`,
+      title: id,
+      emotion: top as Track["emotion"],
+      vector: vec(top),
+      intensity: 0.5,
+      tempo: 0.5,
+      durationSec: 120,
+      startSec: 0,
+      loop: true,
+      soundtrack: "snd",
+      style: "orchestral",
+    });
+    const schedManifest: MusicManifest = {
+      version: 3,
+      styles: [{ id: "orchestral", name: "Orquesta" }],
+      soundtracks: [{ id: "snd", name: "Snd", style: "orchestral" }],
+      playlists: [],
+      tracks: [track("calm", "calma"), track("storm", "combate")],
+    };
+    const dwell = { dwellSec: 5 };
+    const calm: SceneSignal = { vector: vec("calma"), intensity: 0.5, tempo: 0.5 };
+    const storm: SceneSignal = { vector: vec("combate"), intensity: 0.5, tempo: 0.5 };
+    let d = observeScene(initScheduler(), "s1", calm, schedManifest, 0, schedEnv, dwell);
+    expect(d.switchToId).toBe("calm");
+    d = observeScene(d.state, "s2", storm, schedManifest, 100, schedEnv, dwell);
+    expect(d.switchToId).toBeNull();
+    const early = tickScheduler(d.state, storm, schedManifest, 102, schedEnv, dwell);
+    expect(early.switchToId).toBeNull();
+    const late = tickScheduler(d.state, storm, schedManifest, 106, schedEnv, dwell);
+    expect(late.state.activeSceneId).toBe("s2");
+    expect(late.switchToId).toBe("storm");
+    const hold = tickScheduler(late.state, storm, schedManifest, 200, schedEnv, dwell);
+    expect(hold.switchToId).toBeNull();
+    expect(hold.state.currentId).toBe("storm");
   });
 });
