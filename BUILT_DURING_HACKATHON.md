@@ -25,4 +25,5 @@ Building period: 2026-10-27 to 2026-11-04 23:00, America/Buenos_Aires. Each task
 | 2026-10-28 | 32: pictures placement | Figure rules in folio with tests, one picture copy source, theme key in app/theme | Muse Code (Contributor) |
 | 2026-10-28 | 20: home | Home page with Oz hero, browser-side EPUB parsing, free/BYOK upload flow | Muse Code (Contributor) |
 | 2026-10-28 | 34: music mode cycle | One ordered mode list and modeAdvanced intent behind the style control, persisted Chopin mode, same visuals | Muse Code (Contributor) |
+| 2026-10-28 | 20b: byok label | Home BYOK label reads "Bring your own key!" | Muse Code (Contributor) |
 | 2026-10-28 | 36: wheel turn | Wheel and trackpad turn pages at column edges with an inertia lock, Space/Page keys scroll then turn, read-on cue under text pages | Muse Code (Contributor) |
