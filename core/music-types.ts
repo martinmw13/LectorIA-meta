@@ -75,6 +75,7 @@ export interface PersistedMusicPrefs {
   style: string | null;
   volume: number | null;
   muted: boolean;
+  playlist: boolean;
 }
 
 export interface SceneSignal {

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { MUSIC_CONFIG, nowPlaying } from "@/core/music";
 import { displayTitle } from "@/core/music-credit";
 import { effectiveEnd, gainVolume } from "@/core/music-playback";
-import type { StyleInfo, Track } from "@/core/music";
+import type { MusicMode, MusicModeId, Track } from "@/core/music";
 import { MusicStyleControl } from "./folio/music-style-control";
 import { RainAmbience } from "./rain-button";
 
@@ -24,14 +24,11 @@ export function Player({
   muted,
   onVolumeChange,
   onMutedChange,
-  styles,
-  styleId,
-  onStyleChange,
+  modes,
+  current,
+  onAdvance,
   onEnded,
   playlistOn,
-  playlistLabel,
-  onTogglePlaylist,
-  controlsDisabled,
 }: {
   track: Track | null;
   replayNonce: number;
@@ -44,14 +41,11 @@ export function Player({
   muted: boolean;
   onVolumeChange: (volume: number) => void;
   onMutedChange: (muted: boolean) => void;
-  styles: StyleInfo[];
-  styleId: string | null;
-  onStyleChange: (style: string) => void;
+  modes: MusicMode[];
+  current: MusicModeId | null;
+  onAdvance: (to?: MusicModeId) => void;
   onEnded: (trackId: string) => void;
   playlistOn: boolean;
-  playlistLabel: string | null;
-  onTogglePlaylist: () => void;
-  controlsDisabled: boolean;
 }) {
   const firstRef = useRef<HTMLAudioElement | null>(null);
   const secondRef = useRef<HTMLAudioElement | null>(null);
@@ -389,15 +383,7 @@ export function Player({
           </>
         ) : null}
       </span>
-      <MusicStyleControl
-        styles={styles}
-        styleId={styleId}
-        onStyleChange={onStyleChange}
-        playlistLabel={playlistLabel}
-        playlistOn={playlistOn}
-        onTogglePlaylist={onTogglePlaylist}
-        controlsDisabled={controlsDisabled}
-      />
+      <MusicStyleControl modes={modes} current={current} onAdvance={onAdvance} />
     </div>
   );
 }
