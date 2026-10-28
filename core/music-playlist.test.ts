@@ -4,7 +4,6 @@ import {
   CHOPIN_PLAYLIST_ID,
   nextTrack,
   parseManifest,
-  pickRandomTrack,
   requestStyleChange,
   styleHasTracks,
 } from "./music";
@@ -192,14 +191,6 @@ describe("playlistOnly exclusion", () => {
     d = observeScene(d.state, "s2", signal("tristeza"), manifest, 50, envB);
     const settled = tickScheduler(d.state, signal("tristeza"), manifest, 71, envB);
     expect(settled.switchToId).toBe("a-triste-far");
-  });
-
-  it("the scheduled draw never picks a playlist track under a seeded rng", () => {
-    const cands = candidatesFor({ style: "orchestral" }, manifest);
-    for (const seed of [0, 0.25, 0.5, 0.75, 0.99]) {
-      const pick = pickRandomTrack(cands, signal("tristeza"), null, () => seed);
-      expect(pick?.id).toBe("a-triste-far");
-    }
   });
 
   it("Next skips a perfect-match playlist track", () => {

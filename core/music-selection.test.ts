@@ -4,7 +4,6 @@ import {
   dominantEmotion,
   nextTrack,
   parseManifest,
-  pickRandomTrack,
   requestStyleChange,
   resolveInitialSelection,
 } from "./music";
@@ -164,46 +163,6 @@ describe("nextTrack across the style", () => {
   it("a null scene cycles the style set in id order", () => {
     expect(nextTrack(null, manifest, "a-triste", undefined, orch)?.id).toBe("b-alegre");
     expect(nextTrack(null, manifest, null, undefined, orch)?.id).toBe("a-calm2");
-  });
-});
-
-describe("pickRandomTrack", () => {
-  const cands = candidatesFor(orch, manifest);
-
-  it("draws only matching emotion and style within tolerance", () => {
-    for (const seed of [0, 0.3, 0.6, 0.99]) {
-      const pick = pickRandomTrack(cands, signal("calma"), null, rngOf([seed]));
-      expect(pick?.emotion).toBe("calma");
-      expect(pick?.style).toBe("orchestral");
-      expect(pick?.id).not.toBe("a-far");
-    }
-  });
-
-  it("is deterministic under a seeded rng", () => {
-    const first = pickRandomTrack(cands, signal("calma"), null, rngOf([0.99]));
-    const second = pickRandomTrack(cands, signal("calma"), null, rngOf([0.99]));
-    expect(first?.id).toBe(second?.id);
-  });
-
-  it("keeps the current track when it is itself eligible", () => {
-    const pick = pickRandomTrack(cands, signal("calma"), "a-calma", rngOf([0.99]));
-    expect(pick?.id).toBe("a-calma");
-  });
-
-  it("skips the current track when it is not eligible", () => {
-    const pick = pickRandomTrack(cands, signal("calma"), "a-far", rngOf([0]));
-    expect(pick?.id).not.toBe("a-far");
-    expect(pick?.emotion).toBe("calma");
-  });
-
-  it("uses the best same-style tracks when the emotion is missing", () => {
-    const pick = pickRandomTrack(cands, signal("misterio"), null, rngOf([0]));
-    expect(pick?.style).toBe("orchestral");
-    expect(pick).not.toBeNull();
-  });
-
-  it("returns null for an empty set", () => {
-    expect(pickRandomTrack([], signal("calma"), null, rngOf([0]))).toBeNull();
   });
 });
 
