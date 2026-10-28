@@ -1,0 +1,1045 @@
+{
+  "schemaVersion": 2,
+  "exportedAt": "2026-10-27T00:00:00.000Z",
+  "note": "Suggested drafts from etiquetar.html, not reviewed (status todo).",
+  "emotions": [
+    "calma",
+    "alegria",
+    "tristeza",
+    "suspenso",
+    "misterio",
+    "aventura",
+    "combate",
+    "asombro"
+  ],
+  "scales": {
+    "intensity": "1-5",
+    "tempo": "1-5"
+  },
+  "tracks": [
+    {
+      "trackId": "grieg-peer-gynt-morning",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "I. Morning Mood",
+      "durationSec": 229.22
+    },
+    {
+      "trackId": "brahms-sym3-2",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "II. Andante",
+      "durationSec": 529.32
+    },
+    {
+      "trackId": "borodin-steppes",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "In the Steppes of Central Asia",
+      "durationSec": 458.28
+    },
+    {
+      "trackId": "mendelssohn-italian-1",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "I. Allegro vivace",
+      "durationSec": 463.06
+    },
+    {
+      "trackId": "mozart-magic-flute-overture",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "Die Zauberflöte, K620 - Overture",
+      "durationSec": 400.8
+    },
+    {
+      "trackId": "mendelssohn-scottish-2",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "II. Vivace non troppo",
+      "durationSec": 264.05
+    },
+    {
+      "trackId": "grieg-peer-gynt-aase",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "II. The Death of Aase",
+      "durationSec": 273.84
+    },
+    {
+      "trackId": "brahms-sym3-3",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "III. Poco allegretto",
+      "durationSec": 370.1
+    },
+    {
+      "trackId": "tchaikovsky-sym6-4",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "IV. Finale – Adagio lamentoso",
+      "durationSec": 619.01
+    },
+    {
+      "trackId": "beethoven-coriolan",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "Coriolan Overture, Op. 62",
+      "durationSec": 498.74
+    },
+    {
+      "trackId": "brahms-tragic-overture",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "Tragic Overture, Op. 81",
+      "durationSec": 829.75
+    },
+    {
+      "trackId": "grieg-peer-gynt-mountain-king",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "IV. In the Hall of the Mountain King",
+      "durationSec": 154.13
+    },
+    {
+      "trackId": "grieg-peer-gynt-anitra",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "III. Anitra's Dance",
+      "durationSec": 239.69
+    },
+    {
+      "trackId": "mendelssohn-scottish-1",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "I. Andante con moto - Allegro un poco agitato",
+      "durationSec": 845.88
+    },
+    {
+      "trackId": "brahms-sym4-2",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "II. Andante moderato",
+      "durationSec": 674.18
+    },
+    {
+      "trackId": "mendelssohn-hebrides",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "Hebrides Overture, Op. 26",
+      "durationSec": 682.61
+    },
+    {
+      "trackId": "smetana-vltava",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "Má Vlast - Vltava",
+      "durationSec": 770.9
+    },
+    {
+      "trackId": "mendelssohn-italian-4",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "IV. Saltarello. Presto",
+      "durationSec": 367.56
+    },
+    {
+      "trackId": "tchaikovsky-sym6-3",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "III. Allegro molto vivace",
+      "durationSec": 593.09
+    },
+    {
+      "trackId": "brahms-sym3-4",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "IV. Allegro",
+      "durationSec": 586.37
+    },
+    {
+      "trackId": "brahms-sym2-4",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "IV. Allegro con spirito",
+      "durationSec": 585.36
+    },
+    {
+      "trackId": "holst-mars-skidmore",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "I. Mars, the Bringer of War",
+      "durationSec": 498.23
+    },
+    {
+      "trackId": "holst-jupiter-skidmore",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "IV. Jupiter, the Bringer of Jollity",
+      "durationSec": 508.47
+    },
+    {
+      "trackId": "jamendo-742883",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "Love Theme",
+      "durationSec": 174.94
+    },
+    {
+      "trackId": "jamendo-875306",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "Nightpass (Calmer)",
+      "durationSec": 183.86
+    },
+    {
+      "trackId": "jamendo-1402652",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "Pizzicato, Sylvia (Léo Delibes)",
+      "durationSec": 108.61
+    },
+    {
+      "trackId": "jamendo-961892",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "Un ratón en el escenario",
+      "durationSec": 160.75
+    },
+    {
+      "trackId": "jamendo-1402649",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "Adagio in G Minor (Tomaso Albinoni)",
+      "durationSec": 246.77
+    },
+    {
+      "trackId": "jamendo-1250207",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "Day Of Decision (Loop)",
+      "durationSec": 123.43
+    },
+    {
+      "trackId": "jamendo-1389364",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "The Museum",
+      "durationSec": 217.0
+    },
+    {
+      "trackId": "jamendo-1306265",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "Black Cloud",
+      "durationSec": 140.0
+    },
+    {
+      "trackId": "jamendo-1380591",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "Dark night of the soul",
+      "durationSec": 105.87
+    },
+    {
+      "trackId": "jamendo-824306",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "June Sonata (Juni Sonate)",
+      "durationSec": 298.66
+    },
+    {
+      "trackId": "jamendo-1157349",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "A Traves del Viento",
+      "durationSec": 179.24
+    },
+    {
+      "trackId": "jamendo-1376563",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "The Master Thief",
+      "durationSec": 199.34
+    },
+    {
+      "trackId": "jamendo-824301",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "Criminal Fandango",
+      "durationSec": 206.66
+    },
+    {
+      "trackId": "jamendo-1253685",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "Wrath of the Gods",
+      "durationSec": 298.82
+    },
+    {
+      "trackId": "jamendo-1015565",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "The land",
+      "durationSec": 158.4
+    },
+    {
+      "trackId": "jamendo-1363176",
+      "status": "todo",
+      "style": "orchestral",
+      "notSoloPiano": false,
+      "title": "Sogno (part 1)",
+      "durationSec": 96.5
+    },
+    {
+      "trackId": "jamendo-345908",
+      "status": "todo",
+      "style": "piano",
+      "notSoloPiano": false,
+      "title": "Peaceful Innocence",
+      "durationSec": 253.07
+    },
+    {
+      "trackId": "jamendo-847262",
+      "status": "todo",
+      "style": "piano",
+      "notSoloPiano": false,
+      "title": "Small Nostalgia - 1) Barcarola",
+      "durationSec": 291.58
+    },
+    {
+      "trackId": "jamendo-1402650",
+      "status": "todo",
+      "style": "piano",
+      "notSoloPiano": false,
+      "title": "Rondo alla Turca, Piano Sonata No. 11 in A major (Wolfgang Amadeus Mozart)",
+      "durationSec": 219.15
+    },
+    {
+      "trackId": "jamendo-1415221",
+      "status": "todo",
+      "style": "piano",
+      "notSoloPiano": false,
+      "title": "04 GarnaVutka - Quick piano (Piano version)",
+      "durationSec": 47.41
+    },
+    {
+      "trackId": "jamendo-26439",
+      "status": "todo",
+      "style": "piano",
+      "notSoloPiano": false,
+      "title": "Sad",
+      "durationSec": 114.4
+    },
+    {
+      "trackId": "jamendo-1380593",
+      "status": "todo",
+      "style": "piano",
+      "notSoloPiano": false,
+      "title": "Cyclic nature",
+      "durationSec": 176.91
+    },
+    {
+      "trackId": "jamendo-1419495",
+      "status": "todo",
+      "style": "piano",
+      "notSoloPiano": false,
+      "title": "The Donut around the Hole",
+      "durationSec": 113.01
+    },
+    {
+      "trackId": "jamendo-440619",
+      "status": "todo",
+      "style": "piano",
+      "notSoloPiano": false,
+      "title": "Lonely hero",
+      "durationSec": 242.31
+    },
+    {
+      "trackId": "jamendo-1084379",
+      "status": "todo",
+      "style": "piano",
+      "notSoloPiano": false,
+      "title": "Legend",
+      "durationSec": 265.77
+    },
+    {
+      "trackId": "jamendo-326584",
+      "status": "todo",
+      "style": "piano",
+      "notSoloPiano": false,
+      "title": "Un Soir Romantique (Extended)",
+      "durationSec": 252.16
+    }
+  ],
+  "segments": [
+    {
+      "trackId": "grieg-peer-gynt-morning",
+      "segmentId": "grieg-peer-gynt-morning--s1",
+      "startSec": 0.0,
+      "endSec": 229.2,
+      "primary": "calma",
+      "intensity": 2,
+      "tempo": 3,
+      "note": ""
+    },
+    {
+      "trackId": "brahms-sym3-2",
+      "segmentId": "brahms-sym3-2--s1",
+      "startSec": 0.0,
+      "endSec": 529.3,
+      "primary": "calma",
+      "intensity": 1,
+      "tempo": 2,
+      "note": ""
+    },
+    {
+      "trackId": "borodin-steppes",
+      "segmentId": "borodin-steppes--s1",
+      "startSec": 0.0,
+      "endSec": 458.3,
+      "primary": "calma",
+      "intensity": 1,
+      "tempo": 3,
+      "note": "",
+      "vector": {
+        "calma": 0.667,
+        "alegria": 0.0,
+        "tristeza": 0.0,
+        "suspenso": 0.0,
+        "misterio": 0.333,
+        "aventura": 0.0,
+        "combate": 0.0,
+        "asombro": 0.0
+      }
+    },
+    {
+      "trackId": "mendelssohn-italian-1",
+      "segmentId": "mendelssohn-italian-1--s1",
+      "startSec": 0.0,
+      "endSec": 463.1,
+      "primary": "alegria",
+      "intensity": 3,
+      "tempo": 5,
+      "note": ""
+    },
+    {
+      "trackId": "mozart-magic-flute-overture",
+      "segmentId": "mozart-magic-flute-overture--s1",
+      "startSec": 0.0,
+      "endSec": 400.8,
+      "primary": "alegria",
+      "intensity": 4,
+      "tempo": 4,
+      "note": "",
+      "vector": {
+        "calma": 0.0,
+        "alegria": 0.667,
+        "tristeza": 0.0,
+        "suspenso": 0.0,
+        "misterio": 0.0,
+        "aventura": 0.0,
+        "combate": 0.0,
+        "asombro": 0.333
+      }
+    },
+    {
+      "trackId": "mendelssohn-scottish-2",
+      "segmentId": "mendelssohn-scottish-2--s1",
+      "startSec": 0.0,
+      "endSec": 264.1,
+      "primary": "alegria",
+      "intensity": 3,
+      "tempo": 5,
+      "note": ""
+    },
+    {
+      "trackId": "grieg-peer-gynt-aase",
+      "segmentId": "grieg-peer-gynt-aase--s1",
+      "startSec": 0.0,
+      "endSec": 273.8,
+      "primary": "tristeza",
+      "intensity": 1,
+      "tempo": 2,
+      "note": ""
+    },
+    {
+      "trackId": "brahms-sym3-3",
+      "segmentId": "brahms-sym3-3--s1",
+      "startSec": 0.0,
+      "endSec": 370.1,
+      "primary": "tristeza",
+      "intensity": 1,
+      "tempo": 3,
+      "note": ""
+    },
+    {
+      "trackId": "tchaikovsky-sym6-4",
+      "segmentId": "tchaikovsky-sym6-4--s1",
+      "startSec": 0.0,
+      "endSec": 619.0,
+      "primary": "tristeza",
+      "intensity": 1,
+      "tempo": 1,
+      "note": ""
+    },
+    {
+      "trackId": "beethoven-coriolan",
+      "segmentId": "beethoven-coriolan--s1",
+      "startSec": 0.0,
+      "endSec": 498.7,
+      "primary": "suspenso",
+      "intensity": 3,
+      "tempo": 4,
+      "note": "",
+      "vector": {
+        "calma": 0.0,
+        "alegria": 0.0,
+        "tristeza": 0.0,
+        "suspenso": 0.667,
+        "misterio": 0.0,
+        "aventura": 0.0,
+        "combate": 0.333,
+        "asombro": 0.0
+      }
+    },
+    {
+      "trackId": "brahms-tragic-overture",
+      "segmentId": "brahms-tragic-overture--s1",
+      "startSec": 0.0,
+      "endSec": 829.8,
+      "primary": "suspenso",
+      "intensity": 3,
+      "tempo": 4,
+      "note": "",
+      "vector": {
+        "calma": 0.0,
+        "alegria": 0.0,
+        "tristeza": 0.167,
+        "suspenso": 0.556,
+        "misterio": 0.0,
+        "aventura": 0.0,
+        "combate": 0.278,
+        "asombro": 0.0
+      }
+    },
+    {
+      "trackId": "grieg-peer-gynt-mountain-king",
+      "segmentId": "grieg-peer-gynt-mountain-king--s1",
+      "startSec": 0.0,
+      "endSec": 91.0,
+      "primary": "suspenso",
+      "intensity": 2,
+      "tempo": 3,
+      "note": "Corte estimado por audio: revisá dónde empieza cada parte."
+    },
+    {
+      "trackId": "grieg-peer-gynt-mountain-king",
+      "segmentId": "grieg-peer-gynt-mountain-king--s2",
+      "startSec": 91.0,
+      "endSec": 154.1,
+      "primary": "combate",
+      "intensity": 5,
+      "tempo": 3,
+      "note": "Corte estimado por audio: revisá dónde empieza cada parte."
+    },
+    {
+      "trackId": "grieg-peer-gynt-anitra",
+      "segmentId": "grieg-peer-gynt-anitra--s1",
+      "startSec": 0.0,
+      "endSec": 239.7,
+      "primary": "misterio",
+      "intensity": 1,
+      "tempo": 3,
+      "note": ""
+    },
+    {
+      "trackId": "mendelssohn-scottish-1",
+      "segmentId": "mendelssohn-scottish-1--s1",
+      "startSec": 0.0,
+      "endSec": 211.0,
+      "primary": "misterio",
+      "intensity": 1,
+      "tempo": 2,
+      "note": "Corte estimado por audio: revisá dónde empieza cada parte."
+    },
+    {
+      "trackId": "mendelssohn-scottish-1",
+      "segmentId": "mendelssohn-scottish-1--s2",
+      "startSec": 211.0,
+      "endSec": 845.9,
+      "primary": "suspenso",
+      "intensity": 3,
+      "tempo": 4,
+      "note": "Corte estimado por audio: revisá dónde empieza cada parte."
+    },
+    {
+      "trackId": "brahms-sym4-2",
+      "segmentId": "brahms-sym4-2--s1",
+      "startSec": 0.0,
+      "endSec": 674.2,
+      "primary": "misterio",
+      "intensity": 2,
+      "tempo": 2,
+      "note": ""
+    },
+    {
+      "trackId": "mendelssohn-hebrides",
+      "segmentId": "mendelssohn-hebrides--s1",
+      "startSec": 0.0,
+      "endSec": 682.6,
+      "primary": "aventura",
+      "intensity": 4,
+      "tempo": 4,
+      "note": "",
+      "vector": {
+        "calma": 0.0,
+        "alegria": 0.0,
+        "tristeza": 0.0,
+        "suspenso": 0.0,
+        "misterio": 0.0,
+        "aventura": 0.667,
+        "combate": 0.0,
+        "asombro": 0.333
+      }
+    },
+    {
+      "trackId": "smetana-vltava",
+      "segmentId": "smetana-vltava--s1",
+      "startSec": 0.0,
+      "endSec": 770.9,
+      "primary": "aventura",
+      "intensity": 5,
+      "tempo": 4,
+      "note": "",
+      "vector": {
+        "calma": 0.0,
+        "alegria": 0.0,
+        "tristeza": 0.0,
+        "suspenso": 0.0,
+        "misterio": 0.0,
+        "aventura": 0.667,
+        "combate": 0.0,
+        "asombro": 0.333
+      }
+    },
+    {
+      "trackId": "mendelssohn-italian-4",
+      "segmentId": "mendelssohn-italian-4--s1",
+      "startSec": 0.0,
+      "endSec": 367.6,
+      "primary": "aventura",
+      "intensity": 4,
+      "tempo": 5,
+      "note": ""
+    },
+    {
+      "trackId": "tchaikovsky-sym6-3",
+      "segmentId": "tchaikovsky-sym6-3--s1",
+      "startSec": 0.0,
+      "endSec": 593.1,
+      "primary": "combate",
+      "intensity": 5,
+      "tempo": 5,
+      "note": ""
+    },
+    {
+      "trackId": "brahms-sym3-4",
+      "segmentId": "brahms-sym3-4--s1",
+      "startSec": 0.0,
+      "endSec": 451.0,
+      "primary": "combate",
+      "intensity": 5,
+      "tempo": 4,
+      "note": "Corte estimado por audio: revisá dónde empieza cada parte."
+    },
+    {
+      "trackId": "brahms-sym3-4",
+      "segmentId": "brahms-sym3-4--s2",
+      "startSec": 451.0,
+      "endSec": 586.4,
+      "primary": "calma",
+      "intensity": 2,
+      "tempo": 4,
+      "note": "Corte estimado por audio: revisá dónde empieza cada parte."
+    },
+    {
+      "trackId": "brahms-sym2-4",
+      "segmentId": "brahms-sym2-4--s1",
+      "startSec": 0.0,
+      "endSec": 491.0,
+      "primary": "alegria",
+      "intensity": 4,
+      "tempo": 4,
+      "note": "Corte estimado por audio: revisá dónde empieza cada parte."
+    },
+    {
+      "trackId": "brahms-sym2-4",
+      "segmentId": "brahms-sym2-4--s2",
+      "startSec": 491.0,
+      "endSec": 585.4,
+      "primary": "asombro",
+      "intensity": 4,
+      "tempo": 4,
+      "note": "Corte estimado por audio: revisá dónde empieza cada parte."
+    },
+    {
+      "trackId": "holst-mars-skidmore",
+      "segmentId": "holst-mars-skidmore--s1",
+      "startSec": 0.0,
+      "endSec": 498.2,
+      "primary": "combate",
+      "intensity": 5,
+      "tempo": 4,
+      "note": ""
+    },
+    {
+      "trackId": "holst-jupiter-skidmore",
+      "segmentId": "holst-jupiter-skidmore--s1",
+      "startSec": 0.0,
+      "endSec": 508.5,
+      "primary": "alegria",
+      "intensity": 4,
+      "tempo": 4,
+      "note": "",
+      "vector": {
+        "calma": 0.0,
+        "alegria": 0.667,
+        "tristeza": 0.0,
+        "suspenso": 0.0,
+        "misterio": 0.0,
+        "aventura": 0.0,
+        "combate": 0.0,
+        "asombro": 0.333
+      }
+    },
+    {
+      "trackId": "jamendo-742883",
+      "segmentId": "jamendo-742883--s1",
+      "startSec": 0.0,
+      "endSec": 174.9,
+      "primary": "calma",
+      "intensity": 1,
+      "tempo": 2,
+      "note": ""
+    },
+    {
+      "trackId": "jamendo-875306",
+      "segmentId": "jamendo-875306--s1",
+      "startSec": 0.0,
+      "endSec": 183.9,
+      "primary": "calma",
+      "intensity": 1,
+      "tempo": 1,
+      "note": ""
+    },
+    {
+      "trackId": "jamendo-1402652",
+      "segmentId": "jamendo-1402652--s1",
+      "startSec": 0.0,
+      "endSec": 108.6,
+      "primary": "alegria",
+      "intensity": 4,
+      "tempo": 4,
+      "note": ""
+    },
+    {
+      "trackId": "jamendo-961892",
+      "segmentId": "jamendo-961892--s1",
+      "startSec": 0.0,
+      "endSec": 160.8,
+      "primary": "alegria",
+      "intensity": 3,
+      "tempo": 3,
+      "note": ""
+    },
+    {
+      "trackId": "jamendo-1402649",
+      "segmentId": "jamendo-1402649--s1",
+      "startSec": 0.0,
+      "endSec": 246.8,
+      "primary": "tristeza",
+      "intensity": 2,
+      "tempo": 2,
+      "note": ""
+    },
+    {
+      "trackId": "jamendo-1250207",
+      "segmentId": "jamendo-1250207--s1",
+      "startSec": 0.0,
+      "endSec": 123.4,
+      "primary": "tristeza",
+      "intensity": 2,
+      "tempo": 2,
+      "note": ""
+    },
+    {
+      "trackId": "jamendo-1389364",
+      "segmentId": "jamendo-1389364--s1",
+      "startSec": 0.0,
+      "endSec": 217.0,
+      "primary": "suspenso",
+      "intensity": 4,
+      "tempo": 3,
+      "note": ""
+    },
+    {
+      "trackId": "jamendo-1306265",
+      "segmentId": "jamendo-1306265--s1",
+      "startSec": 0.0,
+      "endSec": 140.0,
+      "primary": "suspenso",
+      "intensity": 4,
+      "tempo": 3,
+      "note": ""
+    },
+    {
+      "trackId": "jamendo-1380591",
+      "segmentId": "jamendo-1380591--s1",
+      "startSec": 0.0,
+      "endSec": 105.9,
+      "primary": "misterio",
+      "intensity": 2,
+      "tempo": 4,
+      "note": ""
+    },
+    {
+      "trackId": "jamendo-824306",
+      "segmentId": "jamendo-824306--s1",
+      "startSec": 0.0,
+      "endSec": 298.7,
+      "primary": "misterio",
+      "intensity": 3,
+      "tempo": 3,
+      "note": "",
+      "vector": {
+        "calma": 0.0,
+        "alegria": 0.0,
+        "tristeza": 0.0,
+        "suspenso": 0.0,
+        "misterio": 0.5,
+        "aventura": 0.0,
+        "combate": 0.0,
+        "asombro": 0.5
+      }
+    },
+    {
+      "trackId": "jamendo-1157349",
+      "segmentId": "jamendo-1157349--s1",
+      "startSec": 0.0,
+      "endSec": 179.2,
+      "primary": "aventura",
+      "intensity": 4,
+      "tempo": 4,
+      "note": "",
+      "vector": {
+        "calma": 0.0,
+        "alegria": 0.0,
+        "tristeza": 0.0,
+        "suspenso": 0.0,
+        "misterio": 0.0,
+        "aventura": 0.5,
+        "combate": 0.5,
+        "asombro": 0.0
+      }
+    },
+    {
+      "trackId": "jamendo-1376563",
+      "segmentId": "jamendo-1376563--s1",
+      "startSec": 0.0,
+      "endSec": 199.3,
+      "primary": "aventura",
+      "intensity": 4,
+      "tempo": 2,
+      "note": "",
+      "vector": {
+        "calma": 0.0,
+        "alegria": 0.0,
+        "tristeza": 0.0,
+        "suspenso": 0.0,
+        "misterio": 0.0,
+        "aventura": 0.5,
+        "combate": 0.5,
+        "asombro": 0.0
+      }
+    },
+    {
+      "trackId": "jamendo-824301",
+      "segmentId": "jamendo-824301--s1",
+      "startSec": 0.0,
+      "endSec": 206.7,
+      "primary": "combate",
+      "intensity": 5,
+      "tempo": 5,
+      "note": ""
+    },
+    {
+      "trackId": "jamendo-1253685",
+      "segmentId": "jamendo-1253685--s1",
+      "startSec": 0.0,
+      "endSec": 298.8,
+      "primary": "combate",
+      "intensity": 5,
+      "tempo": 5,
+      "note": ""
+    },
+    {
+      "trackId": "jamendo-1015565",
+      "segmentId": "jamendo-1015565--s1",
+      "startSec": 0.0,
+      "endSec": 158.4,
+      "primary": "asombro",
+      "intensity": 2,
+      "tempo": 3,
+      "note": ""
+    },
+    {
+      "trackId": "jamendo-1363176",
+      "segmentId": "jamendo-1363176--s1",
+      "startSec": 0.0,
+      "endSec": 96.5,
+      "primary": "asombro",
+      "intensity": 2,
+      "tempo": 3,
+      "note": ""
+    },
+    {
+      "trackId": "jamendo-345908",
+      "segmentId": "jamendo-345908--s1",
+      "startSec": 0.0,
+      "endSec": 253.1,
+      "primary": "calma",
+      "intensity": 1,
+      "tempo": 1,
+      "note": ""
+    },
+    {
+      "trackId": "jamendo-847262",
+      "segmentId": "jamendo-847262--s1",
+      "startSec": 0.0,
+      "endSec": 291.6,
+      "primary": "calma",
+      "intensity": 1,
+      "tempo": 1,
+      "note": ""
+    },
+    {
+      "trackId": "jamendo-1402650",
+      "segmentId": "jamendo-1402650--s1",
+      "startSec": 0.0,
+      "endSec": 219.2,
+      "primary": "alegria",
+      "intensity": 4,
+      "tempo": 4,
+      "note": ""
+    },
+    {
+      "trackId": "jamendo-1415221",
+      "segmentId": "jamendo-1415221--s1",
+      "startSec": 0.0,
+      "endSec": 47.4,
+      "primary": "alegria",
+      "intensity": 4,
+      "tempo": 4,
+      "note": ""
+    },
+    {
+      "trackId": "jamendo-26439",
+      "segmentId": "jamendo-26439--s1",
+      "startSec": 0.0,
+      "endSec": 114.4,
+      "primary": "tristeza",
+      "intensity": 2,
+      "tempo": 2,
+      "note": ""
+    },
+    {
+      "trackId": "jamendo-1380593",
+      "segmentId": "jamendo-1380593--s1",
+      "startSec": 0.0,
+      "endSec": 176.9,
+      "primary": "misterio",
+      "intensity": 2,
+      "tempo": 4,
+      "note": ""
+    },
+    {
+      "trackId": "jamendo-1419495",
+      "segmentId": "jamendo-1419495--s1",
+      "startSec": 0.0,
+      "endSec": 113.0,
+      "primary": "aventura",
+      "intensity": 4,
+      "tempo": 5,
+      "note": ""
+    },
+    {
+      "trackId": "jamendo-440619",
+      "segmentId": "jamendo-440619--s1",
+      "startSec": 0.0,
+      "endSec": 242.3,
+      "primary": "aventura",
+      "intensity": 4,
+      "tempo": 3,
+      "note": ""
+    },
+    {
+      "trackId": "jamendo-1084379",
+      "segmentId": "jamendo-1084379--s1",
+      "startSec": 0.0,
+      "endSec": 265.8,
+      "primary": "combate",
+      "intensity": 5,
+      "tempo": 3,
+      "note": ""
+    },
+    {
+      "trackId": "jamendo-326584",
+      "segmentId": "jamendo-326584--s1",
+      "startSec": 0.0,
+      "endSec": 252.2,
+      "primary": "asombro",
+      "intensity": 2,
+      "tempo": 3,
+      "note": ""
+    }
+  ]
+}

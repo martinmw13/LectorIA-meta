@@ -245,6 +245,7 @@ describe("scene entry", () => {
       tempo: 0.5,
       durationSec: 120,
       startSec: 0,
+      gainDb: 0,
       loop: true,
       soundtrack: "snd",
       style: "orchestral",

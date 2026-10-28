@@ -9,6 +9,7 @@
     "dev": "next dev",
     "build": "next build",
     "build:book": "tsx pipeline/build.ts",
+    "build:music": "tsx pipeline/labels-to-manifest.ts",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

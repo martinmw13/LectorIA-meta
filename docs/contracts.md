@@ -45,25 +45,39 @@ manifest migrates inline to one implicit `default` soundtrack of style
 
 `MusicManifest = { version, styles, soundtracks, tracks, playlists }`.
 `StyleInfo = { id, name }` where `id` is a lowercase slug and `name` is
-the Spanish display name. `Soundtrack = { id, name, style }` plus
+the display name. `Soundtrack = { id, name, style }` plus
 optional `credit`. `Track = { id, src, title, emotion, vector,
 intensity, tempo, durationSec, soundtrack, style }` plus optional
 `startSec` (default 0, where playback starts on first play and on each
-loop), `loop` (default true), `source` (`generated`, `jamendo`, or
+loop), `endSec` (default the media end, where the track stops or loops),
+`gainDb` (default 0, a loudness trim in dB, in -24..12),
+`loop` (default true), `source` (`generated`, `jamendo`, or
 `recording`), `artist`, `composer`, `license`, `attribution`, and
-`sourceUrl` (https only). `emotion` is the hand label: one of the 8
+`sourceUrl` (https only). `durationSec` is the playable length: the
+segment end (or the file end) minus `startSec`. `startSec` and `endSec`
+are absolute media times with `startSec < endSec`; `endSec` stays within
+`startSec + durationSec`. The player scales volume by the track gain and
+ends or loops at `effectiveEnd`, the earlier of `endSec` and the loaded
+media end. `emotion` is the hand label: one of the 8
 emotion ids in `core/types.ts`. The vector covers the 8 ids with finite
 entries in 0..1. Every track names a soundtrack id, every track style
 matches its soundtrack style, and every style is a listed style id.
 `core/music.ts` owns `parseManifest`, which rejects unknown versions,
 duplicate ids, unknown soundtrack or style ids, style mismatches,
 missing fields, bad vectors, NaN entries, out-of-range numbers,
-`startSec` outside its range, unknown `source` values, a non-boolean
+a negative `startSec`, a bad `gainDb` or `endSec`, unknown `source`
+values, a non-boolean
 `playlistOnly`, and any `src`
-that is not a `/music/` path or `https` URL. A soundtrack with no
+that is not a `/music/` path or `https` URL. Unknown fields stay
+ignored. A soundtrack with no
 tracks parses. The reader calls it on every fetch, so a bad drop-in
-fails loudly in dev. Remote URLs need a `media-src` addition in
-`next.config.ts`.
+fails loudly in dev. Remote audio lives on one Blob store, so
+`media-src` in `next.config.ts` lists exactly
+`https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com`. Build the
+manifest with `npm run build:music data/music/labels.json
+data/music/library.json --out public/music/manifest.json`, which runs
+`pipeline/labels-to-manifest.ts` and validates the result before
+writing.
 
 `Track.playlistOnly` defaults to false. A true value marks a playlist
 only track: it still names a soundtrack and style, but no emotion pick
