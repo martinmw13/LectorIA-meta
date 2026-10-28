@@ -15,6 +15,27 @@ describe("heroArt", () => {
     }
   });
 
+  it("keeps the comic hero art burst-free: the burst only appears on hover", () => {
+    for (const src of ["/art/skins/comic/orchestra.svg", "/art/skins/comic/piano.svg", "/art/skins/comic/chopin.svg"]) {
+      const svg = readFileSync(join(process.cwd(), "public", src), "utf8");
+      expect(svg, src).not.toContain("burst-h");
+    }
+  });
+
+  it("ships a separate burst SVG per comic music mode", () => {
+    for (const src of [
+      "/art/skins/comic/burst-yellow.svg",
+      "/art/skins/comic/burst-blue.svg",
+      "/art/skins/comic/burst-salmon.svg",
+    ]) {
+      const file = join(process.cwd(), "public", src);
+      expect(existsSync(file), src).toBe(true);
+      const svg = readFileSync(file, "utf8");
+      expect(svg.trimStart().startsWith("<svg"), src).toBe(true);
+      expect(svg).not.toMatch(/<script|on\w+=/i);
+    }
+  });
+
   it("points every skin's art at a real, well-formed SVG or PNG in public/", () => {
     for (const skin of SKINS) {
       const art = heroArt(skin);

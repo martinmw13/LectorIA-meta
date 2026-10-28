@@ -408,16 +408,65 @@ html[data-skin="ink"] .read-aloud-label {
 }
 
 @keyframes ink-wiggle {
-  30% {
-    transform: rotate(-4deg);
+  0%,
+  100% {
+    transform: rotate(0);
   }
-  65% {
-    transform: rotate(3deg);
+  25% {
+    transform: rotate(-2.4deg);
   }
+  55% {
+    transform: rotate(2deg);
+  }
+  80% {
+    transform: rotate(-1deg);
+  }
+}
+
+@keyframes ink-pop-in {
+  0% {
+    transform: scale(0.86) rotate(-7deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.05) rotate(1deg);
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@keyframes ink-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+html[data-skin="ink"] :is(.sticker, .chopin)[data-anim="1"] img {
+  animation: ink-pop-in 440ms cubic-bezier(0.34, 1.5, 0.64, 1);
+}
+
+html[data-skin="ink"] :is(.sticker, .chopin):active img {
+  transform: scale(0.94) rotate(-2deg);
+  transition: transform 80ms ease;
 }
 
 @media (prefers-reduced-motion: reduce) {
   html[data-skin="ink"] :is(.sticker, .chopin, .read-aloud-btn):hover img {
     animation: none;
+  }
+
+  html[data-skin="ink"] :is(.sticker, .chopin):active img {
+    transform: none;
+    transition: none;
+  }
+
+  html[data-skin="ink"] :is(.sticker, .chopin)[data-anim="1"] img {
+    animation: ink-fade 180ms ease;
   }
 }

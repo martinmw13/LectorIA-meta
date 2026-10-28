@@ -103,6 +103,89 @@
   animation: sticker-pop 400ms ease;
 }
 
+/* Floating eighth-notes for the pencil and chihiro sketches: hidden at
+   rest, they drift up once on hover or on a mode change. */
+.mode-notes {
+  display: none;
+}
+
+html:is([data-skin="pencil"], [data-skin="chihiro"]) .mode-notes {
+  display: block;
+  position: absolute;
+  inset: -18%;
+  pointer-events: none;
+}
+
+html:is([data-skin="pencil"], [data-skin="chihiro"]) .mode-notes i {
+  position: absolute;
+  width: 11px;
+  height: 13px;
+  opacity: 0;
+  background: no-repeat center / contain
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 22'%3E%3Cpath d='M7 18V4l9-3v14' fill='none' stroke='%230866FF' stroke-width='2.2'/%3E%3Cellipse cx='4' cy='18' rx='4' ry='3' fill='%230866FF'/%3E%3Cellipse cx='13' cy='15' rx='4' ry='3' fill='%230866FF'/%3E%3C/svg%3E");
+}
+
+html:is([data-skin="pencil"], [data-skin="chihiro"]) .mode-notes i:nth-child(1) {
+  left: 66%;
+  top: 22%;
+}
+
+html:is([data-skin="pencil"], [data-skin="chihiro"]) .mode-notes i:nth-child(2) {
+  left: 76%;
+  top: 40%;
+}
+
+html:is([data-skin="pencil"], [data-skin="chihiro"]) .mode-notes i:nth-child(3) {
+  left: 14%;
+  top: 18%;
+}
+
+@keyframes mode-note {
+  0% {
+    opacity: 0;
+    transform: translate(0, 4px) rotate(-8deg);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(6px, -14px) rotate(12deg);
+  }
+}
+
+@media (hover: hover) {
+  html:is([data-skin="pencil"], [data-skin="chihiro"])
+    :is(.sticker, .player .chopin):hover .mode-notes i {
+    animation: mode-note 900ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  }
+
+  html:is([data-skin="pencil"], [data-skin="chihiro"])
+    :is(.sticker, .player .chopin):hover .mode-notes i:nth-child(2) {
+    animation-delay: 140ms;
+  }
+
+  html:is([data-skin="pencil"], [data-skin="chihiro"])
+    :is(.sticker, .player .chopin):hover .mode-notes i:nth-child(3) {
+    animation-delay: 280ms;
+  }
+}
+
+html:is([data-skin="pencil"], [data-skin="chihiro"])
+  :is(.sticker, .player .chopin)[data-anim="1"] .mode-notes i {
+  animation: mode-note 900ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+html:is([data-skin="pencil"], [data-skin="chihiro"])
+  :is(.sticker, .player .chopin)[data-anim="1"] .mode-notes i:nth-child(2) {
+  animation-delay: 140ms;
+}
+
+html:is([data-skin="pencil"], [data-skin="chihiro"])
+  :is(.sticker, .player .chopin)[data-anim="1"] .mode-notes i:nth-child(3) {
+  animation-delay: 280ms;
+}
+
 .sticker-dot {
   width: 5px;
   height: 5px;
@@ -161,6 +244,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html:is([data-skin="pencil"], [data-skin="chihiro"]) .mode-notes {
+    display: none;
+  }
+
   .sticker img,
   .sticker:hover img,
   .sticker[aria-pressed="true"] img,
