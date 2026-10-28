@@ -1,20 +1,13 @@
 // DOM range mapping for read-along highlight: word timings are
-// paragraph-relative, while the page renders fragments cut by
-// paginateScene. Cut points land on spaces, so a word never straddles
-// fragments; each fragment carries its start in data-from. planRanges is
-// pure (offsets in, offsets out) and unit-tested; rangesForChunk applies
-// a plan to the live text nodes.
+// paragraph-relative char offsets, and the column renders each
+// paragraph whole in `p[data-n]`. planRanges is pure (offsets in,
+// offsets out) and unit-tested; rangesForChunk applies a plan to the
+// live text node.
 import type { ChapterNarration } from "@/core/narration";
 
 type Chunk = ChapterNarration["chunks"][number];
 
-export interface PlannedFragment {
-  from: number;
-  len: number;
-}
-
 export interface PlannedWord {
-  frag: number;
   start: number;
   end: number;
 }
@@ -25,32 +18,27 @@ export interface PlannedRanges {
 }
 
 export function planRanges(
-  frags: PlannedFragment[],
+  textLen: number,
   chunk: Pick<Chunk, "start" | "end" | "w">,
   wordIdx: number,
 ): PlannedRanges {
   const sentence: PlannedWord[] = [];
-  frags.forEach((frag, index) => {
-    const start = Math.max(chunk.start, frag.from);
-    const end = Math.min(chunk.end, frag.from + frag.len);
-    if (end > start) sentence.push({ frag: index, start: start - frag.from, end: end - frag.from });
-  });
+  const start = Math.max(chunk.start, 0);
+  const end = Math.min(chunk.end, textLen);
+  if (end > start) sentence.push({ start, end });
   let word: PlannedWord | null = null;
-  // The active word is a chunk-global index; the holding fragment is the
-  // one whose span contains its paragraph-relative start.
+  // The active word is a chunk-global index; its paragraph-relative
+  // offsets come straight from the timings.
   const abs = wordIdx >= 0 ? (chunk.w[wordIdx * 4] as number | undefined) : undefined;
-  if (abs !== undefined) {
+  if (abs !== undefined && abs >= 0 && abs < textLen) {
     const end = chunk.w[wordIdx * 4 + 1] as number;
-    const at = frags.findIndex((frag) => abs >= frag.from && abs < frag.from + frag.len);
-    if (at >= 0) {
-      const frag = frags[at] as PlannedFragment;
-      word = { frag: at, start: abs - frag.from, end: Math.min(end - frag.from, frag.len) };
-    }
+    word = { start: abs, end: Math.min(end, textLen) };
   }
   return { word, sentence };
 }
 
 export interface SpotRanges {
+  para: HTMLElement | null;
   word: Range | null;
   wordText: string;
   sentence: Range[];
@@ -64,17 +52,13 @@ function firstTextChild(p: Element): Text | null {
 }
 
 export function rangesForChunk(container: HTMLElement, chunk: Chunk, wordIdx: number): SpotRanges {
-  const nodes = [...container.querySelectorAll(`p[data-n="${chunk.n}"]`)];
-  const texts: (Text | null)[] = nodes.map(firstTextChild);
-  const frags: PlannedFragment[] = nodes.map((p, i) => ({
-    from: Number(p.getAttribute("data-from") ?? 0),
-    len: texts[i]?.length ?? 0,
-  }));
-  const plan = planRanges(frags, chunk, wordIdx);
+  const para = container.querySelector(`p[data-n="${chunk.n}"]`);
+  if (!(para instanceof HTMLElement)) return { para: null, word: null, wordText: "", sentence: [] };
+  const text = firstTextChild(para);
+  if (!text) return { para, word: null, wordText: "", sentence: [] };
+  const plan = planRanges(text.length, chunk, wordIdx);
   const sentence: Range[] = [];
   for (const part of plan.sentence) {
-    const text = texts[part.frag];
-    if (!text) continue;
     try {
       const r = document.createRange();
       r.setStart(text, part.start);
@@ -87,18 +71,15 @@ export function rangesForChunk(container: HTMLElement, chunk: Chunk, wordIdx: nu
   let word: Range | null = null;
   let wordText = "";
   if (plan.word) {
-    const text = texts[plan.word.frag];
-    if (text) {
-      try {
-        const r = document.createRange();
-        r.setStart(text, plan.word.start);
-        r.setEnd(text, plan.word.end);
-        word = r;
-        wordText = r.toString();
-      } catch {
-        word = null;
-      }
+    try {
+      const r = document.createRange();
+      r.setStart(text, plan.word.start);
+      r.setEnd(text, plan.word.end);
+      word = r;
+      wordText = r.toString();
+    } catch {
+      word = null;
     }
   }
-  return { word, wordText, sentence };
+  return { para, word, wordText, sentence };
 }

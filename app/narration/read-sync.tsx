@@ -1,23 +1,17 @@
 // Read-sync: a requestAnimationFrame loop follows audio.currentTime
 // through the manifest (surviving seek, pause, and rate changes because
-// it never keeps its own clock), maps words onto the rendered
-// fragments, and turns the sub-page automatically unless the reader
-// just moved by hand.
+// it never keeps its own clock) and maps words onto the whole
+// paragraphs in the reading column. The spoken paragraph is brought in
+// with followIntoView; within 4 s of a hand move the voice keeps
+// reading but the mark hides instead of yanking the reader back.
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { activeChunkAt, activeWordAt, wordAt, type ChapterNarration } from "@/core/narration";
+import { followIntoView } from "../leer/scroll-helpers";
 import { Icon } from "../icons";
 import { engravingScale, highlightStyleFor, type HighlightTreatment } from "./highlight-style";
 import { rangesForChunk } from "./ranges";
-import { autoTurnTarget } from "./turn";
-
-export interface SyncFragment {
-  id: string;
-  n: number;
-  text: string;
-  from?: number;
-}
 
 export interface MarkRect {
   left: number;
@@ -42,25 +36,12 @@ function skinTreatment(): HighlightTreatment {
   }
 }
 
-function reducedMotion(): boolean {
-  try {
-    return !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-  } catch {
-    return false;
-  }
-}
-
 export function useReadSync(opts: {
   enabled: boolean;
   audioRef: RefObject<HTMLAudioElement | null>;
   manifest: ChapterNarration | null;
   span: { startSec: number; endSec: number } | null;
-  containerRef: RefObject<HTMLElement | null>;
-  scrollerRef: RefObject<HTMLElement | null>;
-  pages: { paragraphs: SyncFragment[] }[];
-  textPage: number;
-  onTurnPage: (textIndex: number) => void;
-  lastManualRef: RefObject<number | null>;
+  columnRef: RefObject<HTMLElement | null>;
 }): { mark: MarkRect | null; treatment: HighlightTreatment } {
   const [treatment, setTreatment] = useState<HighlightTreatment>(skinTreatment);
   const [mark, setMark] = useState<MarkRect | null>(null);
@@ -80,55 +61,63 @@ export function useReadSync(opts: {
     return () => obs.disconnect();
   }, []);
 
-  // The follow loop: audio time in, chunk/word out, one auto-turn gate.
+  // The follow loop runs only while the voice plays: play starts it,
+  // pause stops it, so nothing animates while paused.
   useEffect(() => {
-    const { enabled, manifest } = live.current;
-    if (!enabled || !manifest) {
+    const seen = live.current;
+    if (!seen.enabled || !seen.manifest) {
       setActive(null);
       return;
     }
+    const audio = seen.audioRef.current;
+    if (!audio) return;
     let raf = 0;
     const tick = () => {
       raf = requestAnimationFrame(tick);
       // Every input is read live each tick: the scene (and its span)
       // can change under a kept chapter manifest, so a closed-over
       // span would gate the voice against the previous scene.
-      const seen = live.current;
-      if (!seen.enabled || !seen.manifest) return;
-      const audio = seen.audioRef.current;
-      if (!audio || audio.paused) return;
-      const t = audio.currentTime;
-      const span = seen.span;
+      const heard = live.current;
+      if (!heard.enabled || !heard.manifest) return;
+      const el = heard.audioRef.current;
+      if (!el || el.paused) return;
+      const t = el.currentTime;
+      const span = heard.span;
       if (span !== null && (t < span.startSec - 0.3 || t > span.endSec + 2)) return;
-      const heard = seen.manifest;
-      const ci = activeChunkAt(heard.chunks, t);
+      const ci = activeChunkAt(heard.manifest.chunks, t);
       if (ci < 0) {
         setActive((prev) => (prev === null ? prev : null));
         return;
       }
-      const chunk = heard.chunks[ci] as ChapterNarration["chunks"][number];
+      const chunk = heard.manifest.chunks[ci] as ChapterNarration["chunks"][number];
       const wi = activeWordAt(chunk, t);
       setActive((prev) => (prev !== null && prev.chunk === ci && prev.word === wi ? prev : { chunk: ci, word: wi }));
-      const target = autoTurnTarget(
-        seen.pages,
-        chunk.n,
-        seen.textPage,
-        seen.lastManualRef.current,
-        performance.now(),
-      );
-      if (target !== null) seen.onTurnPage(target);
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    const onPlay = () => {
+      if (!raf) tick();
+    };
+    const onPause = () => {
+      cancelAnimationFrame(raf);
+      raf = 0;
+    };
+    audio.addEventListener("play", onPlay);
+    audio.addEventListener("pause", onPause);
+    if (!audio.paused) tick();
+    return () => {
+      cancelAnimationFrame(raf);
+      raf = 0;
+      audio.removeEventListener("play", onPlay);
+      audio.removeEventListener("pause", onPause);
+    };
   }, [opts.enabled, opts.manifest]);
 
-  // Measure the active word against the fragment DOM and paint the
+  // Measure the active word against the column DOM and paint the
   // sentence tint through the Highlight API (no-op where unsupported).
   useLayoutEffect(() => {
-    const { containerRef, scrollerRef, manifest } = live.current;
-    const container = containerRef.current;
+    const { columnRef, manifest } = live.current;
+    const column = columnRef.current;
     clearSentence();
-    if (!container || !manifest || active === null) {
+    if (!column || !manifest || active === null) {
       setMark(null);
       return;
     }
@@ -137,8 +126,18 @@ export function useReadSync(opts: {
       setMark(null);
       return;
     }
-    const { word: wordRange, wordText, sentence } = rangesForChunk(container, chunk, active.word);
+    const { para, word: wordRange, wordText, sentence } = rangesForChunk(column, chunk, active.word);
     paintSentence(sentence);
+    // The spoken paragraph rides into the middle band on its own; after
+    // a hand move the mark hides until the reader is back on screen.
+    if (para && !followIntoView(para, column)) {
+      const view = column.getBoundingClientRect();
+      const box = para.getBoundingClientRect();
+      if (box.bottom <= view.top || box.top >= view.bottom) {
+        setMark(null);
+        return;
+      }
+    }
     if (!wordRange) {
       setMark(null);
       return;
@@ -158,7 +157,7 @@ export function useReadSync(opts: {
       right = Math.max(right, r.right);
       bottom = Math.max(bottom, r.bottom);
     }
-    const box = container.getBoundingClientRect();
+    const box = column.getBoundingClientRect();
     let padX = 0;
     let padY = 0;
     if (treatment === "ink-doodle") {
@@ -174,43 +173,26 @@ export function useReadSync(opts: {
       height: bottom - top + padY * 2,
       word: wordText,
     });
-    const scroller = scrollerRef.current;
-    if (scroller && rects[0]) {
-      const view = scroller.getBoundingClientRect();
-      const first = rects[0];
-      const margin = 8;
-      if (first.top < view.top + margin || first.bottom > view.bottom - margin) {
-        try {
-          scroller.scrollTo({
-            top: scroller.scrollTop + (first.top - view.top) - view.height * 0.3,
-            behavior: reducedMotion() ? "auto" : "smooth",
-          });
-        } catch {
-          // The column keeps native scroll; the mark follows anyway.
-        }
-      }
-    }
-  }, [active, opts.manifest, opts.textPage, treatment]);
+  }, [active, opts.manifest, treatment]);
 
   // Click a word to seek there, only while narration runs.
   useEffect(() => {
-    const { enabled, containerRef, audioRef } = live.current;
-    const container = containerRef.current;
-    if (!enabled || !container) return;
+    const { enabled, columnRef, audioRef } = live.current;
+    const column = columnRef.current;
+    if (!enabled || !column) return;
     const onClick = (event: MouseEvent) => {
       const audio = audioRef.current;
       const heard = live.current.manifest;
       if (!audio || !heard) return;
-      const doc = container.ownerDocument;
+      const doc = column.ownerDocument;
       const atPoint = doc.caretRangeFromPoint?.bind(doc);
       const range = atPoint ? atPoint(event.clientX, event.clientY) : null;
       if (!range || range.startContainer.nodeType !== 3) return;
       const p = (range.startContainer.parentElement as Element | null)?.closest?.("p[data-n]");
-      if (!p || !container.contains(p)) return;
+      if (!p || !column.contains(p)) return;
       const n = Number(p.getAttribute("data-n"));
-      const from = Number(p.getAttribute("data-from") ?? 0);
       if (!Number.isInteger(n)) return;
-      const hit = wordAt({ chunks: heard.chunks }, n, from + range.startOffset);
+      const hit = wordAt({ chunks: heard.chunks }, n, range.startOffset);
       if (hit) {
         try {
           audio.currentTime = hit.t0 + 0.001;
@@ -219,8 +201,8 @@ export function useReadSync(opts: {
         }
       }
     };
-    container.addEventListener("click", onClick);
-    return () => container.removeEventListener("click", onClick);
+    column.addEventListener("click", onClick);
+    return () => column.removeEventListener("click", onClick);
   }, [opts.enabled, opts.manifest]);
 
   return { mark, treatment };
