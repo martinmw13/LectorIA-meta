@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { MSG_BAD_REQUEST } from "@/core/images";
 import { loadOzBook } from "@/server/books";
+import { MAX_IMAGE_BODY_BYTES } from "./body";
 import { handleImagesPost } from "./handler";
 
 const REQUIRED = [
@@ -84,6 +86,87 @@ describe("handleImagesPost", () => {
     } finally {
       warnSpy.mockRestore();
     }
+  });
+
+  it("rejects an oversize content-length with 413 and no raw error", async () => {
+    const marker = "raw-secret-marker-oversize";
+    const res = await handleImagesPost(
+      new Request("http://localhost/api/images", {
+        method: "POST",
+        headers: { "content-length": String(MAX_IMAGE_BODY_BYTES + 1) },
+        body: JSON.stringify({ kind: "passage", marker }),
+      }),
+    );
+    expect(res.status).toBe(413);
+    expect(await res.json()).toEqual({
+      status: "error",
+      code: "bad_request",
+      message: MSG_BAD_REQUEST,
+    });
+  });
+
+  it("rejects a lying small content-length with a big body", async () => {
+    const res = await handleImagesPost(
+      new Request("http://localhost/api/images", {
+        method: "POST",
+        headers: { "content-length": "10" },
+        body: "a".repeat(MAX_IMAGE_BODY_BYTES + 100),
+      }),
+    );
+    expect(res.status).toBe(413);
+    expect(await res.json()).toEqual({
+      status: "error",
+      code: "bad_request",
+      message: MSG_BAD_REQUEST,
+    });
+  });
+
+  it("rejects a big streamed body with no content-length", async () => {
+    const enc = new TextEncoder();
+    const res = await handleImagesPost(
+      new Request("http://localhost/api/images", {
+        method: "POST",
+        body: new ReadableStream({
+          start(c) {
+            c.enqueue(enc.encode("raw-secret-marker-stream".padEnd(MAX_IMAGE_BODY_BYTES + 100, "x")));
+            c.close();
+          },
+        }),
+        duplex: "half",
+      } as RequestInit),
+    );
+    expect(res.status).toBe(413);
+    const json = await res.json();
+    expect(json).toEqual({ status: "error", code: "bad_request", message: MSG_BAD_REQUEST });
+    expect(JSON.stringify(json)).not.toContain("raw-secret-marker-stream");
+  });
+
+  it("treats a mid-upload client abort as 400 with a generic message", async () => {
+    const res = await handleImagesPost(
+      new Request("http://localhost/api/images", {
+        method: "POST",
+        body: new ReadableStream({
+          start(c) {
+            c.error(new Error("raw-secret-marker-abort"));
+          },
+        }),
+        duplex: "half",
+      } as RequestInit),
+    );
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json).toEqual({ status: "error", code: "bad_request", message: MSG_BAD_REQUEST });
+    expect(JSON.stringify(json)).not.toContain("raw-secret-marker-abort");
+  });
+
+  it("still parses a small body and rejects bad JSON with 400", async () => {
+    const invalid = await handleImagesPost(post({ kind: "nope" }));
+    expect(invalid.status).toBe(400);
+    const malformed = await handleImagesPost(
+      new Request("http://localhost/api/images", { method: "POST", body: "not json{" }),
+    );
+    expect(malformed.status).toBe(400);
+    expect(await malformed.json()).toMatchObject({ status: "error", code: "bad_request" });
   });
 
   it("returns generic text when KV throws", async () => {

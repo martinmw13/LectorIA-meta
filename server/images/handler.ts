@@ -2,6 +2,7 @@ import "server-only";
 import { loadOzBook } from "@/server/books";
 import { MSG_BAD_REQUEST, MSG_UNAVAILABLE, parseImageRequest, validateAgainstBook } from "@/core/images";
 import type { ImageRequest, ImageResponse } from "@/core/images";
+import { MAX_IMAGE_BODY_BYTES, readBodyCapped } from "./body";
 import { readImageEnv } from "./env";
 import { createRestKV } from "./kv";
 import { createBlobStore } from "./blob";
@@ -18,9 +19,17 @@ function toResponse(res: ImageResponse): { json: ImageResponse; status: number }
 }
 
 export async function handleImagesPost(req: Request): Promise<Response> {
+  const capped = await readBodyCapped(req, MAX_IMAGE_BODY_BYTES);
+  if (!capped.ok) {
+    return Response.json(
+      { status: "error", code: "bad_request", message: MSG_BAD_REQUEST } satisfies ImageResponse,
+      { status: capped.reason === "too_large" ? 413 : 400 },
+    );
+  }
+
   let parsed: ImageRequest;
   try {
-    parsed = parseImageRequest(await req.json());
+    parsed = parseImageRequest(JSON.parse(capped.text));
   } catch {
     return Response.json(
       { status: "error", code: "bad_request", message: MSG_BAD_REQUEST } satisfies ImageResponse,
