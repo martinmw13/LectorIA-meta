@@ -4,6 +4,8 @@
 
 import { truncateCaption } from "./helpers";
 import { PICTURE_COPY, PictureIcon } from "./picture-copy";
+import { PictureDraw } from "./picture-draw";
+import { usePictureSkin } from "./picture-skin";
 import type { InlineFigure } from "./use-pictures";
 
 export function SelectionPopover({
@@ -43,11 +45,12 @@ export function InlineFigureView({
   onOpen: (src: string, caption: string, opener: HTMLElement | null) => void;
   refCb: (el: HTMLElement | null) => void;
 }) {
+  const skin = usePictureSkin();
   if (figure.phase === "loading") {
     return (
       <figure className="genfig" data-fig={figure.id} ref={refCb as React.Ref<HTMLElement>}>
         <div className="genload" role="status">
-          {PICTURE_COPY.loading}
+          <PictureDraw skin={skin} />
         </div>
       </figure>
     );
@@ -70,6 +73,7 @@ export function InlineFigureView({
   return (
     <figure className="genfig" data-fig={figure.id} ref={refCb as React.Ref<HTMLElement>}>
       <img
+        className={`rv-${skin}`}
         src={url}
         alt={captioned}
         tabIndex={0}

@@ -177,7 +177,7 @@
 .cover-begin:focus-visible,
 .end-next:focus-visible,
 .pane-chapter:focus-visible,
-.pic-half:focus-visible,
+.pic-btn:focus-visible,
 .panels-x:focus-visible,
 .panel:focus-visible,
 .read-on:focus-visible {
@@ -258,47 +258,23 @@
   margin: 18px 0 24px;
 }
 
-/* Paired pane pill: two halves in one rounded pill. */
+/* Paired picture buttons: two frameless choices, no pill frame. */
 .pic-pair {
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
   display: inline-flex;
-  border: 1px solid var(--color-accent);
-  background: var(--color-surface);
-  border-radius: 999px;
-  overflow: hidden;
+  align-items: center;
+  gap: 6px;
   white-space: nowrap;
   max-width: calc(100% - 24px);
 }
 
-.pic-half {
-  font-family: var(--font-ui);
-  font-size: 12.5px;
-  color: var(--color-accent);
-  background: none;
-  border: 0;
-  padding: 8px 14px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.pic-half + .pic-half {
-  border-left: 1px solid var(--color-accent);
-}
-
-.pic-half:hover {
-  color: var(--color-accent-hover);
-  background: var(--color-surface-soft);
-}
-
-.pic-half svg {
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 1.5;
+.pic-pair .pic-btn + .pic-btn {
+  border-left: 1px solid var(--color-border);
+  padding-left: 12px;
+  margin-left: 6px;
 }
 
 .pane-chapter {
