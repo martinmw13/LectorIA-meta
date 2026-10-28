@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { highlightStyleFor } from "./highlight-style";
 
@@ -16,5 +17,10 @@ describe("highlightStyleFor", () => {
     expect(highlightStyleFor("ink-doodle")).toBe("engraving");
     expect(highlightStyleFor("")).toBe("engraving");
     expect(highlightStyleFor("noir")).toBe("engraving");
+  });
+
+  it("keeps body text positioned so read-aloud marks paint behind it", () => {
+    const css = readFileSync("app/styles/folio.css", "utf8");
+    expect(css).toMatch(/\.body-text\s*\{[^}]*position:\s*relative/);
   });
 });

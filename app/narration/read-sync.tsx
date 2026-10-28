@@ -276,8 +276,9 @@ export function ReadMark({ mark, treatment }: { mark: MarkRect | null; treatment
       </span>
     );
   }
-  // Drawn before the scene sections, which paint above it, so the marks
-  // sit behind the glyphs and never touch their font or layout.
+  // Rendered before the .body-text blocks; .body-text is positioned,
+  // so as the later sibling it paints above the marks and glyphs sit on top.
+  // Background and shadow only, so font and layout never change.
   return (
     <>
       {mark.lines.map((l) => (
