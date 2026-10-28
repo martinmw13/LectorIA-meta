@@ -59,9 +59,9 @@ async function loadEpub(
 
 export async function runIngest(
   ctx: StepCtx,
-  deps?: { fetchFn?: typeof fetch; judge?: Judge },
+  deps?: { fetchFn?: typeof fetch; judge?: Judge; config?: BookConfig },
 ): Promise<Book> {
-  const config = bookConfig(ctx.bookKey);
+  const config = deps?.config ?? bookConfig(ctx.bookKey);
   if (config.format === "epub") {
     const bytes = await loadEpub(ctx.bookKey, config.gutenberg, deps?.fetchFn ?? fetch);
     const { title, sections } = readEpubSections(bytes, (text, type) => {
@@ -70,9 +70,16 @@ export async function runIngest(
     });
     void title;
     const cleaned = await cleanSections(config.title, sections, deps?.judge);
-    writeFileSync(join(ctx.dir, "clean-report.json"), `${JSON.stringify(cleaned.report)}\n`);
+    if (cleaned.chapters.length === 0) throw new Error("no chapters found after cleaning");
     const drafts = cleaned.chapters.map((c) => ({ title: c.title, paragraphs: c.paragraphs }));
-    return writeBook(ctx, { title: config.title, author: config.author, gutenberg: config.gutenberg, chapters: drafts });
+    return writeBook(
+      ctx,
+      { title: config.title, author: config.author, gutenberg: config.gutenberg, chapters: drafts },
+      () => {
+        mkdirSync(ctx.dir, { recursive: true });
+        writeFileSync(join(ctx.dir, "clean-report.json"), `${JSON.stringify(cleaned.report)}\n`);
+      },
+    );
   }
   const raw = await loadRaw(ctx.bookKey, config.gutenberg, deps?.fetchFn ?? fetch);
   const drafts = splitChapters(stripGutenberg(raw));
@@ -83,6 +90,7 @@ export async function runIngest(
 function writeBook(
   ctx: StepCtx,
   input: { title: string; author: string; gutenberg: number; chapters: { title: string; paragraphs: string[] }[] },
+  afterDriftCheck?: () => void,
 ): Book {
   const book = { ...buildBook({ id: ctx.bookKey, ...input }), textVersion: "" };
   book.textVersion = textVersionFor(book);
@@ -95,6 +103,7 @@ function writeBook(
       throw new Error(`textVersion drift for ${ctx.bookKey} (rerun with --force to overwrite)`);
     }
   }
+  afterDriftCheck?.();
   writeFileSync(path, `${JSON.stringify(book)}\n`);
   return book;
 }
