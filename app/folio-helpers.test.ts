@@ -176,7 +176,8 @@ describe("loadImageStylePref null and effectiveImageStylePref", () => {
   it("lists every skin default in the picker presets", () => {
     const ids = new Set(STYLE_PRESETS.map((p) => p.id));
     for (const id of Object.values(SKIN_DEFAULT_IMAGE_STYLE)) {
-      expect(ids.has(id)).toBe(true);
+      expect(id).toBeDefined();
+      if (id !== undefined) expect(ids.has(id)).toBe(true);
     }
   });
 });

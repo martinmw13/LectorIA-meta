@@ -5,7 +5,6 @@ import {
   ImageStyleError,
   MAX_CUSTOM_STYLE_CHARS,
   SKIN_DEFAULT_IMAGE_STYLE,
-  SKIN_IDS,
   normalizeCustomStyle,
   parseStyleChoice,
   resolveEffectiveStyle,
@@ -156,27 +155,17 @@ describe("styleSegment", () => {
 });
 
 describe("skin defaults", () => {
-  it("covers every skin id with a valid preset id", () => {
-    expect([...SKIN_IDS]).toEqual([
-      "engraving",
-      "watercolor",
-      "ink",
-      "realistic",
-      "comic",
-      "anime",
-    ]);
-    const ids = new Set(IMAGE_STYLE_PRESETS.map((p) => p.id));
-    for (const skin of SKIN_IDS) {
-      expect(ids.has(SKIN_DEFAULT_IMAGE_STYLE[skin])).toBe(true);
-    }
+  it("maps only the three decided skins to valid presets", () => {
     expect(SKIN_DEFAULT_IMAGE_STYLE).toEqual({
       engraving: "denslow",
       watercolor: "watercolor",
       ink: "pen-pencil",
-      realistic: "realistic",
-      comic: "comic",
-      anime: "anime",
     });
+    const ids = new Set(IMAGE_STYLE_PRESETS.map((p) => p.id));
+    for (const id of Object.values(SKIN_DEFAULT_IMAGE_STYLE)) {
+      expect(id).toBeDefined();
+      if (id !== undefined) expect(ids.has(id)).toBe(true);
+    }
   });
 });
 
@@ -191,23 +180,41 @@ describe("resolveEffectiveStyle", () => {
   });
 
   it("falls back to the skin default", () => {
+    expect(resolveEffectiveStyle(undefined, "engraving")).toEqual({ preset: "denslow" });
     expect(resolveEffectiveStyle(undefined, "watercolor")).toEqual({ preset: "watercolor" });
     expect(resolveEffectiveStyle(undefined, "ink")).toEqual({ preset: "pen-pencil" });
-    expect(resolveEffectiveStyle(undefined, "anime")).toEqual({ preset: "anime" });
   });
 
-  it("ignores an unknown skin", () => {
-    expect(resolveEffectiveStyle(undefined, "nope")).toEqual({ preset: "denslow" });
-  });
-
-  it("ignores prototype names as skins", () => {
-    for (const skin of ["constructor", "toString", "hasOwnProperty", "__proto__"]) {
+  it("falls back to denslow for default, unmapped, or unknown skins", () => {
+    for (const skin of [
+      "default",
+      "comic",
+      "anime-ghibli",
+      "realistic",
+      "nope",
+      "constructor",
+      "toString",
+      "hasOwnProperty",
+      "__proto__",
+    ]) {
       expect(resolveEffectiveStyle(undefined, skin)).toEqual({ preset: "denslow" });
     }
   });
 
   it("falls back to denslow with no skin", () => {
     expect(resolveEffectiveStyle(undefined, undefined)).toEqual({ preset: "denslow" });
+  });
+
+  it("keys a skin default like the same explicit pick", () => {
+    const fromSkin = resolveEffectiveStyle(undefined, "watercolor");
+    expect(fromSkin).toEqual({ preset: "watercolor" });
+    const explicit = resolveEffectiveStyle({ preset: "watercolor" }, "watercolor");
+    expect(explicit).toEqual(fromSkin);
+    const toSegment = (c: typeof fromSkin) =>
+      "preset" in c
+        ? styleSegment({ kind: "preset", id: c.preset })
+        : styleSegment({ kind: "custom", text: c.custom });
+    expect(toSegment(fromSkin)).toBe(toSegment({ preset: "watercolor" }));
   });
 });
 
@@ -230,7 +237,7 @@ describe("styleDescriptorLine", () => {
       expect(line).toContain("No text, no captions, no lettering in the image.");
     }
     expect(styleDescriptorLine({ kind: "preset", id: "realistic" })).toContain(
-      "shallow depth of field",
+      "realistic painterly illustration",
     );
   });
 

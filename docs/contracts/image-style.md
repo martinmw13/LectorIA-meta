@@ -17,27 +17,30 @@ only (stored images keep the style they were made with).
 | id | label | skin default for |
 |----|-------|------------------|
 | `denslow` | Denslow ink (1900), the default | `engraving` |
-| `realistic` | Realistic | `realistic` |
-| `anime` | Anime | `anime` |
+| `realistic` | Realistic | — |
+| `anime` | Anime | — |
 | `pencil` | Pencil sketch | — |
 | `watercolor` | Watercolor | `watercolor` |
 | `storybook` | Storybook | — |
-| `comic` | Comic book | `comic` |
+| `comic` | Comic book | — |
 | `oil` | Oil painting | — |
 | `woodcut` | Woodcut | — |
 | `pen-pencil` | Pen and pencil | `ink` |
 
 ## Skin defaults
 
-The skin-to-preset map lives only in `SKIN_DEFAULT_IMAGE_STYLE`
-(`core/image-style.ts`): `engraving` to `denslow`, `watercolor` to
-`watercolor`, `ink` to `pen-pencil`, `realistic` to `realistic`,
-`comic` to `comic`, `anime` to `anime`. A future skin adds one entry
-there. `resolveEffectiveStyle(explicit, skin)` picks the explicit
-sticky choice first, else the active skin's default (unknown skins
-ignored), else `{ preset: "denslow" }`. Today no skin is passed, so
-the effective style stays Denslow. The request always sends the
-resolved style, or nothing for Denslow.
+The final skin list is `engraving`, `watercolor`, `ink`, `comic`,
+and `anime-ghibli`. The skin-to-preset map lives only in
+`SKIN_DEFAULT_IMAGE_STYLE` (`core/image-style.ts`) and maps three
+of them today: `engraving` to `denslow`, `watercolor` to
+`watercolor`, `ink` to `pen-pencil`. `comic` and `anime-ghibli`
+hold reserved commented slots, not active entries. Skin ids are
+owned by `app/skin.ts`. `resolveEffectiveStyle(explicit, skin)`
+picks the explicit sticky choice first, else the active skin's
+default, else `{ preset: "denslow" }`. Unmapped or unknown skins
+fall back to Denslow. To map a decided skin, uncomment its slot
+with a preset id that exists in `IMAGE_STYLE_PRESETS`. The request
+always sends the resolved style, or nothing for Denslow.
 
 Custom text is normalized server-side: NFKC, control and format chars
 to spaces, whitespace collapsed, trimmed, lowercased. It must be 2-60

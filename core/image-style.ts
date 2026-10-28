@@ -9,7 +9,7 @@ export interface ImageStylePreset {
 
 export const IMAGE_STYLE_PRESETS = [
   { id: "denslow", label: "Denslow ink (1900)", descriptor: "faithful 1900 first-edition book illustration" },
-  { id: "realistic", label: "Realistic", descriptor: "photorealistic cinematic illustration, natural cinematic lighting, shallow depth of field, lifelike textures, period-accurate 1900 Kansas and Oz costume, Dorothy in blue-and-white gingham" },
+  { id: "realistic", label: "Realistic", descriptor: "realistic painterly illustration, natural light, lifelike detail" },
   { id: "anime", label: "Anime", descriptor: "anime-style illustration, clean line art, cel shading, vivid color" },
   { id: "pencil", label: "Pencil sketch", descriptor: "graphite pencil sketch on cream paper, fine hatching, mostly monochrome" },
   { id: "watercolor", label: "Watercolor", descriptor: "soft storybook watercolor painting, translucent washes, gentle palette, light pencil underdrawing, visible paper texture" },
@@ -26,17 +26,13 @@ export type ImageStylePresetId = (typeof IMAGE_STYLE_PRESETS)[number]["id"];
 
 export const DEFAULT_IMAGE_STYLE = "denslow" as const;
 
-// Prototype skins only, not built in the UI. One entry per skin maps it
-// to its default preset; a future skin adds one entry here.
-export const SKIN_IDS = ["engraving", "watercolor", "ink", "realistic", "comic", "anime"] as const;
-export type SkinId = (typeof SKIN_IDS)[number];
-export const SKIN_DEFAULT_IMAGE_STYLE: Record<SkinId, ImageStylePresetId> = {
+// Skin ids are owned by app/skin.ts; this maps only the decided skins.
+export const SKIN_DEFAULT_IMAGE_STYLE: Readonly<Partial<Record<string, ImageStylePresetId>>> = {
   engraving: "denslow",
   watercolor: "watercolor",
   ink: "pen-pencil",
-  realistic: "realistic",
-  comic: "comic",
-  anime: "anime",
+  // comic: "comic",
+  // "anime-ghibli": <new anime preset, descriptor must describe the look, never name Ghibli or any living studio/artist>,
 };
 
 // Explicit sticky pick wins; else the active skin's default (unknown or
@@ -47,7 +43,8 @@ export function resolveEffectiveStyle(
 ): StyleChoice {
   if (explicit !== undefined) return explicit;
   if (skin !== undefined && Object.hasOwn(SKIN_DEFAULT_IMAGE_STYLE, skin)) {
-    return { preset: SKIN_DEFAULT_IMAGE_STYLE[skin as SkinId] };
+    const id = SKIN_DEFAULT_IMAGE_STYLE[skin];
+    if (id !== undefined) return { preset: id };
   }
   return { preset: DEFAULT_IMAGE_STYLE };
 }
