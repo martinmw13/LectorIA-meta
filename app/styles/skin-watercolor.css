@@ -13,7 +13,8 @@ html[data-skin="watercolor"] {
 
 html[data-skin="watercolor"]:not([data-theme="dark"]) {
   --color-text: #1f2a44;
-  --color-text-muted: #5d6a85;
+  --color-text-muted-base: #5d6a85;
+  --color-text-muted: var(--color-text-muted-base);
   --color-surface: #fbf8f1;
   --color-surface-soft: #fffdf8;
   --color-border: rgba(127, 176, 255, 0.45);

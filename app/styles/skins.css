@@ -6,7 +6,8 @@
 
 html[data-skin="pencil"][data-theme="light"] {
   --color-text: #2c2f34;
-  --color-text-muted: #6b6f76;
+  --color-text-muted-base: #6b6f76;
+  --color-text-muted: var(--color-text-muted-base);
   --color-surface: #f6f6f4;
   --color-surface-soft: #ececea;
   --color-border: #d6d6d1;
@@ -49,7 +50,8 @@ html[data-skin="comic"][data-theme="light"] .kicker {
 
 html[data-skin="chihiro"][data-theme="light"] {
   --color-text: #2a2a33;
-  --color-text-muted: #6e625a;
+  --color-text-muted-base: #6e625a;
+  --color-text-muted: var(--color-text-muted-base);
   --color-surface: #fff7ec;
   --color-surface-soft: #f7ead8;
   --color-border: #ebd9c2;

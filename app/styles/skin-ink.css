@@ -14,7 +14,8 @@ html[data-skin="ink"] {
 
 html[data-skin="ink"]:not([data-theme="dark"]) {
   --color-text: #1b1f2a;
-  --color-text-muted: #5b6474;
+  --color-text-muted-base: #5b6474;
+  --color-text-muted: var(--color-text-muted-base);
   --color-surface: #fffef9;
   --color-surface-soft: #ffffff;
   --color-border: rgba(8, 102, 255, 0.45);

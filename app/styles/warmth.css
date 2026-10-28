@@ -26,25 +26,26 @@ html[data-theme="dark"] body::before {
 
 /* Muted text slides toward warm brown as the paper deepens, so it keeps
    >= 4.5:1 at full warmth. Body text keeps >= 8:1 unchanged. Same
-   selectors as the skin tokens; this file loads later, so it wins. */
+   selectors as the skin tokens; this file loads later, so it wins.
+   The base comes from each skin's --color-text-muted-base. */
 html[data-skin="engraving"]:not([data-theme="dark"]) {
-  --color-text-muted: color-mix(in srgb, #75684f, #2b1a0a calc(5% + var(--warmth) * 40%));
+  --color-text-muted: color-mix(in srgb, var(--color-text-muted-base), #2b1a0a calc(5% + var(--warmth) * 40%));
 }
 
 html[data-skin="watercolor"]:not([data-theme="dark"]) {
-  --color-text-muted: color-mix(in srgb, #5d6a85, #2b1a0a calc(var(--warmth) * 30%));
+  --color-text-muted: color-mix(in srgb, var(--color-text-muted-base), #2b1a0a calc(var(--warmth) * 30%));
 }
 
 html[data-skin="ink"]:not([data-theme="dark"]) {
-  --color-text-muted: color-mix(in srgb, #5b6474, #2b1a0a calc(var(--warmth) * 22%));
+  --color-text-muted: color-mix(in srgb, var(--color-text-muted-base), #2b1a0a calc(var(--warmth) * 22%));
 }
 
 html[data-skin="pencil"][data-theme="light"] {
-  --color-text-muted: color-mix(in srgb, #6b6f76, #2b1a0a calc(var(--warmth) * 38%));
+  --color-text-muted: color-mix(in srgb, var(--color-text-muted-base), #2b1a0a calc(var(--warmth) * 38%));
 }
 
 html[data-skin="chihiro"][data-theme="light"] {
-  --color-text-muted: color-mix(in srgb, #6e625a, #2b1a0a calc(var(--warmth) * 26%));
+  --color-text-muted: color-mix(in srgb, var(--color-text-muted-base), #2b1a0a calc(var(--warmth) * 26%));
 }
 
 /* Pencil lays an opaque sheet over the paper; warm the sheet too. */
