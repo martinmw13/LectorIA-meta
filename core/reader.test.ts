@@ -13,6 +13,10 @@ import {
   navReducer,
   nextSceneEntry,
   paginateScene,
+  panelCaption,
+  subPageCount,
+  subPageKind,
+  textPageAt,
 } from "./reader";
 import type { AnalyzedScene, Book, Vector8 } from "./types";
 import { EMOTIONS } from "./types";
@@ -245,6 +249,73 @@ describe("buildReaderModel", () => {
     const cross = [...scenes];
     cross[1] = scene({ id: "c1s2", start_n: 3, end_n: 4, final: null, error: "x" });
     expect(() => buildReaderModel(book, { scenes: cross })).toThrow();
+  });
+});
+
+describe("chapter cover and end pages", () => {
+  it("marks the first and last scene of each chapter", () => {
+    const model = buildReaderModel(book, { scenes });
+    expect(buildSceneView(model, "c1s1", 3)).toMatchObject({ isChapterFirst: true, isChapterLast: false });
+    expect(buildSceneView(model, "c1s2", 3)).toMatchObject({ isChapterFirst: false, isChapterLast: true });
+    expect(buildSceneView(model, "c2s1", 3)).toMatchObject({ isChapterFirst: true, isChapterLast: true });
+  });
+
+  it("puts the cover at index 0 and the end page last", () => {
+    expect(subPageCount(2, true, false)).toBe(3);
+    expect(subPageCount(2, false, true)).toBe(3);
+    expect(subPageCount(1, true, true)).toBe(3);
+    expect(subPageCount(2, false, false)).toBe(2);
+    expect(subPageKind(0, 2, true, false)).toBe("cover");
+    expect(subPageKind(1, 2, true, false)).toBe("text");
+    expect(subPageKind(2, 2, false, true)).toBe("end");
+    expect(subPageKind(0, 1, true, true)).toBe("cover");
+    expect(subPageKind(2, 1, true, true)).toBe("end");
+    expect(textPageAt(1, true)).toBe(0);
+    expect(textPageAt(2, true)).toBe(1);
+    expect(textPageAt(0, false)).toBe(0);
+  });
+
+  it("walks cover, text, and end pages through one reducer", () => {
+    // c1s1 has a cover + 2 text pages, c1s2 has 1 text page + end.
+    const withCovers = buildNavIndex([
+      { sceneId: "c1s1", pages: subPageCount(2, true, false) },
+      { sceneId: "c1s2", pages: subPageCount(1, false, true) },
+    ]);
+    // Back from text page 1 returns to the cover.
+    expect(navReducer({ sceneId: "c1s1", page: 1 }, { kind: "prev" }, withCovers)).toEqual({
+      sceneId: "c1s1",
+      page: 0,
+    });
+    // Back from the cover lands on the previous chapter's last page.
+    expect(navReducer({ sceneId: "c1s2", page: 0 }, { kind: "prev" }, withCovers)).toEqual({
+      sceneId: "c1s1",
+      page: 2,
+    });
+    // enterAtEnd lands on the real last page (the end page here).
+    expect(navReducer({ sceneId: "c1s1", page: 0 }, { kind: "goto", sceneId: "c1s2", atEnd: true }, withCovers)).toEqual({
+      sceneId: "c1s2",
+      page: 1,
+    });
+  });
+});
+
+describe("panelCaption", () => {
+  it("keeps a short summary whole", () => {
+    expect(panelCaption("Dorothy wakes to bright sunshine.")).toBe("Dorothy wakes to bright sunshine.");
+  });
+
+  it("takes the first clause of a long summary", () => {
+    const out = panelCaption(
+      "Anxious watching turns to alarm as winds gather from north and south; Uncle Henry runs to the stock while Aunt Em screams.",
+    );
+    expect(out).toBe("Anxious watching turns to alarm as winds gather from north and south;");
+  });
+
+  it("cuts at a word boundary to 90 chars with an ellipsis", () => {
+    const out = panelCaption(`Dorothy ${"walks ".repeat(30)}on quietly.`);
+    expect(out.length).toBeLessThanOrEqual(90);
+    expect(out.endsWith("…")).toBe(true);
+    expect(out).not.toMatch(/ $/);
   });
 });
 
