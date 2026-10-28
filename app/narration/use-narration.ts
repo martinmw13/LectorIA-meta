@@ -26,10 +26,6 @@ export interface NarrationSceneRef {
   endN: number;
 }
 
-function sameScene(a: NarrationSceneRef | null, b: NarrationSceneRef): boolean {
-  return a !== null && a.id === b.id && a.ch === b.ch && a.startN === b.startN && a.endN === b.endN;
-}
-
 function useDuckRamp(target: number): number {
   const [duck, setDuck] = useState(1);
   const duckRef = useRef(1);
@@ -81,6 +77,7 @@ export function useNarrationController(opts: {
   const wantPlay = useRef(false);
   const pendingSeek = useRef<number | null>(null);
   const advancingRef = useRef(false);
+  const prefetching = useRef(new Set<number>());
 
   // Stored prefs apply after the server-matching first render.
   useEffect(() => {
@@ -147,8 +144,38 @@ export function useNarrationController(opts: {
       });
   }, [prefs.on, scene]);
 
+  // On a chapter's last scene the next manifest is fetched ahead, so the
+  // boundary advance usually finds it cached. It only fills the cache:
+  // status and the current fetch (with its loadToken guard) stay untouched.
+  useEffect(() => {
+    if (!prefs.on || scene === null) return;
+    const order = scenesRef.current;
+    const at = order.findIndex((s) => s.id === scene.id);
+    const next = at >= 0 ? order[at + 1] : undefined;
+    if (!next || next.ch === scene.ch || cacheRef.current.has(next.ch)) return;
+    const entry = entriesRef.current.find((e) => e.ch === next.ch);
+    const ch = next.ch;
+    if (!entry || prefetching.current.has(ch)) return;
+    prefetching.current.add(ch);
+    fetch(entry.manifest)
+      .then((res) => {
+        if (!res.ok) throw new Error(`narration ${res.status}`);
+        return res.json();
+      })
+      .then((json: unknown) => {
+        cacheRef.current.set(ch, parseChapterNarration(json));
+      })
+      .catch(() => {
+        // The boundary advance fetches it again through the main path.
+      })
+      .finally(() => {
+        prefetching.current.delete(ch);
+      });
+  }, [prefs.on, scene]);
+
   // Seek to the scene span, swapping chapter audio when needed. A fresh
-  // src seeks on loadedmetadata; a kept src seeks at once.
+  // src seeks on loadedmetadata; a kept src seeks at once. An explicit
+  // position (click-to-seek) wins over the span start.
   const seekScene = useCallback(() => {
     const audio = audioRef.current;
     const current = sceneRef.current;
@@ -156,15 +183,18 @@ export function useNarrationController(opts: {
     if (!audio || !current || !heard) return;
     const span = sceneSpan(heard, current.startN, current.endN);
     if (!span) return;
+    const at = pendingSeek.current;
+    pendingSeek.current = null;
+    const pos = at ?? span.startSec;
     if (audio.dataset.key !== heard.key) {
-      pendingSeek.current = span.startSec;
+      pendingSeek.current = pos;
       audio.dataset.key = heard.key;
       audio.src = heard.src;
     } else {
       try {
-        audio.currentTime = span.startSec;
+        audio.currentTime = pos;
       } catch {
-        pendingSeek.current = span.startSec;
+        pendingSeek.current = pos;
       }
     }
   }, []);
@@ -182,14 +212,27 @@ export function useNarrationController(opts: {
   }, [seekScene]);
 
   // Scene moves seek at once; playback resumes when the manifest lands.
+  // A self-advance inside one chapter never seeks: that audio is
+  // continuous, so the voice just keeps playing into the next scene.
   const prevSceneId = useRef<string | null>(null);
+  const prevSceneCh = useRef<number | null>(null);
   useEffect(() => {
     if (scene !== null && prevSceneId.current !== scene.id) {
+      // A paused advance (the chapter ended mid-scene) falls through to
+      // the seek below, so the voice resumes at the next span start.
+      const keepPlaying =
+        advancingRef.current &&
+        prevSceneCh.current === scene.ch &&
+        pendingSeek.current === null &&
+        audioRef.current !== null &&
+        !audioRef.current.paused;
       prevSceneId.current = scene.id;
+      prevSceneCh.current = scene.ch;
       advancingRef.current = false;
+      if (keepPlaying) return;
       if (cacheRef.current.get(scene.ch) !== undefined) {
-        seekScene();
         if (wantPlay.current && prefsRef.current.on) playCurrent();
+        else seekScene();
       }
     }
   }, [scene, manifest, seekScene, playCurrent]);
@@ -216,40 +259,34 @@ export function useNarrationController(opts: {
         pendingSeek.current = null;
       }
     };
-    const onTime = () => {
+    // The one advance path: the span watchdog (0.15 s early) and the
+    // chapter end both land here. Events for a chapter whose manifest is
+    // missing, or whose audio is not the one playing, are ignored, so a
+    // late `ended` can never skip the next chapter's first scene.
+    const advance = () => {
       const current = sceneRef.current;
-      if (advancingRef.current || !current || audio.paused) return;
+      if (advancingRef.current || !current) return;
       const heard = cacheRef.current.get(current.ch);
-      if (!heard) return;
-      const span = sceneSpan(heard, current.startN, current.endN);
-      if (span !== null && audio.currentTime >= span.endSec - 0.15) {
-        advancingRef.current = true;
-        const order = scenesRef.current;
-        const at = order.findIndex((s) => s.id === current.id);
-        const next = at >= 0 ? order[at + 1] : undefined;
-        if (next === undefined) {
-          wantPlay.current = false;
-          audio.pause();
-          advancingRef.current = false;
-          return;
-        }
-        // The voice moves on by itself; the reader's scroll never steers it.
-        setScene(next);
-      }
-    };
-    const onEnded = () => {
-      if (advancingRef.current) return;
-      advancingRef.current = true;
-      const current = sceneRef.current;
+      if (!heard || audio.dataset.key !== heard.key) return;
       const order = scenesRef.current;
-      const at = current !== null ? order.findIndex((s) => s.id === current.id) : -1;
+      const at = order.findIndex((s) => s.id === current.id);
       const next = at >= 0 ? order[at + 1] : undefined;
       if (next === undefined) {
         wantPlay.current = false;
-        advancingRef.current = false;
+        audio.pause();
         return;
       }
+      // The voice moves on by itself; the reader's scroll never steers it.
+      advancingRef.current = true;
       setScene(next);
+    };
+    const onTime = () => {
+      const current = sceneRef.current;
+      if (!current || audio.paused) return;
+      const heard = cacheRef.current.get(current.ch);
+      if (!heard || audio.dataset.key !== heard.key) return;
+      const span = sceneSpan(heard, current.startN, current.endN);
+      if (span !== null && audio.currentTime >= span.endSec - 0.15) advance();
     };
     const onError = () => {
       setStatus("error");
@@ -259,14 +296,14 @@ export function useNarrationController(opts: {
     audio.addEventListener("pause", onPause);
     audio.addEventListener("loadedmetadata", onMeta);
     audio.addEventListener("timeupdate", onTime);
-    audio.addEventListener("ended", onEnded);
+    audio.addEventListener("ended", advance);
     audio.addEventListener("error", onError);
     return () => {
       audio.removeEventListener("play", onPlay);
       audio.removeEventListener("pause", onPause);
       audio.removeEventListener("loadedmetadata", onMeta);
       audio.removeEventListener("timeupdate", onTime);
-      audio.removeEventListener("ended", onEnded);
+      audio.removeEventListener("ended", advance);
       audio.removeEventListener("error", onError);
     };
   }, []);
@@ -294,10 +331,6 @@ export function useNarrationController(opts: {
     }
   }, [prefs.volume, status]);
 
-  const registerScene = useCallback((next: NarrationSceneRef) => {
-    setScene((prev) => (sameScene(prev, next) ? prev : next));
-  }, []);
-
   // Press play at the live scene: the scene under the reading line, at
   // its span start — or where it paused when still in that scene. The
   // live scene keeps following scroll only; narration never sets it.
@@ -308,6 +341,8 @@ export function useNarrationController(opts: {
       audio?.pause();
       return;
     }
+    // A fresh press supersedes any click-to-seek still waiting on a fetch.
+    pendingSeek.current = null;
     if (!prefsRef.current.on) {
       persist({ on: true, volume: prefsRef.current.volume });
     }
@@ -319,7 +354,7 @@ export function useNarrationController(opts: {
       wantPlay.current = true;
       return;
     }
-    if (!sameScene(sceneRef.current, target)) {
+    if (sceneRef.current?.id !== target.id) {
       setScene(target);
       wantPlay.current = true;
       return;
@@ -343,17 +378,29 @@ export function useNarrationController(opts: {
     [],
   );
 
-  const setOn = useCallback(
-    (on: boolean) => {
-      if (!on) {
-        wantPlay.current = false;
-        audioRef.current?.pause();
+  // Click-to-seek: the scene holding paragraph n becomes current and
+  // the voice jumps to t. Live-chapter audio seeks at once; a chapter
+  // swap (or a manifest still loading) seeks through pendingSeek once
+  // ready. Without t the scene starts at its span start.
+  const seekTo = useCallback((n: number, t?: number) => {
+    const target = scenesRef.current.find((s) => s.startN <= n && n <= s.endN);
+    if (!target) return;
+    if (t !== undefined) pendingSeek.current = t;
+    if (sceneRef.current?.id === target.id) {
+      const audio = audioRef.current;
+      const heard = cacheRef.current.get(target.ch);
+      if (t !== undefined && audio && heard && audio.dataset.key === heard.key) {
+        pendingSeek.current = null;
+        try {
+          audio.currentTime = t;
+        } catch {
+          pendingSeek.current = t;
+        }
       }
-      persist({ on, volume: prefsRef.current.volume });
-      if (on) wantPlay.current = true;
-    },
-    [],
-  );
+      return;
+    }
+    setScene(target);
+  }, []);
 
   const span =
     scene !== null && manifest !== null ? sceneSpan(manifest, scene.startN, scene.endN) : null;
@@ -369,10 +416,9 @@ export function useNarrationController(opts: {
     scene,
     manifest,
     span,
-    registerScene,
     toggle,
     setVolume,
-    setOn,
+    seekTo,
   };
 }
 

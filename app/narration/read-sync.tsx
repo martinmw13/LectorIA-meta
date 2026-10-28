@@ -42,6 +42,7 @@ export function useReadSync(opts: {
   manifest: ChapterNarration | null;
   span: { startSec: number; endSec: number } | null;
   columnRef: RefObject<HTMLElement | null>;
+  seekTo: (n: number, t?: number) => void;
 }): { mark: MarkRect | null; treatment: HighlightTreatment } {
   const [treatment, setTreatment] = useState<HighlightTreatment>(skinTreatment);
   const [mark, setMark] = useState<MarkRect | null>(null);
@@ -176,15 +177,17 @@ export function useReadSync(opts: {
     });
   }, [active, opts.manifest, treatment]);
 
-  // Click a word to seek there, only while narration runs.
+  // Click a word to seek there, only while narration runs. The
+  // controller owns the audio element, so the click only forwards
+  // (paragraph, time); a drag selection (Picture this) never seeks.
   useEffect(() => {
-    const { enabled, columnRef, audioRef } = live.current;
+    const { enabled, columnRef } = live.current;
     const column = columnRef.current;
     if (!enabled || !column) return;
     const onClick = (event: MouseEvent) => {
-      const audio = audioRef.current;
+      if (window.getSelection()?.isCollapsed === false) return;
       const heard = live.current.manifest;
-      if (!audio || !heard) return;
+      if (!heard) return;
       const doc = column.ownerDocument;
       const atPoint = doc.caretRangeFromPoint?.bind(doc);
       const range = atPoint ? atPoint(event.clientX, event.clientY) : null;
@@ -195,12 +198,12 @@ export function useReadSync(opts: {
       if (!Number.isInteger(n)) return;
       const hit = wordAt({ chunks: heard.chunks }, n, range.startOffset);
       if (hit) {
-        try {
-          audio.currentTime = hit.t0 + 0.001;
-        } catch {
-          // Past the end; the watchdog advances on timeupdate.
-        }
+        live.current.seekTo(n, hit.t0 + 0.001);
+        return;
       }
+      // Another chapter: the word time is unknown until its manifest
+      // loads, so the voice starts at that scene's span start.
+      if (!heard.chunks.some((c) => c.n === n)) live.current.seekTo(n);
     };
     column.addEventListener("click", onClick);
     return () => column.removeEventListener("click", onClick);
