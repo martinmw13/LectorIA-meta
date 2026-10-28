@@ -9,10 +9,10 @@ export type RainState = 0 | 1 | 2 | 3;
 // geometry, viewBox 0 0 100 100. Ink/paint colours live in CSS custom
 // properties (ambience.css, per skin) so dark theme can override them;
 // level accent colours (halos, bolt fills, washes) stay literal.
-const CLOUD =
+export const CLOUD =
   "M30 64C18 64 14 53 21 47C19 36 31 29 40 34C44 22 62 20 68 32C80 30 89 41 84 50C90 56 86 64 77 64Z";
 const CLOUD_IN = "M33 58C27 57 26 51 30 48M47 33C51 27 59 27 62 33M70 40C76 40 80 45 79 50";
-const DROPS: Array<Array<[number, number]>> = [
+export const DROPS: Array<Array<[number, number]>> = [
   [],
   [
     [40, 73],
@@ -37,7 +37,7 @@ const DROPS: Array<Array<[number, number]>> = [
     [76, 92],
   ],
 ];
-const BOLT = "M57 62L47 79H55L49 95L66 74H57.5L63 62Z";
+export const BOLT = "M57 62L47 79H55L49 95L66 74H57.5L63 62Z";
 
 function rays(n: number, r1: number, r2: number, jit = 0): string {
   return Array.from({ length: n }, (_, i) => {

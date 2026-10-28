@@ -63,7 +63,7 @@ describe("rain button still and frameless", () => {
     expect(button).toMatch(/data-art=\{artSkin\}/);
     expect(button).toMatch(/skin=\{artSkin\}/);
     expect(css).not.toMatch(/html\[data-skin/);
-    for (const art of ["engraving", "watercolor", "ink"]) {
+    for (const art of ["engraving", "watercolor", "ink", "pencil", "comic", "chihiro"]) {
       expect(css).toMatch(new RegExp(`\\.skip\\.rain\\[data-art="${art}"\\]`));
     }
     expect(css).toMatch(/html\[data-theme="dark"\] \.player \.skip\.rain\[data-art=/);

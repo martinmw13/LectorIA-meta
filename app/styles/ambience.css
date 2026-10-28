@@ -99,6 +99,47 @@
   --rain-halo: #e5484d;
 }
 
+/* Pencil and chihiro are paintings (public/art/skins) with vector drops
+   and glints on top; comic is a halftone burst inked in --rain-k. */
+.player .skip.rain[data-art="pencil"] {
+  --rain-m-state: 520ms;
+  --rain-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.player .skip.rain[data-art="comic"] {
+  --rain-m-state: 420ms;
+  --rain-ease: cubic-bezier(0.3, 1.6, 0.5, 1);
+  --rain-k: #14161c;
+}
+
+.player .skip.rain[data-art="comic"] .face {
+  transition-timing-function: steps(2);
+}
+
+.player .skip.rain[data-art="chihiro"] {
+  --rain-m-state: 560ms;
+  --rain-ease: cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.player .skip.rain .paint {
+  transition: filter 220ms ease;
+}
+
+.player .skip.rain .fx-drop,
+.player .skip.rain .fx-glint {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.player .skip.rain[data-level="off"] .paint {
+  opacity: 0.85;
+}
+
+html[data-theme="dark"] .player .skip.rain[data-art="pencil"] .paint {
+  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.45));
+}
+
 /* Dark player bar: lighten the inks so the art stays legible. */
 html[data-theme="dark"] .player .skip.rain[data-art="engraving"] {
   --rain-ink: #e9dfc6;
@@ -167,6 +208,28 @@ html[data-theme="dark"] .player .skip.rain[data-art="ink"][data-level="off"] svg
   animation: rb-pop-in var(--rain-m-state) var(--rain-ease) both;
 }
 
+.player .skip.rain[data-art="pencil"][data-anim] .face {
+  animation: rb-sketch-in var(--rain-m-state) var(--rain-ease) both;
+}
+
+.player .skip.rain[data-art="comic"][data-anim] .face {
+  animation: rb-pow var(--rain-m-state) var(--rain-ease) both;
+}
+
+.player .skip.rain[data-art="chihiro"][data-anim] .face {
+  animation: rb-wet-in var(--rain-m-state) var(--rain-ease) both;
+}
+
+.player .skip.rain[data-anim] .fx-drop {
+  animation: rb-fall 750ms var(--rain-ease) backwards;
+  animation-delay: calc(200ms + var(--i, 0) * 70ms);
+}
+
+.player .skip.rain[data-anim] .fx-glint {
+  animation: rb-glint 600ms var(--rain-ease) backwards;
+  animation-delay: calc(200ms + var(--i, 0) * 110ms);
+}
+
 .player .skip.rain[data-anim] .etch,
 .player .skip.rain[data-anim] .draw {
   animation: rb-stroke-in var(--rain-m-draw) var(--rain-ease) both;
@@ -226,6 +289,28 @@ html[data-theme="dark"] .player .skip.rain[data-art="ink"][data-level="off"] svg
 
   .player .skip.rain[data-art="ink"]:hover .face {
     animation: rb-wiggle 420ms ease;
+  }
+
+  .player .skip.rain:hover .fx-drop {
+    animation: rb-fall 750ms var(--rain-ease, ease);
+    animation-delay: calc(var(--i, 0) * 70ms);
+  }
+
+  .player .skip.rain:hover .fx-glint {
+    animation: rb-glint 600ms var(--rain-ease, ease);
+    animation-delay: calc(var(--i, 0) * 110ms);
+  }
+
+  .player .skip.rain[data-art="pencil"]:hover .face {
+    transform: translateY(-2px) rotate(-2deg);
+  }
+
+  .player .skip.rain[data-art="comic"]:hover .face {
+    transform: rotate(-4deg) scale(1.06);
+  }
+
+  .player .skip.rain[data-art="chihiro"]:hover .paint {
+    filter: brightness(1.06) saturate(1.12);
   }
 }
 
@@ -406,6 +491,58 @@ html[data-theme="dark"] .player .skip.rain[data-art="ink"][data-level="off"] svg
   }
   80% {
     transform: rotate(-1deg);
+  }
+}
+
+@keyframes rb-sketch-in {
+  from {
+    opacity: 0.3;
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0);
+  }
+}
+
+@keyframes rb-pow {
+  0% {
+    transform: scale(0.6) rotate(-8deg);
+  }
+  60% {
+    transform: scale(1.12) rotate(3deg);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes rb-fall {
+  0% {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  25% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@keyframes rb-glint {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(0);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.1) rotate(45deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.6) rotate(90deg);
   }
 }
 

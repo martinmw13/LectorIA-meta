@@ -6,6 +6,7 @@
 @import "./styles/ambience.css";
 @import "./styles/chapters.css";
 @import "./styles/narration.css";
+@import "./styles/skins.css";
 
 * {
   box-sizing: border-box;

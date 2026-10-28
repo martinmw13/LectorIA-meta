@@ -63,28 +63,25 @@ describe("icon registry", () => {
     }
   });
 
-  it("ships rain art only for the three rain skins", () => {
-    expect(iconSkin("rain-storm", "engraving")).toBe("engraving");
-    expect(iconSkin("rain-storm", "watercolor")).toBe("watercolor");
-    expect(iconSkin("rain-storm", "ink")).toBe("ink");
-    expect(iconSkin("rain-storm", "pencil")).toBe(DEFAULT_SKIN);
-    expect(iconSkin("rain-storm", "comic")).toBe(DEFAULT_SKIN);
-    expect(iconSkin("rain-storm", "chihiro")).toBe(DEFAULT_SKIN);
+  it("ships its own rain art for every skin", () => {
+    for (const skin of SKINS) expect(iconSkin("rain-storm", skin)).toBe(skin);
     expect(iconSkin("moon", "watercolor")).toBe(DEFAULT_SKIN);
     const rains: IconName[] = ["rain-off", "rain-drizzle", "rain-moderate", "rain-storm"];
     const seen = new Set<string>();
     for (const name of rains) {
-      for (const skin of ["engraving", "watercolor", "ink"] as const) {
+      for (const skin of SKINS) {
         seen.add(renderToStaticMarkup(createElement(Icon, { name, skin })));
       }
     }
-    expect(seen.size).toBe(rains.length * 3);
+    expect(seen.size).toBe(rains.length * SKINS.length);
   });
 
   it("carries the class hooks the rain CSS animates", () => {
     for (const skin of SKINS) {
       const storm = renderToStaticMarkup(createElement(Icon, { name: "rain-storm", skin }));
-      for (const cls of ["halo", "drop", "bolt"]) {
+      // Pencil and chihiro are paintings with vector drops on top.
+      const painted = skin === "pencil" || skin === "chihiro";
+      for (const cls of painted ? ["paint", "fx-drop"] : ["halo", "drop", "bolt"]) {
         expect(storm).toContain(cls);
       }
       expect(storm).toContain("--i");

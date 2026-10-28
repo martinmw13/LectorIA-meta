@@ -3,9 +3,32 @@
 // hover (:hover) and press (:active); nothing loops at rest.
 "use client";
 
-import { usePictureSkinId, type PictureSkin } from "./picture-skin";
+import { burst } from "../icons-rain-extra";
+import type { PictureSkin } from "./picture-skin";
+
+const COMIC_POW = burst(12, 36, 48);
 
 function ButtonArt({ skin }: { skin: PictureSkin }) {
+  if (skin === "pencil" || skin === "chihiro") {
+    return (
+      <svg viewBox="0 0 42 42" aria-hidden="true">
+        <image className="pic-btn-paint" href={`/art/skins/${skin}/pic.png`} width="42" height="42" />
+      </svg>
+    );
+  }
+  if (skin === "comic") {
+    const k = { stroke: "#14161C", strokeLinejoin: "round", strokeLinecap: "round" } as const;
+    return (
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <path className="pic-btn-pow" d={COMIC_POW} fill="#9CC5FF" {...k} strokeWidth="2.2" />
+        <circle cx="30" cy="32" r="10" fill="#FFE45C" {...k} strokeWidth="2.4" />
+        <path d="M10 74C26 60 42 62 54 70S80 78 90 66" fill="none" {...k} strokeWidth="11" />
+        <path d="M10 74C26 60 42 62 54 70S80 78 90 66" fill="none" stroke="#0866FF" strokeWidth="6" strokeLinecap="round" />
+        <path d="M60 56L82 18C84 14 90 17 88 21L67 60Z" fill="#F29E4C" {...k} strokeWidth="2.6" />
+        <path d="M60 56C53 58 52 66 45 71C56 73 65 69 67 60Z" fill="#14161C" />
+      </svg>
+    );
+  }
   if (skin === "watercolor") {
     return (
       <svg viewBox="0 0 42 42" aria-hidden="true">
@@ -55,13 +78,11 @@ export function PictureButton({
   label: string;
   onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
 }) {
-  // Raw skin rides along for future per-skin CSS; art uses the variant.
-  const skinId = usePictureSkinId();
   return (
     <button
       type="button"
       className={`pic-btn pic-btn-${skin}`}
-      data-picture-skin={skinId}
+      data-picture-skin={skin}
       onClick={onClick}
     >
       <span className="pic-btn-art" aria-hidden="true">
