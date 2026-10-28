@@ -10,11 +10,18 @@ import type { Track } from "@/core/music";
 const blocked = () => Promise.reject(Object.assign(new Error("no gesture"), { name: "NotAllowedError" }));
 const T1 = { id: "t1", src: "/music/t1.m4a", startSec: 0, title: "T1", loop: true } as unknown as Track;
 const noop = () => undefined;
+// jsdom has no Web Audio; the rain button unlocks it on the first gesture.
+class FakeAudioContext {
+  resume() {
+    return Promise.resolve();
+  }
+}
 let play: ReturnType<typeof vi.spyOn>;
 
 beforeEach(() => {
   vi.stubGlobal("requestAnimationFrame", () => 1);
   vi.stubGlobal("cancelAnimationFrame", noop);
+  vi.stubGlobal("AudioContext", FakeAudioContext);
   play = vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
   vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(noop);
 });
