@@ -71,6 +71,18 @@ function fakeEl(top: number, height: number): HTMLElement {
   return { getBoundingClientRect: () => box(top, height) } as unknown as HTMLElement;
 }
 
+function glidingCol(): { scroller: HTMLElement; frames: Array<(now: number) => void>; cancelled: number[] } {
+  const frames: Array<(now: number) => void> = [];
+  const cancelled: number[] = [];
+  const view = {
+    performance: { now: () => 0 },
+    requestAnimationFrame: (fn: (now: number) => void) => frames.push(fn),
+    cancelAnimationFrame: (id: number) => void cancelled.push(id),
+  };
+  const scroller = Object.assign(fakeCol(0, 1000), { ownerDocument: { defaultView: view } });
+  return { scroller, frames, cancelled };
+}
+
 function fakeCol(top: number, height: number, scrollTop = 0): HTMLElement {
   return {
     scrollTop,
@@ -87,32 +99,47 @@ describe("followIntoView", () => {
     expect(scroller.scrollTop).toBe(0);
   });
 
-  test("scrolls elements above or below the band to 35%", () => {
+  test("brings elements above the band or past 60% back to 38%", () => {
     const scroller = fakeCol(0, 1000, 1000);
     expect(followIntoView(fakeEl(50, 20), scroller, 10_000)).toBe(true);
-    expect(scroller.scrollTop).toBe(700);
+    expect(scroller.scrollTop).toBe(670);
     const fresh = fakeCol(0, 1000);
-    expect(followIntoView(fakeEl(900, 20), fresh, 10_000)).toBe(true);
-    expect(fresh.scrollTop).toBe(550);
+    expect(followIntoView(fakeEl(590, 20), fresh, 10_000)).toBe(true);
+    expect(fresh.scrollTop).toBe(210);
   });
 
   test("never scrolls above the top", () => {
     const scroller = fakeCol(0, 1000);
-    expect(followIntoView(fakeEl(50, 20), scroller, 10_000)).toBe(true);
+    expect(followIntoView(fakeEl(50, 20), scroller, 10_000)).toBe(false);
     expect(scroller.scrollTop).toBe(0);
   });
 
-  test("judges the band against an in-flight smooth scroll, so frames never stack scrolls", () => {
-    const calls: number[] = [];
-    const scroller = {
-      ...fakeCol(0, 1000),
-      scrollTo: ({ top }: { top: number }) => void calls.push(top),
-    } as unknown as HTMLElement;
-    // The smooth scroll has not moved yet: the word still reads at 900.
+  test("glides there over several frames, judged against its target so frames never stack", () => {
+    const { scroller, frames, cancelled } = glidingCol();
+    // The glide has not stepped yet: the word still reads at 900.
     expect(followIntoView(fakeEl(900, 20), scroller, 10_000)).toBe(true);
     expect(followIntoView(fakeEl(900, 20), scroller, 10_016)).toBe(true);
     expect(followIntoView(fakeEl(930, 20), scroller, 10_032)).toBe(true);
-    expect(calls).toEqual([550]);
+    expect(frames).toHaveLength(1);
+    expect(cancelled).toHaveLength(0);
+    const seen: number[] = [];
+    for (let t = 0; frames.length > 0 && t < 100; t++) {
+      const step = frames.shift() as (now: number) => void;
+      step((t + 1) * 100);
+      seen.push(scroller.scrollTop);
+    }
+    // Steady: several small eased steps that only move forward.
+    expect(seen.length).toBeGreaterThan(4);
+    expect(seen.every((v, i) => i === 0 || v >= (seen[i - 1] as number))).toBe(true);
+    expect(seen.at(-1)).toBe(520);
+  });
+
+  test("a user scroll stops a glide mid-way", () => {
+    const { scroller, frames, cancelled } = glidingCol();
+    expect(followIntoView(fakeEl(900, 20), scroller, 10_000)).toBe(true);
+    noteUserScroll(scroller, 10_100);
+    expect(cancelled).toHaveLength(1);
+    expect(frames).toHaveLength(1);
   });
 
   test("a box taller than the band follows its top and never tugs back down", () => {
@@ -125,7 +152,7 @@ describe("followIntoView", () => {
 
   test("pauses after a user scroll", () => {
     const scroller = fakeCol(0, 1000);
-    const el = fakeEl(50, 20);
+    const el = fakeEl(900, 20);
     noteUserScroll(scroller, 10_000);
     expect(followIntoView(el, scroller, 10_000 + 3999)).toBe(false);
     expect(followIntoView(el, scroller, 10_000 + 4000)).toBe(true);

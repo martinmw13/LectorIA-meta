@@ -160,6 +160,9 @@
     rgba(220, 233, 255, 0) 100%
   );
   border-radius: 12px 6px 14px 5px / 8px 12px 6px 12px;
+  /* The prototype's 2px 3px bleed, without touching layout. */
+  margin: -2px -3px;
+  padding: 2px 3px;
 }
 
 .narr-sen[data-treatment="watercolor"] {
@@ -186,15 +189,18 @@
   box-shadow: inset 0 -2px 0 #0866ff;
 }
 
+/* Lantern: a faint amber sentence tint and a warm glow behind the word,
+   soft at the edges like lamplight, with no hard box or rule. */
 .narr-sen[data-treatment="lantern"] {
-  background: rgba(240, 180, 90, 0.16);
+  background: rgba(240, 180, 90, 0.1);
 }
 
 .narr-on[data-treatment="lantern"] {
-  background: rgba(255, 210, 120, 0.95);
-  box-shadow:
-    0 0 10px 2px rgba(255, 190, 90, 0.5),
-    inset 0 -2px 0 #0866ff;
+  margin: -3px -6px;
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: radial-gradient(closest-side, rgba(255, 186, 96, 0.78), rgba(255, 200, 120, 0.42) 65%, rgba(255, 214, 150, 0) 100%);
+  box-shadow: 0 0 14px 4px rgba(255, 186, 90, 0.3);
 }
 
 /* Dark pages carry light text: keep the marks low so it stays readable. */
@@ -207,7 +213,8 @@ html[data-theme="dark"] .narr-on[data-treatment="pencil"] {
 }
 
 html[data-theme="dark"] .narr-on[data-treatment="lantern"] {
-  background: rgba(255, 190, 90, 0.3);
+  background: radial-gradient(closest-side, rgba(255, 190, 90, 0.34), rgba(255, 190, 90, 0) 100%);
+  box-shadow: 0 0 12px 3px rgba(255, 190, 90, 0.14);
 }
 
 html[data-theme="dark"] :is(.narr-sen, .narr-on)[data-treatment="watercolor"] {
