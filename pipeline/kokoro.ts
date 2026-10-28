@@ -39,17 +39,16 @@ export function createKokoroClient(): KokoroClient {
     synthesize: async ({ texts, gaps, voice, speed }) => {
       const modal = new ModalClient();
       const fn = await modal.functions.fromName("lectoria-narration", "narrate");
-      let lastError: unknown = null;
       for (let attempt = 1; attempt <= 2; attempt++) {
         try {
           const out = await fn.remote([], { texts, gaps, voice, speed });
           if (!validShape(out, texts.length)) throw new Error("narration synthesize failed");
           return { mp3: new Uint8Array(out.mp3), durationSec: out.durationSec, spans: out.spans, gpuSec: out.gpuSec };
-        } catch (error) {
-          lastError = error;
+        } catch {
+          // SDK errors stay here; callers and logs see only the generic message.
         }
       }
-      throw lastError instanceof Error ? lastError : new Error("narration synthesize failed");
+      throw new Error("narration synthesize failed");
     },
   };
 }

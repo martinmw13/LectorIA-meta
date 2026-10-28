@@ -2,6 +2,8 @@
 # One function, narrate(texts, gaps, voice, speed), scales to zero after
 # a minute idle. Deploy with: modal deploy pipeline/modal/narrate.py.
 # Remove entirely with: modal app stop lectoria-narration.
+from __future__ import annotations
+
 import io
 import re
 import subprocess
@@ -9,18 +11,20 @@ import tempfile
 import time
 
 import modal
-import numpy as np
-import soundfile as sf
 
 kimg = (
     modal.Image.debian_slim(python_version="3.11")
     .apt_install("espeak-ng", "ffmpeg")
     .pip_install("kokoro==0.9.4", "soundfile", "numpy", "torch==2.5.1", "transformers==4.46.3")
 )
+with kimg.imports():
+    import numpy as np
+    import soundfile as sf
 vol = modal.Volume.from_name("lectoria-hf-cache", create_if_missing=True)
 app = modal.App("lectoria-narration", image=kimg)
 
 SAMPLE_RATE = 24000
+MIN_SPAN_SAMPLES = int(round(0.05 * SAMPLE_RATE))
 VOICE_RE = re.compile(r"^[a-z]{2}_[a-z]+$")
 
 _pipe = None
@@ -72,6 +76,10 @@ def narrate(texts: list[str], gaps: list[float], voice: str, speed: float) -> di
         for _, _, audio in pipe(clean(text), voice=voice, speed=float(speed)):
             chunks.append(np.asarray(audio, dtype=np.float32).reshape(-1))
         speech = np.concatenate(chunks) if chunks else np.zeros(0, dtype=np.float32)
+        if speech.shape[0] < MIN_SPAN_SAMPLES:
+            # Kokoro can render a sentence as no audio ("…"); t0 == t1
+            # fails parseChapterNarration, so pad to a 50 ms floor.
+            speech = np.concatenate([speech, np.zeros(MIN_SPAN_SAMPLES - speech.shape[0], dtype=np.float32)])
         t0 = cursor / SAMPLE_RATE
         parts.append(speech)
         cursor += speech.shape[0]

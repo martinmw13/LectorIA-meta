@@ -62,6 +62,30 @@ function memoryStore() {
   return { store, audio, manifests };
 }
 
+function setupMixedBook(dir: string): void {
+  // Distinct text per chapter so the fake can fail exactly one of them.
+  writeFileSync(
+    join(dir, "book.json"),
+    JSON.stringify({
+      id: "oz",
+      title: "Oz",
+      author: "A",
+      source: { gutenberg: 55, url: "u" },
+      textVersion: "sha256:x",
+      chapters: [
+        { ch: 1, title: "One", start_n: 1, end_n: 2 },
+        { ch: 2, title: "Two", start_n: 3, end_n: 4 },
+      ],
+      paragraphs: [
+        { id: "c1p1", ch: 1, n: 1, text: `Dorothy walked the long dusty road with Toto beside her.` },
+        { id: "c1p2", ch: 1, n: 2, text: `The yellow brick road stretched far ahead of them.` },
+        { id: "c2p3", ch: 2, n: 3, text: `FAIL the wicked witch cackled in the dark castle.` },
+        { id: "c2p4", ch: 2, n: 4, text: `FAIL flying monkeys circled above the high walls.` },
+      ],
+    }),
+  );
+}
+
 function readNarration(dir: string): { provenance: Record<string, unknown>; chapters: Record<string, ChapterNarration> } {
   return JSON.parse(readFileSync(join(dir, "narration.json"), "utf8")) as {
     provenance: Record<string, unknown>;
@@ -123,21 +147,28 @@ describe("runNarrate", () => {
     expect(again.calls()).toBeGreaterThanOrEqual(1);
   });
 
-  it("fails the run when synthesis throws", async () => {
+  it("writes the ready chapters with no input and fails when one chapter fails", async () => {
     const dir = mkdtempSync(join(tmpdir(), "narrate-fail-"));
-    setupBook(dir);
+    setupMixedBook(dir);
     const { store } = memoryStore();
-    await expect(
-      runNarrate(
-        { bookKey: "oz", force: false, dir },
-        {
-          synthesize: async () => {
-            throw new Error("modal down");
-          },
-          store,
-          capUsd: 2,
-        },
-      ),
-    ).rejects.toThrow(/chapter 1/);
+    const good = fakeSynthesize();
+    const ctx = { bookKey: "oz", force: false, dir };
+    const flaky: NarrationDeps["synthesize"] = async (req) => {
+      if (req.texts.some((t) => t.includes("FAIL"))) throw new Error("modal down");
+      return good.synthesize(req);
+    };
+    await expect(runNarrate(ctx, { synthesize: flaky, store, capUsd: 2 })).rejects.toThrow(/chapter 2/);
+    // The paid chapter is kept, and no input is recorded so the next run
+    // redoes instead of reusing the partial file.
+    const partial = readNarration(dir);
+    expect(Object.keys(partial.chapters)).toEqual(["1"]);
+    expect(partial.provenance.input).toBeNull();
+
+    // The retry resumes the ready chapter and generates the missing one.
+    const retry = await runNarrate(ctx, { synthesize: good.synthesize, store, capUsd: 2 });
+    expect(retry).toMatchObject({ generated: 1, cached: 1, stopped: false });
+    const file = readNarration(dir);
+    expect(Object.keys(file.chapters).sort()).toEqual(["1", "2"]);
+    expect(typeof file.provenance.input).toBe("string");
   });
 });

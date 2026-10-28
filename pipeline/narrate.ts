@@ -147,6 +147,7 @@ export async function runNarrate(
   };
   const stats: NarrateStats = { generated: 0, cached: 0, gpuSec: 0, estimatedMicro: 0, actualMicro: 0, stopped: false };
   const chapters: Record<string, ChapterNarration> = {};
+  const failed: number[] = [];
   // Bounded pool that stops starting new chapters once the cap refuses,
   // so the run reports instead of spending more.
   let next = 0;
@@ -181,7 +182,12 @@ export async function runNarrate(
       stats.stopped = true;
       return;
     }
-    if (result.status !== "ready") throw new Error(`narration failed for chapter ${ch}`);
+    // A failed chapter must not lose the paid chapters: record it, keep
+    // going, and fail only after the ready chapters are written.
+    if (result.status !== "ready") {
+      failed.push(ch);
+      return;
+    }
     chapters[String(ch)] = result.narration;
     if (result.cached) {
       stats.cached += 1;
@@ -202,13 +208,15 @@ export async function runNarrate(
     }
   });
   await Promise.all(workers);
-  const complete = !stats.stopped && Object.keys(chapters).length === book.chapters.length;
+  const complete = !stats.stopped && failed.length === 0 && Object.keys(chapters).length === book.chapters.length;
   writeFileSync(
     outPath,
     `${JSON.stringify({
       textVersion: book.textVersion,
       provenance: {
-        input: complete ? keys.current : ((previous as { provenance?: { input?: unknown } } | null)?.provenance?.input ?? keys.current),
+        // An incomplete run records no input, so the next run redoes
+        // instead of reusing a partial chapters map.
+        input: complete ? keys.current : null,
         voice: NARRATION_VOICE,
         model: NARRATION_MODEL,
         speed: NARRATION_SPEED,
@@ -227,5 +235,6 @@ export async function runNarrate(
       `estimated $${(stats.estimatedMicro / 1_000_000).toFixed(4)}, actual $${(stats.actualMicro / 1_000_000).toFixed(4)}` +
       (stats.stopped ? ` (stopped at cap $${(capMicro / 1_000_000).toFixed(2)})` : ""),
   );
+  if (failed.length > 0) throw new Error(`narration failed for chapter ${[...failed].sort((a, b) => a - b).join(", ")}`);
   return stats;
 }
