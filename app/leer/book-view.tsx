@@ -111,7 +111,10 @@ export function BookView({
     return attachFollowPause(col);
   }, [initialSceneId]);
 
-  // The scene most in view wins; ties keep document order. One observer,
+  // The scene under the reading line (40% down the column) is current.
+  // A thin rootMargin band, not ratios: a long scene filling the screen
+  // must beat a short one fully in view, and the band fires exactly when
+  // a section crosses the line. Ties keep document order. One observer,
   // no scroll listeners, no layout reads on scroll.
   useEffect(() => {
     const col = readColRef.current;
@@ -128,7 +131,7 @@ export function BookView({
         const next = pickCurrentScene(order, seen);
         if (next) commitScene(next);
       },
-      { root: col, threshold: [0, 0.25, 0.5, 0.75, 1] },
+      { root: col, rootMargin: "-40% 0px -59% 0px", threshold: 0 },
     );
     for (const section of col.querySelectorAll("[data-scene-id]")) io.observe(section);
     return () => io.disconnect();
@@ -252,10 +255,10 @@ export function BookView({
                   onReadFirst={() => readFirst(chapter.ch)}
                 />
               )}
-              {chapter.scenes.map((s) => (
+              {chapter.scenes.map((s, si) => (
                 <section key={s.id} className="book-section" data-scene-id={s.id} aria-label={s.title}>
                   <div
-                    className="body-text dropcap"
+                    className={si === 0 ? "body-text dropcap" : "body-text"}
                     ref={s.id === currentId ? pic.viewRef : undefined}
                   >
                     {s.paragraphs.map((p, i, arr) => (

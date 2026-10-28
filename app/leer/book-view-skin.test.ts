@@ -1,4 +1,4 @@
-// Scene page follows the live skin for the image style default.
+// Book view follows the live skin for the image style default.
 // No DOM test setup in this repo, so the wiring is pinned against the
 // source directly, plus a runtime check that the skin owner drives the pref.
 import { readFileSync } from "node:fs";
@@ -6,9 +6,9 @@ import { describe, expect, it } from "vitest";
 import { effectiveImageStylePref } from "../image-style";
 import { getSkin, setSkin, subscribe } from "../skin";
 
-const page = readFileSync(new URL("./scene-page.tsx", import.meta.url), "utf8");
+const page = readFileSync(new URL("./book-view.tsx", import.meta.url), "utf8");
 
-describe("scene page image style skin", () => {
+describe("book view image style skin", () => {
   it("derives the pref from the live skin, not the default", () => {
     expect(page).toMatch(/const skin = useSkin\(\);/);
     expect(page).toMatch(/effectiveImageStylePref\(storedPref, skin\)/);

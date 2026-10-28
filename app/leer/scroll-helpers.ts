@@ -32,14 +32,17 @@ export function prefersReducedMotion(): boolean {
   );
 }
 
-// Scroll the scroller so the scene section sits at its top. Instant when
+// Scroll the scroller so the scene section sits at its top; a chapter's
+// first scene lands on the chapter heading instead. Instant when
 // smooth is false or the user prefers reduced motion. False when the
 // section is missing. scrollIntoView also renders content-visibility
 // sections on the way there.
 export function scrollToSceneId(scroller: HTMLElement, sceneId: string, smooth = true): boolean {
   const el = scroller.querySelector(`[data-scene-id="${sceneId}"]`);
   if (!el || typeof el.scrollIntoView !== "function") return false;
-  el.scrollIntoView({
+  const block = el.closest?.(".chapter-block");
+  const target = block && block.querySelector("[data-scene-id]") === el ? block : el;
+  target.scrollIntoView({
     block: "start",
     behavior: smooth && !prefersReducedMotion() ? "smooth" : "auto",
   });
