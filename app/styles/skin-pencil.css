@@ -453,7 +453,7 @@ html[data-skin="pencil"] :is(.sticker img, .chopin img, .read-aloud-art, .pic-bt
   }
 
   html[data-skin="pencil"] :is(.sticker, .chopin, .read-aloud-btn):hover :is(img, .read-aloud-art) {
-    transform: translateY(-4px) rotate(-3deg);
+    transform: translateY(-5px) rotate(-3deg);
   }
 
   html[data-skin="pencil"] :is(.stickers[data-art="hero"] .sticker, .chopin, .player .skip.rain):hover::before {
@@ -472,6 +472,22 @@ html[data-skin="pencil"] :is(.sticker, .chopin, .read-aloud-btn):active :is(img,
   transition-duration: 80ms;
 }
 
+@keyframes pencil-settle {
+  0% {
+    transform: translateY(-10px) rotate(4deg) scale(1.06);
+  }
+  55% {
+    transform: translateY(2px) rotate(-1deg) scale(0.98);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+html[data-skin="pencil"] :is(.sticker, .player .chopin)[data-anim="1"] img {
+  animation: pencil-settle 550ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 @media (prefers-reduced-motion: reduce) {
   html[data-skin="pencil"] :is(.sticker img, .chopin img, .read-aloud-art, .pic-btn-art svg),
   html[data-skin="pencil"] :is(.stickers[data-art="hero"] .sticker, .chopin, .player .skip.rain)::before {
@@ -480,5 +496,9 @@ html[data-skin="pencil"] :is(.sticker, .chopin, .read-aloud-btn):active :is(img,
 
   html[data-skin="pencil"] :is(.sticker, .chopin, .read-aloud-btn):is(:hover, :active) :is(img, .read-aloud-art) {
     transform: none;
+  }
+
+  html[data-skin="pencil"] :is(.sticker, .player .chopin)[data-anim="1"] img {
+    animation: none;
   }
 }

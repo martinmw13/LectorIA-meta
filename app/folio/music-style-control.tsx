@@ -16,7 +16,7 @@ export type MusicStyleControlProps = {
 };
 
 // One pop cycle: how long the newly current button replays its animation.
-const ANIM_MS = 450;
+const ANIM_MS = 600;
 
 function stickerFor(id: string, label: string, art: HeroArt): string {
   const piano = /piano/i.test(id) || /piano/i.test(label);
@@ -69,6 +69,7 @@ export function MusicStyleControl({ modes, current, onAdvance }: MusicStyleContr
                 title={s.label}
               >
                 <img src={stickerFor(s.id, s.label, art)} alt="" width={40} height={40} />
+                <span className="mode-notes" aria-hidden="true"><i /><i /><i /></span>
               </button>
               <span className="sticker-dot" aria-hidden="true" />
             </span>
@@ -92,6 +93,7 @@ export function MusicStyleControl({ modes, current, onAdvance }: MusicStyleContr
               width={40}
               height={40}
             />
+            <span className="mode-notes" aria-hidden="true"><i /><i /><i /></span>
           </button>
           <span className="sticker-dot" aria-hidden="true" />
         </span>
