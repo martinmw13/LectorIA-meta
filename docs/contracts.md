@@ -23,3 +23,4 @@ Details live in these files:
 - [Chat api](contracts/chat-api.md)
 - [Quotas and budget](contracts/quotas-and-budget.md)
 - [Chapter panels](contracts/chapter-panels.md)
+- [Home](contracts/home.md)
