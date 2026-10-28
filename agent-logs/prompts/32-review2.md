@@ -1,0 +1,3 @@
+# Review task 32, round 2
+
+Worktree /workspace/wt-32, branch `pictures-placement`. Read docs/reviews/32.md, then review only the latest commit (`git show HEAD`), which addresses findings 1 and 2. Confirm: the gate is acquired atomically in illustratePassage (after every early return, before the loading figure insert) and in retryFigure, always released by requestFigure's finally, no path starts two requests or sticks busy, and behavior is unchanged. Confirm the comment fix. Run `npm test` and `npm run typecheck`. Append a short "Round 2" section to docs/reviews/32.md with the verdict, and commit it ("Add review 32 round 2"). Fix nothing in code. Never stop to ask. Do not push. Do not run `next start`. No paid API calls.

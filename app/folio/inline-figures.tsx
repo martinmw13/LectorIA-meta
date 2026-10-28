@@ -3,17 +3,8 @@
 "use client";
 
 import { truncateCaption } from "./helpers";
+import { PICTURE_COPY, PictureIcon } from "./picture-copy";
 import type { InlineFigure } from "./use-pictures";
-
-function PictureIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true">
-      <rect x="2.5" y="2.5" width="11" height="11" />
-      <circle cx="6" cy="7" r="1.4" />
-      <path d="M3.5 13 7 9.5l2.5 2.5 2-2 1 1" />
-    </svg>
-  );
-}
 
 export function SelectionPopover({
   pos,
@@ -33,7 +24,7 @@ export function SelectionPopover({
       onClick={onPick}
       aria-label="Picture this"
     >
-      <PictureIcon />
+      <PictureIcon size={12} />
       Picture this
     </button>
   );
@@ -56,7 +47,7 @@ export function InlineFigureView({
     return (
       <figure className="genfig" data-fig={figure.id} ref={refCb as React.Ref<HTMLElement>}>
         <div className="genload" role="status">
-          Sketching…
+          {PICTURE_COPY.loading}
         </div>
       </figure>
     );
@@ -67,7 +58,7 @@ export function InlineFigureView({
         <p className="gen-error" role="alert">
           {figure.message}{" "}
           <button type="button" className="retry-text" onClick={onRetry}>
-            Try again
+            {PICTURE_COPY.retry}
           </button>
         </p>
       </figure>
@@ -94,8 +85,8 @@ export function InlineFigureView({
           type="button"
           className="grm"
           onClick={onRemove}
-          aria-label="Remove picture"
-          title="Remove picture"
+          aria-label={PICTURE_COPY.remove}
+          title={PICTURE_COPY.remove}
         >
           ×
         </button>
