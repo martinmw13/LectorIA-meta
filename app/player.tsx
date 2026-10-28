@@ -216,12 +216,7 @@ export function Player({
   const { armGestureStart, disarmGesture } = useMusicAutostart({
     trackId,
     rootRef,
-    trackRef,
-    playingRef,
-    startedRef,
-    setStarted,
-    setPlaying,
-    requestPlayRef,
+    startPlayback,
   });
 
   useEffect(() => {
@@ -296,27 +291,20 @@ export function Player({
     onEndedRef.current(next.id);
   }
 
-  function toggle() {
-    const both = [firstRef.current, secondRef.current];
+  // The single start path (autostart, first gesture, Play): the first start
+  // lets the track effect cue the track; later starts resume the elements.
+  function startPlayback() {
+    if (playingRef.current && startedRef.current) return;
     disarmGesture();
-    if (!startedRef.current) {
-      rememberPaused(false);
-      startedRef.current = true;
-      setStarted(true);
-      playingRef.current = true;
-      setPlaying(true);
-      return;
-    }
-    if (playingRef.current) {
-      for (const el of both) el?.pause();
-      playingRef.current = false;
-      setPlaying(false);
-      rememberPaused(true);
-      return;
-    }
     rememberPaused(false);
     playingRef.current = true;
     setPlaying(true);
+    if (!startedRef.current) {
+      startedRef.current = true;
+      setStarted(true);
+      return;
+    }
+    const both = [firstRef.current, secondRef.current];
     let heard = false;
     both.forEach((el, i) => {
       if (el && (levelRef.current[i] ?? 0) > 0.02) {
@@ -326,6 +314,18 @@ export function Player({
     });
     const next = trackRef.current;
     if (!heard && next) requestPlayRef.current(next, 0);
+  }
+
+  function toggle() {
+    if (!startedRef.current || !playingRef.current) {
+      startPlayback();
+      return;
+    }
+    disarmGesture();
+    for (const el of [firstRef.current, secondRef.current]) el?.pause();
+    playingRef.current = false;
+    setPlaying(false);
+    rememberPaused(true);
   }
 
   function changeVolume(value: number) {
