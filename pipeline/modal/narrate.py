@@ -41,9 +41,33 @@ def pipeline():
 
 def clean(text: str) -> str:
     # Light TTS-only cleanup; offsets in the manifest never change because
-    # the caller keeps the original text for timing and display.
-    text = re.sub(r"(?<=\w)\s*—\s*(?=\w)", ", ", text)
+    # the caller keeps the original text for timing and display. Em dashes
+    # stay: Kokoro reads them fine and the tokens must match the display.
     return text.replace("_", "")
+
+
+WORD_RE = re.compile(r"[^\W_]", re.UNICODE)
+
+
+def result_parts(result):
+    """(audio samples, tokens) from one KPipeline result.
+
+    Real results are objects with .audio/.tokens; a plain
+    (graphemes, phonemes, audio) tuple yields audio with no tokens.
+    """
+    audio = getattr(result, "audio", None)
+    tokens = getattr(result, "tokens", None)
+    if audio is None and isinstance(result, (tuple, list)):
+        audio = result[2] if len(result) > 2 else None
+        tokens = []
+    return np.asarray(audio, dtype=np.float32).reshape(-1), tokens or []
+
+
+def token_parts(token):
+    """(text, start_ts, end_ts) from one token, object or sequence form."""
+    if isinstance(token, (tuple, list)):
+        return token[0], token[2], token[3]
+    return token.text, token.start_ts, token.end_ts
 
 
 def check(texts, gaps, voice, speed):
@@ -72,18 +96,32 @@ def narrate(texts: list[str], gaps: list[float], voice: str, speed: float) -> di
     spans: list[dict] = []
     cursor = 0
     for text, gap in zip(texts, gaps):
+        t0 = cursor / SAMPLE_RATE
         chunks = []
-        for _, _, audio in pipe(clean(text), voice=voice, speed=float(speed)):
-            chunks.append(np.asarray(audio, dtype=np.float32).reshape(-1))
+        words: list = []
+        offset = 0
+        for result in pipe(clean(text), voice=voice, speed=float(speed)):
+            speech_chunk, tokens = result_parts(result)
+            # A result's audio offset inside the sentence is the running
+            # sample count of the results before it.
+            base = t0 + offset / SAMPLE_RATE
+            for token in tokens:
+                tok_text, start_ts, end_ts = token_parts(token)
+                if start_ts is None or end_ts is None:
+                    continue
+                if not WORD_RE.search(tok_text):
+                    continue
+                words.append([tok_text, round(base + float(start_ts), 3), round(base + float(end_ts), 3)])
+            chunks.append(speech_chunk)
+            offset += speech_chunk.shape[0]
         speech = np.concatenate(chunks) if chunks else np.zeros(0, dtype=np.float32)
         if speech.shape[0] < MIN_SPAN_SAMPLES:
             # Kokoro can render a sentence as no audio ("…"); t0 == t1
             # fails parseChapterNarration, so pad to a 50 ms floor.
             speech = np.concatenate([speech, np.zeros(MIN_SPAN_SAMPLES - speech.shape[0], dtype=np.float32)])
-        t0 = cursor / SAMPLE_RATE
         parts.append(speech)
         cursor += speech.shape[0]
-        spans.append({"t0": t0, "t1": cursor / SAMPLE_RATE})
+        spans.append({"t0": t0, "t1": cursor / SAMPLE_RATE, "words": words})
         silence = int(round(float(gap) * SAMPLE_RATE))
         if silence > 0:
             parts.append(np.zeros(silence, dtype=np.float32))

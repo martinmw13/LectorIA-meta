@@ -275,10 +275,10 @@ describe("narrate keys", () => {
     const { narrateInputOf, narrateKeys } = await import("./freshness");
     expect(narrateKeys(dir)).toEqual({
       recorded: undefined,
-      current: narrateInputOf("sha256:x", "af_heart", "kokoro-82m/0.9.4", 0.95, 1),
+      current: narrateInputOf("sha256:x", "af_heart", "kokoro-82m/0.9.4", 0.95, 2),
     });
-    expect(narrateInputOf("sha256:x", "af_heart", "kokoro-82m/0.9.4", 0.95, 1)).not.toBe(
-      narrateInputOf("sha256:y", "af_heart", "kokoro-82m/0.9.4", 0.95, 1),
+    expect(narrateInputOf("sha256:x", "af_heart", "kokoro-82m/0.9.4", 0.95, 2)).not.toBe(
+      narrateInputOf("sha256:y", "af_heart", "kokoro-82m/0.9.4", 0.95, 2),
     );
     const { runNarrate } = await import("./narrate");
     let calls = 0;
@@ -286,7 +286,7 @@ describe("narrate keys", () => {
     await runNarrate({ bookKey: "oz", force: true, dir }, {
       synthesize: async ({ texts, gaps }: { texts: string[]; gaps: number[] }) => {
         calls += 1;
-        return { mp3: new Uint8Array([1]), durationSec: 2, spans: texts.map(() => ({ t0: 0, t1: 1 })), gpuSec: 1 };
+        return { mp3: new Uint8Array([1]), durationSec: 2, spans: texts.map(() => ({ t0: 0, t1: 1, words: [] })), gpuSec: 1 };
       },
       store,
       capUsd: 2,

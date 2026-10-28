@@ -6,6 +6,7 @@ import {
   NARRATION_MODEL,
   NARRATION_SPEED,
   NARRATION_VOICE,
+  alignWords,
   estimateNarrationMicro,
   narrationKey,
   narrationKeyInput,
@@ -40,7 +41,7 @@ export interface NarrationDeps {
   }): Promise<{
     mp3: Uint8Array;
     durationSec: number;
-    spans: { t0: number; t1: number }[];
+    spans: { t0: number; t1: number; words: [string, number, number][] }[];
     gpuSec: number;
   }>;
 }
@@ -120,13 +121,20 @@ export async function ensureChapterNarration(
       voice,
       model: NARRATION_MODEL,
       speed,
-      chunks: input.chunks.map((chunk, i) => ({
-        n: chunk.n,
-        start: chunk.start,
-        end: chunk.end,
-        t0: (out.spans[i] as { t0: number; t1: number }).t0,
-        t1: (out.spans[i] as { t0: number; t1: number }).t1,
-      })),
+      chunks: input.chunks.map((chunk, i) => {
+        const span = out.spans[i] as { t0: number; t1: number; words: [string, number, number][] };
+        // alignWords returns offsets into the chunk text; the manifest
+        // holds paragraph-relative offsets, so the chunk start is added.
+        const w: number[] = [];
+        for (const [start, end, t0, t1] of alignWords(
+          chunk.text,
+          span.words.map(([text, wt0, wt1]) => ({ text, t0: wt0, t1: wt1 })),
+          span,
+        )) {
+          w.push(chunk.start + start, chunk.start + end, t0, t1);
+        }
+        return { n: chunk.n, start: chunk.start, end: chunk.end, t0: span.t0, t1: span.t1, w };
+      }),
     });
     await deps.store.putManifest(key, manifest);
     await deps.index.set(key, manifest);

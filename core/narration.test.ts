@@ -8,7 +8,9 @@ import {
   PARAGRAPH_GAP_SEC,
   SENTENCE_GAP_SEC,
   activeChunkAt,
+  activeWordAt,
   actualNarrationMicro,
+  alignWords,
   chapterChunks,
   chaptersToPrepare,
   estimateNarrationMicro,
@@ -17,7 +19,10 @@ import {
   parseChapterNarration,
   sceneSpan,
   splitSentences,
+  wordAt,
 } from "./narration";
+import type { WordToken } from "./narration";
+import probeRaw from "./fixtures/kokoro-probe.json";
 
 const OZ = `“I am Oz, the Great and Terrible,” said the little man, in a trembling voice. “But don't strike me — please don't — and I will do anything you want me to do.” “Oh, you're a humbug!” said Dorothy. Mr. H. M. Wogglebug rushed — very fast — toward the door!” said Dorothy, turning pale.`;
 
@@ -105,16 +110,16 @@ describe("cache keys", () => {
 
 describe("parseChapterNarration", () => {
   const good = {
-    format: 1,
-    key: "narration/v1/af_heart/abc",
-    src: "/narration/v1/af_heart/abc.mp3",
+    format: 2,
+    key: "narration/v2/af_heart/abc",
+    src: "/narration/v2/af_heart/abc.mp3",
     durationSec: 10,
     voice: "af_heart",
     model: "kokoro-82m/0.9.4",
     speed: 0.95,
     chunks: [
-      { n: 1, start: 0, end: 5, t0: 0, t1: 4 },
-      { n: 2, start: 0, end: 7, t0: 4.3, t1: 9.5 },
+      { n: 1, start: 0, end: 5, t0: 0, t1: 4, w: [0, 5, 0.5, 3.5] },
+      { n: 2, start: 0, end: 7, t0: 4.3, t1: 9.5, w: [0, 3, 4.5, 6, 3, 7, 6, 9] },
     ],
   };
 
@@ -126,24 +131,31 @@ describe("parseChapterNarration", () => {
   it("throws on any bad field", () => {
     const bad: unknown[] = [
       null,
-      { ...good, format: 2 },
+      { ...good, format: 1 },
       { ...good, src: "http://evil.example.com/n.mp3" },
       { ...good, src: "/audio/n.mp3" },
       { ...good, src: "javascript:alert(1)" },
       { ...good, durationSec: Number.NaN },
       { ...good, chunks: [] },
-      { ...good, chunks: [{ n: 1.5, start: 0, end: 5, t0: 0, t1: 4 }] },
-      { ...good, chunks: [{ n: 1, start: 5, end: 5, t0: 0, t1: 4 }] },
-      { ...good, chunks: [{ n: 1, start: 0, end: 5, t0: 4, t1: 4 }] },
-      { ...good, chunks: [{ n: 1, start: 0, end: 5, t0: -1, t1: 4 }] },
-      { ...good, chunks: [{ n: 1, start: 0, end: 5, t0: 0, t1: 11 }] },
+      { ...good, chunks: [{ n: 1.5, start: 0, end: 5, t0: 0, t1: 4, w: [] }] },
+      { ...good, chunks: [{ n: 1, start: 5, end: 5, t0: 0, t1: 4, w: [] }] },
+      { ...good, chunks: [{ n: 1, start: 0, end: 5, t0: 4, t1: 4, w: [] }] },
+      { ...good, chunks: [{ n: 1, start: 0, end: 5, t0: -1, t1: 4, w: [] }] },
+      { ...good, chunks: [{ n: 1, start: 0, end: 5, t0: 0, t1: 11, w: [] }] },
       {
         ...good,
         chunks: [
-          { n: 1, start: 0, end: 5, t0: 4, t1: 6 },
-          { n: 2, start: 0, end: 5, t0: 0, t1: 3 },
+          { n: 1, start: 0, end: 5, t0: 4, t1: 6, w: [] },
+          { n: 2, start: 0, end: 5, t0: 0, t1: 3, w: [] },
         ],
       },
+      { ...good, chunks: [{ n: 1, start: 0, end: 5, t0: 0, t1: 4 }] },
+      { ...good, chunks: [{ n: 1, start: 0, end: 5, t0: 0, t1: 4, w: [0, 5, 0.5] }] },
+      { ...good, chunks: [{ n: 1, start: 0, end: 5, t0: 0, t1: 4, w: [0, 5, 0.5, Number.NaN] }] },
+      { ...good, chunks: [{ n: 1, start: 0, end: 5, t0: 0, t1: 4, w: [0, 5.5, 0.5, 3.5] }] },
+      { ...good, chunks: [{ n: 1, start: 0, end: 5, t0: 0, t1: 4, w: [0, 6, 0.5, 3.5] }] },
+      { ...good, chunks: [{ n: 1, start: 0, end: 5, t0: 0, t1: 4, w: [0, 5, 0.5, 4.5] }] },
+      { ...good, chunks: [{ n: 1, start: 0, end: 5, t0: 0, t1: 4, w: [3, 5, 0.5, 3.5, 0, 2, 0.5, 3.5] }] },
     ];
     for (const entry of bad) expect(() => parseChapterNarration(entry)).toThrow();
   });
@@ -157,6 +169,164 @@ describe("activeChunkAt", () => {
     expect(activeChunkAt(chunks, 4.2)).toBe(0);
     expect(activeChunkAt(chunks, 4.3)).toBe(1);
     expect(activeChunkAt(chunks, 99)).toBe(2);
+  });
+});
+
+interface ProbeResult {
+  graphemes: string;
+  n: number;
+  tokens: [string, string, number | null, number | null][];
+}
+
+const probe = probeRaw as unknown as ProbeResult[];
+
+// The probe's sentence, as displayed in the paragraph. Kokoro heard the
+// same text (em dashes are no longer rewritten), so its tokens line up.
+const READALONG = `“Oh, dear!” said Dorothy—she was frightened. Mr. Oz’s balloon rose 3 feet, didn't it?`;
+
+const READALONG_WORDS = [
+  "Oh", "dear", "said", "Dorothy", "she", "was", "frightened",
+  "Mr", "Oz’s", "balloon", "rose", "3", "feet", "didn't", "it",
+];
+
+// Probe tokens with null timings dropped and times made absolute,
+// punctuation tokens included: alignWords must skip them.
+function probeTokens(spanT0: number): WordToken[] {
+  const out: WordToken[] = [];
+  for (const [text, , s, e] of (probe[0] as ProbeResult).tokens) {
+    if (s === null || e === null) continue;
+    out.push({ text, t0: spanT0 + s, t1: spanT0 + e });
+  }
+  return out;
+}
+
+function checkWellFormed(words: [number, number, number, number][], text: string, span: { t0: number; t1: number }): void {
+  let prevT0 = span.t0;
+  for (const [s, e, t0, t1] of words) {
+    expect(Number.isInteger(s)).toBe(true);
+    expect(Number.isInteger(e)).toBe(true);
+    expect(s).toBeLessThan(e);
+    expect(text.slice(s, e)).toMatch(/^[\p{L}\p{N}]/u);
+    expect(t0).toBeGreaterThanOrEqual(span.t0);
+    expect(t1).toBeLessThanOrEqual(span.t1);
+    expect(t0).toBeLessThanOrEqual(t1);
+    expect(t0).toBeGreaterThanOrEqual(prevT0);
+    prevT0 = t0;
+  }
+}
+
+describe("alignWords", () => {
+  it("maps the probe tokens onto every display word", () => {
+    const span = { t0: 10, t1: 16 };
+    const words = alignWords(READALONG, probeTokens(span.t0), span);
+    expect(words.map(([s, e]) => READALONG.slice(s, e))).toEqual(READALONG_WORDS);
+    // "Mr." covers "Mr" and "Oz’s" matches across the apostrophe.
+    expect(words[7]?.[2]).toBeCloseTo(13.0375, 2);
+    expect(words[8]?.[2]).toBeCloseTo(13.3875, 2);
+    expect(words[3]?.[2]).toBeCloseTo(11.275, 2);
+    expect(words[3]?.[3]).toBeCloseTo(11.775, 2);
+    checkWellFormed(words, READALONG, span);
+  });
+
+  it("interpolates a missing token between its neighbours", () => {
+    const span = { t0: 0, t1: 6 };
+    const words = alignWords(READALONG, probeTokens(0).filter((t) => t.text !== "balloon"), span);
+    expect(words.map(([s, e]) => READALONG.slice(s, e))).toEqual(READALONG_WORDS);
+    // "rose" still keeps its Kokoro time after the gap.
+    expect(words[10]?.[2]).toBeCloseTo(4.225, 2);
+    const balloon = words[9] as [number, number, number, number];
+    expect(balloon[2]).toBeGreaterThanOrEqual((words[8] as [number, number, number, number])[3]);
+    expect(balloon[3]).toBeLessThanOrEqual((words[10] as [number, number, number, number])[2]);
+    checkWellFormed(words, READALONG, span);
+  });
+
+  it("skips an extra token without derailing the rest", () => {
+    const span = { t0: 0, t1: 6 };
+    const tokens = probeTokens(0);
+    tokens.splice(4, 0, { text: "um", t0: 0.6, t1: 0.7 });
+    const words = alignWords(READALONG, tokens, span);
+    expect(words.map(([s, e]) => READALONG.slice(s, e))).toEqual(READALONG_WORDS);
+    expect(words[2]?.[2]).toBeCloseTo(1.125, 3);
+    checkWellFormed(words, READALONG, span);
+  });
+
+  it("survives a number Kokoro spells out", () => {
+    const span = { t0: 0, t1: 6 };
+    const tokens = probeTokens(0).map((t) => (t.text === "3" ? { ...t, text: "three" } : t));
+    const words = alignWords(READALONG, tokens, span);
+    expect(words.map(([s, e]) => READALONG.slice(s, e))).toEqual(READALONG_WORDS);
+    expect(words[12]?.[2]).toBeCloseTo(4.8125, 2);
+    const three = words[11] as [number, number, number, number];
+    expect(three[2]).toBeGreaterThanOrEqual((words[10] as [number, number, number, number])[3]);
+    expect(three[3]).toBeLessThanOrEqual((words[12] as [number, number, number, number])[2]);
+    checkWellFormed(words, READALONG, span);
+  });
+
+  it("matches straight quotes against curly ones", () => {
+    const text = `Oz's "quoted" didn't`;
+    const span = { t0: 0, t1: 3 };
+    const words = alignWords(
+      text,
+      [
+        { text: "Oz’s", t0: 0, t1: 1 },
+        { text: "quoted", t0: 1, t1: 2 },
+        { text: "didn’t", t0: 2, t1: 3 },
+      ],
+      span,
+    );
+    expect(words.map(([s, e]) => text.slice(s, e))).toEqual(["Oz's", "quoted", "didn't"]);
+    expect(words.map(([, , t0]) => t0)).toEqual([0, 1, 2]);
+  });
+
+  it("splits a compound token across its display words by length", () => {
+    const text = "well-known fact";
+    const words = alignWords(
+      text,
+      [
+        { text: "well-known", t0: 1, t1: 2 },
+        { text: "fact", t0: 2, t1: 3 },
+      ],
+      { t0: 0, t1: 4 },
+    );
+    expect(words.map(([s, e]) => text.slice(s, e))).toEqual(["well", "known", "fact"]);
+    expect(words[0]?.[2]).toBeCloseTo(1, 3);
+    expect(words[0]?.[3]).toBeCloseTo(1 + 4 / 9, 3);
+    expect(words[1]?.[2]).toBeCloseTo(1 + 4 / 9, 3);
+    expect(words[1]?.[3]).toBeCloseTo(2, 3);
+  });
+
+  it("interpolates across the span with no tokens", () => {
+    const words = alignWords("hi there", [], { t0: 5, t1: 7 });
+    expect(words).toHaveLength(2);
+    expect(words[0]?.[2]).toBe(5);
+    expect(words[1]?.[3]).toBe(7);
+  });
+});
+
+describe("activeWordAt", () => {
+  const chunk = { w: [0, 2, 0.5, 1, 3, 5, 1.5, 2] };
+  it("holds the highlight through the gap after a word", () => {
+    expect(activeWordAt(chunk, 0.4)).toBe(-1);
+    expect(activeWordAt(chunk, 0.5)).toBe(0);
+    expect(activeWordAt(chunk, 1.4)).toBe(0);
+    expect(activeWordAt(chunk, 1.5)).toBe(1);
+    expect(activeWordAt(chunk, 99)).toBe(1);
+  });
+});
+
+describe("wordAt", () => {
+  const narration = {
+    chunks: [
+      { n: 1, start: 0, end: 8, w: [0, 2, 0.5, 1, 3, 8, 1.5, 2] },
+      { n: 1, start: 9, end: 14, w: [9, 14, 2.5, 3] },
+    ],
+  };
+  it("finds the word covering a char offset for click-to-seek", () => {
+    expect(wordAt(narration, 1, 1)).toEqual({ chunk: 0, word: 0, t0: 0.5 });
+    expect(wordAt(narration, 1, 4)).toEqual({ chunk: 0, word: 1, t0: 1.5 });
+    expect(wordAt(narration, 1, 10)).toEqual({ chunk: 1, word: 0, t0: 2.5 });
+    expect(wordAt(narration, 1, 8)).toBeNull();
+    expect(wordAt(narration, 2, 1)).toBeNull();
   });
 });
 

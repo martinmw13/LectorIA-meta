@@ -47,7 +47,7 @@ function fakes(opts?: {
     (async ({ texts, gaps }) => ({
       mp3: new Uint8Array([1, 2, 3]),
       durationSec: texts.length * 2 + gaps.reduce((a, b) => a + b, 0),
-      spans: texts.map((_, i) => ({ t0: i * 2, t1: i * 2 + 1.5 })),
+      spans: texts.map((_, i) => ({ t0: i * 2, t1: i * 2 + 1.5, words: [] as [string, number, number][] })),
       gpuSec: 7.1,
     }));
   return {
@@ -126,7 +126,7 @@ describe("ensureChapterNarration", () => {
     const { chunks, gaps } = built();
     const key = keyFor(chunks);
     const manifest: ChapterNarration = {
-      format: 1,
+      format: 2,
       key,
       src: `https://blob.example.com/${key}.mp3`,
       durationSec: 10,
@@ -134,8 +134,8 @@ describe("ensureChapterNarration", () => {
       model: NARRATION_MODEL,
       speed: NARRATION_SPEED,
       chunks: [
-        { n: 1, start: 0, end: 5, t0: 0, t1: 4 },
-        { n: 2, start: 0, end: 7, t0: 4.3, t1: 9 },
+        { n: 1, start: 0, end: 5, t0: 0, t1: 4, w: [0, 5, 0.5, 3.5] },
+        { n: 2, start: 0, end: 7, t0: 4.3, t1: 9, w: [0, 7, 4.5, 8.5] },
       ],
     };
     deps.storeMap.set(key, manifest);
@@ -193,7 +193,7 @@ describe("ensureChapterNarration", () => {
       synthesize: async ({ texts }) => ({
         mp3: new Uint8Array([9]),
         durationSec: 5,
-        spans: texts.slice(0, -1).map((_, i) => ({ t0: i, t1: i + 0.5 })),
+        spans: texts.slice(0, -1).map((_, i) => ({ t0: i, t1: i + 0.5, words: [] as [string, number, number][] })),
         gpuSec: 1,
       }),
     });
@@ -219,6 +219,27 @@ describe("ensureChapterNarration", () => {
     // A second call after success is a free hit.
     const again = await ensureChapterNarration({ chunks, gaps }, deps);
     expect(again).toMatchObject({ status: "ready", cached: true, costMicro: 0 });
+  });
+
+  it("builds paragraph-relative word timings from span words", async () => {
+    const deps = fakes({
+      synthesize: async ({ texts }) => ({
+        mp3: new Uint8Array([1]),
+        durationSec: 4,
+        spans: texts.map(() => ({
+          t0: 0,
+          t1: 3.5,
+          words: [
+            ["hi", 0.5, 1.5],
+            ["there", 1.5, 3],
+          ] as [string, number, number][],
+        })),
+        gpuSec: 1,
+      }),
+    });
+    const out = await ensureChapterNarration({ chunks: [{ n: 1, start: 0, end: 8, text: "hi there" }], gaps: [0] }, deps);
+    if (out.status !== "ready") throw new Error("expected a generated ready");
+    expect(out.narration.chunks[0]?.w).toEqual([0, 2, 0.5, 1.5, 3, 8, 1.5, 3]);
   });
 
   it("swallows release failures", async () => {

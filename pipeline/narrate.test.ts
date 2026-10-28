@@ -39,7 +39,7 @@ function fakeSynthesize() {
     return {
       mp3: new Uint8Array([calls]),
       durationSec: texts.length * 2 + gaps.reduce((a, b) => a + b, 0),
-      spans: texts.map((_, i) => ({ t0: i * 2, t1: i * 2 + 1.5 })),
+      spans: texts.map((_, i) => ({ t0: i * 2, t1: i * 2 + 1.5, words: [] as [string, number, number][] })),
       gpuSec: 7.1,
     };
   };

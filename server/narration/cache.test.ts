@@ -8,14 +8,14 @@ const ENV = { spendCapMicro: 1_000_000, dailySpendCapMicro: 1_000_000 };
 
 function manifest(key: string): ChapterNarration {
   return {
-    format: 1,
+    format: 2,
     key,
     src: `https://blob.example.com/${key}.mp3`,
     durationSec: 10,
     voice: NARRATION_VOICE,
     model: NARRATION_MODEL,
     speed: NARRATION_SPEED,
-    chunks: [{ n: 1, start: 0, end: 5, t0: 0, t1: 4 }],
+    chunks: [{ n: 1, start: 0, end: 5, t0: 0, t1: 4, w: [0, 5, 1, 3] }],
   };
 }
 
@@ -70,7 +70,7 @@ describe("narration server adapters", () => {
     expect(await deps.sha256Hex("abc")).toBe("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
   });
 
-  it("keeps the manifest format at 1", () => {
-    expect(NARRATION_FORMAT).toBe(1);
+  it("keeps the manifest format at 2", () => {
+    expect(NARRATION_FORMAT).toBe(2);
   });
 });

@@ -9,19 +9,37 @@ function that scales to zero.
 
 ## Manifest
 
-`ChapterNarration` in `core/narration.ts`: `format: 1`, `key`, `src`,
+`ChapterNarration` in `core/narration.ts`: `format: 2`, `key`, `src`,
 `durationSec`, `voice`, `model`, `speed`, and `chunks` with `n`
 (paragraph ordinal), `start`/`end` (char offsets into the paragraph),
-and `t0`/`t1` (seconds). `parseChapterNarration` throws on any bad
-field: it is a trust boundary, since the reader fetches this JSON.
-`src` is an `https:` URL or a same-origin path under `/narration/`.
+`t0`/`t1` (seconds), and `w` (word timings, below).
+`parseChapterNarration` throws on any bad field: it is a trust
+boundary, since the reader fetches this JSON. `src` is an `https:`
+URL or a same-origin path under `/narration/`.
+
+## Word timings
+
+No forced alignment: the Modal function returns each Kokoro token
+timestamp with chapter-absolute seconds per span, and `alignWords`
+maps them onto display words (`/[\p{L}\p{N}]+(?:['’][\p{L}\p{N}]+)*/u`,
+so "Oz’s" and "didn't" are one word and punctuation never
+highlights). Both sides compare on NFKD lowercase letters and digits
+with apostrophes dropped, in order with a lookahead of 3 either way;
+a token spanning several display words ("well-known") splits its time
+by character length. Words left without time interpolate between
+their neighbours; all times are clamped to the span and monotonic.
+`w` is flat `[start, end, t0, t1, ...]` with paragraph-relative char
+offsets and seconds, validated (multiple of 4, offsets in range,
+times in range, sorted) and required. `activeWordAt` drives the
+highlight, `wordAt` drives click-to-seek. Cost: 4 numbers per word,
+about 25 KB per chapter manifest.
 
 ## Cache key
 
 `narrationKeyInput` builds a canonical string from the
 NFC-normalized, whitespace-collapsed chunk texts joined with `"\n"`,
 plus voice, model, speed, and format. Callers hash it with SHA-256;
-`narrationKey` returns `narration/v1/<voice>/<first 32 hex>`. Same
+`narrationKey` returns `narration/v2/<voice>/<first 32 hex>`. Same
 text + voice + model + speed gives the same key, any edit gives a new
 one. Audio lives at `<key>.mp3`, the manifest at `<key>.json`, as
 deterministic public Blob paths; the Redis index `narr:idx:<key>`

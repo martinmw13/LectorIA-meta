@@ -7,7 +7,7 @@ import { ModalClient } from "modal";
 export interface KokoroSynthResult {
   mp3: Uint8Array;
   durationSec: number;
-  spans: { t0: number; t1: number }[];
+  spans: { t0: number; t1: number; words: [string, number, number][] }[];
   gpuSec: number;
 }
 
@@ -23,15 +23,24 @@ function validShape(value: unknown, texts: number): value is KokoroSynthResult {
   if (typeof out.durationSec !== "number" || !Number.isFinite(out.durationSec)) return false;
   if (typeof out.gpuSec !== "number" || !Number.isFinite(out.gpuSec)) return false;
   if (!Array.isArray(out.spans) || out.spans.length !== texts) return false;
-  return out.spans.every(
-    (span) =>
-      typeof span === "object" &&
-      span !== null &&
+  return out.spans.every((span) => {
+    if (typeof span !== "object" || span === null) return false;
+    const words = (span as { words: unknown }).words;
+    if (!Array.isArray(words)) return false;
+    for (const entry of words) {
+      if (!Array.isArray(entry) || entry.length !== 3) return false;
+      const [text, t0, t1] = entry as unknown[];
+      if (typeof text !== "string") return false;
+      if (typeof t0 !== "number" || !Number.isFinite(t0)) return false;
+      if (typeof t1 !== "number" || !Number.isFinite(t1)) return false;
+    }
+    return (
       typeof (span as { t0: unknown }).t0 === "number" &&
       Number.isFinite((span as { t0: number }).t0) &&
       typeof (span as { t1: unknown }).t1 === "number" &&
-      Number.isFinite((span as { t1: number }).t1),
-  );
+      Number.isFinite((span as { t1: number }).t1)
+    );
+  });
 }
 
 export function createKokoroClient(): KokoroClient {
