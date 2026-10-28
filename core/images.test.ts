@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  DAILY_SPEND_TTL_SEC,
   budgetExceeded,
   buildCaption,
   buildPrompt,
   canRelease,
   createMemoryKV,
+  dailySpendKey,
   imageCostMicro,
   imageKey,
   indexKeyFor,
@@ -12,6 +14,7 @@ import {
   overQuota,
   parseImageRequest,
   quotaKeys,
+  spendKey,
   validateAgainstBook,
 } from "./images";
 import { IMAGE_COST_MICRO } from "./types";
@@ -176,6 +179,13 @@ describe("quota and budget helpers", () => {
     expect(budgetExceeded(11_000_000, 10_000_000)).toBe(true);
     expect(budgetExceeded(10_000_000, 10_000_000)).toBe(false);
     expect(imageCostMicro()).toBe(IMAGE_COST_MICRO);
+  });
+
+  it("builds day-scoped daily spend keys with a 48 h TTL", () => {
+    expect(dailySpendKey("2026-10-27")).toBe("img:spend:daily:2026-10-27");
+    expect(dailySpendKey("2026-10-28")).not.toBe(dailySpendKey("2026-10-27"));
+    expect(dailySpendKey("2026-10-28")).not.toBe(spendKey());
+    expect(DAILY_SPEND_TTL_SEC).toBe(172800);
   });
 
   it("compares lock tokens", () => {

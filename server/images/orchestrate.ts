@@ -1,13 +1,15 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import {
+  DAILY_SPEND_TTL_SEC,
   MSG_FAILED,
   MSG_QUOTA,
-  MSG_BUDGET,
+  MSG_CREDITS_OUT,
   LOCK_TTL_SEC,
   buildCaption,
   buildPrompt,
   budgetExceeded,
+  dailySpendKey,
   imageCostMicro,
   imageKey,
   indexKeyFor,
@@ -47,6 +49,8 @@ export async function orchestrate(
   const key = imageKey(req);
   const indexKey = indexKeyFor(key);
   const lockKey = lockKeyFor(key);
+  // deps.day is the UTC day string (YYYY-MM-DD), shared with quota keys.
+  const dailyKey = dailySpendKey(deps.day);
 
   const indexed = await deps.kv.get(indexKey);
   if (indexed) {
@@ -73,6 +77,7 @@ export async function orchestrate(
   const keys = quotaKeysFor({ day: deps.day, ip: deps.ip, salt: deps.env.ipSalt, anonId: deps.anonId });
   let quotaTaken = false;
   let spendTaken = false;
+  let dailySpendTaken = false;
   // Best-effort refunds that clear their flag only after the write lands,
   // so the outer catch refunds each reserve exactly once.
   const refundQuotaOnce = async (): Promise<void> => {
@@ -91,6 +96,14 @@ export async function orchestrate(
       // Redis down: nothing reserved server-side to retry against.
     }
   };
+  const refundDailySpendOnce = async (): Promise<void> => {
+    try {
+      await deps.kv.decrBy(dailyKey, imageCostMicro());
+      dailySpendTaken = false;
+    } catch {
+      // Redis down: nothing reserved server-side to retry against.
+    }
+  };
 
   try {
     if (!verifyHuman()) {
@@ -104,13 +117,28 @@ export async function orchestrate(
     }
     quotaTaken = true;
 
+    // Both caps apply only to requests paid with our key. The future
+    // BYOK path must skip these reserves and check its own key instead.
     const total = await deps.kv.incrBy(spendKey(), imageCostMicro());
     spendTaken = true;
     if (budgetExceeded(total, deps.env.spendCapMicro)) {
       await refundSpendOnce();
       await refundQuotaOnce();
       await release();
-      return { status: "error", code: "budget", message: MSG_BUDGET };
+      return { status: "error", code: "budget", message: MSG_CREDITS_OUT };
+    }
+
+    const dailyTotal = await deps.kv.incrBy(dailyKey, imageCostMicro());
+    dailySpendTaken = true;
+    // Refresh the expiry on every reserve: cheap, idempotent, and keeps
+    // the key alive through a busy day without a separate read.
+    await deps.kv.expire(dailyKey, DAILY_SPEND_TTL_SEC);
+    if (budgetExceeded(dailyTotal, deps.env.dailySpendCapMicro)) {
+      await refundDailySpendOnce();
+      await refundSpendOnce();
+      await refundQuotaOnce();
+      await release();
+      return { status: "error", code: "daily_budget", message: MSG_CREDITS_OUT };
     }
 
     let bytes: Uint8Array;
@@ -124,6 +152,7 @@ export async function orchestrate(
         }),
       );
     } catch {
+      await refundDailySpendOnce();
       await refundSpendOnce();
       await refundQuotaOnce();
       await release();
@@ -154,6 +183,7 @@ export async function orchestrate(
         await release();
         return { status: "ready", url: raced, cached: true, caption: captionFor(req, deps.content) };
       }
+      await refundDailySpendOnce();
       await refundSpendOnce();
       await refundQuotaOnce();
       await release();
@@ -161,6 +191,7 @@ export async function orchestrate(
       return { status: "error", code: "unavailable", message: MSG_FAILED };
     }
   } catch {
+    if (dailySpendTaken) await refundDailySpendOnce();
     if (spendTaken) await refundSpendOnce();
     if (quotaTaken) await refundQuotaOnce();
     await release();
