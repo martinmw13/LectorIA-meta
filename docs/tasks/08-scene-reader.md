@@ -62,7 +62,7 @@ Budget is 250 words per sub-page. Oz averages 35 words per paragraph and 8.3 par
 
 ## Where state lives
 
-Scene id lives in the route and is the only source of truth. Sub-page index lives in client state inside `scene-page.tsx`, keyed by scene id so it resets on entry. "Enter at last sub-page" travels as `?at=end`, set only by the Prev button through `router.push`, read once on mount. Choice: intent stays in the URL because back and forward then land on the same sub-page.
+Scene id lives in the route and is the only source of truth. Sub-page index lives in client state inside `scene-page.tsx`, keyed by scene id so it resets on entry. "Enter at last sub-page" travels as a one-shot module flag in `scene-page.tsx`: the Prev move through `navReducer` sets it just before `router.push`, and the new page's `useState` initializer consumes and clears it. A direct URL load never sets it, so it starts at page 0. Choice: intent stays in client memory because a URL param forces a `Suspense` boundary and bails the static prerender out to client rendering.
 
 ## Layout and audio persistence
 
@@ -100,12 +100,12 @@ AGENTS.md product rules: replace the three scroll lines with "The reader shows o
 
 ## Scene isolation check
 
-`scripts/check-isolation.mjs` runs after `next build` in CI and in `package.json`. It picks a few scenes, takes excerpts from neighbor scene paragraphs, and scans the prerendered HTML and RSC files of each scene route for those excerpts. Any hit fails the build. Choice: built files are the real guarantee, since a pure view test cannot see payload leaks.
+`scripts/check-isolation.mjs` runs after `next build` in CI and in `package.json`. It walks every scene route, requires the scene's own first paragraph in the `.html` file itself, and probes every paragraph of both neighbours across the HTML and RSC files. Any neighbor hit, or any own text missing from the HTML, fails the build. Choice: built files are the real guarantee, since a pure view test cannot see payload leaks.
 
 ## Test list
 
-Vitest beside the code, no DOM library. Pagination: order kept, zero loss or duplication, oversize paragraph alone, empty scene one page, never crosses scenes. View model: chapter counts, prev and next ids, unknown id throws, no neighbor text in pages. Reducer: next and prev across sub-pages, scenes, and chapters, back lands last, bounds no-op, goto with `atEnd`, unknown id keeps state. Music: sub-page moves schedule nothing, scene entry calls `observeScene` once, first scene plays at once. Isolation: pure view test plus the post build scan. Prefs and scheduler tests from task 6 stay green.
+Vitest beside the code, no DOM library. Pagination: order kept, zero loss or duplication, oversize paragraph alone, empty scene one page, never crosses scenes. View model: chapter counts, prev and next ids, unknown id throws, no neighbor text in pages. Reducer: next and prev across sub-pages, scenes, and chapters, back lands last, bounds no-op, goto with `atEnd`, unknown id keeps state. Music: the `nextSceneEntry` gate observes once per route id only after the manifest lands (late manifest, repeats, back-nav sequence), and a scheduler pass moves the track after entry plus dwell then holds across ticks. Isolation: pure view test plus the post build scan. Prefs and scheduler tests from task 6 stay green.
 
 ## Risks
 
-Route params in the layout container can lag one render behind the new page, so the container must compare ids before observing. The `?at=end` param needs a Suspense boundary around the pager. Static output grows with 133 scene routes, so the build must stay static only with no per request code.
+Route params in the layout container can lag one render behind the new page, so the container must compare ids before observing. Static output grows with 133 scene routes, so the build must stay static only with no per request code. The `sceneTitle` prop is gone from `app/player.tsx`: the scene title is already the page heading, so the bar shows only track info.

@@ -30,7 +30,8 @@ and emotion triple only. Each scene page builds its view with
 and neighbor ids. Sub-pages come from `paginateScene` (250 words, split
 at paragraph boundaries). The pager moves sub-pages in client state and
 pushes routes with `router.push`, never `<Link>`; going back lands on
-the previous scene's last sub-page via `?at=end`. The client never
+the previous scene's last sub-page through a one-shot client flag, never
+a URL param, so prerendered pages stay static. The client never
 receives other scenes' text, titles, or summaries.
 
 ## Music library
