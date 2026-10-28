@@ -1,10 +1,10 @@
-// Word-mark treatment per skin. Only the three decided treatments
-// exist; today's "default" skin and anything unknown use engraving.
+// Word-mark treatment per skin. The six reader skins share the three
+// decided treatments; anything unknown uses engraving.
 export type HighlightTreatment = "engraving" | "watercolor" | "ink-doodle";
 
 export function highlightStyleFor(skin: string): HighlightTreatment {
-  if (skin === "watercolor") return "watercolor";
-  if (skin === "ink-doodle") return "ink-doodle";
+  if (skin === "watercolor" || skin === "chihiro") return "watercolor";
+  if (skin === "ink" || skin === "comic") return "ink-doodle";
   return "engraving";
 }
 

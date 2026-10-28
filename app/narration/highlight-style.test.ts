@@ -2,14 +2,18 @@ import { describe, expect, it } from "vitest";
 import { engravingScale, highlightStyleFor } from "./highlight-style";
 
 describe("highlightStyleFor", () => {
-  it("maps each decided skin to its treatment", () => {
+  it("maps all six skins to their treatment", () => {
     expect(highlightStyleFor("engraving")).toBe("engraving");
+    expect(highlightStyleFor("pencil")).toBe("engraving");
     expect(highlightStyleFor("watercolor")).toBe("watercolor");
-    expect(highlightStyleFor("ink-doodle")).toBe("ink-doodle");
+    expect(highlightStyleFor("chihiro")).toBe("watercolor");
+    expect(highlightStyleFor("ink")).toBe("ink-doodle");
+    expect(highlightStyleFor("comic")).toBe("ink-doodle");
   });
 
   it("falls back to engraving for today and unknown skins", () => {
     expect(highlightStyleFor("default")).toBe("engraving");
+    expect(highlightStyleFor("ink-doodle")).toBe("engraving");
     expect(highlightStyleFor("")).toBe("engraving");
     expect(highlightStyleFor("noir")).toBe("engraving");
   });
