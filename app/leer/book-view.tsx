@@ -72,6 +72,7 @@ export function BookView({
     manifest: narration.manifest,
     span: narration.span,
     columnRef: readColRef,
+    seekTo: narration.seekTo,
   });
 
   const order = useMemo(() => model.chapters.flatMap((c) => c.scenes.map((s) => s.id)), [model]);
