@@ -86,3 +86,31 @@ export type AnalyzedScene = Scene & SceneEmotion;
 
 export const LOW_CONFIDENCE = 0.6;
 export const FEATURE_WEIGHTS = { intensity: 0.5, tempo: 0.5 } as const;
+
+// Image API contract. Request names the selection by paragraph ordinals;
+// the response is a Blob URL, never bytes. No routes yet.
+export interface ImageRequest {
+  bookId: string;
+  textVersion: string;
+  firstN: number;
+  lastN: number;
+}
+
+export interface ImageResponse {
+  url: string;
+}
+
+export interface ChatMessage {
+  role: "user" | "assistant";
+  text: string;
+}
+
+// Chat API contract. Server builds context from the book text up to
+// positionN (whole book when spoilerMode), prefix first, question last.
+export interface ChatRequest {
+  bookId: string;
+  textVersion: string;
+  positionN: number;
+  spoilerMode: boolean;
+  messages: ChatMessage[];
+}
