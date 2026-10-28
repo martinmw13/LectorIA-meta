@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
-import { Caveat, EB_Garamond, IM_Fell_English, IM_Fell_English_SC, Instrument_Sans, Lora, Newsreader } from 'next/font/google';
+import { Caveat, EB_Garamond, IM_Fell_English, IM_Fell_English_SC, Instrument_Sans, Kalam, Lora, Newsreader } from 'next/font/google';
 import './globals.css';
 import { DEFAULT_SKIN, SKIN_SCRIPT } from './skin';
 import { THEME_SCRIPT } from './theme';
@@ -60,7 +60,16 @@ const lora = Lora({
   preload: false,
 });
 
-const FONT_VARS = [newsreader, instrumentSans, fell, fellSC, garamond, caveat, lora].map((f) => f.variable).join(' ');
+// Ink skin hand for labels and buttons (Caveat and Newsreader are shared).
+const kalam = Kalam({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-kalam',
+  display: 'swap',
+  preload: false,
+});
+
+const FONT_VARS = [newsreader, instrumentSans, fell, fellSC, garamond, caveat, lora, kalam].map((f) => f.variable).join(' ');
 
 export const metadata: Metadata = {
   title: 'Lectoria',

@@ -19,6 +19,12 @@ const HERO: Partial<Record<SkinId, HeroArt>> = {
     chopin: "/art/skins/watercolor/chopin.svg",
     narrate: "/art/skins/watercolor/narrate.svg",
   },
+  ink: {
+    orchestra: "/art/skins/ink/orchestra.svg",
+    piano: "/art/skins/ink/piano.svg",
+    chopin: "/art/skins/ink/chopin.svg",
+    narrate: "/art/skins/ink/narrate.svg",
+  },
 };
 
 export function heroArt(skin: SkinId): HeroArt | null {
