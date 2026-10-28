@@ -1,0 +1,29 @@
+name: muse-label
+
+# Adds the "Muse Code" label to a PR when any of its commits carries the
+# Muse Code co-author trailer and is not a rescue commit.
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  label:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Label Muse PRs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          count=$(gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$PR/commits?per_page=100" \
+            --jq '[.[].commit.message | select(contains("Co-authored-by: Muse Code (Meta) <muse-code@agents.noreply.invalid>") and (test("(^|\n)Rescue:") | not))] | length' \
+            | awk '{s+=$1} END {print s+0}')
+          echo "Muse commits: $count"
+          if [ "$count" -gt 0 ]; then
+            gh pr edit "$PR" -R "$GITHUB_REPOSITORY" --add-label 'Muse Code'
+          fi
