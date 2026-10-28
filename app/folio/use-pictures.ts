@@ -106,7 +106,14 @@ export function usePictures({
   );
   const [popover, setPopover] = useState<{ top: number; left: number } | null>(null);
   const [lightbox, setLightbox] = useState<LightboxItem | null>(null);
-  const viewRef = useRef<HTMLDivElement | null>(null);
+  // The text view mounts late on a chapter's first scene (cover first),
+  // so the node is tracked in state and the listener follows it.
+  const viewNodeRef = useRef<HTMLDivElement | null>(null);
+  const [viewEl, setViewEl] = useState<HTMLDivElement | null>(null);
+  const viewRef = useCallback((node: HTMLDivElement | null) => {
+    viewNodeRef.current = node;
+    setViewEl(node);
+  }, []);
   const popRef = useRef<HTMLButtonElement | null>(null);
   const openerRef = useRef<HTMLElement | null>(null);
   const busyRef = useRef(false);
@@ -186,7 +193,7 @@ export function usePictures({
   );
 
   const illustratePassage = useCallback(() => {
-    const view = viewRef.current;
+    const view = viewNodeRef.current;
     const sel = window.getSelection();
     if (!view || !sel || !sel.rangeCount || !canStart(busyRef.current)) return;
     const quote = sel.toString().trim();
@@ -229,7 +236,7 @@ export function usePictures({
   );
 
   useEffect(() => {
-    const view = viewRef.current;
+    const view = viewEl;
     if (!view) return;
     let frame = 0;
     const onMouseUp = () => {
@@ -258,7 +265,7 @@ export function usePictures({
       cancelAnimationFrame(frame);
       view.removeEventListener("mouseup", onMouseUp);
     };
-  }, [sceneId]);
+  }, [viewEl]);
 
   useEffect(() => {
     if (!popover) return;

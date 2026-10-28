@@ -18,7 +18,9 @@ Chopin to Chopin exits keeping the stored selection like `playlistToggled`
 exiting, and Chopin to a style exits under the target selection in one
 switch with one crossfade. `playlistToggled` and `styleChanged` still work. A
 stored Chopin mode starts the session in the playlist; without the
-playlist the stored style stands.
+playlist the stored style stands. Persistence itself lives in
+`app/music-prefs.ts`: one store owns the prefs and partial updates
+merge over the last known full object.
 
 All three mode intents route through one `transition` function taking a
 `ModeTarget` (`style`, `enterPlaylist`, or `exitPlaylist` with a style
