@@ -1,5 +1,17 @@
 {
-  "version": 2,
+  "version": 3,
+  "styles": [
+    { "id": "orchestral", "name": "Orquesta" },
+    { "id": "piano", "name": "Piano" }
+  ],
+  "soundtracks": [
+    {
+      "id": "placeholder-musicgen",
+      "name": "MusicGen placeholder",
+      "style": "orchestral",
+      "credit": "MusicGen placeholder output for the demo. Replace with the final recording. CC-BY-NC-4.0."
+    }
+  ],
   "tracks": [
     {
       "id": "oz-test-01",
@@ -20,6 +32,8 @@
       "tempo": 0.245,
       "durationSec": 10,
       "loop": true,
+      "soundtrack": "placeholder-musicgen",
+      "style": "orchestral",
       "source": "generated",
       "license": "CC-BY-NC-4.0",
       "attribution": "MusicGen placeholder output for the demo. Replace with the final recording."
@@ -42,6 +56,8 @@
       "intensity": 0.53,
       "tempo": 0.539,
       "durationSec": 10,
+      "soundtrack": "placeholder-musicgen",
+      "style": "orchestral",
       "source": "generated",
       "license": "CC-BY-NC-4.0",
       "attribution": "MusicGen placeholder output for the demo. Replace with the final recording."

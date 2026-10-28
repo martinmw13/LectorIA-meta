@@ -8,7 +8,11 @@ describe("committed music manifest", () => {
   it("parses and every file src exists under public/", () => {
     const raw = readFileSync(join(__dirname, "..", "public", "music", "manifest.json"), "utf8");
     const manifest = parseManifest(JSON.parse(raw));
-    expect(manifest.version).toBe(2);
+    expect(manifest.version).toBe(3);
+    expect(manifest.styles).toEqual([
+      { id: "orchestral", name: "Orquesta" },
+      { id: "piano", name: "Piano" },
+    ]);
     expect(manifest.tracks.length).toBeGreaterThan(0);
     for (const track of manifest.tracks) {
       if (track.src.startsWith("/")) {

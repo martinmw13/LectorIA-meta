@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { MUSIC_CONFIG } from "@/core/music";
-import type { Track } from "@/core/music";
+import type { StyleInfo, Track } from "@/core/music";
+import { PlayerControls } from "./player-controls";
 
 // Two audio elements with equal-power crossfades. Volume lives in a
 // ref, so the slider never re-runs the track effect or touches src.
@@ -10,18 +11,42 @@ import type { Track } from "@/core/music";
 // affects visuals; the audio fade always runs its full length.
 export function Player({
   track,
+  replayNonce,
   fadeSec,
   sceneTitle,
+  soundtrackName,
+  isFallback,
   canSkip,
   onSkip,
+  mixOn,
+  onToggleMix,
+  styles,
+  styleId,
+  onStyleChange,
   onEnded,
+  playlistOn,
+  playlistLabel,
+  onTogglePlaylist,
+  controlsDisabled,
 }: {
   track: Track | null;
+  replayNonce: number;
   fadeSec: number;
   sceneTitle: string | null;
+  soundtrackName: string | null;
+  isFallback: boolean;
   canSkip: boolean;
   onSkip: () => void;
+  mixOn: boolean;
+  onToggleMix: () => void;
+  styles: StyleInfo[];
+  styleId: string | null;
+  onStyleChange: (style: string) => void;
   onEnded: (trackId: string) => void;
+  playlistOn: boolean;
+  playlistLabel: string | null;
+  onTogglePlaylist: () => void;
+  controlsDisabled: boolean;
 }) {
   const firstRef = useRef<HTMLAudioElement | null>(null);
   const secondRef = useRef<HTMLAudioElement | null>(null);
@@ -152,17 +177,20 @@ export function Player({
       }
       return;
     }
-    // The single start path: fade 0 on the very first press.
+    // The single start path: fade 0 on the very first press. replayNonce
+    // re-cues the same track (one-track playlist wrap); nothing else is a dep
+    // so volume, pause/play, and re-renders never restart the track.
     const dur = firstPlayRef.current ? 0 : fadeSecRef.current;
     firstPlayRef.current = false;
     requestPlayRef.current(next, dur);
-  }, [started, trackId]);
+  }, [started, trackId, replayNonce]);
 
   useEffect(() => cancelFade, []);
 
   function handleTimeUpdate(index: number, el: HTMLAudioElement) {
     const next = trackRef.current;
-    if (!next || !next.loop || index !== audibleRef.current) return;
+    // A playlist track always runs to its end so the scheduler advances.
+    if (!next || !next.loop || playlistOn || index !== audibleRef.current) return;
     const fade = loopFadeSec();
     const duration = el.duration;
     if (!Number.isFinite(duration) || duration <= fade * 2) return;
@@ -184,7 +212,7 @@ export function Player({
     }
     const next = trackRef.current;
     if (!next) return;
-    if (next.loop) {
+    if (next.loop && !playlistOn) {
       requestPlayRef.current(next, loopFadeSec());
       return;
     }
@@ -227,7 +255,9 @@ export function Player({
 
   const credit = track ? [track.composer, track.artist].filter(Boolean).join(", ") : "";
   const detail = track
-    ? [track.emotion, credit || null, track.license || null].filter(Boolean).join(" · ")
+    ? [playlistOn ? null : track.emotion, soundtrackName, credit || null, track.license || null]
+        .filter(Boolean)
+        .join(" · ")
     : null;
 
   return (
@@ -254,9 +284,20 @@ export function Player({
           aria-label="Volume"
         />
       </label>
-      <button type="button" onClick={onSkip} disabled={!canSkip} aria-label="Change track">
-        Change track
-      </button>
+      <PlayerControls
+        canNext={canSkip}
+        onNext={onSkip}
+        mixOn={mixOn}
+        onToggleMix={onToggleMix}
+        styles={styles}
+        styleId={styleId}
+        onStyleChange={onStyleChange}
+        playlistLabel={playlistLabel}
+        playlistOn={playlistOn}
+        onTogglePlaylist={onTogglePlaylist}
+        controlsDisabled={controlsDisabled}
+      />
+      {isFallback && !playlistOn ? <span className="player-note">de otra banda sonora</span> : null}
       {track?.attribution ? <span className="player-note">{track.attribution}</span> : null}
       {track?.sourceUrl ? (
         <a className="player-note" href={track.sourceUrl} rel="noopener noreferrer" target="_blank">

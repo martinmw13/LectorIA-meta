@@ -3,6 +3,7 @@ import { MUSIC_CONFIG, rankTracks, scoreTrack } from "./music";
 import type { SceneSignal, Track } from "./music";
 import type { Vector8 } from "./types";
 import { EMOTIONS } from "./types";
+import type { MusicManifest, SelectEnv } from "./music";
 import {
   initScheduler,
   noteTrackEnded,
@@ -10,6 +11,11 @@ import {
   requestNext,
   tickScheduler,
 } from "./music-schedule";
+
+const env: SelectEnv = {
+  selection: { mode: "soundtrack", soundtrackId: "snd", style: "orchestral" },
+  rng: () => 0,
+};
 
 function vec(top: string): Vector8 {
   const v = Object.fromEntries(EMOTIONS.map((id) => [id, 0.01])) as Record<string, number>;
@@ -33,11 +39,16 @@ function track(id: string, top: string, intensity = 0.5, tempo = 0.5): Track {
     durationSec: 120,
     startSec: 0,
     loop: true,
+    soundtrack: "snd",
+    style: "orchestral",
   };
 }
 
-const manifest = {
-  version: 2,
+const manifest: MusicManifest = {
+  version: 3,
+  styles: [{ id: "orchestral", name: "Orquesta" }],
+  soundtracks: [{ id: "snd", name: "Snd", style: "orchestral" }],
+  playlists: [],
   tracks: [
     track("sad-a", "tristeza", 0.5, 0.5),
     track("sad-b", "tristeza", 0.6, 0.5),
@@ -48,7 +59,7 @@ const manifest = {
 };
 
 function firstActive(top: string, at = 0) {
-  return observeScene(initScheduler(), "s1", signal(top), manifest, at);
+  return observeScene(initScheduler(), "s1", signal(top), manifest, at, env);
 }
 
 // A scene whose best track beats sad-a by a mid margin: past the switch
@@ -84,12 +95,12 @@ describe("observeScene and tickScheduler", () => {
   it("holds a new scene for dwellSec, then switches with the normal fade", () => {
     const mid = midSignal();
     let d = firstActive("tristeza");
-    d = observeScene(d.state, "s2", mid, manifest, 50);
+    d = observeScene(d.state, "s2", mid, manifest, 50, env);
     expect(d.switchToId).toBeNull();
     expect(d.state.pendingSceneId).toBe("s2");
-    const early = tickScheduler(d.state, mid, manifest, 60);
+    const early = tickScheduler(d.state, mid, manifest, 60, env);
     expect(early.switchToId).toBeNull();
-    const late = tickScheduler(d.state, mid, manifest, 70);
+    const late = tickScheduler(d.state, mid, manifest, 70, env);
     expect(late.state.activeSceneId).toBe("s2");
     expect(late.switchToId).toBe(rankTracks(mid, manifest)[0]?.id);
     expect(late.crossfadeSec).toBe(MUSIC_CONFIG.crossfadeSec);
@@ -102,8 +113,8 @@ describe("observeScene and tickScheduler", () => {
       scoreTrack(s, manifest.tracks[1] as Track) - scoreTrack(s, manifest.tracks[0] as Track);
     expect(gap).toBeLessThan(MUSIC_CONFIG.switchMargin);
     let d = firstActive("tristeza");
-    d = observeScene(d.state, "s2", s, manifest, 100);
-    const settled = tickScheduler(d.state, s, manifest, 130);
+    d = observeScene(d.state, "s2", s, manifest, 100, env);
+    const settled = tickScheduler(d.state, s, manifest, 130, env);
     expect(settled.state.activeSceneId).toBe("s2");
     expect(settled.switchToId).toBeNull();
   });
@@ -134,8 +145,8 @@ describe("observeScene and tickScheduler", () => {
     expect(gapOf(wHi)).toBeGreaterThanOrEqual(MUSIC_CONFIG.switchMargin);
     const run = (w: number) => {
       let d = firstActive("tristeza");
-      d = observeScene(d.state, "s2", mix(w), manifest, 100);
-      return tickScheduler(d.state, mix(w), manifest, 130);
+      d = observeScene(d.state, "s2", mix(w), manifest, 100, env);
+      return tickScheduler(d.state, mix(w), manifest, 130, env);
     };
     expect(run(wLo).switchToId).toBeNull();
     const hi = run(wHi);
@@ -145,11 +156,11 @@ describe("observeScene and tickScheduler", () => {
   it("holds a mid win until minTrackSec, then switches", () => {
     const mid = midSignal();
     let d = firstActive("tristeza");
-    d = observeScene(d.state, "s2", mid, manifest, 10);
-    const early = tickScheduler(d.state, mid, manifest, 30);
+    d = observeScene(d.state, "s2", mid, manifest, 10, env);
+    const early = tickScheduler(d.state, mid, manifest, 30, env);
     expect(early.state.activeSceneId).toBe("s2");
     expect(early.switchToId).toBeNull();
-    const late = tickScheduler(early.state, mid, manifest, 56);
+    const late = tickScheduler(early.state, mid, manifest, 56, env);
     expect(late.switchToId).toBe(rankTracks(mid, manifest)[0]?.id);
     expect(late.crossfadeSec).toBe(MUSIC_CONFIG.crossfadeSec);
     expect(late.hardCut).toBe(false);
@@ -161,8 +172,8 @@ describe("observeScene and tickScheduler", () => {
       scoreTrack(s, manifest.tracks[3] as Track) - scoreTrack(s, manifest.tracks[0] as Track);
     expect(gap).toBeGreaterThanOrEqual(MUSIC_CONFIG.hardCutMargin);
     let d = firstActive("tristeza");
-    d = observeScene(d.state, "s2", s, manifest, 10);
-    const settled = tickScheduler(d.state, s, manifest, 30);
+    d = observeScene(d.state, "s2", s, manifest, 10, env);
+    const settled = tickScheduler(d.state, s, manifest, 30, env);
     expect(settled.state.activeSceneId).toBe("s2");
     expect(settled.switchToId).toBe("calm");
     expect(settled.hardCut).toBe(true);
@@ -171,29 +182,29 @@ describe("observeScene and tickScheduler", () => {
 
   it("keeps only the newest scene on a fast scroll", () => {
     let d = firstActive("tristeza");
-    d = observeScene(d.state, "s2", signal("calma"), manifest, 50);
+    d = observeScene(d.state, "s2", signal("calma"), manifest, 50, env);
     expect(d.state.pendingSceneId).toBe("s2");
-    d = observeScene(d.state, "s3", signal("suspenso"), manifest, 55);
+    d = observeScene(d.state, "s3", signal("suspenso"), manifest, 55, env);
     expect(d.state.pendingSceneId).toBe("s3");
-    const early = tickScheduler(d.state, signal("suspenso"), manifest, 70);
+    const early = tickScheduler(d.state, signal("suspenso"), manifest, 70, env);
     expect(early.state.activeSceneId).toBe("s1");
-    const late = tickScheduler(d.state, signal("suspenso"), manifest, 76);
+    const late = tickScheduler(d.state, signal("suspenso"), manifest, 76, env);
     expect(late.state.activeSceneId).toBe("s3");
     expect(late.switchToId).toBe("tense");
   });
 
   it("returns to the active scene clears a pending scene with no switch", () => {
     let d = firstActive("tristeza");
-    d = observeScene(d.state, "s2", signal("calma"), manifest, 50);
-    d = observeScene(d.state, "s1", signal("tristeza"), manifest, 55);
+    d = observeScene(d.state, "s2", signal("calma"), manifest, 50, env);
+    d = observeScene(d.state, "s1", signal("tristeza"), manifest, 55, env);
     expect(d.state.pendingSceneId).toBeNull();
     expect(d.switchToId).toBeNull();
   });
 
   it("a null scene promotes with no switch", () => {
     let d = firstActive("tristeza");
-    d = observeScene(d.state, "s2", null, manifest, 100);
-    const settled = tickScheduler(d.state, null, manifest, 130);
+    d = observeScene(d.state, "s2", null, manifest, 100, env);
+    const settled = tickScheduler(d.state, null, manifest, 130, env);
     expect(settled.state.activeSceneId).toBe("s2");
     expect(settled.switchToId).toBeNull();
   });
@@ -202,14 +213,14 @@ describe("observeScene and tickScheduler", () => {
 describe("requestNext", () => {
   it("holds the override on the same scene past minTrackSec, even with a hard-cut gap", () => {
     let d = firstActive("tristeza");
-    d = requestNext(d.state, signal("tristeza"), manifest, 5);
+    d = requestNext(d.state, signal("tristeza"), manifest, 5, env);
     expect(d.state.overrideId).toBe("sad-b");
     const calm = signal("calma");
     const best = rankTracks(calm, manifest)[0] as Track;
     const gap =
       scoreTrack(calm, best) - scoreTrack(calm, manifest.tracks[1] as Track);
     expect(gap).toBeGreaterThanOrEqual(MUSIC_CONFIG.hardCutMargin);
-    const held = tickScheduler(d.state, calm, manifest, 5 + MUSIC_CONFIG.minTrackSec + 10);
+    const held = tickScheduler(d.state, calm, manifest, 5 + MUSIC_CONFIG.minTrackSec + 10, env);
     expect(held.switchToId).toBeNull();
     expect(held.state.currentId).toBe("sad-b");
     expect(held.state.overrideId).toBe("sad-b");
@@ -222,8 +233,8 @@ describe("requestNext", () => {
       scoreTrack(mid, best) - scoreTrack(mid, manifest.tracks[1] as Track),
     ).toBeGreaterThanOrEqual(MUSIC_CONFIG.switchMargin);
     let d = firstActive("tristeza");
-    d = requestNext(d.state, signal("tristeza"), manifest, 5);
-    const held = tickScheduler(d.state, mid, manifest, 5 + MUSIC_CONFIG.minTrackSec + 5);
+    d = requestNext(d.state, signal("tristeza"), manifest, 5, env);
+    const held = tickScheduler(d.state, mid, manifest, 5 + MUSIC_CONFIG.minTrackSec + 5, env);
     expect(held.switchToId).toBeNull();
     expect(held.state.currentId).toBe("sad-b");
     expect(held.state.overrideId).toBe("sad-b");
@@ -231,9 +242,9 @@ describe("requestNext", () => {
 
   it("resumes normal rules after a new scene is promoted", () => {
     let d = firstActive("tristeza");
-    d = requestNext(d.state, signal("tristeza"), manifest, 5);
-    d = observeScene(d.state, "s2", signal("calma"), manifest, 50);
-    const settled = tickScheduler(d.state, signal("calma"), manifest, 50 + MUSIC_CONFIG.dwellSec + 1);
+    d = requestNext(d.state, signal("tristeza"), manifest, 5, env);
+    d = observeScene(d.state, "s2", signal("calma"), manifest, 50, env);
+    const settled = tickScheduler(d.state, signal("calma"), manifest, 50 + MUSIC_CONFIG.dwellSec + 1, env);
     expect(settled.state.overrideId).toBeNull();
     expect(settled.switchToId).toBe("calm");
     expect(settled.hardCut).toBe(true);
@@ -241,14 +252,14 @@ describe("requestNext", () => {
 
   it("holds the override until the scene changes, then clears it", () => {
     let d = firstActive("tristeza");
-    d = requestNext(d.state, signal("tristeza"), manifest, 5);
+    d = requestNext(d.state, signal("tristeza"), manifest, 5, env);
     expect(d.switchToId).toBe("sad-b");
     expect(d.crossfadeSec).toBe(MUSIC_CONFIG.crossfadeSec);
     expect(d.state.overrideId).toBe("sad-b");
     // Same scene again: override still stands, current unchanged.
     expect(d.state.currentId).toBe("sad-b");
-    d = observeScene(d.state, "s2", signal("tristeza"), manifest, 40);
-    const settled = tickScheduler(d.state, signal("tristeza"), manifest, 61);
+    d = observeScene(d.state, "s2", signal("tristeza"), manifest, 40, env);
+    const settled = tickScheduler(d.state, signal("tristeza"), manifest, 61, env);
     expect(settled.state.overrideId).toBeNull();
     // The override track was the base: sad-b still holds a near scene.
     expect(settled.state.currentId).toBe("sad-b");
@@ -259,16 +270,16 @@ describe("requestNext", () => {
 describe("noteTrackEnded", () => {
   it("fades into the best remaining track excluding the ended one", () => {
     let d = firstActive("tristeza");
-    d = noteTrackEnded(d.state, signal("tristeza"), manifest, "sad-a", 200);
+    d = noteTrackEnded(d.state, signal("tristeza"), manifest, "sad-a", 200, env);
     expect(d.switchToId).toBe("sad-b");
     expect(d.crossfadeSec).toBe(MUSIC_CONFIG.crossfadeSec);
   });
 
   it("clears the skip override", () => {
     let d = firstActive("tristeza");
-    d = requestNext(d.state, signal("tristeza"), manifest, 5);
+    d = requestNext(d.state, signal("tristeza"), manifest, 5, env);
     expect(d.state.overrideId).toBe("sad-b");
-    d = noteTrackEnded(d.state, signal("tristeza"), manifest, "sad-b", 200);
+    d = noteTrackEnded(d.state, signal("tristeza"), manifest, "sad-b", 200, env);
     expect(d.state.overrideId).toBeNull();
     expect(d.state.overrideSceneId).toBeNull();
     expect(d.switchToId).toBe("sad-a");
