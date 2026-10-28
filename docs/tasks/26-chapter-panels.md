@@ -28,7 +28,7 @@ no generation, no network calls.
   purple), `app/styles/chapters.css`.
 - `app/folio/use-pictures.ts`: read-only `getCachedScenePicture`
   getter; behaviour unchanged.
-- Contract delta lives in `docs/contracts-chapters.md`, not
+- Contract delta lives in `docs/contracts/chapter-panels.md`, not
   `docs/contracts.md`.
 
 ## Checks

@@ -22,3 +22,4 @@ Details live in these files:
 - [Picture vault and style pref](contracts/picture-vault-and-style-pref.md)
 - [Chat api](contracts/chat-api.md)
 - [Quotas and budget](contracts/quotas-and-budget.md)
+- [Chapter panels](contracts/chapter-panels.md)
