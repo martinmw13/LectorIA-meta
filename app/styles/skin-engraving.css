@@ -113,7 +113,7 @@ html[data-skin="engraving"] .top-line {
   border-bottom: 3px double var(--eng-ink);
 }
 
-html[data-skin="engraving"] :is(.band-pager, .band-play) {
+html[data-skin="engraving"] .band-play {
   border-top: 3px double var(--eng-ink);
 }
 

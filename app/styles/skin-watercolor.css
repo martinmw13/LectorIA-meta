@@ -110,11 +110,11 @@ html[data-skin="watercolor"]:not([data-theme="dark"]) .top-line {
   background: linear-gradient(180deg, rgba(220, 233, 255, 0.55), transparent);
 }
 
-html[data-skin="watercolor"] :is(.band-pager, .band-play) {
+html[data-skin="watercolor"] .band-play {
   border-top: 0;
 }
 
-html[data-skin="watercolor"]:not([data-theme="dark"]) :is(.band-pager, .band-play) {
+html[data-skin="watercolor"]:not([data-theme="dark"]) .band-play {
   background: linear-gradient(0deg, rgba(220, 233, 255, 0.6), rgba(251, 248, 241, 0));
 }
 

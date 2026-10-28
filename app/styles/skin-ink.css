@@ -107,7 +107,7 @@ html[data-skin="ink"] .top-line {
   border-bottom: 2px solid var(--color-accent);
 }
 
-html[data-skin="ink"] :is(.band-pager, .band-play) {
+html[data-skin="ink"] .band-play {
   border-top: 2px solid var(--color-accent);
 }
 

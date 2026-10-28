@@ -74,8 +74,14 @@ html[data-skin="chihiro"][data-theme="light"] body {
 }
 
 html[data-skin="chihiro"][data-theme="light"] .top-line,
-html[data-skin="chihiro"][data-theme="light"] .home-brand {
+html[data-skin="chihiro"][data-theme="light"] .home-brand,
+html[data-skin="chihiro"][data-theme="light"] .band-pager {
   text-shadow: 0 0 8px rgba(255, 240, 220, 0.95);
+}
+
+/* The scene ticks sit on the sky, where the cream border colour vanishes. */
+html[data-skin="chihiro"][data-theme="light"] .band-pager .ticks i:not(.on) {
+  background: rgba(110, 98, 90, 0.45);
 }
 
 html[data-skin="chihiro"][data-theme="light"] h1.chapter-title {

@@ -97,7 +97,7 @@ html[data-skin="pencil"] .top-line {
     bottom / 100% 1px no-repeat;
 }
 
-html[data-skin="pencil"] :is(.band-pager, .band-play) {
+html[data-skin="pencil"] .band-play {
   border-top-color: rgba(50, 52, 56, 0.22);
 }
 
