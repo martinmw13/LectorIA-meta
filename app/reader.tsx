@@ -129,7 +129,7 @@ export function Reader({
     } catch {
       // The inline script already set a theme; keep the default.
     }
-    if (window.location.search.includes("dev")) setDevOpen(true);
+    if (new URLSearchParams(window.location.search).has("dev")) setDevOpen(true);
   }, []);
 
   useEffect(() => {

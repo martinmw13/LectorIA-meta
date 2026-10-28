@@ -67,6 +67,8 @@
   font-style: italic;
   font-size: 15.5px;
   line-height: 1.35;
+  flex: 1 1 auto;
+  min-width: 0;
   max-width: 300px;
   white-space: nowrap;
   overflow: hidden;

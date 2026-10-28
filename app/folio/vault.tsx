@@ -102,62 +102,51 @@ export function PictureVault({
       ) : (
         <div className="vault-list">
           {scene ? (
-            <button type="button" className="vault-item" onClick={onGotoScene}>
-              <span className="vault-thumb">
-                <img src={scene.url} alt="" />
-              </span>
-              <span className="vault-cap">{scene.caption}</span>
-              <span className="vault-meta">
-                <span className="vault-ref">This scene</span>
-                <span
+            <div className="vault-item">
+              <button type="button" className="vault-goto" onClick={onGotoScene} aria-label={`Go to ${scene.caption}`}>
+                <span className="vault-thumb">
+                  <img src={scene.url} alt="" />
+                </span>
+                <span className="vault-cap">{scene.caption}</span>
+              </button>
+              <div className="vault-meta">
+                <button
+                  type="button"
                   className="vault-x"
-                  role="button"
-                  tabIndex={0}
                   aria-label="View larger"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onOpen(scene.url, scene.caption, null);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.stopPropagation();
-                      onOpen(scene.url, scene.caption, null);
-                    }
-                  }}
+                  onClick={() => onOpen(scene.url, scene.caption, null)}
                 >
                   <ExpandIcon />
-                </span>
-              </span>
-            </button>
+                </button>
+              </div>
+            </div>
           ) : null}
           {ordered.map((f) => (
-            <button key={f.id} type="button" className="vault-item" onClick={() => onGotoFigure(f)}>
-              <span className="vault-thumb">
-                <img src={f.url ?? ""} alt="" />
-              </span>
-              <span className="vault-cap">{`\u201C${truncateCaption(f.quote)}\u201D`}</span>
-              <span className="vault-meta">
-                <span className="vault-ref">This scene</span>
-                <span
+            <div key={f.id} className="vault-item">
+              <button
+                type="button"
+                className="vault-goto"
+                onClick={() => onGotoFigure(f)}
+                aria-label={`Go to picture: ${truncateCaption(f.quote)}`}
+              >
+                <span className="vault-thumb">
+                  <img src={f.url ?? ""} alt="" />
+                </span>
+                <span className="vault-cap">{`\u201C${truncateCaption(f.quote)}\u201D`}</span>
+              </button>
+              <div className="vault-meta">
+                <button
+                  type="button"
                   className="vault-x"
-                  role="button"
-                  tabIndex={0}
                   aria-label="View larger"
-                  onClick={(e) => {
-                    e.stopPropagation();
+                  onClick={() => {
                     if (f.url) onOpen(f.url, f.quote, null);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.stopPropagation();
-                      if (f.url) onOpen(f.url, f.quote, null);
-                    }
                   }}
                 >
                   <ExpandIcon />
-                </span>
-              </span>
-            </button>
+                </button>
+              </div>
+            </div>
           ))}
         </div>
       )}
