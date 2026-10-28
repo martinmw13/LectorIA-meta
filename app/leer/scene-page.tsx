@@ -118,9 +118,11 @@ export function ScenePage({
     <article aria-labelledby="scene-heading">
       <div className="scene-view" ref={pic.viewRef}>
         <p className="scene-progress">
-          <span>
-            {`Chapter ${view.ch} · ${view.chapterTitle} · Scene ${view.k} of ${view.n}${view.pages.length > 1 ? ` · Page ${page + 1} of ${view.pages.length}` : ""}`}
+          <span className="scene-progress-chapter">{`Chapter ${view.ch} · ${view.chapterTitle}`}</span>
+          <span className="scene-progress-sep" aria-hidden="true">
+            ·
           </span>
+          <span>{`Scene ${view.k} of ${view.n}${view.pages.length > 1 ? ` · Page ${page + 1} of ${view.pages.length}` : ""}`}</span>
           <button
             type="button"
             className="picture-scene"
