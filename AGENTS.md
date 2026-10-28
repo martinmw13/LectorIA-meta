@@ -105,8 +105,9 @@ Owner decisions. Short and binding.
 - Spend is counted in integer micro-dollars. Reserve with Redis `INCRBY` before each model call and refund with `DECRBY` after. Reserve per call, including retries.
 - The server clamps every model tool argument. Tool arguments are untrusted input.
 - The CSP allows `challenges.cloudflare.com` (script and frame) and `*.public.blob.vercel-storage.com` (images).
-- The "Picture this" cache key is the paragraph range the selection touches (`firstPara..lastPara` ordinals) plus `textVersion` plus `promptVersion`. The prompt is built from those paragraphs.
-- Images are cached only in Vercel Blob at deterministic paths (`addRandomSuffix: false`, check with `head()`). No Redis index. Routes return Blob URLs, never image bytes.
+- The "Picture this" cache key is the book plus the paragraph where the selection starts plus `textVersion` plus `promptVersion`. Never generate the same image twice for one paragraph. The prompt is built from that paragraph plus scene context.
+- The "Picture scene" cache key is the book plus the scene id plus `textVersion` plus `promptVersion`.
+- Images live in Vercel Blob at deterministic public paths (`addRandomSuffix: false`, `allowOverwrite: false`). An index in Upstash Redis maps key to Blob URL so hits are one Redis GET; on an index miss check the Blob path with `head()` before generating and backfill the index. Routes return Blob URLs, never image bytes.
 - Modal endpoints require proxy auth. Tokens live only in env.
 
 ## Security rules

@@ -18,6 +18,7 @@
     "test:hooks": "node --test scripts/*.test.mjs"
   },
   "dependencies": {
+    "@vercel/blob": "2.8.2",
     "next": "16.4.3",
     "react": "19.3.1",
     "react-dom": "19.3.1",

@@ -200,13 +200,34 @@ keyboard use. `app/player.tsx` keeps the audio engine and bar layout;
 
 ## Image api
 
-Contract only, no routes. Request `{ bookId, textVersion, firstN, lastN
-}` names the selection by touched paragraph ordinals. Response `{ url }`
-is a Vercel Blob URL. The cache key is `firstN..lastN` plus
-`textVersion` plus `promptVersion` at a deterministic Blob path with
-`addRandomSuffix: false`. The server checks the path with `head()`
-before generating and never returns bytes. The same paragraph range
-reuses the image. Types live in `core/types.ts`.
+`POST /api/images` (Node runtime, `maxDuration` 120). Request is a
+discriminated union: `{ kind: "passage", bookId, textVersion, n }` names
+the paragraph where the selection starts, `{ kind: "scene", bookId,
+textVersion, sceneId }` names the scene. Validation is strict: known
+book, matching `textVersion`, integer `n` inside the book, known
+`sceneId`. Any other body is a 400 with a generic Spanish message.
+The client sends ordinals and ids only, never text.
+
+Responses (typed in `core/types.ts`): `{ status: "ready", url, cached,
+caption }` with a Vercel Blob URL, never bytes; `{ status: "pending" }`
+when another request holds the lock, in which case the client reposts
+every 3 s up to about 2 minutes; `{ status: "error", code, message }`
+where code is `quota`, `budget`, `unavailable`, or `bad_request` with a
+friendly Spanish message. Caption is the scene title for scenes and the
+first words of the paragraph for passages, built server-side.
+
+The passage cache key is book plus start paragraph plus `textVersion`
+plus `PROMPT_VERSION` (`v1`); the scene key is book plus scene id plus
+the same versions. Both map to a deterministic Blob path
+(`addRandomSuffix: false`, `allowOverwrite: false`). An Upstash Redis
+index maps key to Blob URL, so hits are one GET; on an index miss the
+server lists by exact path prefix (head equivalent) before generating
+and backfills the index.
+A Redis lock per key returns `pending` to concurrent requests. Quota is
+5 new images per person per day by hashed IP and signed cookie,
+whichever runs out first; a shared spend counter in integer
+micro-dollars sits under `SPEND_CAP_USD` (default 10). Failures refund
+quota and budget and release the lock.
 
 ## Chat api
 
