@@ -6,6 +6,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { MusicMode, MusicModeId } from "@/core/music";
+import { heroArt, type HeroArt } from "../skin-art";
+import { useSkin } from "../use-skin";
 
 export type MusicStyleControlProps = {
   modes: MusicMode[];
@@ -16,15 +18,16 @@ export type MusicStyleControlProps = {
 // One pop cycle: how long the newly current button replays its animation.
 const ANIM_MS = 450;
 
-function stickerFor(id: string, label: string): string {
-  return /piano/i.test(id) || /piano/i.test(label)
-    ? "/art/stickers/piano.svg"
-    : "/art/stickers/violin.svg";
+function stickerFor(id: string, label: string, art: HeroArt | null): string {
+  const piano = /piano/i.test(id) || /piano/i.test(label);
+  if (art) return piano ? art.piano : art.orchestra;
+  return piano ? "/art/stickers/piano.svg" : "/art/stickers/violin.svg";
 }
 
 export function MusicStyleControl({ modes, current, onAdvance }: MusicStyleControlProps) {
   const styles = modes.filter((m) => m.kind === "style");
   const playlist = modes.find((m) => m.kind === "playlist") ?? null;
+  const art = heroArt(useSkin());
   // The button whose mode just became current pops once, then rests still.
   const [anim, setAnim] = useState<MusicModeId | null>(null);
   const firstRef = useRef(true);
@@ -54,7 +57,7 @@ export function MusicStyleControl({ modes, current, onAdvance }: MusicStyleContr
   return (
     <>
       {styles.length >= 2 ? (
-        <span className="stickers" role="group" aria-label="Music style">
+        <span className="stickers" role="group" aria-label="Music style" data-art={art ? "hero" : undefined}>
           {styles.map((s) => (
             <span className="sticker-wrap" key={s.id}>
               <button
@@ -66,7 +69,7 @@ export function MusicStyleControl({ modes, current, onAdvance }: MusicStyleContr
                 aria-label={s.label}
                 title={s.label}
               >
-                <img src={stickerFor(s.id, s.label)} alt="" width={40} height={40} />
+                <img src={stickerFor(s.id, s.label, art)} alt="" width={40} height={40} />
               </button>
               <span className="sticker-dot" aria-hidden="true" />
             </span>
@@ -85,7 +88,7 @@ export function MusicStyleControl({ modes, current, onAdvance }: MusicStyleContr
             title="Just play Chopin"
           >
             <img
-              src="/art/chopin-just-play-me.png"
+              src={art?.chopin ?? "/art/chopin-just-play-me.png"}
               alt="Just play Chopin"
               width={40}
               height={40}

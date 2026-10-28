@@ -10,7 +10,9 @@ export default function Home() {
     <main className="home-root">
       <div className="home-wrap">
         <header>
-          <span className="home-brand">LECTORIA</span>
+          <span className="home-brand">
+            Lector<em>IA</em>
+          </span>
           <hr className="home-rule" />
         </header>
         <Hero />
