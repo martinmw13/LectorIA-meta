@@ -6,12 +6,26 @@
   --rain-storm: #e5484d;
 }
 
+/* The cloud icon is the button: no box, frame, or fill. The 34px hit
+   area comes from .skip. */
 .player .skip.rain {
-  transition: border-color 200ms ease, box-shadow 200ms ease;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.player .skip.rain:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.player .skip.rain:focus:not(:focus-visible) {
+  outline: none;
 }
 
 .player .skip.rain svg {
-  transition: opacity 200ms ease;
+  transition: opacity 200ms ease, filter 200ms ease;
 }
 
 .player .skip.rain .rain-cloud {
@@ -34,27 +48,41 @@
   fill: #9aa4ae;
 }
 
-.player .skip.rain[data-level="drizzle"] {
-  border-color: color-mix(in srgb, var(--rain-drizzle) 60%, transparent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rain-drizzle) 35%, transparent);
+/* Level cue as a soft glow on the icon itself. Off stays dim with no glow. */
+.player .skip.rain[data-level="drizzle"] svg {
+  filter: drop-shadow(0 0 3px var(--rain-drizzle));
 }
 
-.player .skip.rain[data-level="moderate"] {
-  border-color: color-mix(in srgb, var(--rain-moderate) 60%, transparent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rain-moderate) 40%, transparent);
+.player .skip.rain[data-level="moderate"] svg {
+  filter: drop-shadow(0 0 3px var(--rain-moderate));
 }
 
-.player .skip.rain[data-level="storm"] {
-  border-color: color-mix(in srgb, var(--rain-storm) 60%, transparent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rain-storm) 38%, transparent);
+.player .skip.rain[data-level="storm"] svg {
+  filter: drop-shadow(0 0 3px var(--rain-storm));
 }
 
+/* Still frame: drops rest visible, bolt rests at 0.85. No idle animation. */
 .player .skip.rain .rain-drop {
   stroke: currentColor;
   stroke-width: 1.25;
   stroke-linecap: round;
   opacity: 0.9;
-  animation: rain-drop-fall 1.4s linear infinite;
+}
+
+/* One drop cycle plus one bolt flash on hover (hover-capable devices
+   only) or briefly after a click while data-anim is set. */
+@media (hover: hover) {
+  .player .skip.rain:hover .rain-drop {
+    animation: rain-drop-fall 1.4s linear;
+  }
+
+  .player .skip.rain:hover .rain-bolt {
+    animation: rain-bolt-flash 1.4s linear;
+  }
+}
+
+.player .skip.rain[data-anim] .rain-drop {
+  animation: rain-drop-fall 1.4s linear;
 }
 
 .player .skip.rain .rain-drop:nth-of-type(3n + 2) {
@@ -81,7 +109,10 @@
 
 .player .skip.rain .rain-bolt {
   opacity: 0.85;
-  animation: rain-bolt-flash 5s linear infinite;
+}
+
+.player .skip.rain[data-anim] .rain-bolt {
+  animation: rain-bolt-flash 1.4s linear;
 }
 
 @keyframes rain-bolt-flash {
@@ -111,8 +142,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .player .skip.rain .rain-drop,
-  .player .skip.rain .rain-bolt {
+  .player .skip.rain:hover .rain-drop,
+  .player .skip.rain[data-anim] .rain-drop,
+  .player .skip.rain:hover .rain-bolt,
+  .player .skip.rain[data-anim] .rain-bolt {
     animation: none;
   }
 }

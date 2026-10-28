@@ -45,3 +45,12 @@ still. State changes crossfade in about 200 ms. The icon is inline SVG.
 - `app/ambience-engine.ts`: the Web Audio engine.
 - `app/rain-button.tsx`: the button, its icons, and the rain volume
   slider. `app/player.tsx` gains one element next to the volume slider.
+
+## Update 25b
+
+The button stays still and frameless. No idle animation: drops and bolt
+animate only on hover (hover-capable devices) and for one 1.4 s burst
+after a click via `data-anim`, cleared by a timeout. The `.skip` border,
+background, and halo are off; the level cue is a `drop-shadow` glow on
+the icon. Focus ring shows on keyboard focus only. Reduced motion
+disables hover and click animation too.
