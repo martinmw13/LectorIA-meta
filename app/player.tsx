@@ -303,7 +303,16 @@ export function Player({
         {now?.line ?? "Music unavailable"}
       </span>
       <label className="player-volume">
-        Volume
+        <svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <path d="M2.5 6v4h2.6L9 13V3L5.1 6H2.5z" />
+          <path
+            d="M11 5.6a3.4 3.4 0 0 1 0 4.8M12.8 3.8a6 6 0 0 1 0 8.4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+        </svg>
         <input
           type="range"
           min={0}
@@ -324,8 +333,18 @@ export function Player({
         controlsDisabled={controlsDisabled}
       />
       {track?.sourceUrl ? (
-        <a className="player-note" href={track.sourceUrl} rel="noopener noreferrer" target="_blank">
-          Source
+        <a
+          className="skip"
+          href={track.sourceUrl}
+          rel="noopener noreferrer"
+          target="_blank"
+          aria-label="Source"
+          title="Source"
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+            <path d="M6.5 3.5H3.5v9h9V9.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M9.5 3.5h3v3M12.2 3.8 7.5 8.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </a>
       ) : null}
     </div>

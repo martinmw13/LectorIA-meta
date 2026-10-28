@@ -25,7 +25,6 @@ export function PlayerControls({
     <>
       {styles.length >= 2 ? (
         <label className="player-note">
-          Orchestra / Piano
           <select
             value={styleId ?? ""}
             onChange={(e) => onStyleChange(e.target.value)}
