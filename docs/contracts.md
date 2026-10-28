@@ -32,7 +32,11 @@ at paragraph boundaries). The pager moves sub-pages in client state and
 pushes routes with `router.push`, never `<Link>`; going back lands on
 the previous scene's last sub-page through a one-shot client flag, never
 a URL param, so prerendered pages stay static. The client never
-receives other scenes' text, titles, or summaries.
+receives other scenes' text, titles, or summaries. The progress line
+reads `Chapter 1 · The Cyclone`, a spaced separator, then `Scene 1 of 4
+· Page 1 of 3` as two spans on one line. Book type is 1.1875rem / 1.7
+with no paragraph gaps and a 1.5em first-line indent on following
+paragraphs.
 
 ## Music library
 
@@ -98,12 +102,15 @@ the best same-style tracks when the emotion is missing) within
 it is eligible, and avoids an immediate repeat otherwise. The style is
 the user's choice, changed with the style selector. The default style is
 the first listed style with tracks; a stored style with tracks wins. The
-session persists `{ style }` in localStorage under `lectoria.music.v1`.
-Old values with `mode` or `soundtrackId` load by `style` alone and
-ignore unknown fields. A stored style with no tracks falls back to the
-default. Storage exceptions never break playback. Dwell and min-track
-rules hold. The core never calls `Math.random`; the reader injects it
-and tests pass a seeded stub.
+session persists `{ style, volume, muted }` in localStorage under
+`lectoria.music.v1`. Old values with `mode` or `soundtrackId` load by
+`style` alone and ignore unknown fields; a stored object without
+`volume` or `muted` loads `volume: null` and `muted: false`. A bad
+`volume` (not a finite number in 0..1) loads null and the player starts
+at 0.8; a bad `muted` loads false. A stored style with no tracks falls
+back to the default. Storage exceptions never break playback. Dwell
+and min-track rules hold. The core never calls `Math.random`; the
+reader injects it and tests pass a seeded stub.
 
 ## Next track and style change
 
@@ -199,35 +206,45 @@ frozen point. Audio starts once, on the first press, with fade 0.
 Audio starts only after the user presses play. Reduced motion is read in
 state with a change listener and affects visuals only, never the fade.
 
-The bar is one contained row (reader column width, centered with
-margins): Previous, Play/Pause, Next, the now-playing line
-(flexible, truncated with an ellipsis), a speaker-icon volume slider with
-`aria-label` `Volume`, a style selector with `aria-label`
+The bar is one sticky row, 56 px tall: the `Lectoria` wordmark left,
+the player centre, the Chopin button and the source icon link right.
+The inner row is centered with 24 px side padding, one bottom hairline
+in the border token, and nothing touching the viewport edges. The inner
+max-width is 56rem, wider than the 65ch book column on purpose so the
+full now-playing line fits at 1280 px. The player holds Previous,
+Play/Pause, Next, the now-playing line (flexible space, `min-width`
+16rem, truncated with an ellipsis, full line in the `title` tooltip),
+a mute icon button (`aria-pressed`, `aria-label` `Mute` / `Unmute`, the
+icon shows the muted state), a volume slider with `aria-label` `Volume`
+(96 px) next to it, a style selector with `aria-label`
 `Orchestra / Piano` and no visible label text listing only styles that
-have tracks (hidden while fewer than two qualify), then
-`Just play Chopin`. The three transport buttons and the source icon link
-are icon-only inline SVGs (`currentColor`, 32 px hit area), quiet
-and neutral, Meta blue on hover and focus-visible, each with `aria-label`
-and `title` (the source link reads `Source`). Previous walks the session
-history and restarts the current track with no history, including the
-current playlist piece in playlist mode; Next cycles same-emotion tracks
-in the style.
-A `Just play Chopin` toggle appears only when
-the manifest defines that playlist with tracks; its text comes from the
-playlist label, it carries `aria-pressed`, and it shows the Meta blue
-accent while pressed. The now-playing line shows `display title · composer
+have tracks (hidden while fewer than two qualify), then the Chopin
+button and the source icon link. The transport and mute buttons and the
+source icon link are icon-only inline SVGs (`currentColor`, 32 px hit
+area), quiet and neutral, Meta blue on hover and focus-visible, each
+with `aria-label` and `title`; the source link reads `Music source
+(opens in new tab)`. Previous walks the session history and restarts
+the current track with no history, including the current playlist piece
+in playlist mode; Next cycles same-emotion tracks in the style.
+A `Just play Chopin` round image button (`/art/chopin-just-play-me.png`,
+40 px, `alt` and `aria-label` `Just play Chopin`) appears only when
+the manifest defines that playlist with tracks; it carries
+`aria-pressed`, and while pressed it shows a 2 px Meta-blue ring plus
+scale 1.05. The now-playing line shows `display title · composer
 · source`: `displayTitle` drops quoted nicknames, key phrases, and
 opus/catalogue suffixes from the track title, and the source is the
 artist plus ` / <platform>` when the attribution names Musopen or
 Jamendo and the artist does not already say it, dropped when it would
 repeat the performer. The full manifest title plus the license and full
-attribution sits in the `title` tooltip. A source icon link stays compact
-when the manifest provides one. On manifest failure the reader still renders and
-the bar shows a short neutral note. UI motion stays under 200 ms.
-Controls are real buttons and inputs with labels, visible focus, and
-keyboard use. `app/player.tsx` keeps the audio engine, transport, and
-bar layout; `app/player-controls.tsx` holds the style selector and the
-playlist toggle; `app/music-prefs.ts` owns the storage helper.
+attribution sits in the `title` tooltip. On manifest failure the reader
+still renders and the bar shows a short neutral note. UI motion stays
+under 200 ms. Controls are real buttons and inputs with labels, visible
+focus, and keyboard use. `app/player.tsx` keeps the audio engine,
+transport, and bar layout; `app/player-controls.tsx` holds the style
+selector and the playlist toggle; `app/music-prefs.ts` owns the storage
+helper. The heading keeps `h2:focus:not(:focus-visible){outline:none}`
+so mouse navigation shows no box while keyboard focus keeps its ring.
+No user-visible emotion labels exist; ids stay as they are.
 `core/music-credit.ts` builds the line as a pure function with tests,
 including the pure `displayTitle`.
 `core/music-history.ts` is the bounded history stack and
