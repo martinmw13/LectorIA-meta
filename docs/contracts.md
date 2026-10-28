@@ -199,27 +199,31 @@ frozen point. Audio starts once, on the first press, with fade 0.
 Audio starts only after the user presses play. Reduced motion is read in
 state with a change listener and affects visuals only, never the fade.
 
-The bar is one row: Play/Pause, the now-playing line (flexible,
-truncated with an ellipsis), Volume, a skip-forward icon button
-(disabled when Next has nothing to offer), a style selector labelled
+The bar is one row: Previous, Play/Pause, Next, the now-playing line
+(flexible, truncated with an ellipsis), Volume, a style selector labelled
 `Orchestra / Piano` listing only styles that have tracks (hidden while
-fewer than two qualify), then `Just play Chopin`. The skip icon is an
-inline SVG (`currentColor`, 32 px hit area), quiet and neutral, Meta blue
-on hover and focus-visible. A `Just play Chopin` toggle appears only when
+fewer than two qualify), then `Just play Chopin`. The three transport
+buttons are icon-only inline SVGs (`currentColor`, 32 px hit area), quiet
+and neutral, Meta blue on hover and focus-visible, each with `aria-label`
+and `title`. Previous walks the session history and restarts the current
+track with no history; Next cycles same-emotion tracks in the style.
+A `Just play Chopin` toggle appears only when
 the manifest defines that playlist with tracks; its text comes from the
 playlist label, it carries `aria-pressed`, and it shows the Meta blue
-accent while pressed. The now-playing line shows `title · performer ·
-source`: the track title, the composer or artist, and the track
-attribution or its soundtrack credit, whichever the manifest provides,
-with missing parts skipped. The full credit plus the license sits in the
+accent while pressed. The now-playing line shows `title · composer ·
+source`: the track title as given, the composer or artist, and the short
+source credit (artist), dropped when it would repeat the performer. The
+line plus the license and full attribution sits in the
 `title` tooltip. A source link stays compact when the manifest provides
 one. On manifest failure the reader still renders and
 the bar shows a short neutral note. UI motion stays under 200 ms.
 Controls are real buttons and inputs with labels, visible focus, and
-keyboard use. `app/player.tsx` keeps the audio engine and bar layout;
-`app/player-controls.tsx` holds the skip button and the style selector;
-`app/music-prefs.ts` owns the storage helper. `core/music-credit.ts`
-builds the line as a pure function with tests.
+keyboard use. `app/player.tsx` keeps the audio engine, transport, and
+bar layout; `app/player-controls.tsx` holds the style selector and the
+playlist toggle; `app/music-prefs.ts` owns the storage helper.
+`core/music-credit.ts` builds the line as a pure function with tests.
+`core/music-history.ts` is the bounded history stack and
+`requestManualTrack` in `core/music-schedule.ts` holds a manual pick.
 
 ## Image api
 
