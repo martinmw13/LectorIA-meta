@@ -11,15 +11,18 @@ const REQUIRED = [
   "IP_HASH_SALT",
 ] as const;
 
+const KV_FALLBACK = ["KV_REST_API_URL", "KV_REST_API_TOKEN"] as const;
+const ALL_ENV = [...REQUIRED, ...KV_FALLBACK];
+
 let saved: Record<string, string | undefined>;
 
 beforeEach(() => {
   saved = {};
-  for (const k of REQUIRED) saved[k] = process.env[k];
+  for (const k of ALL_ENV) saved[k] = process.env[k];
 });
 
 afterEach(() => {
-  for (const k of REQUIRED) {
+  for (const k of ALL_ENV) {
     if (saved[k] === undefined) delete process.env[k];
     else process.env[k] = saved[k];
   }
@@ -43,7 +46,7 @@ function post(body: unknown): Request {
 
 describe("handleImagesPost", () => {
   it("returns unavailable without touching quota when env is missing", async () => {
-    for (const k of REQUIRED) delete process.env[k];
+    for (const k of ALL_ENV) delete process.env[k];
     const fetchSpy = vi.fn().mockRejectedValue(new Error("must not be called"));
     vi.stubGlobal("fetch", fetchSpy);
     const res = await handleImagesPost(post(passageBody()));
