@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
-import { EB_Garamond, IM_Fell_English, IM_Fell_English_SC, Instrument_Sans, Newsreader } from 'next/font/google';
+import { Caveat, EB_Garamond, IM_Fell_English, IM_Fell_English_SC, Instrument_Sans, Lora, Newsreader } from 'next/font/google';
 import './globals.css';
 import { DEFAULT_SKIN, SKIN_SCRIPT } from './skin';
 import { THEME_SCRIPT } from './theme';
@@ -42,7 +42,25 @@ const garamond = EB_Garamond({
   display: 'swap',
 });
 
-const FONT_VARS = [newsreader, instrumentSans, fell, fellSC, garamond].map((f) => f.variable).join(' ');
+// Watercolor skin faces. Not the default skin, so they load only when a
+// page uses them.
+const caveat = Caveat({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-caveat',
+  display: 'swap',
+  preload: false,
+});
+
+const lora = Lora({
+  subsets: ['latin'],
+  style: ['normal', 'italic'],
+  variable: '--font-lora',
+  display: 'swap',
+  preload: false,
+});
+
+const FONT_VARS = [newsreader, instrumentSans, fell, fellSC, garamond, caveat, lora].map((f) => f.variable).join(' ');
 
 export const metadata: Metadata = {
   title: 'Lectoria',
