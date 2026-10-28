@@ -1,6 +1,9 @@
-// Client-safe EPUB parser: fflate plus the platform DOMParser, no node
-// imports, so the home upload page can run it in the browser.
+// Client-safe EPUB reader: fflate plus an injected parser (jsdom in Node,
+// the global DOMParser in the browser). No node imports, no env reads, so
+// the home upload page can run it in the browser.
 import { unzipSync } from "fflate";
+import { cleanDeterministic } from "./clean";
+import type { RawSection } from "./clean";
 
 export const MAX_EPUB_BYTES = 20 * 1024 * 1024;
 const MAX_ENTRY_BYTES = 8 * 1024 * 1024;
@@ -32,6 +35,18 @@ export interface EpubBook {
   cover: { bytes: Uint8Array; mediaType: string } | null;
 }
 
+export type XmlParser = (
+  text: string,
+  type: "application/xhtml+xml" | "text/html" | "application/xml",
+) => Document;
+
+function browserParse(
+  text: string,
+  type: "application/xhtml+xml" | "text/html" | "application/xml",
+): Document {
+  return new DOMParser().parseFromString(text, type);
+}
+
 const FONT_ALGORITHMS = new Set([
   "http://www.idpf.org/2008/embedding",
   "http://ns.adobe.com/pdf/enc#RC",
@@ -40,6 +55,24 @@ const FONT_ALGORITHMS = new Set([
 const COVER_TYPES = new Set(["image/jpeg", "image/png", "image/gif", "image/webp"]);
 const WORD_RE = /[\p{L}\p{N}]+(?:['’][\p{L}]+)*/gu;
 
+const BLOCK_TAGS = new Set([
+  "p",
+  "div",
+  "li",
+  "blockquote",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "td",
+  "dt",
+  "dd",
+  "pre",
+  "figcaption",
+]);
+
 // Zip-bomb guard, checked in the inflate filter so big entries never load.
 export function assertEntrySize(originalSize: number | undefined): void {
   if (typeof originalSize === "number" && originalSize > MAX_ENTRY_BYTES) {
@@ -47,27 +80,12 @@ export function assertEntrySize(originalSize: number | undefined): void {
   }
 }
 
-function inflateOnly(zip: Uint8Array, names: Set<string>): Record<string, Uint8Array> {
-  const out = unzipSync(zip, {
-    filter: (file) => {
-      if (!names.has(file.name)) return false;
-      assertEntrySize(file.originalSize);
-      return true;
-    },
-  }) as Record<string, Uint8Array>;
-  for (const name of Object.keys(out)) assertEntrySize(out[name]?.length);
-  return out;
+function decode(bytes: Uint8Array): string {
+  return new TextDecoder().decode(bytes);
 }
 
-function parseXml(text: string): Document {
-  let doc: Document;
-  try {
-    doc = new DOMParser().parseFromString(text, "application/xml");
-  } catch {
-    throw new EpubError("unreadable");
-  }
-  if (doc.getElementsByTagName("parsererror").length > 0) throw new EpubError("unreadable");
-  return doc;
+function clean(text: string | null | undefined): string {
+  return (text ?? "").replace(/\s+/g, " ").trim();
 }
 
 function elsByLocal(scope: Document | Element, local: string): Element[] {
@@ -80,34 +98,15 @@ function elsByLocal(scope: Document | Element, local: string): Element[] {
   return out;
 }
 
-function directChildren(el: Element, local: string): Element[] {
-  return Array.from(el.children).filter((child) => child.localName === local);
-}
-
-function clean(text: string | null | undefined): string {
-  return (text ?? "").replace(/\s+/g, " ").trim();
-}
-
-// Gutenberg boilerplate (front matter, edition notices) carries no story.
-function normLabel(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function isFrontMatter(label: string, title: string): boolean {
-  const norm = normLabel(label);
-  if (norm === "contents" || norm === "table of contents") return true;
-  if (norm.includes("project gutenberg")) return true;
-  const normTitle = normLabel(title);
-  if (normTitle.length > 0 && norm === normTitle) return true;
-  return false;
-}
-
-function decode(bytes: Uint8Array): string {
-  return new TextDecoder().decode(bytes);
+function mustParse(parse: XmlParser, text: string, type: "application/xml"): Document {
+  let doc: Document;
+  try {
+    doc = parse(text, type);
+  } catch {
+    throw new EpubError("unreadable");
+  }
+  if (doc.getElementsByTagName("parsererror").length > 0) throw new EpubError("unreadable");
+  return doc;
 }
 
 // OPF hrefs resolve against the OPF directory; decode %20 and drop #fragments.
@@ -128,31 +127,84 @@ function resolveHref(opfPath: string, href: string): string {
   return parts.join("/");
 }
 
-function hasTocType(el: Element): boolean {
-  const direct = el.getAttribute("epub:type") ?? el.getAttribute("type") ?? "";
-  if (direct.split(/\s+/).includes("toc")) return true;
-  for (let i = 0; i < el.attributes.length; i++) {
-    const attr = el.attributes[i];
-    if (attr && attr.localName === "type" && attr.value.split(/\s+/).includes("toc")) return true;
+// META-INF/rights.xml means Adobe DRM. An encryption.xml that lists
+// anything but font obfuscation means the content is encrypted.
+function assertNoDrm(files: Record<string, Uint8Array>, parse: XmlParser): void {
+  if ("META-INF/rights.xml" in files) throw new EpubError("drm");
+  const enc = files["META-INF/encryption.xml"];
+  if (enc === undefined) return;
+  const doc = mustParse(parse, decode(enc), "application/xml");
+  for (const method of elsByLocal(doc, "EncryptionMethod")) {
+    if (!FONT_ALGORITHMS.has(method.getAttribute("Algorithm") ?? "")) throw new EpubError("drm");
   }
-  return false;
 }
 
-function navChapters(doc: Document): string[] | null {
-  const nav = elsByLocal(doc, "nav").find(hasTocType);
-  const ol = nav ? elsByLocal(nav, "ol")[0] : undefined;
-  if (!ol) return null;
-  const labels = directChildren(ol, "li").map((li) => clean(elsByLocal(li, "a")[0]?.textContent));
-  const kept = labels.filter((label) => label.length > 0);
-  return kept.length > 0 ? kept : null;
+// First label wins: several nav entries can point at one file (the license
+// entry may share the last chapter file), and the first in document order
+// names the chapter.
+function navLabels(doc: Document, keyOf: (href: string) => string): Map<string, string> {
+  const labels = new Map<string, string>();
+  const navs = elsByLocal(doc, "nav");
+  const scope =
+    navs.find((nav) => (nav.getAttribute("epub:type") ?? "").split(/\s+/).includes("toc")) ??
+    navs[0] ??
+    doc.documentElement;
+  if (!scope) return labels;
+  for (const a of elsByLocal(scope, "a")) {
+    const href = a.getAttribute("href");
+    if (href === null) continue;
+    const key = keyOf(href.split("#")[0] ?? "");
+    if (!labels.has(key)) labels.set(key, clean(a.textContent));
+  }
+  return labels;
 }
 
-function ncxChapters(doc: Document): string[] {
-  const map = elsByLocal(doc, "navMap")[0];
-  if (!map) return [];
-  return directChildren(map, "navPoint")
-    .map((point) => clean(elsByLocal(directChildren(point, "navLabel")[0] ?? point, "text")[0]?.textContent))
-    .filter((label) => label.length > 0);
+function ncxLabels(doc: Document, keyOf: (href: string) => string): Map<string, string> {
+  const labels = new Map<string, string>();
+  for (const point of elsByLocal(doc, "navPoint")) {
+    const label = elsByLocal(point, "navLabel")[0];
+    const content = elsByLocal(point, "content")[0];
+    const src = content?.getAttribute("src");
+    if (label === undefined || src === undefined || src === null) continue;
+    const key = keyOf(src.split("#")[0] ?? "");
+    if (!labels.has(key)) labels.set(key, clean(elsByLocal(label, "text")[0]?.textContent));
+  }
+  return labels;
+}
+
+function epubTypes(el: Element): string[] {
+  const raw = [el.getAttribute("epub:type"), el.getAttributeNS("http://www.idpf.org/2007/ops", "type")];
+  const out: string[] = [];
+  for (const value of raw) {
+    if (value !== null) out.push(...value.split(/\s+/).filter((t) => t.length > 0));
+  }
+  return [...new Set(out)];
+}
+
+function spineBlocks(doc: Document): { text: string; heading: boolean }[] {
+  for (const el of doc.querySelectorAll("script, style")) el.remove();
+  for (const el of doc.querySelectorAll("[id]")) {
+    const id = el.getAttribute("id") ?? "";
+    if (id.startsWith("pg-") || id === "project-gutenberg-license") el.remove();
+  }
+  for (const br of doc.getElementsByTagName("br")) br.replaceWith(doc.createTextNode(" "));
+  const blocks: { text: string; heading: boolean }[] = [];
+  for (const el of doc.querySelectorAll("*")) {
+    if (!BLOCK_TAGS.has(el.tagName.toLowerCase())) continue;
+    if ([...el.querySelectorAll("*")].some((child) => BLOCK_TAGS.has(child.tagName.toLowerCase()))) continue;
+    const text = clean(el.textContent);
+    if (text.length === 0) continue;
+    blocks.push({ text, heading: /^h[1-6]$/i.test(el.tagName) });
+  }
+  return blocks;
+}
+
+interface EpubPackage {
+  mimetype: string;
+  title: string;
+  author: string | null;
+  sections: RawSection[];
+  cover: { bytes: Uint8Array; mediaType: string } | null;
 }
 
 // Counts every word; long books route to BYOK in the UI, never an error.
@@ -166,153 +218,61 @@ function countWords(text: string, start: number): number {
   return count;
 }
 
-function bodyText(doc: Document): string {
-  return elsByLocal(doc, "body")[0]?.textContent ?? doc.documentElement?.textContent ?? "";
-}
-
-function spineText(docText: string): string {
+function parseSpineDoc(parse: XmlParser, text: string): Document | null {
+  let doc: Document;
   try {
-    return bodyText(parseXml(docText));
+    doc = parse(text, "application/xhtml+xml");
   } catch {
-    const doc = new DOMParser().parseFromString(docText, "text/html");
-    return bodyText(doc);
+    doc = parse(text, "text/html");
+    return doc;
   }
+  if (doc.getElementsByTagName("parsererror").length > 0) {
+    try {
+      return parse(text, "text/html");
+    } catch {
+      return null;
+    }
+  }
+  return doc;
 }
 
-export function parseEpub(bytes: Uint8Array): EpubBook {
+function openEpub(
+  bytes: Uint8Array,
+  parse: XmlParser,
+  opts: { checkMimetype: boolean; strictSpine: boolean },
+): EpubPackage {
   if (bytes.length > MAX_EPUB_BYTES) throw new EpubError("too_large");
   if (bytes[0] !== 0x50 || bytes[1] !== 0x4b || bytes[2] !== 0x03 || bytes[3] !== 0x04) {
     throw new EpubError("not_epub");
   }
-
-  let first: Record<string, Uint8Array>;
+  let files: Record<string, Uint8Array>;
   try {
-    first = inflateOnly(
-      bytes,
-      new Set(["mimetype", "META-INF/container.xml", "META-INF/encryption.xml", "META-INF/rights.xml"]),
-    );
-  } catch (err) {
-    if (err instanceof EpubError) throw err;
-    throw new EpubError("unreadable");
+    files = unzipSync(bytes, {
+      filter: (entry) => {
+        if (typeof entry.originalSize === "number" && entry.originalSize > MAX_ENTRY_BYTES) return false;
+        return true;
+      },
+    }) as Record<string, Uint8Array>;
+  } catch {
+    throw new EpubError("not_epub");
   }
-
-  const mimetype = first["mimetype"] ? clean(decode(first["mimetype"] as Uint8Array)) : "";
-  if (mimetype !== "application/epub+zip") throw new EpubError("not_epub");
-  if (first["META-INF/rights.xml"]) throw new EpubError("drm");
-
-  const encryption = first["META-INF/encryption.xml"];
-  if (encryption) {
-    const doc = parseXml(decode(encryption));
-    for (const method of elsByLocal(doc, "EncryptionMethod")) {
-      if (!FONT_ALGORITHMS.has(method.getAttribute("Algorithm") ?? "")) throw new EpubError("drm");
-    }
-  }
-
-  const container = first["META-INF/container.xml"];
-  if (!container) throw new EpubError("unreadable");
-  const opfPath = elsByLocal(parseXml(decode(container)), "rootfile")[0]?.getAttribute("full-path");
-  if (!opfPath) throw new EpubError("unreadable");
-
-  let opfBytes: Record<string, Uint8Array>;
-  try {
-    opfBytes = inflateOnly(bytes, new Set([opfPath]));
-  } catch (err) {
-    if (err instanceof EpubError) throw err;
-    throw new EpubError("unreadable");
-  }
-  const opfRaw = opfBytes[opfPath];
-  if (!opfRaw) throw new EpubError("unreadable");
-  const opf = parseXml(decode(opfRaw));
-
-  const manifest = new Map<string, { href: string; mediaType: string; properties: string }>();
-  for (const item of elsByLocal(opf, "item")) {
-    const id = item.getAttribute("id");
-    const href = item.getAttribute("href");
-    if (id && href) {
-      manifest.set(id, {
-        href: resolveHref(opfPath, href),
-        mediaType: item.getAttribute("media-type") ?? "",
-        properties: item.getAttribute("properties") ?? "",
-      });
-    }
-  }
-  const spine = elsByLocal(opf, "spine")[0];
-  const tocId = spine?.getAttribute("toc") ?? "";
-  const spineRefs = elsByLocal(opf, "itemref")
-    .filter((ref) => ref.getAttribute("linear") !== "no")
-    .map((ref) => ref.getAttribute("idref") ?? "");
-
-  const wanted = new Set<string>();
-  let navPath: string | null = null;
-  for (const item of manifest.values()) {
-    if (item.properties.split(/\s+/).includes("nav")) navPath = item.href;
-  }
-  if (navPath) wanted.add(navPath);
-  let ncxPath: string | null = null;
-  const tocItem = tocId ? manifest.get(tocId) : undefined;
-  if (tocItem) ncxPath = tocItem.href;
-  else {
-    for (const item of manifest.values()) {
-      if (item.mediaType === "application/x-dtbnc+xml" || item.mediaType === "application/x-dtbncx+xml") {
-        ncxPath = item.href;
-      }
-    }
-  }
-  if (ncxPath) wanted.add(ncxPath);
-
-  let coverPath: string | null = null;
-  let coverType = "";
-  for (const item of manifest.values()) {
-    if (item.properties.split(/\s+/).includes("cover-image")) {
-      coverPath = item.href;
-      coverType = item.mediaType;
-    }
-  }
-  if (!coverPath) {
-    const coverId = elsByLocal(opf, "meta").find((m) => m.getAttribute("name") === "cover")?.getAttribute("content");
-    const coverItem = coverId ? manifest.get(coverId) : undefined;
-    if (coverItem) {
-      coverPath = coverItem.href;
-      coverType = coverItem.mediaType;
-    }
-  }
-  if (coverPath && COVER_TYPES.has(coverType)) wanted.add(coverPath);
-  else coverPath = null;
-
-  const spinePaths: string[] = [];
-  for (const idref of spineRefs) {
-    const item = manifest.get(idref);
-    if (item && (item.mediaType === "application/xhtml+xml" || item.mediaType === "text/html")) {
-      wanted.add(item.href);
-      spinePaths.push(item.href);
-    }
-  }
-
-  let rest: Record<string, Uint8Array>;
-  try {
-    rest = inflateOnly(bytes, wanted);
-  } catch (err) {
-    if (err instanceof EpubError) throw err;
-    throw new EpubError("unreadable");
-  }
-
-  let chapters: string[] = [];
-  const navRaw = navPath ? rest[navPath] : undefined;
-  if (navRaw) chapters = navChapters(parseXml(decode(navRaw))) ?? [];
-  if (chapters.length === 0) {
-    const ncxRaw = ncxPath ? rest[ncxPath] : undefined;
-    if (ncxRaw) chapters = ncxChapters(parseXml(decode(ncxRaw)));
-  }
-
-  let words = 0;
-  let inflated = 0;
-  for (const path of spinePaths) {
-    const raw = rest[path];
-    if (!raw) continue;
-    inflated += raw.length;
-    if (inflated > MAX_INFLATED_BYTES) throw new EpubError("unreadable");
-    words = countWords(spineText(decode(raw)), words);
-  }
+  let total = 0;
+  for (const data of Object.values(files)) total += data.length;
+  if (total > MAX_INFLATED_BYTES) throw new EpubError("too_large");
+  const mimetypeRaw = files["mimetype"];
+  const mimetype = mimetypeRaw ? clean(decode(mimetypeRaw)) : "";
+  // The browser entry point rejects wrong mimetype first, like task 20 did;
+  // the section reader skips the check so pipeline fixtures need no mimetype.
+  if (opts.checkMimetype && mimetype !== "application/epub+zip") throw new EpubError("not_epub");
+  assertNoDrm(files, parse);
+  if (!("META-INF/container.xml" in files)) throw new EpubError("not_epub");
+  const containerText = decode(files["META-INF/container.xml"] as Uint8Array);
+  const opfPath = elsByLocal(mustParse(parse, containerText, "application/xml"), "rootfile")[0]?.getAttribute(
+    "full-path",
+  );
+  const opfRaw = opfPath !== undefined && opfPath !== null ? files[opfPath] : undefined;
+  if (opfPath === undefined || opfPath === null || opfRaw === undefined) throw new EpubError("unreadable");
+  const opf = mustParse(parse, decode(opfRaw), "application/xml");
 
   const metadata = elsByLocal(opf, "metadata")[0];
   let title = "Untitled";
@@ -330,14 +290,148 @@ export function parseEpub(bytes: Uint8Array): EpubBook {
     author = cleanedAuthor ? cleanedAuthor : null;
   }
 
-  const coverRaw = coverPath ? rest[coverPath] : undefined;
-  return {
-    title,
-    author,
-    chapters: chapters.filter((label) => !isFrontMatter(label, title)).slice(0, 500),
-    words,
-    cover: coverRaw ? { bytes: coverRaw, mediaType: coverType } : null,
-  };
+  const manifest = new Map<string, { href: string; mediaType: string; properties: string }>();
+  for (const item of elsByLocal(elsByLocal(opf, "manifest")[0] ?? opf, "item")) {
+    const id = item.getAttribute("id");
+    const href = item.getAttribute("href");
+    if (id && href) {
+      manifest.set(id, {
+        href: resolveHref(opfPath, href),
+        mediaType: item.getAttribute("media-type") ?? "",
+        properties: item.getAttribute("properties") ?? "",
+      });
+    }
+  }
+  const spineEl = elsByLocal(opf, "spine")[0];
+  const tocId = spineEl?.getAttribute("toc") ?? "";
+  const spineRefs = elsByLocal(opf, "itemref").map((ref) => ({
+    idref: ref.getAttribute("idref") ?? "",
+    linear: ref.getAttribute("linear") !== "no",
+  }));
+
+  let labels = new Map<string, string>();
+  // Nav hrefs resolve against the OPF directory, like manifest hrefs.
+  const keyOf = (href: string): string => resolveHref(opfPath, href);
+  const tocItem = tocId ? manifest.get(tocId) : undefined;
+  const ncxEntry = tocItem ?? [...manifest.values()].find((item) => /\.ncx$/i.test(item.href));
+  const navEntry = [...manifest.values()].find((item) => item.properties.split(/\s+/).includes("nav"));
+  for (const entry of [navEntry, ncxEntry]) {
+    if (entry === undefined) continue;
+    const raw = files[entry.href];
+    if (raw === undefined) continue;
+    let doc: Document;
+    try {
+      doc = parse(decode(raw), entry === navEntry ? "application/xhtml+xml" : "application/xml");
+    } catch {
+      continue;
+    }
+    labels = entry === navEntry ? navLabels(doc, keyOf) : ncxLabels(doc, keyOf);
+    if (labels.size > 0) break;
+  }
+
+  let cover: EpubPackage["cover"] = null;
+  let coverPath: string | null = null;
+  let coverType = "";
+  for (const item of manifest.values()) {
+    if (item.properties.split(/\s+/).includes("cover-image")) {
+      coverPath = item.href;
+      coverType = item.mediaType;
+    }
+  }
+  if (!coverPath) {
+    const coverId = elsByLocal(opf, "meta").find((m) => m.getAttribute("name") === "cover")?.getAttribute("content");
+    const coverItem = coverId ? manifest.get(coverId) : undefined;
+    if (coverItem) {
+      coverPath = coverItem.href;
+      coverType = coverItem.mediaType;
+    }
+  }
+  if (coverPath && COVER_TYPES.has(coverType)) {
+    const raw = files[coverPath];
+    if (raw) cover = { bytes: raw, mediaType: coverType };
+  }
+
+  const sections: RawSection[] = [];
+  for (const ref of spineRefs) {
+    const manifestItem = manifest.get(ref.idref);
+    if (manifestItem === undefined) throw new EpubError("unreadable");
+    // Non-document spine entries (audio, video) carry no chapter text.
+    if (
+      manifestItem.mediaType !== "" &&
+      manifestItem.mediaType !== "application/xhtml+xml" &&
+      manifestItem.mediaType !== "text/html"
+    ) {
+      continue;
+    }
+    const name = manifestItem.href;
+    const data = files[name];
+    // The browser entry point skips unreadable spine docs, like task 20
+    // did; the section reader throws so the pipeline fails loudly.
+    if (data === undefined) {
+      if (opts.strictSpine) throw new EpubError("unreadable");
+      continue;
+    }
+    const text = decode(data);
+    const doc = parseSpineDoc(parse, text);
+    if (doc === null) {
+      if (!opts.strictSpine) continue;
+      sections.push({
+        id: name,
+        href: manifestItem.href,
+        linear: ref.linear,
+        types: [],
+        docTitle: null,
+        navLabel: labels.get(manifestItem.href) ?? null,
+        blocks: [],
+      });
+      continue;
+    }
+    const body = elsByLocal(doc, "body")[0] ?? doc.documentElement;
+    const types = body ? epubTypes(body) : [];
+    if (body) {
+      for (const child of [...body.children]) {
+        if (["section", "article", "div"].includes(child.tagName.toLowerCase())) {
+          types.push(...epubTypes(child));
+        }
+      }
+    }
+    const titleEl = elsByLocal(doc, "title")[0];
+    const docTitle = titleEl === undefined ? null : clean(titleEl.textContent) || null;
+    sections.push({
+      id: name,
+      href: manifestItem.href,
+      linear: ref.linear,
+      types: [...new Set(types)],
+      docTitle,
+      navLabel: labels.get(manifestItem.href) ?? null,
+      blocks: spineBlocks(doc),
+    });
+  }
+  if (sections.length === 0) throw new EpubError("unreadable");
+
+  return { mimetype, title, author, sections, cover };
+}
+
+export function readEpubSections(
+  bytes: Uint8Array,
+  parse: XmlParser = browserParse,
+): Pick<EpubPackage, "title" | "author" | "sections"> {
+  const { title, author, sections } = openEpub(bytes, parse, { checkMimetype: false, strictSpine: true });
+  return { title, author, sections };
+}
+
+export function parseEpub(bytes: Uint8Array): EpubBook {
+  const { title, author, sections, cover } = openEpub(bytes, browserParse, {
+    checkMimetype: true,
+    strictSpine: false,
+  });
+  const { chapters } = cleanDeterministic(title, sections);
+  let words = 0;
+  const kept = chapters.slice(0, 500);
+  for (const chapter of kept) {
+    for (const paragraph of chapter.paragraphs) words = countWords(paragraph, words);
+  }
+  return { title, author, chapters: kept.map((chapter) => chapter.title), words, cover };
 }
 
 export async function readEpubFile(file: File): Promise<EpubBook> {

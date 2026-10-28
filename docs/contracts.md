@@ -24,3 +24,4 @@ Details live in these files:
 - [Quotas and budget](contracts/quotas-and-budget.md)
 - [Chapter panels](contracts/chapter-panels.md)
 - [Home](contracts/home.md)
+- [Cleaning](contracts/cleaning.md)
