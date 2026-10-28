@@ -223,9 +223,6 @@ export function UploadSection() {
             </button>
           </div>
           <div className="ob-keybox" id="obKeybox" hidden={!keyOpen}>
-            <p className="ob-fine">
-              After your book opens, longer ones ask for your own Meta key. It stays in this tab only.
-            </p>
             <div className="ob-keyrow">
               <label className="sr-only" htmlFor="obKey">
                 Paste your API key

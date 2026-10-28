@@ -10,6 +10,9 @@ Swapping final covers in later means editing `app/home/covers.ts`
 only: it maps every shelf book and skin to a path, with pencil, comic,
 and chihiro reusing the painted sets until theirs exist.
 
-Skipped: pre-parse key input in the idle picks (the real key step
-stays after parsing), cover preloading, and screenshots (no browser
-runs in this sandbox; fit was checked against the built CSS).
+The idle Bring your own key! pick opens the prototype's key field: a
+password input with a show/hide eye. The key lives in `UploadSection`
+state only, prefills the key step after parsing, and is cleared on Free,
+reset, and submit.
+
+Skipped: cover preloading.

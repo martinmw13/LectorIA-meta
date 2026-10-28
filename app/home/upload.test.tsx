@@ -85,7 +85,7 @@ describe("idle keybox", () => {
     expect(input.type).toBe("password");
     expect(input.placeholder).toBe("Paste your API key");
     expect(input.getAttribute("autocomplete")).toBe("off");
-    expect(input.spellcheck).toBe(false);
+    expect(input.getAttribute("spellcheck")).toBe("false");
     expect(input.name).not.toMatch(/api.?key/i);
     expect(eyeButton().getAttribute("aria-label")).toBe("Show API key");
   });
