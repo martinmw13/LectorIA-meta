@@ -30,6 +30,163 @@ export interface ReaderModel {
   chapters: ReaderChapter[];
 }
 
+// 250 words fill a desktop view at the 65ch measure without scroll.
+export const PAGE_WORD_BUDGET = 250;
+
+export interface SubPage {
+  paragraphs: ReaderParagraph[];
+  startN: number;
+  endN: number;
+  words: number;
+}
+
+export function countWords(text: string): number {
+  const words = text.split(/\s+/).filter((w) => w.length > 0);
+  return words.length;
+}
+
+// Split one scene into sub-pages by word budget at paragraph boundaries.
+// A paragraph never splits; an oversize one takes its own page.
+export function paginateScene(
+  paragraphs: ReaderParagraph[],
+  budgetWords: number = PAGE_WORD_BUDGET,
+): SubPage[] {
+  const pages: SubPage[] = [];
+  let current: ReaderParagraph[] = [];
+  let words = 0;
+  const flush = () => {
+    if (current.length === 0) return;
+    pages.push({
+      paragraphs: current,
+      startN: current[0]?.n ?? 0,
+      endN: current[current.length - 1]?.n ?? 0,
+      words,
+    });
+    current = [];
+    words = 0;
+  };
+  for (const p of paragraphs) {
+    const w = countWords(p.text);
+    if (current.length > 0 && words + w > budgetWords) flush();
+    current.push(p);
+    words += w;
+  }
+  flush();
+  if (pages.length === 0) pages.push({ paragraphs: [], startN: 0, endN: 0, words: 0 });
+  return pages;
+}
+
+export interface SceneView {
+  sceneId: string;
+  ch: number;
+  chapterTitle: string;
+  title: string;
+  emotion: ReaderScene["emotion"];
+  pages: SubPage[];
+  prevSceneId: string | null;
+  nextSceneId: string | null;
+  k: number;
+  n: number;
+}
+
+// The only text a scene route ships: this scene, its chapter, its pages,
+// and neighbor ids for the pager. Throws on unknown scene id.
+export function buildSceneView(
+  model: ReaderModel,
+  sceneId: string,
+  budgetWords: number = PAGE_WORD_BUDGET,
+): SceneView {
+  const flat = model.chapters.flatMap((c) => c.scenes.map((s) => ({ ch: c.ch, chapterTitle: c.title, scene: s })));
+  const at = flat.findIndex((e) => e.scene.id === sceneId);
+  if (at < 0 || !flat[at]) throw new Error(`unknown scene ${sceneId}`);
+  const entry = flat[at] as { ch: number; chapterTitle: string; scene: ReaderScene };
+  const chapterScenes = flat.filter((e) => e.ch === entry.ch);
+  const prev = at > 0 ? flat[at - 1] : null;
+  const next = at < flat.length - 1 ? flat[at + 1] : null;
+  return {
+    sceneId,
+    ch: entry.ch,
+    chapterTitle: entry.chapterTitle,
+    title: entry.scene.title,
+    emotion: entry.scene.emotion,
+    pages: paginateScene(entry.scene.paragraphs, budgetWords),
+    prevSceneId: prev?.scene.id ?? null,
+    nextSceneId: next?.scene.id ?? null,
+    k: chapterScenes.findIndex((e) => e.scene.id === sceneId) + 1,
+    n: chapterScenes.length,
+  };
+}
+
+export interface NavState {
+  sceneId: string;
+  page: number;
+}
+
+export type NavAction =
+  | { kind: "next" }
+  | { kind: "prev" }
+  | { kind: "goto"; sceneId: string; atEnd?: boolean };
+
+export interface NavIndex {
+  order: string[];
+  pageCounts: Map<string, number>;
+}
+
+export function buildNavIndex(views: { sceneId: string; pages: number }[]): NavIndex {
+  return {
+    order: views.map((v) => v.sceneId),
+    pageCounts: new Map(views.map((v) => [v.sceneId, v.pages] as [string, number])),
+  };
+}
+
+// Every pager move in one place: next/prev cross scenes and chapters,
+// going back lands on the last sub-page, bounds are no-ops, unknown
+// goto ids keep state.
+export function navReducer(state: NavState, action: NavAction, index: NavIndex): NavState {
+  const at = index.order.indexOf(state.sceneId);
+  if (at < 0) return state;
+  const pages = index.pageCounts.get(state.sceneId) ?? 1;
+  if (action.kind === "next") {
+    if (state.page < pages - 1) return { ...state, page: state.page + 1 };
+    const nextId = index.order[at + 1];
+    return nextId === undefined ? state : { sceneId: nextId, page: 0 };
+  }
+  if (action.kind === "prev") {
+    if (state.page > 0) return { ...state, page: state.page - 1 };
+    const prevId = at > 0 ? index.order[at - 1] : undefined;
+    if (prevId === undefined) return state;
+    return { sceneId: prevId, page: (index.pageCounts.get(prevId) ?? 1) - 1 };
+  }
+  if (index.order.indexOf(action.sceneId) < 0) return state;
+  const count = index.pageCounts.get(action.sceneId) ?? 1;
+  return { sceneId: action.sceneId, page: action.atEnd ? count - 1 : 0 };
+}
+
+// True only when the scene id changed. The container gates observeScene
+// on this, so sub-page moves never touch the scheduler.
+export function isSceneEntry(prevSceneId: string | null, nextSceneId: string): boolean {
+  return prevSceneId !== nextSceneId;
+}
+
+export interface SceneEntryGate {
+  observedId: string | null;
+  routeId: string | null;
+  manifestReady: boolean;
+}
+
+// The container's effect gate in one testable place: observe exactly once
+// per route id, only after the manifest lands. Route params can lag a
+// render, so the last observed id is compared before every observe call.
+export function nextSceneEntry(gate: SceneEntryGate): {
+  shouldObserve: boolean;
+  nextObservedId: string | null;
+} {
+  if (!gate.routeId || !gate.manifestReady || !isSceneEntry(gate.observedId, gate.routeId)) {
+    return { shouldObserve: false, nextObservedId: gate.observedId };
+  }
+  return { shouldObserve: true, nextObservedId: gate.routeId };
+}
+
 // Throws on unordered scenes and on paragraphs covered zero or two times.
 export function buildReaderModel(
   book: Pick<Book, "id" | "title" | "author" | "chapters" | "paragraphs" | "textVersion">,

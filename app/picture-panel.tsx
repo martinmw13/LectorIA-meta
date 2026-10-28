@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ImageResponse } from "@/core/images";
-import { pickActiveScene } from "./active-scene";
 import { pickStartN } from "./picture-selection";
 import type { ParaEntry } from "./picture-selection";
 
@@ -31,8 +30,17 @@ async function postImage(body: unknown): Promise<ImageResponse> {
 }
 
 // Companion panel: illustrates the selected passage or the current scene.
-// The client sends ordinals and ids only, never text.
-export function PicturePanel({ bookId, textVersion }: { bookId: string; textVersion: string }) {
+// The client sends ordinals and ids only, never text. The scene id comes
+// from the route, never from a DOM scan.
+export function PicturePanel({
+  bookId,
+  textVersion,
+  sceneId,
+}: {
+  bookId: string;
+  textVersion: string;
+  sceneId: string;
+}) {
   const [card, setCard] = useState<Card>({ phase: "idle" });
   const [selTop, setSelTop] = useState<number | null>(null);
   const [selLeft, setSelLeft] = useState<number | null>(null);
@@ -107,13 +115,9 @@ export function PicturePanel({ bookId, textVersion }: { bookId: string; textVers
   }, [bookId, textVersion, request]);
 
   const illustrateScene = useCallback(() => {
-    const sections = [...document.querySelectorAll<HTMLElement>("section[data-scene-id]")].map(
-      (el) => ({ id: el.dataset.sceneId ?? "", top: el.getBoundingClientRect().top }),
-    );
-    const sceneId = pickActiveScene(sections, window.innerHeight / 3);
     if (!sceneId) return;
     void request({ kind: "scene", bookId, textVersion, sceneId });
-  }, [bookId, textVersion, request]);
+  }, [bookId, textVersion, sceneId, request]);
 
   return (
     <div className="picture">

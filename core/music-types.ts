@@ -96,6 +96,9 @@ export interface MusicConfig {
   weights: MusicWeights;
   switchMargin: number;
   dwellSec: number;
+  // Route entries are deliberate jumps, so 5 s absorbs a double pressed
+  // Next but still cues inside the first sub-page.
+  sceneEntryDwellSec: number;
   minTrackSec: number;
   hardCutMargin: number;
   crossfadeSec: number;

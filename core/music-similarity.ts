@@ -67,6 +67,7 @@ export const MUSIC_CONFIG: MusicConfig = {
   weights: { emotion: 0.7, intensity: 0.15, tempo: 0.15 },
   switchMargin: 0.07,
   dwellSec: 20,
+  sceneEntryDwellSec: 5,
   minTrackSec: 45,
   hardCutMargin: 0.2,
   crossfadeSec: 3,

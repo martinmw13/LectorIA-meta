@@ -32,6 +32,8 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
+      - name: Scene isolation check
+        run: npm run check:isolation
       - name: Built-in secret scan
         run: node scripts/check-secrets.mjs --all
       - name: Install pinned gitleaks

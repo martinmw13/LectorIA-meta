@@ -13,7 +13,6 @@ export function Player({
   track,
   replayNonce,
   fadeSec,
-  sceneTitle,
   soundtrackName,
   isFallback,
   canSkip,
@@ -32,7 +31,6 @@ export function Player({
   track: Track | null;
   replayNonce: number;
   fadeSec: number;
-  sceneTitle: string | null;
   soundtrackName: string | null;
   isFallback: boolean;
   canSkip: boolean;
@@ -270,7 +268,6 @@ export function Player({
       <span className="player-track" aria-live="polite">
         {track ? track.title : "Music unavailable"}
         {detail ? ` · ${detail}` : ""}
-        {sceneTitle ? ` · ${sceneTitle}` : ""}
       </span>
       <label className="player-volume">
         Volume

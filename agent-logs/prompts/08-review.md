@@ -1,0 +1,12 @@
+Review task 8 (scene by scene reader) on branch `scene-reader`: `git diff origin/main..HEAD`. The design is `docs/tasks/08-scene-reader.md`, the spec is `agent-logs/prompts/08-impl.md`. Do not edit code. Write the review to `docs/reviews/08.md` and commit it (plain message, no --no-verify, no push, do not start a server; `next start` hangs in this sandbox).
+
+Format: a verdict line (`Verdict: changes needed` or `Verdict: clean`), then numbered findings, each with severity (blocker / should / nit), file:line, the problem, and the concrete fix. Keep it short. No praise.
+
+Check in particular:
+1. Spoiler isolation. The owner's core requirement: no text of any other scene in the DOM, HTML or RSC payload; nothing prefetched. Verified by the orchestrator: `.next/server/app/leer/c5s2.html` contains NO scene text at all, because `ScenePage` calls `useSearchParams()` under `<Suspense>`, which makes the static prerender bail out to client rendering. The text is only in the RSC payload, and `scripts/check-isolation.mjs` passed because it searches HTML and RSC together. Required fix: drop `?at=end` and `useSearchParams`/Suspense; carry the prev-entry intent in client memory (e.g. a module-level one-shot flag in the client module set right before `router.push` and consumed by the `useState` initializer; a direct URL load never sets it, so hydration stays consistent). The isolation script must require the scene's own first paragraph in the `.html` file itself, scan every scene route (not 5 samples), and probe every paragraph of both neighbours.
+2. Music only on scene entry: exactly one `observeScene` per scene id, none on sub-page moves, params lag handled, the first scene plays on first press. Is there a test that proves the music does not change on a sub-page move and does change on a scene change? If only `isSceneEntry` is tested, say what is missing.
+3. Picture this uses the route scene id; the companion panel stays sticky on desktop; image tests pass.
+4. Task 06 controls (Mezclar bandas, Orquesta/Piano, Just play Chopin, Cambiar track) unaffected. `sceneEntryDwellSec` added without changing scoring.
+5. Continuous-scroll code fully removed (IntersectionObserver, active-scene, section dividers, data-scene-id CSS). AGENTS.md and docs/contracts.md updated.
+6. Keyboard: arrows ignored in form fields; focus handling; disabled states at book edges. Spanish UI copy correct and unslopped; no purple; motion under 200 ms and off under prefers-reduced-motion.
+7. AGENTS.md rules: core pure, files under the size limit, strict types, no secrets.

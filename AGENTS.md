@@ -86,9 +86,8 @@ Save every Muse Code session transcript as JSONL in `agent-logs/NN-<step>.jsonl`
 Owner decisions. Short and binding.
 
 - Desktop first. No mobile or iOS work now.
-- The reader uses continuous scroll. The unit is the scene.
-- A chapter holds several scenes. Each scene has its own emotion. Music changes at scene boundaries inside a chapter. No pagination.
-- Reading position is the first paragraph visible at the top, tracked with IntersectionObserver.
+- The reader shows one scene at a time. Sub-pages split long scenes by length only. Music cues run on scene entry.
+- A chapter holds several scenes. Each scene has its own emotion.
 - Paragraph ids carry a global ordinal `n`. Compare `n`, never id strings.
 - `book.json` is frozen with a `textVersion` hash. Every cache key includes it.
 - Scenes cover each chapter's paragraphs with no gaps and no overlaps. No scene crosses a chapter boundary.
