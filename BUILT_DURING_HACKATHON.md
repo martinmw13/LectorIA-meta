@@ -29,3 +29,4 @@ Building period: 2026-10-27 to 2026-11-04 23:00, America/Buenos_Aires. Each task
 | 2026-10-28 | 20b: byok label | Home BYOK label reads "Bring your own key!" | Muse Code (Contributor) |
 | 2026-10-28 | 36: wheel turn | Wheel and trackpad turn pages at column edges with an inertia lock, Space/Page keys scroll then turn, read-on cue under text pages | Muse Code (Contributor) |
 | 2026-10-28 | 42: popover cover | Picture this popover attaches when the text view mounts, fixing first scenes | Muse Code (Contributor) |
+| 2026-10-28 | 24: cleaning | Book cleaning layer: EPUB spine reader, deterministic front/back-matter rules, one cheap Muse judge call for ambiguous sections, removal report, clean:epub CLI | Muse Code (Standard design; Contributor implementation) |
