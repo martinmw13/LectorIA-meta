@@ -23,7 +23,14 @@ function signal(top: string, intensity = 0.5, tempo = 0.5): SceneSignal {
   return { vector: vec(top), intensity, tempo };
 }
 
-function track(id: string, top: string, intensity = 0.5, tempo = 0.5): Track {
+function track(
+  id: string,
+  top: string,
+  intensity = 0.5,
+  tempo = 0.5,
+  soundtrack = "snd",
+  style = "orchestral",
+): Track {
   return {
     id,
     src: `/music/${id}.mp3`,
@@ -35,13 +42,18 @@ function track(id: string, top: string, intensity = 0.5, tempo = 0.5): Track {
     durationSec: 120,
     startSec: 0,
     loop: true,
+    soundtrack,
+    style,
   };
 }
 
 // Three tristeza tracks (ranked a > b > c by intensity closeness),
 // one calma and one suspenso.
 const manifest: MusicManifest = {
-  version: 2,
+  version: 3,
+  styles: [{ id: "orchestral", name: "Orquesta" }],
+  soundtracks: [{ id: "snd", name: "Snd", style: "orchestral" }],
+  playlists: [],
   tracks: [
     track("sad-a", "tristeza", 0.5, 0.5),
     track("sad-b", "tristeza", 0.6, 0.5),
@@ -100,7 +112,10 @@ describe("scoreTrack and rankTracks", () => {
   it("ranks by the override weights when provided", () => {
     const s = signal("tristeza");
     const two: MusicManifest = {
-      version: 2,
+      version: 3,
+      styles: [{ id: "orchestral", name: "Orquesta" }],
+      soundtracks: [{ id: "snd", name: "Snd", style: "orchestral" }],
+      playlists: [],
       tracks: [
         track("sad-far", "tristeza", 0.9, 0.9),
         track("calm-near", "calma", 0.5, 0.5),
@@ -117,7 +132,10 @@ describe("scoreTrack and rankTracks", () => {
 
   it("breaks ties by lower track id, not manifest order", () => {
     const tied: MusicManifest = {
-      version: 2,
+      version: 3,
+      styles: [{ id: "orchestral", name: "Orquesta" }],
+      soundtracks: [{ id: "snd", name: "Snd", style: "orchestral" }],
+      playlists: [],
       tracks: [track("b", "calma"), track("a", "calma")],
     };
     expect(rankTracks(signal("calma"), tied)[0]?.id).toBe("a");
@@ -164,9 +182,22 @@ describe("nextTrack", () => {
   });
 
   it("returns null with one track or none", () => {
-    const one: MusicManifest = { version: 2, tracks: [track("solo", "calma")] };
+    const one: MusicManifest = {
+      version: 3,
+      styles: [{ id: "orchestral", name: "Orquesta" }],
+      soundtracks: [{ id: "snd", name: "Snd", style: "orchestral" }],
+      playlists: [],
+      tracks: [track("solo", "calma")],
+    };
     expect(nextTrack(signal("calma"), one, "solo")).toBeNull();
-    expect(nextTrack(signal("calma"), { version: 2, tracks: [] }, null)).toBeNull();
+    const empty: MusicManifest = {
+      version: 3,
+      styles: [{ id: "orchestral", name: "Orquesta" }],
+      soundtracks: [{ id: "snd", name: "Snd", style: "orchestral" }],
+      playlists: [],
+      tracks: [],
+    };
+    expect(nextTrack(signal("calma"), empty, null)).toBeNull();
   });
 });
 
@@ -187,9 +218,13 @@ describe("parseManifest v2", () => {
     ],
   };
 
-  it("accepts a good manifest with loop and startSec defaults", () => {
+  it("migrates a good manifest to v3 with loop and startSec defaults", () => {
     const parsed = parseManifest(JSON.parse(JSON.stringify(good)));
-    expect(parsed.version).toBe(2);
+    expect(parsed.version).toBe(3);
+    expect(parsed.soundtracks).toEqual([{ id: "default", name: "Default", style: "orchestral" }]);
+    expect(parsed.styles).toEqual([{ id: "orchestral", name: "Orquesta" }]);
+    expect(parsed.tracks[0]?.soundtrack).toBe("default");
+    expect(parsed.tracks[0]?.style).toBe("orchestral");
     expect(parsed.tracks[0]?.loop).toBe(true);
     expect(parsed.tracks[0]?.startSec).toBe(0);
   });

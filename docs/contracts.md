@@ -22,24 +22,99 @@ covered zero or two times.
 
 ## Music library
 
-The library is a static `public/music/manifest.json`, version 2, fetched
+The library is a static `public/music/manifest.json`, version 3, fetched
 by the client from `/music/manifest.json`. A static file needs no route,
 ships from the CDN, and swaps by replacing files only. Tracks may be
-several minutes long and are not loops unless marked so.
+several minutes long and are not loops unless marked so. A version 2
+manifest migrates inline to one implicit `default` soundtrack of style
+`orchestral`.
 
-`MusicManifest = { version, tracks }`. `Track = { id, src, title,
-emotion, vector, intensity, tempo, durationSec }` plus optional
+`MusicManifest = { version, styles, soundtracks, tracks, playlists }`.
+`StyleInfo = { id, name }` where `id` is a lowercase slug and `name` is
+the Spanish display name. `Soundtrack = { id, name, style }` plus
+optional `credit`. `Track = { id, src, title, emotion, vector,
+intensity, tempo, durationSec, soundtrack, style }` plus optional
 `startSec` (default 0, where playback starts on first play and on each
 loop), `loop` (default true), `source` (`generated`, `jamendo`, or
 `recording`), `artist`, `composer`, `license`, `attribution`, and
 `sourceUrl` (https only). `emotion` is the hand label: one of the 8
 emotion ids in `core/types.ts`. The vector covers the 8 ids with finite
-entries in 0..1. `core/music.ts` owns `parseManifest`, which rejects
-unknown versions, missing fields, bad vectors, NaN entries, out-of-range
-numbers, `startSec` outside its range, unknown `source` values, and any
-`src` that is not a `/music/` path or `https` URL. The reader calls it on
-every fetch, so a bad drop-in fails loudly in dev. Remote URLs need a
-`media-src` addition in `next.config.ts`.
+entries in 0..1. Every track names a soundtrack id, every track style
+matches its soundtrack style, and every style is a listed style id.
+`core/music.ts` owns `parseManifest`, which rejects unknown versions,
+duplicate ids, unknown soundtrack or style ids, style mismatches,
+missing fields, bad vectors, NaN entries, out-of-range numbers,
+`startSec` outside its range, unknown `source` values, a non-boolean
+`playlistOnly`, and any `src`
+that is not a `/music/` path or `https` URL. A soundtrack with no
+tracks parses. The reader calls it on every fetch, so a bad drop-in
+fails loudly in dev. Remote URLs need a `media-src` addition in
+`next.config.ts`.
+
+`Track.playlistOnly` defaults to false. A true value marks a playlist
+only track: it still names a soundtrack and style, but no emotion pick
+ever returns it. `MusicManifest.playlists` holds
+`Playlist = { id, label, trackIds }` entries, most notably
+`just-play-chopin`. A missing key parses as an empty list, and a v2
+migration gives an empty list. Parse rejects duplicate playlist ids,
+empty labels, non-array `trackIds`, and any `trackIds` entry that names
+no track, with the playlist and the id in the message.
+
+## Soundtracks and selection
+
+One soundtrack plays at a time. `MusicSelection = { mode, soundtrackId,
+style }` is the session: `style` scopes every pick, `soundtrackId` is
+the home in `soundtrack` mode, `mode` picks the ranking rule. The style
+is the user's choice, changed with the style selector. The initial
+soundtrack is the one covering the most hand-labeled emotions, ties by
+lower id; a valid persisted id wins. The session persists `{ mode,
+soundtrackId, style }` in localStorage under `lectoria.music.v1`. On
+load a stored style with no tracks and a stored soundtrack outside the
+stored style fall back to the defaults. Storage exceptions never break
+playback.
+
+In `soundtrack` mode each scene scores only the session soundtrack. When
+the soundtrack has no track with the scene emotion, the scheduler borrows
+the best same-style track for that scene only and reports `fallback`, so
+the bar can say `de otra banda sonora`. In `random` mode each scheduled
+select draws among same-style tracks with the scene emotion (or the best
+same-style tracks when the emotion is missing) within `randomTolerance`
+(0.05) of the best score, keeps the current track when it is eligible,
+and avoids an immediate repeat otherwise. Dwell and min-track rules hold
+in both modes. The core never calls `Math.random`; the reader injects it
+and tests pass a seeded stub.
+
+## Change track, mix toggle, style change
+
+`nextTrack` cycles same-emotion tracks in score order, wrapping and
+skipping the current. In `soundtrack` mode it stays inside the current
+soundtrack first, then tries the same emotion in other same-style
+soundtracks, then the best same-style track overall. In `random` mode it
+ranges over all same-style soundtracks at once. A null scene cycles the
+style set in id order.
+
+The `Mezclar bandas` toggle flips `mode`. Turning it off keeps the
+soundtrack of the playing track. `requestStyleChange` moves the session
+to the best-coverage soundtrack of the new style and picks the best
+match for the scene inside that soundtrack, or the best same-style track
+by score when the picked soundtrack lacks the scene emotion. It never
+crosses styles. The scheduler applies it at once with the normal
+crossfade and holds the choice like a Next. There is no
+soundtrack-change button.
+
+## Playlist mode
+
+`SchedulerState.playlist` holds `{ id, index }` while a fixed playlist
+plays. `enterPlaylist` switches at once to the first `trackIds` entry
+with `crossfadeSec`, no dwell and no min-track rule. While it is on,
+scene changes update the active scene but never switch, `requestNext`
+and `noteTrackEnded` advance to the next entry in order and wrap from
+the last to the first, and playlist tracks run to their end because the
+player forces looping off. `exitPlaylist` clears the playlist state and
+switches at once to the best match for the current scene under the
+restored selection. The mode is never persisted, so a reload returns to
+emotion mode. The mix toggle and the style selector stay disabled while
+it is on, and the style list hides styles with only playlist tracks.
 
 ## Similarity and config
 
@@ -84,16 +159,6 @@ it never triggers a switch. A non-looping track that ends fades into
 the best remaining track, excluding the one that ended, and clears the
 skip override.
 
-## Change track
-
-`nextTrack` cycles tracks hand-labeled with the scene dominant emotion
-(argmax of the renormalized scene vector, ties by emotion order), ranked
-by score with ties by lower id, wrapping around and skipping the current
-track. When the current track has another emotion, it starts at the top
-candidate. With no other same-emotion track it falls back to the best
-track overall that is not current. A null scene cycles all tracks in id
-order. One track or none gives null, and the UI disables the button.
-
 ## Player
 
 `app/player.tsx` takes the track, the fade length for the latest switch,
@@ -115,12 +180,23 @@ frozen point. Audio starts once, on the first press, with fade 0.
 Audio starts only after the user presses play. Reduced motion is read in
 state with a change listener and affects visuals only, never the fade.
 
-The bar shows Play/Pause, Volume, a Change track button (disabled when
-Next has nothing to offer), the track title with its emotion label, and
-attribution when present: composer or artist, license, and a source
-link. On manifest failure the reader still renders and the bar shows a
-short neutral note. UI motion stays under 200 ms. Controls are real
-buttons and inputs with labels, visible focus, and keyboard use.
+The bar shows Play/Pause, Volume, a Cambiar track button (disabled when
+Next has nothing to offer), a Mezclar bandas toggle with `aria-pressed`,
+and a style selector listing only styles that have tracks (hidden while
+fewer than two qualify). A `Just play Chopin` toggle appears only when
+the manifest defines that playlist with tracks; its text comes from the
+playlist label, it carries `aria-pressed`, and it shows the Meta blue
+accent while pressed. It shows the track title with its emotion
+label, the soundtrack name, and attribution when present: composer or
+artist, license, and a source link. While the playlist plays, the bar
+hides the emotion label and the fallback note. A fallback pick adds the
+quiet note
+`de otra banda sonora`. On manifest failure the reader still renders and
+the bar shows a short neutral note. UI motion stays under 200 ms.
+Controls are real buttons and inputs with labels, visible focus, and
+keyboard use. `app/player.tsx` keeps the audio engine and bar layout;
+`app/player-controls.tsx` holds the buttons and the style selector;
+`app/music-prefs.ts` owns the storage helper.
 
 ## Image api
 

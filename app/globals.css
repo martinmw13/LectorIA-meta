@@ -103,6 +103,17 @@ body {
   outline-offset: 2px;
 }
 
+.player button[aria-pressed="true"] {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.player button[aria-pressed="true"]:hover {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+}
+
 .player-track {
   min-width: 0;
   overflow: hidden;
