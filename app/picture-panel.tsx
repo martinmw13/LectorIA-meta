@@ -81,9 +81,9 @@ export function usePictureScene({
   }, []);
 
   const illustrateScene = useCallback(() => {
-    if (!sceneId) return;
+    if (!sceneId || card.phase === "loading") return;
     void request({ kind: "scene", bookId, textVersion, sceneId });
-  }, [bookId, textVersion, sceneId, request]);
+  }, [bookId, textVersion, sceneId, request, card.phase]);
 
   const illustratePassage = useCallback(() => {
     const view = viewRef.current;
@@ -94,9 +94,9 @@ export function usePictureScene({
       n: Number(el.getAttribute("data-n")),
     }));
     const n = pickStartN(entries, paraOf(sel.anchorNode)?.id ?? null, paraOf(sel.focusNode)?.id ?? null);
-    if (n === null || !Number.isInteger(n)) return;
+    if (n === null || !Number.isInteger(n) || card.phase === "loading") return;
     void request({ kind: "passage", bookId, textVersion, n });
-  }, [bookId, textVersion, request]);
+  }, [bookId, textVersion, request, card.phase]);
 
   const dismissCard = useCallback(() => setCard({ phase: "idle" }), []);
 
