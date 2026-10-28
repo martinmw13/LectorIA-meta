@@ -177,7 +177,8 @@ export function Player({
 
   function handleEnded(index: number) {
     const els = [firstRef.current, secondRef.current];
-    if (index !== audibleRef.current) {
+    // An element that ends while a fade is running is the one fading out.
+    if (index !== audibleRef.current || fadeRef.current !== null) {
       els[index]?.pause();
       return;
     }
