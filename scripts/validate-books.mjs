@@ -1,11 +1,13 @@
 // Validates every processed book under data/books against the pipeline
-// invariants. Prints one line per problem and exits 1 if any are found.
+// invariants. CLI: `node scripts/validate-books.mjs [dataDir]` prints one
+// line per problem and exits 1 if any are found.
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { EMOTIONS } from "../core/emotions.mjs";
 
-const EMOTIONS = ["calma", "alegria", "tristeza", "suspenso", "misterio", "aventura", "combate", "asombro"];
-const ROOT = "data/books";
-const problems = [];
+let ROOT;
+let problems;
 const bad = (id, msg) => problems.push(`${id}: ${msg}`);
 const load = (dir, name) => (existsSync(join(dir, name)) ? JSON.parse(readFileSync(join(dir, name), "utf8")) : null);
 const unit = (x) => typeof x === "number" && x >= 0 && x <= 1;
@@ -92,12 +94,22 @@ function checkBook(id) {
   }
 }
 
-const books = readdirSync(ROOT).filter((d) => statSync(join(ROOT, d)).isDirectory());
-const library = JSON.parse(readFileSync("data/library.json", "utf8"));
-for (const entry of library) {
-  if (entry.status === "ready" && !books.includes(entry.id)) bad(entry.id, "library says ready but no data/books folder");
+// Returns the checked book ids and one string per problem; empty means valid.
+export function validateBooks(dataDir = join(dirname(fileURLToPath(import.meta.url)), "../data")) {
+  ROOT = join(dataDir, "books");
+  problems = [];
+  const books = readdirSync(ROOT).filter((d) => statSync(join(ROOT, d)).isDirectory());
+  const library = JSON.parse(readFileSync(join(dataDir, "library.json"), "utf8"));
+  for (const entry of library) {
+    if (entry.status === "ready" && !books.includes(entry.id)) bad(entry.id, "library says ready but no data/books folder");
+  }
+  books.forEach(checkBook);
+  return { books, problems };
 }
-books.forEach(checkBook);
-for (const p of problems) console.error(p);
-console.log(`validate-books: ${books.length} book(s), ${problems.length} problem(s)`);
-process.exit(problems.length ? 1 : 0);
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const { books, problems } = validateBooks(process.argv[2]);
+  for (const p of problems) console.error(p);
+  console.log(`validate-books: ${books.length} book(s), ${problems.length} problem(s)`);
+  process.exit(problems.length ? 1 : 0);
+}

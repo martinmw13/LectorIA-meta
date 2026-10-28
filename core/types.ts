@@ -1,16 +1,8 @@
 // Shared shapes for the book pipeline. Every type stored in data files
 // lives here so core never imports from pipeline.
 import type { ImageStyle } from "./image-style";
-export const EMOTIONS = [
-  "calma",
-  "alegria",
-  "tristeza",
-  "suspenso",
-  "misterio",
-  "aventura",
-  "combate",
-  "asombro",
-] as const;
+import { EMOTIONS } from "./emotions.mjs";
+export { EMOTIONS };
 
 export type EmotionId = (typeof EMOTIONS)[number];
 export type JevEmotionId = EmotionId | "unknown";
