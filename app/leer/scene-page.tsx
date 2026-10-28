@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import type { SceneView } from "@/core/reader";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { buildNavIndex, navReducer } from "@/core/reader";
+import type { NavAction, SceneView } from "@/core/reader";
 
 export interface ChapterJump {
   ch: number;
@@ -10,34 +11,59 @@ export interface ChapterJump {
   firstSceneId: string;
 }
 
+// One-shot entry intent: set just before pushing the previous scene
+// route, so the new page opens on its last sub-page. Client memory only,
+// never the URL, so prerendered pages stay static and a direct URL load
+// always starts at page 0.
+let enterAtEnd = false;
+
 // One scene view: sub-pages, keys, buttons, progress, chapter jump.
 // Sub-page moves stay in client state; scene moves push a new route.
-export function ScenePage({ view, chapters }: { view: SceneView; chapters: ChapterJump[] }) {
+export function ScenePage({
+  view,
+  chapters,
+  views,
+}: {
+  view: SceneView;
+  chapters: ChapterJump[];
+  views: { sceneId: string; pages: number }[];
+}) {
   const router = useRouter();
-  const atEnd = useSearchParams().get("at") === "end";
-  const [page, setPage] = useState(atEnd ? view.pages.length - 1 : 0);
-  const headingRef = useRef<HTMLHeadingElement>(null);
+  const index = useMemo(() => buildNavIndex(views), [views]);
   const lastPage = view.pages.length - 1;
+  const [page, setPage] = useState(() => {
+    if (enterAtEnd) {
+      enterAtEnd = false;
+      return lastPage;
+    }
+    return 0;
+  });
+  const headingRef = useRef<HTMLHeadingElement>(null);
   const sub = view.pages[page] ?? view.pages[0];
   const atStart = view.prevSceneId === null && page === 0;
   const atBookEnd = view.nextSceneId === null && page === lastPage;
 
-  function goNext() {
-    if (page < lastPage) {
-      setPage(page + 1);
-      window.scrollTo(0, 0);
+  // Every pager move runs through navReducer; a new scene id means a
+  // route push, a same-scene result means a client sub-page move.
+  function move(action: NavAction) {
+    const next = navReducer({ sceneId: view.sceneId, page }, action, index);
+    if (next.sceneId !== view.sceneId) {
+      if (next.page > 0) enterAtEnd = true;
+      router.push(`/leer/${next.sceneId}`);
       return;
     }
-    if (view.nextSceneId) router.push(`/leer/${view.nextSceneId}`);
+    if (next.page !== page) {
+      setPage(next.page);
+      window.scrollTo(0, 0);
+    }
+  }
+
+  function goNext() {
+    move({ kind: "next" });
   }
 
   function goPrev() {
-    if (page > 0) {
-      setPage(page - 1);
-      window.scrollTo(0, 0);
-      return;
-    }
-    if (view.prevSceneId) router.push(`/leer/${view.prevSceneId}?at=end`);
+    move({ kind: "prev" });
   }
 
   // Scene entry resets orientation; sub-page moves keep the heading.
@@ -69,11 +95,11 @@ export function ScenePage({ view, chapters }: { view: SceneView; chapters: Chapt
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  });
+  }, [page, view.sceneId, index, router]);
 
   function jumpChapter(ch: number) {
     const found = chapters.find((c) => c.ch === ch);
-    if (found && found.firstSceneId !== view.sceneId) router.push(`/leer/${found.firstSceneId}`);
+    if (found && found.firstSceneId !== view.sceneId) move({ kind: "goto", sceneId: found.firstSceneId });
   }
 
   return (
@@ -81,7 +107,7 @@ export function ScenePage({ view, chapters }: { view: SceneView; chapters: Chapt
       <div className="scene-view" key={`${view.sceneId}:${page}`}>
         <p className="scene-progress">
           Capítulo {view.ch}, {view.chapterTitle}. Escena {view.k} de {view.n}
-          {view.pages.length > 1 ? `. Página ${page + 1} de ${view.pages.length}` : ""}
+          {view.pages.length > 1 ? ` Página ${page + 1} de ${view.pages.length}` : ""}
         </p>
         <h2 id="scene-heading" ref={headingRef} tabIndex={-1}>
           {view.title}

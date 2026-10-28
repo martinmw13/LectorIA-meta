@@ -1,5 +1,4 @@
-import { Suspense } from "react";
-import { buildReaderModel, buildSceneView } from "@/core/reader";
+import { buildReaderModel, buildSceneView, paginateScene } from "@/core/reader";
 import { loadOzBook } from "@/server/books";
 import { PicturePanel } from "../../picture-panel";
 import { ScenePage } from "../scene-page";
@@ -24,12 +23,14 @@ export default async function SceneRoute({ params }: { params: Promise<{ sceneId
     title: chapter.title,
     firstSceneId: chapter.scenes[0]?.id ?? "",
   }));
+  // Page counts for the pager reducer: ids and numbers only, no text.
+  const views = model.chapters.flatMap((chapter) =>
+    chapter.scenes.map((scene) => ({ sceneId: scene.id, pages: paginateScene(scene.paragraphs).length })),
+  );
   return (
     <div className="shell">
       <main className="book">
-        <Suspense>
-          <ScenePage view={view} chapters={chapters} />
-        </Suspense>
+        <ScenePage key={sceneId} view={view} chapters={chapters} views={views} />
       </main>
       <aside className="companion" aria-label="Companion">
         <PicturePanel bookId={model.bookId} textVersion={model.textVersion} sceneId={sceneId} />
