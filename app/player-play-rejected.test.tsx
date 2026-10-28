@@ -15,6 +15,8 @@ let play: ReturnType<typeof vi.spyOn>;
 let pause: ReturnType<typeof vi.spyOn>;
 
 beforeEach(() => {
+  // These cover manual starts; autoplay has its own tests.
+  localStorage.setItem("lectoria.music.paused", "1");
   vi.stubGlobal("requestAnimationFrame", () => 1);
   vi.stubGlobal("cancelAnimationFrame", noop);
   play = vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
@@ -22,6 +24,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  localStorage.clear();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   document.body.innerHTML = "";

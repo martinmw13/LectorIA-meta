@@ -9,6 +9,28 @@ import type { MusicMode, MusicModeId, Track } from "@/core/music";
 import { MusicStyleControl } from "./folio/music-style-control";
 import { RainAmbience } from "./rain-button";
 
+// An explicit pause sticks across visits: the reader never auto-starts
+// music the user stopped.
+const MUSIC_PAUSED_KEY = "lectoria.music.paused";
+const GESTURES = ["pointerdown", "keydown", "touchend", "wheel"] as const;
+
+function pausedByUser(): boolean {
+  try {
+    return window.localStorage.getItem(MUSIC_PAUSED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function rememberPaused(paused: boolean) {
+  try {
+    if (paused) window.localStorage.setItem(MUSIC_PAUSED_KEY, "1");
+    else window.localStorage.removeItem(MUSIC_PAUSED_KEY);
+  } catch {
+    // Private mode: the pause holds for this page only.
+  }
+}
+
 // Two audio elements with equal-power crossfades. Volume lives in a
 // ref, so the slider never re-runs the track effect or touches src.
 // Nothing plays before the first user press. Reduced motion only
@@ -80,6 +102,8 @@ export function Player({
   const playingRef = useRef(false);
   const startedRef = useRef(false);
   const firstPlayRef = useRef(true);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const disarmRef = useRef<(() => void) | null>(null);
 
   // Scheduler fade when set, else the config default; never 0 mid session.
   function loopFadeSec() {
@@ -131,7 +155,29 @@ export function Player({
       playingRef.current = false;
       setPlaying(false);
       for (const other of [firstRef.current, secondRef.current]) other?.pause();
+      if ((err as { name?: string })?.name === "NotAllowedError") armGestureStart();
     });
+  }
+
+  // Autoplay with sound was blocked: the first gesture anywhere starts the
+  // music once. A gesture on the player itself is left to its own buttons.
+  function armGestureStart() {
+    if (disarmRef.current || pausedByUser()) return;
+    const onGesture = (event: Event) => {
+      disarm();
+      if (rootRef.current?.contains(event.target as Node) || playingRef.current || pausedByUser()) return;
+      const next = trackRef.current;
+      if (!next) return;
+      playingRef.current = true;
+      setPlaying(true);
+      requestPlayRef.current(next, 0);
+    };
+    const disarm = () => {
+      for (const type of GESTURES) document.removeEventListener(type, onGesture, true);
+      disarmRef.current = null;
+    };
+    for (const type of GESTURES) document.addEventListener(type, onGesture, { capture: true, passive: true });
+    disarmRef.current = disarm;
   }
 
   // Assigned each render so handlers always see fresh refs. Fades from
@@ -202,6 +248,17 @@ export function Player({
   };
 
   const trackId = track?.id ?? null;
+
+  // Reading begins with music: try to start as soon as the first track is
+  // known, unless the user paused it before.
+  useEffect(() => {
+    if (startedRef.current || trackId === null || pausedByUser()) return;
+    startedRef.current = true;
+    setStarted(true);
+    playingRef.current = true;
+    setPlaying(true);
+  }, [trackId]);
+
   useEffect(() => {
     const next = trackRef.current;
     if (!started || !next) {
@@ -222,7 +279,13 @@ export function Player({
     requestPlayRef.current(next, dur);
   }, [started, trackId, replayNonce]);
 
-  useEffect(() => cancelFade, []);
+  useEffect(
+    () => () => {
+      cancelFade();
+      disarmRef.current?.();
+    },
+    [],
+  );
 
   // Duck moves outside the fade engine, so re-apply on every step.
   useEffect(() => {
@@ -273,7 +336,9 @@ export function Player({
 
   function toggle() {
     const both = [firstRef.current, secondRef.current];
+    disarmRef.current?.();
     if (!startedRef.current) {
+      rememberPaused(false);
       startedRef.current = true;
       setStarted(true);
       playingRef.current = true;
@@ -284,8 +349,10 @@ export function Player({
       for (const el of both) el?.pause();
       playingRef.current = false;
       setPlaying(false);
+      rememberPaused(true);
       return;
     }
+    rememberPaused(false);
     playingRef.current = true;
     setPlaying(true);
     let heard = false;
@@ -349,7 +416,7 @@ export function Player({
   }, [trackId, head]);
 
   return (
-    <div className="player" role="region" aria-label="Music player" data-reduced-motion={reducedMotion}>
+    <div ref={rootRef} className="player" role="region" aria-label="Music player" data-reduced-motion={reducedMotion}>
       <audio ref={firstRef} preload="auto" onTimeUpdate={(e) => handleTimeUpdate(0, e.currentTarget)} onEnded={() => handleEnded(0)} />
       <audio ref={secondRef} preload="auto" onTimeUpdate={(e) => handleTimeUpdate(1, e.currentTarget)} onEnded={() => handleEnded(1)} />
       <button type="button" className="skip" onClick={onPrev} disabled={!canPrev} aria-label="Previous track" title="Previous track">
