@@ -31,6 +31,16 @@ describe("checkIsolation", () => {
     );
   });
 
+  it("fails when the own text lives only in the RSC payload, not the HTML", () => {
+    const readFile = (path) =>
+      path.endsWith(".rsc") ? `<p>${own}</p>` : "<p>other words entirely here</p>";
+    const filesFor = (id) => [`/out/${id}.html`, `/out/${id}.rsc`];
+    assert.match(
+      checkIsolation({ scenes: scenes(), readFile, filesFor }).join("\n"),
+      /s1: own text missing from HTML/,
+    );
+  });
+
   it("sees through JSON and HTML escaping", () => {
     assert.equal(normalize("farmer\\u2019s wife\\nnext"), normalize("farmer’s wife next"));
     assert.equal(normalize("farmer&#x27;s wife"), normalize("farmer’s wife"));

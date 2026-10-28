@@ -1,8 +1,8 @@
 // Scene isolation check: no scene route may ship another scene's text.
-// Scans the prerendered HTML and RSC files of a few scene routes for
+// Scans the prerendered HTML and RSC files of every scene route for
 // excerpts of neighboring scenes' paragraphs. Run after `npm run build`.
 // Fails when a neighbor excerpt appears, or when the scene's own text is
-// missing (which would prove the scan itself is blind).
+// missing from its HTML (which would prove the scan itself is blind).
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -10,8 +10,6 @@ import { fileURLToPath } from "node:url";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const EXCERPT_LEN = 80;
 const MIN_EXCERPT_LEN = 40;
-// First, middle, and last scenes, so both edges are covered.
-const SAMPLE_AT = [0, 1, 0.5, -2, -1];
 
 export function unescapePayload(text) {
   return text
@@ -70,9 +68,8 @@ function routeFiles(sceneId) {
 
 export function checkIsolation({ scenes, readFile = (p) => readFileSync(p, "utf8"), filesFor = routeFiles } = {}) {
   const list = scenes ?? loadScenes();
-  const at = SAMPLE_AT.map((i) => (i < 0 ? list.length + i : Math.floor(list.length * i)));
   const failures = [];
-  for (const i of at) {
+  for (let i = 0; i < list.length; i++) {
     const scene = list[i];
     if (!scene) continue;
     const files = filesFor(scene.id);
@@ -80,14 +77,17 @@ export function checkIsolation({ scenes, readFile = (p) => readFileSync(p, "utf8
       failures.push(`${scene.id}: no prerendered files (run npm run build first)`);
       continue;
     }
+    // The scene's own first paragraph must be in the HTML itself, not
+    // just the RSC payload: otherwise the scan is blind to an empty page.
+    const html = files.filter((f) => f.endsWith(".html")).map((f) => normalize(readFile(f))).join("\n");
     const haystack = files.map((f) => normalize(readFile(f))).join("\n");
     const own = excerpt(scene.texts[0] ?? "");
-    if (own.length >= MIN_EXCERPT_LEN && !haystack.includes(own)) {
-      failures.push(`${scene.id}: own text missing, the scan is blind`);
+    if (own.length >= MIN_EXCERPT_LEN && !html.includes(own)) {
+      failures.push(`${scene.id}: own text missing from HTML, the scan is blind`);
     }
     for (const neighbor of [list[i - 1], list[i + 1]]) {
       if (!neighbor) continue;
-      for (const text of neighbor.texts.slice(0, 2)) {
+      for (const text of neighbor.texts) {
         const probe = excerpt(text);
         if (probe.length < MIN_EXCERPT_LEN) continue;
         if (haystack.includes(probe)) {
@@ -106,5 +106,5 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     for (const failure of failures) console.error(`isolation: ${failure}`);
     process.exit(1);
   }
-  console.log("isolation: sampled scene routes carry no neighbor text");
+  console.log("isolation: every scene route carries only its own text");
 }
