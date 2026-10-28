@@ -8,12 +8,12 @@ import { countWords } from "../core/reader";
 import {
   RESPLIT_ASK_MARGIN,
   RESPLIT_AUTO_MARGIN,
-  bestBoundary,
   buildWindows,
   isResplitCandidate,
   meanVector,
   planSplits,
   splitIds,
+  topOf,
 } from "../core/resplit";
 import type { ResplitWindow, SplitCall } from "../core/resplit";
 import { validateBookCoverage } from "../core/scenes";
@@ -58,13 +58,28 @@ const TITLES_SCHEMA = {
 
 export interface ResplitEntry {
   from: string;
-  into: string[];
-  at_n: number[];
+  at_n: number;
   margin: number;
-  left: EmotionId;
-  right: EmotionId;
+  window_left: EmotionId;
+  window_right: EmotionId;
+  final_left: EmotionId | null;
+  final_right: EmotionId | null;
   decided_by: "rule" | "muse";
   reason?: string;
+}
+
+export interface ResplitRejected {
+  from: string;
+  at_n: number;
+  margin: number;
+  window_left: EmotionId;
+  window_right: EmotionId;
+  reason: string;
+}
+
+export interface ResplitMergedBack {
+  from: string;
+  top: EmotionId | null;
 }
 
 interface Usage {
@@ -118,6 +133,9 @@ export async function runResplit(ctx: StepCtx, deps: { jev: JevClient; meta: Met
   };
   const candidates = analysisFile.scenes.filter((s) => isResplitCandidate(wordsOf(s), s.final));
   let windowsClassified = 0;
+  const windowFailures: string[] = [];
+  const rejected: ResplitRejected[] = [];
+  const mergedBack: ResplitMergedBack[] = [];
 
   const splitScenes = await runPool(candidates, 4, async (scene) => {
     const paragraphs = book.paragraphs.filter((p) => p.n >= scene.start_n && p.n <= scene.end_n);
@@ -125,18 +143,28 @@ export async function runResplit(ctx: StepCtx, deps: { jev: JevClient; meta: Met
     const windows: ResplitWindow[] = [];
     for (const span of spans) {
       const text = paragraphs.filter((p) => p.n >= span.startN && p.n <= span.endN).map((p) => p.text).join("\n");
-      const result = await deps.jev.classify({ book: book.title, chapter: chapterTitle.get(scene.ch) ?? "", sceneTitle: scene.title, scene: text });
+      let result;
+      try {
+        result = await deps.jev.classify({ book: book.title, chapter: chapterTitle.get(scene.ch) ?? "", sceneTitle: scene.title, scene: text });
+      } catch {
+        windowFailures.push(scene.id);
+        return null;
+      }
       usage.jevRequests += 1;
       usage.jevInputTokens += result.input_tokens;
       usage.jevOutputTokens += result.output_tokens;
       const { unknown: _dropped, ...rest } = result.vector;
       const vector = renormalize8(rest);
-      if (vector === null) return null;
+      if (vector === null) {
+        windowFailures.push(scene.id);
+        return null;
+      }
       windows.push({ ...span, vector });
       windowsClassified += 1;
     }
     if (windows.length < 2) return null;
-    const taken: { call: SplitCall; by: "rule" | "muse"; reason?: string }[] = [];
+    const taken: { call: SplitCall; by: "rule" | "muse" }[] = [];
+    const reasons = new Map<number, string>();
     const cuts = await planSplits(
       windows,
       async (call) => {
@@ -158,10 +186,12 @@ export async function runResplit(ctx: StepCtx, deps: { jev: JevClient; meta: Met
         trackMeta(usage, result);
         const data = result.data as { split?: unknown; reason?: unknown };
         const split = data.split === true;
-        if (split) taken.push({ call, by: "muse", reason: String(data.reason ?? "") });
+        const reason = String(data.reason ?? "");
+        if (split) reasons.set(call.index, reason);
+        else rejected.push({ from: scene.id, at_n: boundaryN, margin: call.margin, window_left: call.left, window_right: call.right, reason });
         return split;
       },
-      (call) => taken.push({ call, by: "rule" }),
+      (call, by) => taken.push({ call, by }),
     );
     if (cuts.length === 0) return null;
     const bounds = [0, ...cuts, windows.length];
@@ -180,50 +210,91 @@ export async function runResplit(ctx: StepCtx, deps: { jev: JevClient; meta: Met
     if (parts.length !== ranges.length || parts.some((p, i) => p.start_n !== ranges[i]?.startN || p.end_n !== ranges[i]?.endN)) {
       throw new Error(`scene ${scene.id} titles do not cover the split ranges`);
     }
-    const ids = splitIds(scene.id, parts.length);
-    const analyzed = await runPool(parts, 4, async (part, i) => {
-      const text = paragraphs.filter((p) => p.n >= part.start_n && p.n <= part.end_n).map((p) => p.text).join("\n");
-      const emotion = await classifyScene(
-        { id: ids[i] ?? "", ch: scene.ch, start_n: part.start_n, end_n: part.end_n, title: part.title, summary: part.summary, characters: Array.isArray(part.characters) ? part.characters.map(String) : [] },
-        text,
-        book.title,
-        chapterTitle.get(scene.ch) ?? "",
-        deps,
-        usage.meta,
-      );
-      usage.jevRequests += 1;
+    const bases = parts.map((part) => ({
+      ch: scene.ch,
+      start_n: part.start_n,
+      end_n: part.end_n,
+      title: part.title,
+      summary: part.summary,
+      characters: Array.isArray(part.characters) ? part.characters.map(String) : [],
+    }));
+    const analyzed = await runPool(bases, 4, async (base) => {
+      const text = paragraphs.filter((p) => p.n >= base.start_n && p.n <= base.end_n).map((p) => p.text).join("\n");
+      const emotion = await classifyScene({ id: "", ...base }, text, book.title, chapterTitle.get(scene.ch) ?? "", deps, usage.meta);
       if (emotion.jev) {
+        usage.jevRequests += 1;
         usage.jevInputTokens += emotion.jev.input_tokens;
         usage.jevOutputTokens += emotion.jev.output_tokens;
       }
       return emotion;
     });
-    const first = taken[0]?.call ?? bestBoundary(windows);
-    const reason = taken.find((t) => t.reason)?.reason;
+    // Merge adjacent parts whose re-classified top emotion agrees; a
+    // null final never merges. One extra classify per merged group.
+    const tops = analyzed.map((e) => (e.final ? topOf(e.final.vector).id : null));
+    const groups: number[][] = [];
+    for (let i = 0; i < bases.length; i++) {
+      const last = groups[groups.length - 1];
+      const prev = last ? tops[last[last.length - 1] ?? -1] : undefined;
+      const top = tops[i];
+      if (last && top !== null && top === prev) last.push(i);
+      else groups.push([i]);
+    }
+    if (groups.length === 1 && bases.length > 1) {
+      mergedBack.push({ from: scene.id, top: tops[0] ?? null });
+      return null;
+    }
+    const finals: { base: (typeof bases)[number]; emotion: SceneEmotion }[] = [];
+    for (const group of groups) {
+      if (group.length === 1) {
+        const i = group[0] ?? 0;
+        finals.push({ base: bases[i]!, emotion: (analyzed[i] ?? { jev: null, muse_override: null, final: null, error: "missing part emotion" }) as SceneEmotion });
+        continue;
+      }
+      const first = bases[group[0] ?? 0]!;
+      const lastBase = bases[group[group.length - 1] ?? 0]!;
+      const base = { ...first, start_n: first.start_n, end_n: lastBase.end_n };
+      const text = paragraphs.filter((p) => p.n >= base.start_n && p.n <= base.end_n).map((p) => p.text).join("\n");
+      const emotion = await classifyScene({ id: "", ...base }, text, book.title, chapterTitle.get(scene.ch) ?? "", deps, usage.meta);
+      if (emotion.jev) {
+        usage.jevRequests += 1;
+        usage.jevInputTokens += emotion.jev.input_tokens;
+        usage.jevOutputTokens += emotion.jev.output_tokens;
+      }
+      finals.push({ base, emotion });
+      mergedBack.push({ from: scene.id, top: emotion.final ? topOf(emotion.final.vector).id : null });
+    }
+    const ids = splitIds(scene.id, finals.length);
+    const byCut = new Map(taken.map((t) => [t.call.index, t]));
+    const finalTops = finals.map((f) => (f.emotion.final ? topOf(f.emotion.final.vector).id : null));
+    // One entry per surviving cut; the window tops picked the cut and
+    // the final tops are what the stored parts re-classified to.
+    const entries: ResplitEntry[] = [];
+    let start = 0;
+    for (let g = 0; g + 1 < groups.length; g++) {
+      const end = start + (groups[g]?.length ?? 0);
+      const cutIndex = bounds[end] ?? 0;
+      const call = byCut.get(cutIndex);
+      const reason = reasons.get(cutIndex);
+      entries.push({
+        from: scene.id,
+        at_n: finals[g + 1]?.base.start_n ?? 0,
+        margin: call?.call.margin ?? 0,
+        window_left: call?.call.left ?? "calma",
+        window_right: call?.call.right ?? "calma",
+        final_left: finalTops[g] ?? null,
+        final_right: finalTops[g + 1] ?? null,
+        decided_by: call?.by ?? "rule",
+        ...(reason ? { reason } : {}),
+      });
+      start = end;
+    }
     return {
       scene,
-      parts: parts.map((part, i) => ({
-        scene: {
-          id: ids[i] ?? "",
-          ch: scene.ch,
-          start_n: part.start_n,
-          end_n: part.end_n,
-          title: part.title,
-          summary: part.summary,
-          characters: Array.isArray(part.characters) ? part.characters.map(String) : [],
-        } satisfies Scene,
-        emotion: (analyzed[i] ?? { jev: null, muse_override: null, final: null, error: "missing part emotion" }) as SceneEmotion,
+      parts: finals.map((f, i) => ({
+        scene: { id: ids[i] ?? "", ...f.base } satisfies Scene,
+        emotion: f.emotion,
       })),
-      entry: {
-        from: scene.id,
-        into: ids,
-        at_n: ranges.map((r) => r.startN),
-        margin: first?.margin ?? 0,
-        left: first?.left ?? "calma",
-        right: first?.right ?? "calma",
-        decided_by: taken.some((t) => t.by === "muse") ? ("muse" as const) : ("rule" as const),
-        ...(reason ? { reason } : {}),
-      } satisfies ResplitEntry,
+      entries,
     };
   });
 
@@ -236,15 +307,18 @@ export async function runResplit(ctx: StepCtx, deps: { jev: JevClient; meta: Met
       scenes.push(old);
       continue;
     }
-    entries.push(split.entry);
+    entries.push(...split.entries);
     for (const part of split.parts) scenes.push({ ...part.scene, ...part.emotion });
   }
   scenes.sort((a, b) => a.start_n - b.start_n);
+  const seen = new Set<string>();
+  for (const s of scenes) {
+    if (seen.has(s.id)) throw new Error(`resplit minted duplicate scene id ${s.id}`);
+    seen.add(s.id);
+  }
   const problems = validateBookCoverage(book, scenes);
   if (problems.length > 0) throw new Error(`resplit breaks coverage: ${problems.map((p) => p.message).join("; ")}`);
 
-  const runningCost = jevCostUsd(usage.jevInputTokens) + metaCostUsd({ prompt: usage.meta.promptTokens, cached: usage.meta.cachedTokens, completion: usage.meta.completionTokens });
-  if (runningCost > 0.5) throw new Error(`resplit cost $${runningCost.toFixed(2)} passed the $0.50 stop line`);
   usage.meta.costUsd = metaCostUsd({ prompt: usage.meta.promptTokens, cached: usage.meta.cachedTokens, completion: usage.meta.completionTokens });
   const jevCost = jevCostUsd(usage.jevInputTokens);
   const prevJev = analysisFile.provenance.jev;
@@ -297,6 +371,9 @@ export async function runResplit(ctx: StepCtx, deps: { jev: JevClient; meta: Met
           candidates: candidates.length,
           windows_classified: windowsClassified,
           splits: entries,
+          merged_back: mergedBack,
+          rejected: rejected,
+          window_failures: windowFailures,
           jev: { model: deps.jev.model, requests: usage.jevRequests, input_tokens: usage.jevInputTokens, output_tokens: usage.jevOutputTokens, cost_usd: jevCost },
           meta: { model: usage.meta.model, requests: usage.meta.requests, prompt_tokens: usage.meta.promptTokens, cached_tokens: usage.meta.cachedTokens, completion_tokens: usage.meta.completionTokens, cost_usd: usage.meta.costUsd },
         },

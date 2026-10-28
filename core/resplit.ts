@@ -151,5 +151,6 @@ export async function planSplits(
 
 // First part keeps the scene id; later parts add a letter suffix.
 export function splitIds(baseId: string, count: number): string[] {
+  if (count > 26) throw new Error(`splitIds supports at most 26 parts, got ${count}`);
   return Array.from({ length: count }, (_, i) => (i === 0 ? baseId : `${baseId}${String.fromCharCode(97 + i)}`));
 }
