@@ -41,7 +41,7 @@ export interface OrchestrateDeps {
 
 // One pass, no skipped steps: hit -> lock -> human -> quota -> budget ->
 // generate -> store -> index -> release. Every failure after the reserve
-// refunds quota and budget and releases the lock.
+// refunds quota, budget, and the daily counter and releases the lock.
 export async function orchestrate(
   req: ImageRequest,
   deps: OrchestrateDeps,

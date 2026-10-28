@@ -5,7 +5,7 @@ import { MUSIC_CONFIG, nowPlaying } from "@/core/music";
 import { displayTitle } from "@/core/music-credit";
 import { effectiveEnd, gainVolume } from "@/core/music-playback";
 import type { StyleInfo, Track } from "@/core/music";
-import { PlayerControls } from "./player-controls";
+import { MusicStyleControl } from "./folio/music-style-control";
 import { RainAmbience } from "./rain-button";
 
 // Two audio elements with equal-power crossfades. Volume lives in a
@@ -389,7 +389,7 @@ export function Player({
           </>
         ) : null}
       </span>
-      <PlayerControls
+      <MusicStyleControl
         styles={styles}
         styleId={styleId}
         onStyleChange={onStyleChange}

@@ -1,23 +1,10 @@
-// Player extras: Orchestra / Piano sticker buttons and the Chopin
-// playlist toggle. No audio here, so the bar layout can change without
-// touching the engine.
+// Single swap point for the music-style control (style picker plus the
+// Chopin playlist toggle). The player renders <MusicStyleControl /> and
+// must not know its internals: replacing this file and
+// app/styles/music-style-control.css swaps the whole design.
 import type { StyleInfo } from "@/core/music";
 
-function stickerFor(style: StyleInfo): string {
-  return /piano/i.test(style.id) || /piano/i.test(style.name)
-    ? "/art/stickers/piano.svg"
-    : "/art/stickers/violin.svg";
-}
-
-export function PlayerControls({
-  styles,
-  styleId,
-  onStyleChange,
-  playlistLabel,
-  playlistOn,
-  onTogglePlaylist,
-  controlsDisabled,
-}: {
+export type MusicStyleControlProps = {
   styles: StyleInfo[];
   styleId: string | null;
   onStyleChange: (style: string) => void;
@@ -25,7 +12,23 @@ export function PlayerControls({
   playlistOn: boolean;
   onTogglePlaylist: () => void;
   controlsDisabled: boolean;
-}) {
+};
+
+function stickerFor(style: StyleInfo): string {
+  return /piano/i.test(style.id) || /piano/i.test(style.name)
+    ? "/art/stickers/piano.svg"
+    : "/art/stickers/violin.svg";
+}
+
+export function MusicStyleControl({
+  styles,
+  styleId,
+  onStyleChange,
+  playlistLabel,
+  playlistOn,
+  onTogglePlaylist,
+  controlsDisabled,
+}: MusicStyleControlProps) {
   return (
     <>
       {styles.length >= 2 ? (

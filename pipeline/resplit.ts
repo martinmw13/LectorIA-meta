@@ -96,9 +96,22 @@ function newUsage(model: string): Usage {
   return { jevRequests: 0, jevInputTokens: 0, jevOutputTokens: 0, meta: { model, requests: 0, promptTokens: 0, cachedTokens: 0, completionTokens: 0, costUsd: 0 } };
 }
 
+export interface ResplitWindowFailure {
+  from: string;
+  reason: string;
+}
+
 function museFailureReason(err: unknown): string {
   const msg = err instanceof Error ? err.message : String(err);
-  return msg.slice(0, 200);
+  const reason = msg
+    .replace(/https?:\/\/\S+/g, "[url]")
+    .replace(/www\.\S+/g, "[url]")
+    .replace(/(?:bearer|api[_-]?key|token|secret|password)\s*[:=]\s*\S+/gi, "$1 [redacted]")
+    .replace(/[A-Za-z0-9_\-+/=]{24,}/g, "[redacted]")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 200);
+  return reason || "unknown-error";
 }
 
 function trackMeta(usage: Usage, result: { promptTokens: number; cachedTokens: number; completionTokens: number }): void {
@@ -142,7 +155,7 @@ export async function runResplit(ctx: StepCtx, deps: { jev: JevClient; meta: Met
   };
   const candidates = analysisFile.scenes.filter((s) => isResplitCandidate(wordsOf(s), s.final));
   let windowsClassified = 0;
-  const windowFailures: string[] = [];
+  const windowFailures: ResplitWindowFailure[] = [];
   const museFailures: { from: string; reason: string }[] = [];
   const rejected: ResplitRejected[] = [];
   const mergedBack: ResplitMergedBack[] = [];
@@ -156,8 +169,8 @@ export async function runResplit(ctx: StepCtx, deps: { jev: JevClient; meta: Met
       let result;
       try {
         result = await deps.jev.classify({ book: book.title, chapter: chapterTitle.get(scene.ch) ?? "", sceneTitle: scene.title, scene: text });
-      } catch {
-        windowFailures.push(scene.id);
+      } catch (err) {
+        windowFailures.push({ from: scene.id, reason: museFailureReason(err) });
         return null;
       }
       usage.jevRequests += 1;
@@ -166,7 +179,7 @@ export async function runResplit(ctx: StepCtx, deps: { jev: JevClient; meta: Met
       const { unknown: _dropped, ...rest } = result.vector;
       const vector = renormalize8(rest);
       if (vector === null) {
-        windowFailures.push(scene.id);
+        windowFailures.push({ from: scene.id, reason: "null-vector" });
         return null;
       }
       windows.push({ ...span, vector });
