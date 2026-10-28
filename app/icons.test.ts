@@ -10,11 +10,14 @@ import { DEFAULT_SKIN, SKINS } from "./skin";
 // migrates to the registry. app/folio/picture-draw.tsx is the Picture this
 // drawing canvas, not an icon. app/folio/picture-button.tsx holds the
 // per-skin button art until it moves into the registry as a skinned icon.
+// app/style-stamp.tsx holds the dynamic skin-name ring: a textPath whose
+// text changes per skin cannot live in the static registry.
 const ALLOWLIST = new Set([
   "app/icons.tsx",
   "app/player.tsx",
   "app/folio/picture-draw.tsx",
   "app/folio/picture-button.tsx",
+  "app/style-stamp.tsx",
 ]);
 
 function walk(dir: string, out: string[] = []): string[] {
