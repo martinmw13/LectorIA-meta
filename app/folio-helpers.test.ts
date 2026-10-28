@@ -122,6 +122,22 @@ describe("loadImageStylePref null and effectiveImageStylePref", () => {
     });
   }
 
+  it("keeps load and parse in agreement", () => {
+    const store: Record<string, string> = {};
+    stubStorage(store);
+    try {
+      store["lectoria.imageStyle"] = JSON.stringify({ kind: "preset", id: "pencil" });
+      expect(loadImageStylePref()).toEqual(parseImageStylePref({ kind: "preset", id: "pencil" }));
+      store["lectoria.imageStyle"] = JSON.stringify({ kind: "custom", text: "crayon drawing" });
+      expect(loadImageStylePref()).toEqual(parseImageStylePref({ kind: "custom", text: "crayon drawing" }));
+      store["lectoria.imageStyle"] = JSON.stringify({ kind: "preset", id: "nope" });
+      expect(loadImageStylePref()).toBeNull();
+      expect(parseImageStylePref({ kind: "preset", id: "nope" })).toEqual(DEFAULT_IMAGE_STYLE);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("returns null when nothing valid is stored", () => {
     const store: Record<string, string> = {};
     stubStorage(store);

@@ -205,7 +205,7 @@ describe("styled buildPrompt", () => {
       style: { kind: "preset", id: "watercolor" },
     });
     expect(prompt).not.toContain("Denslow");
-    expect(prompt).toContain("Art style: soft translucent washes,");
+    expect(prompt).toContain("Art style: soft storybook watercolor painting,");
     expect(prompt).toContain("silver shoes");
   });
 

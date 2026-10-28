@@ -12,7 +12,7 @@ export const IMAGE_STYLE_PRESETS = [
   { id: "realistic", label: "Realistic", descriptor: "photorealistic cinematic illustration, natural cinematic lighting, shallow depth of field, lifelike textures, period-accurate 1900 Kansas and Oz costume, Dorothy in blue-and-white gingham" },
   { id: "anime", label: "Anime", descriptor: "anime-style illustration, clean line art, cel shading, vivid color" },
   { id: "pencil", label: "Pencil sketch", descriptor: "graphite pencil sketch on cream paper, fine hatching, mostly monochrome" },
-  { id: "watercolor", label: "Watercolor", descriptor: "soft translucent washes, gentle storybook palette, light pencil underdrawing, visible paper texture" },
+  { id: "watercolor", label: "Watercolor", descriptor: "soft storybook watercolor painting, translucent washes, gentle palette, light pencil underdrawing, visible paper texture" },
   { id: "storybook", label: "Storybook", descriptor: "modern children's picture-book illustration, soft gouache, warm colors" },
   { id: "comic", label: "Comic book", descriptor: "comic-book art, bold inks, halftone shading, strong flat colors" },
   { id: "oil", label: "Oil painting", descriptor: "classical oil painting, rich brushwork, warm glazes" },
@@ -46,9 +46,8 @@ export function resolveEffectiveStyle(
   skin: string | undefined,
 ): StyleChoice {
   if (explicit !== undefined) return explicit;
-  if (skin !== undefined) {
-    const fallback = (SKIN_DEFAULT_IMAGE_STYLE as Record<string, ImageStylePresetId>)[skin];
-    if (fallback !== undefined) return { preset: fallback };
+  if (skin !== undefined && Object.hasOwn(SKIN_DEFAULT_IMAGE_STYLE, skin)) {
+    return { preset: SKIN_DEFAULT_IMAGE_STYLE[skin as SkinId] };
   }
   return { preset: DEFAULT_IMAGE_STYLE };
 }

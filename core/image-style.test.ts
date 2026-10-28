@@ -200,6 +200,12 @@ describe("resolveEffectiveStyle", () => {
     expect(resolveEffectiveStyle(undefined, "nope")).toEqual({ preset: "denslow" });
   });
 
+  it("ignores prototype names as skins", () => {
+    for (const skin of ["constructor", "toString", "hasOwnProperty", "__proto__"]) {
+      expect(resolveEffectiveStyle(undefined, skin)).toEqual({ preset: "denslow" });
+    }
+  });
+
   it("falls back to denslow with no skin", () => {
     expect(resolveEffectiveStyle(undefined, undefined)).toEqual({ preset: "denslow" });
   });
@@ -208,7 +214,7 @@ describe("resolveEffectiveStyle", () => {
 describe("styleDescriptorLine", () => {
   it("frames presets as an art style with the shared guards", () => {
     const line = styleDescriptorLine({ kind: "preset", id: "watercolor" });
-    expect(line.startsWith("Art style: soft translucent washes,")).toBe(true);
+    expect(line.startsWith("Art style: soft storybook watercolor painting,")).toBe(true);
     expect(line).toContain("silver shoes");
     expect(line).toContain("no ruby slippers");
     expect(line).toContain("no real people");

@@ -1,0 +1,3 @@
+# Task 17 review round 2
+
+Read `docs/reviews/17.md`, section "Grok Bot review, skins addendum". Fix items 5, 6 and 7 with minimal edits and tests. Then append a short "## Muse review, round 2" section to `docs/reviews/17.md` (your own findings on the whole branch vs `origin/main`, what you fixed, verdict). Do not change default Denslow keys or prompt. Run `npm test`, `npx next typegen`, `npm run typecheck`, `npm run build`, `npm run check:isolation`, `npm run check:secrets`, `npm run test:hooks`, `npm run check:size`, `gitleaks git --redact --no-banner`. Never run `next start`. Also `git add agent-logs/` (logs and prompts). Commit: "Task 17 review round 2".

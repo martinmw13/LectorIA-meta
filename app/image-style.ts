@@ -27,7 +27,7 @@ export function resolveStyleSelect(pref: ImageStylePref, otherOpen: boolean): st
 
 export const DENSLOW_CREDIT = "In the style of W. W. Denslow";
 
-export function parseImageStylePref(json: unknown): ImageStylePref {
+function toImageStylePref(json: unknown): ImageStylePref | null {
   if (typeof json === "object" && json !== null && !Array.isArray(json)) {
     const pref = json as Record<string, unknown>;
     if (pref.kind === "preset" && typeof pref.id === "string" && STYLE_PRESETS.some((p) => p.id === pref.id)) {
@@ -37,7 +37,11 @@ export function parseImageStylePref(json: unknown): ImageStylePref {
       return { kind: "custom", text: pref.text.trim().slice(0, 60) };
     }
   }
-  return DEFAULT_IMAGE_STYLE;
+  return null;
+}
+
+export function parseImageStylePref(json: unknown): ImageStylePref {
+  return toImageStylePref(json) ?? DEFAULT_IMAGE_STYLE;
 }
 
 // Null means no explicit pick stored. Invalid stored values also read
@@ -47,19 +51,7 @@ export function loadImageStylePref(): ImageStylePref | null {
     if (typeof window === "undefined") return null;
     const raw = window.localStorage.getItem(IMAGE_STYLE_KEY);
     if (!raw) return null;
-    const parsed: unknown = JSON.parse(raw);
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return null;
-    const rec = parsed as Record<string, unknown>;
-    if (rec.kind === "preset" && typeof rec.id === "string") {
-      if (rec.id === "denslow" || STYLE_PRESETS.some((p) => p.id === rec.id)) {
-        return { kind: "preset", id: rec.id };
-      }
-      return null;
-    }
-    if (rec.kind === "custom" && typeof rec.text === "string" && rec.text.trim().length > 0) {
-      return { kind: "custom", text: rec.text.trim().slice(0, 60) };
-    }
-    return null;
+    return toImageStylePref(JSON.parse(raw) as unknown);
   } catch {
     return null;
   }
