@@ -4,8 +4,7 @@ import {
   DAILY_SPEND_TTL_SEC,
   MSG_FAILED,
   MSG_QUOTA,
-  MSG_BUDGET_TOTAL,
-  MSG_BUDGET_DAILY,
+  MSG_CREDITS_OUT,
   LOCK_TTL_SEC,
   buildCaption,
   buildPrompt,
@@ -126,7 +125,7 @@ export async function orchestrate(
       await refundSpendOnce();
       await refundQuotaOnce();
       await release();
-      return { status: "error", code: "budget", message: MSG_BUDGET_TOTAL };
+      return { status: "error", code: "budget", message: MSG_CREDITS_OUT };
     }
 
     const dailyTotal = await deps.kv.incrBy(dailyKey, imageCostMicro());
@@ -139,7 +138,7 @@ export async function orchestrate(
       await refundSpendOnce();
       await refundQuotaOnce();
       await release();
-      return { status: "error", code: "daily_budget", message: MSG_BUDGET_DAILY };
+      return { status: "error", code: "daily_budget", message: MSG_CREDITS_OUT };
     }
 
     let bytes: Uint8Array;

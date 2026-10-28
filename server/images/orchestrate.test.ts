@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  MSG_BUDGET_DAILY,
-  MSG_BUDGET_TOTAL,
+  MSG_CREDITS_OUT,
   createMemoryKV,
   dailySpendKey,
   imageKey,
@@ -207,7 +206,7 @@ describe("orchestrate", () => {
       generate: async () => (calls++, new Uint8Array([9])),
     };
     const res = await orchestrate(passage, d);
-    expect(res).toEqual({ status: "error", code: "daily_budget", message: MSG_BUDGET_DAILY });
+    expect(res).toEqual({ status: "error", code: "daily_budget", message: MSG_CREDITS_OUT });
     expect(calls).toBe(0);
     expect(await d.kv.get(spendKey())).toBe("0");
     expect(await d.kv.get(dailySpendKey("2026-10-27"))).toBe("0");
@@ -238,7 +237,7 @@ describe("orchestrate", () => {
   it("still enforces the total cap with the total message", async () => {
     const d = deps({ env: { ...env, spendCapMicro: 1 } });
     const res = await orchestrate(passage, d);
-    expect(res).toEqual({ status: "error", code: "budget", message: MSG_BUDGET_TOTAL });
+    expect(res).toEqual({ status: "error", code: "budget", message: MSG_CREDITS_OUT });
     expect(await d.kv.get(spendKey())).toBe("0");
   });
 

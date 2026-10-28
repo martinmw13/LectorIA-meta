@@ -35,7 +35,7 @@ export function readImageEnv(from: NodeJS.ProcessEnv = process.env): ImageEnv {
   ].filter((m): m is string => m !== null);
   if (missing.length > 0) throw new Error(`missing image env: ${missing.join(",")}`);
   const capUsd = Number(from.SPEND_CAP_USD ?? "10");
-  const dailyCapUsd = Number(from.DAILY_SPEND_CAP_USD ?? "1.5");
+  const dailyCapUsd = Number(from.DAILY_SPEND_CAP_USD ?? "2");
   return {
     upstashUrl: upstashUrl as string,
     upstashToken: upstashToken as string,
@@ -44,7 +44,7 @@ export function readImageEnv(from: NodeJS.ProcessEnv = process.env): ImageEnv {
     ipSalt: from.IP_HASH_SALT as string,
     spendCapMicro: Math.round((Number.isFinite(capUsd) ? capUsd : 10) * 1_000_000),
     dailySpendCapMicro: Math.round(
-      (Number.isFinite(dailyCapUsd) && dailyCapUsd >= 0 ? dailyCapUsd : 1.5) * 1_000_000,
+      (Number.isFinite(dailyCapUsd) && dailyCapUsd >= 0 ? dailyCapUsd : 2) * 1_000_000,
     ),
   };
 }

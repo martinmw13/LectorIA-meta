@@ -14,12 +14,11 @@ export const MAX_SCENE_CLIP_CHARS = 1200;
 
 export const MSG_BAD_REQUEST = "That request was not valid. Try again.";
 export const MSG_QUOTA = "You reached your limit of 5 images per day. Come back tomorrow.";
-export const MSG_BUDGET_TOTAL =
-  "Our free credits for the hackathon are used up. Thanks for reading with us! " +
-  "You can keep going by bringing your own key.";
-export const MSG_BUDGET_DAILY =
-  "So many readers today that our free credits for today are used up. " +
-  "Come back tomorrow, or bring your own key.";
+export const MSG_CREDITS_OUT =
+  "So many people loved this that we've run out of credits to share. " +
+  "Feel free to bring your own key! Meanwhile, The Wonderful Wizard of Oz " +
+  "is ready to read, with its soundtrack and illustrations.";
+export const CREDITS_OUT_LIBRARY_HREF = "/";
 export const MSG_UNAVAILABLE = "Images are unavailable right now.";
 export const MSG_FAILED = "Could not generate the image. Try again.";
 export const MSG_RETRY = "The image is taking longer than expected. Try again.";
