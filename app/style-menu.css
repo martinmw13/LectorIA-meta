@@ -1,0 +1,275 @@
+/* Style dropdown (option D): "Style: <Name> ▾". Boxless; the underline and
+ * the Meta-blue chevron say it is clickable. Each name wears its skin's own
+ * lettering via data-face, so the menu previews all six. Motion only on
+ * hover, press and open; reduced motion turns it all off. */
+
+.style-menu {
+  position: relative;
+  flex: none;
+}
+
+.style-menu-home {
+  position: absolute;
+  top: 10px;
+  right: 4px;
+  z-index: 60;
+}
+
+.style-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--color-text);
+  font-family: var(--font-ui, var(--font-instrument)), system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.style-menu-btn:focus-visible,
+.style-menu-item:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.style-menu-key {
+  color: var(--color-text-muted);
+}
+
+.style-menu-chev {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform var(--motion-duration) ease;
+}
+
+.style-menu-btn:hover .style-menu-chev {
+  transform: translateY(2px);
+}
+
+.style-menu-btn[aria-expanded="true"] .style-menu-chev {
+  transform: rotate(180deg);
+}
+
+.style-menu-btn:active .style-name {
+  transform: translateY(1px);
+}
+
+/* ---------- The name, in each skin's lettering ---------- */
+.style-name {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 2px;
+  color: var(--color-text);
+  font-size: 14.5px;
+  background: linear-gradient(currentColor, currentColor) 0 100% / 100% 1px no-repeat;
+  transition:
+    color var(--motion-duration) ease,
+    background-size var(--motion-duration) ease,
+    box-shadow var(--motion-duration) ease,
+    transform var(--motion-duration) ease;
+}
+
+.style-menu-btn:hover .style-name,
+.style-menu-item:hover .style-name {
+  color: var(--color-accent);
+  background-image: linear-gradient(var(--color-accent), var(--color-accent));
+  background-size: 100% 2px;
+}
+
+.style-menu-key[data-face="engraving"] {
+  font-family: var(--font-fell-sc), georgia, serif;
+  font-size: 14px;
+}
+.style-name[data-face="engraving"] {
+  font-family: var(--font-fell), georgia, serif;
+  font-size: 15.5px;
+  font-style: italic;
+}
+
+.style-menu-key[data-face="watercolor"] {
+  font-family: var(--font-lora), georgia, serif;
+}
+.style-name[data-face="watercolor"] {
+  padding: 0 2px;
+  font-family: var(--font-caveat), cursive;
+  font-size: 19px;
+  font-weight: 700;
+  background-image: linear-gradient(rgba(141, 184, 255, 0.55), rgba(141, 184, 255, 0.55));
+  background-size: 100% 7px;
+}
+.style-menu-btn:hover .style-name[data-face="watercolor"],
+.style-menu-item:hover .style-name[data-face="watercolor"] {
+  border-radius: 4px;
+  background-image: linear-gradient(rgba(8, 102, 255, 0.18), rgba(8, 102, 255, 0.18));
+  background-size: 100% 100%;
+}
+
+.style-menu-key[data-face="ink"] {
+  font-family: var(--font-kalam), cursive;
+  font-size: 14px;
+}
+.style-name[data-face="ink"] {
+  font-family: var(--font-kalam), cursive;
+  font-size: 15px;
+  font-weight: 700;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 4' preserveAspectRatio='none'%3E%3Cpath d='M1 2.5C12 1 22 3.4 33 2s18 1.4 26 .2' fill='none' stroke='%230866ff' stroke-width='1.4' stroke-linecap='round'/%3E%3C/svg%3E")
+    0 100% / 100% 4px no-repeat;
+}
+.style-menu-btn:hover .style-name[data-face="ink"],
+.style-menu-item:hover .style-name[data-face="ink"] {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 4' preserveAspectRatio='none'%3E%3Cpath d='M1 2.5C12 1 22 3.4 33 2s18 1.4 26 .2' fill='none' stroke='%230866ff' stroke-width='1.4' stroke-linecap='round'/%3E%3C/svg%3E")
+    0 100% / 100% 5px no-repeat;
+}
+
+.style-menu-key[data-face="pencil"] {
+  font-family: var(--font-jost), system-ui, sans-serif;
+  font-size: 12.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.style-name[data-face="pencil"] {
+  font-family: var(--font-cormorant), georgia, serif;
+  font-size: 17px;
+  font-weight: 600;
+  background-image: linear-gradient(rgba(127, 131, 138, 0.6), rgba(127, 131, 138, 0.6));
+}
+
+.style-menu-key[data-face="comic"] {
+  color: var(--color-text);
+  font-family: var(--font-instrument), system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+/* An opaque yellow caption box keeps its dark ink in both themes. */
+.style-name[data-face="comic"],
+.style-menu-btn:hover .style-name[data-face="comic"],
+.style-menu-item:hover .style-name[data-face="comic"] {
+  padding: 3px 5px 2px;
+  border: 2px solid #14161c;
+  color: #14161c;
+  background: #ffe45c;
+  box-shadow: 2px 2px 0 #14161c;
+  font-family: var(--font-instrument), system-ui, sans-serif;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.style-menu-btn:hover .style-name[data-face="comic"],
+.style-menu-item:hover .style-name[data-face="comic"] {
+  box-shadow: 3px 3px 0 var(--color-accent);
+  transform: translate(-1px, -1px);
+}
+.style-menu-btn:has([data-face="comic"]) .style-menu-chev {
+  stroke-width: 3;
+}
+
+.style-menu-key[data-face="chihiro"] {
+  font-family: var(--font-instrument), system-ui, sans-serif;
+  font-weight: 600;
+}
+.style-name[data-face="chihiro"] {
+  font-family: var(--font-newsreader), georgia, serif;
+  font-size: 16px;
+  font-style: italic;
+  background-image: linear-gradient(rgba(201, 162, 39, 0.8), rgba(201, 162, 39, 0.8));
+}
+html:not([data-theme="dark"]) .style-name[data-face="chihiro"] {
+  color: #9c2f1e;
+}
+html:not([data-theme="dark"]) .style-menu-btn:hover .style-name[data-face="chihiro"],
+html:not([data-theme="dark"]) .style-menu-item:hover .style-name[data-face="chihiro"] {
+  color: var(--color-accent);
+}
+
+/* ---------- The open menu ---------- */
+.style-menu-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 190px;
+  padding: 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.35);
+  animation: style-menu-drop 160ms ease;
+}
+
+@keyframes style-menu-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.style-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 36px;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.style-menu-item:hover,
+.style-menu-item:focus-visible {
+  background: var(--color-surface-soft);
+}
+
+.style-menu-check {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  visibility: hidden;
+}
+
+.style-menu-item[aria-checked="true"] .style-menu-check {
+  visibility: visible;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .style-menu-chev,
+  .style-name {
+    transition: none;
+  }
+  .style-menu-list {
+    animation: none;
+  }
+  .style-menu-btn:hover .style-menu-chev,
+  .style-menu-btn:active .style-name,
+  .style-menu-btn:hover .style-name[data-face="comic"],
+  .style-menu-item:hover .style-name[data-face="comic"] {
+    transform: none;
+  }
+}

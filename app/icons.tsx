@@ -19,6 +19,8 @@ export type IconName =
   | "book"
   | "brush"
   | "check-box"
+  | "chevron-down"
+  | "check"
   | "vault"
   | RainIconName;
 
@@ -92,7 +94,7 @@ export const BASE_ICONS: Record<string, IconDef> = {
     viewBox: "0 0 16 16",
     body: <path d="M9.5 2.5h4v4M13.5 2.5 9 7M6.5 13.5h-4v-4M2.5 13.5 7 9" />,
   },
-  // Paintbrush for the style-stamp medal. Callers set the stroke.
+  // Paintbrush. Callers set the stroke.
   brush: {
     width: 24,
     height: 24,
@@ -104,6 +106,19 @@ export const BASE_ICONS: Record<string, IconDef> = {
         <path d="M12.6 9.4l2.1 2.1" />
       </>
     ),
+  },
+  // Style menu: the Meta-blue chevron and the live style's tick.
+  "chevron-down": {
+    width: 12,
+    height: 12,
+    viewBox: "0 0 12 12",
+    body: <path d="M2.5 4.5 6 8l3.5-3.5" />,
+  },
+  check: {
+    width: 14,
+    height: 14,
+    viewBox: "0 0 12 12",
+    body: <path d="M2.5 6.5 5 9l4.5-6" />,
   },
   // Keepsake box for the Picture Vault row in the margin.
   vault: {
