@@ -223,7 +223,7 @@ describe("parseManifest v2", () => {
     const parsed = parseManifest(JSON.parse(JSON.stringify(good)));
     expect(parsed.version).toBe(3);
     expect(parsed.soundtracks).toEqual([{ id: "default", name: "Default", style: "orchestral" }]);
-    expect(parsed.styles).toEqual([{ id: "orchestral", name: "Orquesta" }]);
+    expect(parsed.styles).toEqual([{ id: "orchestral", name: "Orchestra" }]);
     expect(parsed.tracks[0]?.soundtrack).toBe("default");
     expect(parsed.tracks[0]?.style).toBe("orchestral");
     expect(parsed.tracks[0]?.loop).toBe(true);

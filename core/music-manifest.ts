@@ -58,7 +58,7 @@ export function parseManifest(json: unknown): MusicManifest {
     const tracks = json.tracks.map((entry, i) => parseTrack(entry, i, "default", "orchestral"));
     return {
       version: 3,
-      styles: [{ id: "orchestral", name: "Orquesta" }],
+      styles: [{ id: "orchestral", name: "Orchestra" }],
       soundtracks: [{ id: "default", name: "Default", style: "orchestral" }],
       tracks,
       playlists: [],
