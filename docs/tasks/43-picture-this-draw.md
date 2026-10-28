@@ -63,3 +63,35 @@ and `picture-draw.test.tsx`), `npm run check:secrets`,
   blur; the prototype's animated `f-wc`/`f-wet` washes were too
   heavy for a loading slot. (shortcut: filter fidelity; upgrade
   only if the stills look flat.)
+
+## Round 3
+
+- `usePictureLoaded` keeps the url next to the flag and derives
+  `loaded` from the pair, so a cached ready-to-ready swap resets
+  in the same render: the new image waits for its own load, never
+  flashes as revealed. Late events from a previous image cannot
+  mark the new url loaded. Header comment now says the frozen
+  still stays mounted under the image until load.
+- `picture-skin.ts` no longer reads `data-skin` or `?skin=`
+  itself; it maps the skin owner's value to a drawing variant
+  (`pictureVariant`: comic->ink, anime-ghibli/chihiro->watercolor,
+  pencil/graphite/graphite-pencil->engraving, unknown->engraving).
+  One entry changes when a skin gets its own animation. The raw
+  id rides as `data-picture-skin` on the slot and button for
+  future per-skin CSS. `usePictureSkinId` exposes it.
+- The selection popover computes document coordinates
+  (`popoverPos`: rect plus page scroll) and renders through a
+  portal into `document.body`, so it stays on the selection in
+  paged or continuous layouts. Each scene's hook instance still
+  owns its popover; resize also hides it, and a scene change
+  clears it.
+- The popover is boxless: Meta-blue text and icon over a paper
+  halo, underline on hover, press nudge, focus ring, still under
+  reduced motion.
+
+## Checks
+
+`npm run typecheck` (one pre-existing error in `pipeline/kokoro.ts`:
+missing optional `modal` types, present on the base tree too),
+`npm test` (incl. the new accumulate, reduced-motion, url-swap,
+variant-mapping and portal tests).
