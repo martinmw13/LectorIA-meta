@@ -4,7 +4,8 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { BASE_ICONS, ICON_SETS, Icon, type IconName } from "./icons";
-import { SKINS } from "./skin";
+import { hasRainArt } from "./icons-rain";
+import { DEFAULT_SKIN, SKINS } from "./skin";
 
 // app/player.tsx keeps its inline SVGs until its open PR lands, then it
 // migrates to the registry.
@@ -39,21 +40,37 @@ describe("icon registry", () => {
     }
   });
 
-  it("resolves every rain state to a skin-specific def for every skin", () => {
+  it("resolves every rain state for every skin, falling back to the default art", () => {
     expect(readFileSync(new URL("./icons-rain.tsx", import.meta.url), "utf8")).not.toContain(
       "dangerouslySetInnerHTML",
     );
     const rains: IconName[] = ["rain-off", "rain-drizzle", "rain-moderate", "rain-storm"];
     for (const name of rains) {
-      const seen = new Set<string>();
       for (const skin of SKINS) {
         const html = renderToStaticMarkup(createElement(Icon, { name, skin }));
         expect(html).toContain('viewBox="0 0 100 100"');
         expect(html).toContain('aria-hidden="true"');
-        seen.add(html);
+        if (!hasRainArt(skin)) {
+          expect(html).toBe(renderToStaticMarkup(createElement(Icon, { name, skin: DEFAULT_SKIN })));
+        }
       }
-      expect(seen.size).toBe(SKINS.length);
     }
+  });
+
+  it("ships rain art only for the three rain skins", () => {
+    expect(hasRainArt("engraving")).toBe(true);
+    expect(hasRainArt("watercolor")).toBe(true);
+    expect(hasRainArt("ink")).toBe(true);
+    expect(hasRainArt("comic")).toBe(false);
+    expect(hasRainArt("anime-ghibli")).toBe(false);
+    const rains: IconName[] = ["rain-off", "rain-drizzle", "rain-moderate", "rain-storm"];
+    const seen = new Set<string>();
+    for (const name of rains) {
+      for (const skin of ["engraving", "watercolor", "ink"] as const) {
+        seen.add(renderToStaticMarkup(createElement(Icon, { name, skin })));
+      }
+    }
+    expect(seen.size).toBe(rains.length * 3);
   });
 
   it("carries the class hooks the rain CSS animates", () => {

@@ -12,4 +12,10 @@ Dark theme: `html[data-skin="x"][data-theme="dark"]` overrides lighten the inks 
 
 Deferred: the skin switcher itself, per-skin defs for the other icons (they render from `BASE_ICONS` byte-identical everywhere), per-chapter music art.
 
+## Skin owner
+
+`app/skin.ts` is the single runtime owner of the current skin, mirroring `app/theme.ts`. `SKINS` holds the final five (`engraving`, `watercolor`, `ink`, `comic`, `anime-ghibli`) with `engraving` default; `SKIN_KEY = "lectoria.skin"` persists the choice. `initialSkin(stored, search)` is pure: a valid `?skin=` wins, else a valid stored value, else the default. `SKIN_SCRIPT` applies the same rule before first paint (`?skin=` for that load only, never stored). Runtime API: `getSkin` reads the live `data-skin`, `setSkin` writes it plus storage and notifies, `subscribe` also tracks the `storage` event across tabs, `cycleSkin` advances one step for the home button, and `useSkin()` (in `app/use-skin.ts`) subscribes via `useSyncExternalStore`. Nothing else may write `data-skin`.
+
+Rain art still exists only for engraving, watercolor and ink: the button resolves `artSkin = hasRainArt(skin) ? skin : DEFAULT_SKIN` (helper in `app/icons-rain.tsx`), renders `<Icon skin={artSkin}>`, and carries `data-art` so the rain CSS keys on the resolved art instead of raw `html[data-skin]` (dark overrides stay as `html[data-theme="dark"] … [data-art="x"]`). The icon fallback chain is `ICON_SETS[skin] ?? ICON_SETS[DEFAULT_SKIN] ?? BASE_ICONS`. `tokens.css` is unchanged: its `html[data-skin]` layer applies identical values to every skin.
+
 Checks: `npm test` (pipeline/ingest.test.ts fails on main too, jsdom env), `npm run typecheck`, `npm run build`, `npm run check:isolation`, `npm run test:hooks`, `npm run check:size`, `npm run check:secrets`.

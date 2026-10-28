@@ -52,10 +52,20 @@ describe("rain button still and frameless", () => {
     expect(button).not.toContain("<svg");
   });
 
-  it("reads the skin from data-skin with the default for hydration", () => {
-    expect(button).toMatch(/useState<SkinId>\(DEFAULT_SKIN\)/);
-    expect(button).toMatch(/document\.documentElement\.dataset\.skin/);
-    expect(button).toMatch(/isSkinId\(current\)/);
+  it("reads the skin from the skin owner with the default for hydration", () => {
+    expect(button).toMatch(/const skin = useSkin\(\);/);
+    expect(button).toMatch(/hasRainArt\(skin\) \? skin : DEFAULT_SKIN/);
+    expect(button).not.toMatch(/document\.documentElement\.dataset\.skin/);
+  });
+
+  it("renders the resolved art skin and keys the rain CSS on it", () => {
+    expect(button).toMatch(/data-art=\{artSkin\}/);
+    expect(button).toMatch(/skin=\{artSkin\}/);
+    expect(css).not.toMatch(/html\[data-skin/);
+    for (const art of ["engraving", "watercolor", "ink"]) {
+      expect(css).toMatch(new RegExp(`\\.skip\\.rain\\[data-art="${art}"\\]`));
+    }
+    expect(css).toMatch(/html\[data-theme="dark"\] \.player \.skip\.rain\[data-art=/);
   });
 
   it("sets data-anim on click and clears it on a timeout with cleanup", () => {
