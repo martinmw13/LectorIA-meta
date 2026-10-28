@@ -74,7 +74,6 @@ html[data-skin="chihiro"][data-theme="light"] body {
 }
 
 html[data-skin="chihiro"][data-theme="light"] .top-line,
-html[data-skin="chihiro"][data-theme="light"] .home-brand,
 html[data-skin="chihiro"][data-theme="light"] .band-pager {
   text-shadow: 0 0 8px rgba(255, 240, 220, 0.95);
 }
@@ -93,8 +92,7 @@ html[data-skin="chihiro"][data-theme="light"] .kicker {
 }
 
 /* A small red lantern hung by the wordmark; it glows on header hover. */
-html[data-skin="chihiro"] .wordmark::after,
-html[data-skin="chihiro"] .home-brand::after {
+html[data-skin="chihiro"] .wordmark::after {
   content: "";
   display: inline-block;
   width: 18px;
@@ -114,8 +112,7 @@ html[data-skin="chihiro"] .home-brand::after {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html[data-skin="chihiro"] .wordmark::after,
-  html[data-skin="chihiro"] .home-brand::after {
+  html[data-skin="chihiro"] .wordmark::after {
     transition: none;
   }
 }

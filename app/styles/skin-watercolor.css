@@ -48,7 +48,7 @@ html[data-skin="watercolor"] .top-center {
   color: var(--color-text-muted);
 }
 
-html[data-skin="watercolor"] :is(.wordmark, .home-brand) {
+html[data-skin="watercolor"] .wordmark {
   font-family: var(--font-wc-hand);
   font-weight: 700;
   font-size: 30px;
@@ -57,7 +57,7 @@ html[data-skin="watercolor"] :is(.wordmark, .home-brand) {
   color: var(--color-text);
 }
 
-html[data-skin="watercolor"] :is(.wordmark, .home-brand) em {
+html[data-skin="watercolor"] .wordmark em {
   font-style: normal;
   color: var(--color-accent);
 }

@@ -11,7 +11,6 @@ export type IconName =
   | "pencil"
   | "picture"
   | "expand"
-  | "read-aloud"
   | "ink-circle"
   | "upload"
   | "key"
@@ -92,20 +91,6 @@ export const BASE_ICONS: Record<string, IconDef> = {
     height: 11,
     viewBox: "0 0 16 16",
     body: <path d="M9.5 2.5h4v4M13.5 2.5 9 7M6.5 13.5h-4v-4M2.5 13.5 7 9" />,
-  },
-  // Open book with two sound-wave arcs: the read-aloud control.
-  "read-aloud": {
-    width: 16,
-    height: 16,
-    viewBox: "0 0 16 16",
-    body: (
-      <>
-        <path d="M1.8 4.2c1.2-.5 2.5-.5 3.7 0 1.2-.5 2.5-.5 3.7 0V12c-1.2-.5-2.5-.5-3.7 0-1.2-.5-2.5-.5-3.7 0Z" />
-        <path d="M5.5 4.2v7.8" />
-        <path d="M10.8 6.4a2.4 2.4 0 0 1 0 3.2" />
-        <path d="M12.4 4.9a4.6 4.6 0 0 1 0 6.2" />
-      </>
-    ),
   },
   // Paintbrush for the style-stamp medal. Callers set the stroke.
   brush: {

@@ -30,13 +30,12 @@ holds Previous, Play/Pause, Next, mute (`Mute` / `Unmute`), a `Volume`
 slider, the now-playing line (ellipsis, full line in `title`), then
 the stickers and Chopin. The line shows `display title · composer`,
 then the source artist as a link with an arrow icon when the manifest
-gives a URL. Orchestra and Piano are sticker buttons
-(`/art/stickers/violin.svg`, `/art/stickers/piano.svg`, Noto Emoji,
-Apache-2.0), shown while two styles have tracks, with `aria-pressed`
-for the selected one, a white die-cut outline, and a Meta-blue dot
-below it. Previous walks the session history and restarts the track
+gives a URL. Orchestra and Piano are buttons
+with each skin's own art (`app/skin-art.ts`,
+`public/art/skins/<skin>/`), shown while two styles have tracks, with
+`aria-pressed` for the selected one and a Meta-blue dot below it. Previous walks the session history and restarts the track
 with no history; Next cycles same-emotion tracks in the style.
-A `Just play Chopin` round image button (`/art/chopin-just-play-me.png`,
+A `Just play Chopin` image button (the skin's `chopin` art,
 40 px) appears only when the manifest defines that playlist; while
 pressed it shows a 2 px Meta-blue ring plus scale 1.05. The style
 stickers stay enabled while it plays: pressing one leaves the playlist

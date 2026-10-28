@@ -5,18 +5,19 @@ import { SKINS } from "./skin";
 import { heroArt } from "./skin-art";
 
 describe("heroArt", () => {
-  it("gives the default engraving skin its own music and read-aloud art", () => {
-    expect(heroArt("engraving")).not.toBeNull();
-  });
-
-  it("gives every skin its own music art, so no skin falls back to the old stickers", () => {
-    for (const skin of SKINS) expect(heroArt(skin), skin).not.toBeNull();
+  it("gives every skin non-empty orchestra/piano/chopin/narrate strings", () => {
+    for (const skin of SKINS) {
+      const art = heroArt(skin);
+      for (const key of ["orchestra", "piano", "chopin", "narrate"] as const) {
+        expect(typeof art[key], `${skin}.${key}`).toBe("string");
+        expect(art[key].length, `${skin}.${key}`).toBeGreaterThan(0);
+      }
+    }
   });
 
   it("points every skin's art at a real, well-formed SVG or PNG in public/", () => {
     for (const skin of SKINS) {
       const art = heroArt(skin);
-      if (!art) continue;
       for (const src of Object.values(art)) {
         const file = join(process.cwd(), "public", src);
         expect(existsSync(file), src).toBe(true);

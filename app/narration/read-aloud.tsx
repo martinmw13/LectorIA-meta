@@ -2,7 +2,6 @@
 // slider. Light mode is the default; colours come from tokens.
 "use client";
 
-import { Icon } from "../icons";
 import { heroArt } from "../skin-art";
 import { useSkin } from "../use-skin";
 import { useNarration } from "./context";
@@ -13,7 +12,7 @@ export function ReadAloud() {
   const label = !on ? "Read aloud" : playing ? "Pause" : "Read aloud";
   const art = heroArt(useSkin());
   return (
-    <div className="read-aloud" data-state={status} data-on={on} data-art={art ? "hero" : undefined}>
+    <div className="read-aloud" data-state={status} data-on={on} data-art="hero">
       <button
         type="button"
         className="read-aloud-btn"
@@ -22,11 +21,7 @@ export function ReadAloud() {
         aria-label={label}
         title={label}
       >
-        {art ? (
-          <img className="read-aloud-art" src={art.narrate} alt="" width={40} height={40} />
-        ) : (
-          <Icon name="read-aloud" />
-        )}
+        <img className="read-aloud-art" src={art.narrate} alt="" width={40} height={40} />
         <span className="read-aloud-label">{label}</span>
       </button>
       <label className="read-aloud-volume">

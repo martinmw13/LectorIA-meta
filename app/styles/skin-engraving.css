@@ -53,7 +53,7 @@ html[data-skin="engraving"] .chapter-jump-text {
   letter-spacing: 0.12em;
 }
 
-html[data-skin="engraving"] :is(.wordmark, .home-brand) {
+html[data-skin="engraving"] .wordmark {
   font-family: var(--font-eng-label);
   font-weight: 400;
   font-size: 22px;
@@ -62,7 +62,7 @@ html[data-skin="engraving"] :is(.wordmark, .home-brand) {
   color: var(--color-text);
 }
 
-html[data-skin="engraving"] :is(.wordmark, .home-brand) em {
+html[data-skin="engraving"] .wordmark em {
   color: var(--color-accent);
 }
 

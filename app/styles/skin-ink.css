@@ -49,7 +49,7 @@ html[data-skin="ink"] .top-center {
   color: var(--color-text-muted);
 }
 
-html[data-skin="ink"] :is(.wordmark, .home-brand) {
+html[data-skin="ink"] .wordmark {
   font-family: var(--font-ink-title);
   font-weight: 700;
   font-size: 30px;
@@ -58,7 +58,7 @@ html[data-skin="ink"] :is(.wordmark, .home-brand) {
   color: var(--color-text);
 }
 
-html[data-skin="ink"] :is(.wordmark, .home-brand) em {
+html[data-skin="ink"] .wordmark em {
   font-style: normal;
   color: var(--color-accent);
 }

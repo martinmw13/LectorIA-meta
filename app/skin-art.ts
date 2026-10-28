@@ -1,12 +1,11 @@
 // Hero art for the player buttons, per skin: the illustrated Orchestra,
 // Piano, Just Chopin! and Read aloud buttons from the approved skin
-// prototypes (public/art/skins/<skin>/). A skin without its own art here
-// keeps the default stickers and line icon.
+// prototypes (public/art/skins/<skin>/).
 import type { SkinId } from "./skin";
 
 export type HeroArt = { orchestra: string; piano: string; chopin: string; narrate: string };
 
-const HERO: Partial<Record<SkinId, HeroArt>> = {
+const HERO: Record<SkinId, HeroArt> = {
   engraving: {
     orchestra: "/art/skins/engraving/orchestra.svg",
     piano: "/art/skins/engraving/piano.svg",
@@ -45,6 +44,6 @@ const HERO: Partial<Record<SkinId, HeroArt>> = {
   },
 };
 
-export function heroArt(skin: SkinId): HeroArt | null {
-  return HERO[skin] ?? null;
+export function heroArt(skin: SkinId): HeroArt {
+  return HERO[skin];
 }
