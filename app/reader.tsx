@@ -10,7 +10,13 @@ import {
   resolveInitialSelection,
   styleHasTracks,
 } from "@/core/music";
-import type { MusicManifest, MusicSelection, SceneSignal, Track } from "@/core/music";
+import type {
+  MusicManifest,
+  MusicSelection,
+  PersistedMusicPrefs,
+  SceneSignal,
+  Track,
+} from "@/core/music";
 import {
   enterPlaylist,
   exitPlaylist,
@@ -61,11 +67,12 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
   const [fadeSec, setFadeSec] = useState(0);
   const [playlistOn, setPlaylistOn] = useState(false);
   // Volume and mute persist next to the style in one prefs object; the
-  // player stays a controlled view over them. Prefs load once so mount
-  // parses localStorage a single time.
-  const [initialPrefs] = useState(loadMusicPrefs);
-  const [volume, setVolume] = useState(() => initialPrefs?.volume ?? DEFAULT_VOLUME);
-  const [muted, setMuted] = useState(() => initialPrefs?.muted ?? false);
+  // player stays a controlled view over them. State starts at the server
+  // defaults so hydration matches, then a mount effect applies stored
+  // prefs (parsed once) to volume, muted, and style via prefsRef.
+  const [volume, setVolume] = useState(DEFAULT_VOLUME);
+  const [muted, setMuted] = useState(false);
+  const prefsRef = useRef<PersistedMusicPrefs | null>(null);
   // Ref mirrors so persist handlers always save fresh sound values.
   const volumeRef = useRef(volume);
   volumeRef.current = volume;
@@ -134,6 +141,19 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
     [applyDecision],
   );
 
+  // Stored prefs load once here, after the server-matching first render.
+  // Saves happen only on user actions below, so the defaults above never
+  // overwrite storage before this runs. The fetch below resolves later and
+  // reads the style through the ref.
+  useEffect(() => {
+    const prefs = loadMusicPrefs();
+    prefsRef.current = prefs;
+    if (prefs !== null) {
+      if (prefs.volume !== null) setVolume(prefs.volume);
+      setMuted(prefs.muted);
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     fetch("/music/manifest.json")
@@ -145,7 +165,7 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
         if (cancelled) return;
         const parsed = parseManifest(json);
         setManifest(parsed);
-        setSelection(resolveInitialSelection(parsed, initialPrefs));
+        setSelection(resolveInitialSelection(parsed, prefsRef.current));
       })
       .catch(() => {
         if (!cancelled) setMusicFailed(true);
@@ -153,7 +173,7 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
     return () => {
       cancelled = true;
     };
-  }, [initialPrefs]);
+  }, []);
 
   // Scene entry: exactly one observe call per scene id, once the manifest
   // lands. The first scene cues at once, so it plays on the first press.
