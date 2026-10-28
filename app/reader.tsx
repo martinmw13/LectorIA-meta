@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import { currentMode, musicModes, parseManifest } from "@/core/music";
+import { canPlayAudio } from "./ambience-engine";
+import { choosePlayableSources, currentMode, musicModes, parseManifest } from "@/core/music";
 import type { MusicManifest, MusicMode, MusicModeId, SceneSignal, Track } from "@/core/music";
 import { EMOTIONS } from "@/core/types";
 import { dispatch, startSession } from "@/core/music-session";
@@ -217,7 +218,7 @@ export function Reader({
       })
       .then((json: unknown) => {
         if (cancelled) return;
-        const parsed = parseManifest(json);
+        const parsed = choosePlayableSources(parseManifest(json), canPlayAudio);
         setManifest(parsed);
         const session = startSession(parsed, prefsStoreRef.current.load());
         sessionRef.current = session;

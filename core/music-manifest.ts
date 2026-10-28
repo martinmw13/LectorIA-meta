@@ -169,10 +169,33 @@ function parsePlaylists(json: Record<string, unknown>, trackIds: Set<string>): P
   });
 }
 
+export function audioType(src: string): string {
+  const path = src.split("?")[0]!.toLowerCase();
+  if (path.endsWith(".webm")) return "audio/webm; codecs=opus";
+  if (path.endsWith(".m4a") || path.endsWith(".mp4")) return "audio/mp4";
+  if (path.endsWith(".mp3")) return "audio/mpeg";
+  if (path.endsWith(".ogg") || path.endsWith(".opus")) return "audio/ogg; codecs=opus";
+  if (path.endsWith(".wav")) return "audio/wav";
+  return "";
+}
+
+export function choosePlayableSources(
+  manifest: MusicManifest,
+  canPlay: (type: string) => boolean,
+): MusicManifest {
+  const tracks = manifest.tracks.map((track) => {
+    if (track.fallbackSrc === undefined) return track;
+    if (canPlay(audioType(track.src))) return track;
+    if (canPlay(audioType(track.fallbackSrc))) return { ...track, src: track.fallbackSrc };
+    return track;
+  });
+  return { ...manifest, tracks };
+}
+
 function parseTrack(entry: unknown, i: number, soundtrack: string, style: string): Track {
   if (!isRecord(entry)) throw new Error(`track ${i} must be an object`);
   {
-    const { id, src, title, emotion, vector, intensity, tempo } = entry;
+    const { id, src, fallbackSrc, title, emotion, vector, intensity, tempo } = entry;
     const { durationSec, startSec, gainDb, endSec, loop, playlistOnly } = entry;
     const { source, artist, composer, license, attribution, sourceUrl } = entry;
     if (typeof id !== "string" || id === "") throw new Error(`track ${i} needs a string id`);
@@ -252,9 +275,13 @@ function parseTrack(entry: unknown, i: number, soundtrack: string, style: string
     if (sourceUrl !== undefined && (typeof sourceUrl !== "string" || !sourceUrl.startsWith("https://"))) {
       throw new Error(`track ${id} sourceUrl must be an https URL`);
     }
+    if (fallbackSrc !== undefined && !isSrc(fallbackSrc)) {
+      throw new Error(`track ${id} fallbackSrc must be a /music/ path or https URL`);
+    }
     return {
       id,
       src,
+      ...(fallbackSrc === undefined ? {} : { fallbackSrc: fallbackSrc as string }),
       title,
       playlistOnly: only,
       emotion,

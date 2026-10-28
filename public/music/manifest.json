@@ -47,7 +47,7 @@
       "id": "beethoven-coriolan",
       "labelId": "beethoven-coriolan",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/beethoven-coriolan.mp3",
+      "src": "/music/v1/cnso/beethoven-coriolan.webm",
       "title": "Coriolan Overture",
       "emotion": "suspenso",
       "vector": {
@@ -77,7 +77,7 @@
       "id": "borodin-steppes",
       "labelId": "borodin-steppes",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/borodin-steppes.mp3",
+      "src": "/music/v1/cnso/borodin-steppes.webm",
       "title": "In the Steppes of Central Asia",
       "emotion": "calma",
       "vector": {
@@ -107,7 +107,7 @@
       "id": "brahms-sym2-4--s1",
       "labelId": "brahms-sym2-4",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/brahms-sym2-4.mp3",
+      "src": "/music/v1/cnso/brahms-sym2-4.webm",
       "title": "Symphony No. 2 – IV",
       "emotion": "alegria",
       "vector": {
@@ -138,7 +138,7 @@
       "id": "brahms-sym2-4--s2",
       "labelId": "brahms-sym2-4",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/brahms-sym2-4.mp3",
+      "src": "/music/v1/cnso/brahms-sym2-4.webm",
       "title": "Symphony No. 2 – IV",
       "emotion": "asombro",
       "vector": {
@@ -169,7 +169,7 @@
       "id": "brahms-sym3-2",
       "labelId": "brahms-sym3-2",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/brahms-sym3-2.mp3",
+      "src": "/music/v1/cnso/brahms-sym3-2.webm",
       "title": "Symphony No. 3 – II",
       "emotion": "calma",
       "vector": {
@@ -199,7 +199,7 @@
       "id": "brahms-sym3-3",
       "labelId": "brahms-sym3-3",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/brahms-sym3-3.mp3",
+      "src": "/music/v1/cnso/brahms-sym3-3.webm",
       "title": "Symphony No. 3 – III",
       "emotion": "tristeza",
       "vector": {
@@ -229,7 +229,7 @@
       "id": "brahms-sym3-4--s1",
       "labelId": "brahms-sym3-4",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/brahms-sym3-4.mp3",
+      "src": "/music/v1/cnso/brahms-sym3-4.webm",
       "title": "Symphony No. 3 – IV",
       "emotion": "combate",
       "vector": {
@@ -260,7 +260,7 @@
       "id": "brahms-sym3-4--s2",
       "labelId": "brahms-sym3-4",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/brahms-sym3-4.mp3",
+      "src": "/music/v1/cnso/brahms-sym3-4.webm",
       "title": "Symphony No. 3 – IV",
       "emotion": "calma",
       "vector": {
@@ -291,7 +291,7 @@
       "id": "brahms-sym4-2",
       "labelId": "brahms-sym4-2",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/brahms-sym4-2.mp3",
+      "src": "/music/v1/cnso/brahms-sym4-2.webm",
       "title": "Symphony No. 4 – II",
       "emotion": "misterio",
       "vector": {
@@ -321,7 +321,7 @@
       "id": "brahms-tragic-overture",
       "labelId": "brahms-tragic-overture",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/brahms-tragic-overture.mp3",
+      "src": "/music/v1/cnso/brahms-tragic-overture.webm",
       "title": "Tragic Overture",
       "emotion": "suspenso",
       "vector": {
@@ -351,7 +351,7 @@
       "id": "grieg-peer-gynt-aase",
       "labelId": "grieg-peer-gynt-aase",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/grieg-peer-gynt-aase.mp3",
+      "src": "/music/v1/cnso/grieg-peer-gynt-aase.webm",
       "title": "Peer Gynt Suite No. 1 – II. The Death of Åse",
       "emotion": "tristeza",
       "vector": {
@@ -381,7 +381,7 @@
       "id": "grieg-peer-gynt-anitra",
       "labelId": "grieg-peer-gynt-anitra",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/grieg-peer-gynt-anitra.mp3",
+      "src": "/music/v1/cnso/grieg-peer-gynt-anitra.webm",
       "title": "Peer Gynt Suite No. 1 – III. Anitra's Dance",
       "emotion": "misterio",
       "vector": {
@@ -411,7 +411,7 @@
       "id": "grieg-peer-gynt-morning",
       "labelId": "grieg-peer-gynt-morning",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/grieg-peer-gynt-morning.mp3",
+      "src": "/music/v1/cnso/grieg-peer-gynt-morning.webm",
       "title": "Peer Gynt Suite No. 1 – I. Morning Mood",
       "emotion": "calma",
       "vector": {
@@ -441,7 +441,7 @@
       "id": "grieg-peer-gynt-mountain-king--s1",
       "labelId": "grieg-peer-gynt-mountain-king",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/grieg-peer-gynt-mountain-king.mp3",
+      "src": "/music/v1/cnso/grieg-peer-gynt-mountain-king.webm",
       "title": "Peer Gynt Suite No. 1 – IV. In the Hall of the Mountain King",
       "emotion": "suspenso",
       "vector": {
@@ -472,7 +472,7 @@
       "id": "grieg-peer-gynt-mountain-king--s2",
       "labelId": "grieg-peer-gynt-mountain-king",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/grieg-peer-gynt-mountain-king.mp3",
+      "src": "/music/v1/cnso/grieg-peer-gynt-mountain-king.webm",
       "title": "Peer Gynt Suite No. 1 – IV. In the Hall of the Mountain King",
       "emotion": "combate",
       "vector": {
@@ -503,7 +503,7 @@
       "id": "mendelssohn-hebrides",
       "labelId": "mendelssohn-hebrides",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/mendelssohn-hebrides.mp3",
+      "src": "/music/v1/cnso/mendelssohn-hebrides.webm",
       "title": "The Hebrides Overture",
       "emotion": "aventura",
       "vector": {
@@ -533,7 +533,7 @@
       "id": "mendelssohn-italian-1",
       "labelId": "mendelssohn-italian-1",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/mendelssohn-italian-1.mp3",
+      "src": "/music/v1/cnso/mendelssohn-italian-1.webm",
       "title": "Symphony No. 4 \"Italian\" – I",
       "emotion": "alegria",
       "vector": {
@@ -563,7 +563,7 @@
       "id": "mendelssohn-italian-4",
       "labelId": "mendelssohn-italian-4",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/mendelssohn-italian-4.mp3",
+      "src": "/music/v1/cnso/mendelssohn-italian-4.webm",
       "title": "Symphony No. 4 \"Italian\" – IV",
       "emotion": "aventura",
       "vector": {
@@ -593,7 +593,7 @@
       "id": "mendelssohn-scottish-1--s1",
       "labelId": "mendelssohn-scottish-1",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/mendelssohn-scottish-1.mp3",
+      "src": "/music/v1/cnso/mendelssohn-scottish-1.webm",
       "title": "Symphony No. 3 \"Scottish\" – I",
       "emotion": "misterio",
       "vector": {
@@ -624,7 +624,7 @@
       "id": "mendelssohn-scottish-1--s2",
       "labelId": "mendelssohn-scottish-1",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/mendelssohn-scottish-1.mp3",
+      "src": "/music/v1/cnso/mendelssohn-scottish-1.webm",
       "title": "Symphony No. 3 \"Scottish\" – I",
       "emotion": "suspenso",
       "vector": {
@@ -655,7 +655,7 @@
       "id": "mendelssohn-scottish-2",
       "labelId": "mendelssohn-scottish-2",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/mendelssohn-scottish-2.mp3",
+      "src": "/music/v1/cnso/mendelssohn-scottish-2.webm",
       "title": "Symphony No. 3 \"Scottish\" – II",
       "emotion": "alegria",
       "vector": {
@@ -685,7 +685,7 @@
       "id": "mozart-magic-flute-overture",
       "labelId": "mozart-magic-flute-overture",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/mozart-magic-flute-overture.mp3",
+      "src": "/music/v1/cnso/mozart-magic-flute-overture.webm",
       "title": "The Magic Flute – Overture",
       "emotion": "alegria",
       "vector": {
@@ -715,7 +715,7 @@
       "id": "smetana-vltava",
       "labelId": "smetana-vltava",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/smetana-vltava.mp3",
+      "src": "/music/v1/cnso/smetana-vltava.webm",
       "title": "Má vlast – Vltava",
       "emotion": "aventura",
       "vector": {
@@ -745,7 +745,7 @@
       "id": "tchaikovsky-sym6-3",
       "labelId": "tchaikovsky-sym6-3",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/tchaikovsky-sym6-3.mp3",
+      "src": "/music/v1/cnso/tchaikovsky-sym6-3.webm",
       "title": "Symphony No. 6 \"Pathétique\" – III",
       "emotion": "combate",
       "vector": {
@@ -775,7 +775,7 @@
       "id": "tchaikovsky-sym6-4",
       "labelId": "tchaikovsky-sym6-4",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/tchaikovsky-sym6-4.mp3",
+      "src": "/music/v1/cnso/tchaikovsky-sym6-4.webm",
       "title": "Symphony No. 6 \"Pathétique\" – IV",
       "emotion": "tristeza",
       "vector": {
@@ -805,7 +805,7 @@
       "id": "holst-jupiter-skidmore",
       "labelId": "holst-jupiter-skidmore",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/holst/holst-jupiter-skidmore.mp3",
+      "src": "/music/v1/holst/holst-jupiter-skidmore.webm",
       "title": "The Planets – Jupiter",
       "emotion": "alegria",
       "vector": {
@@ -836,7 +836,7 @@
       "id": "holst-mars-skidmore",
       "labelId": "holst-mars-skidmore",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/holst/holst-mars-skidmore.mp3",
+      "src": "/music/v1/holst/holst-mars-skidmore.webm",
       "title": "The Planets – Mars",
       "emotion": "combate",
       "vector": {
@@ -867,7 +867,7 @@
       "id": "jamendo-1015565",
       "labelId": "jamendo-1015565",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-orquesta/15-asombro-the-land.mp3",
+      "src": "/music/v1/jamendo-orquesta/15-asombro-the-land.webm",
       "title": "The land",
       "emotion": "asombro",
       "vector": {
@@ -897,7 +897,7 @@
       "id": "jamendo-1157349",
       "labelId": "jamendo-1157349",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-orquesta/11-aventura-a-traves-del-viento.mp3",
+      "src": "/music/v1/jamendo-orquesta/11-aventura-a-traves-del-viento.webm",
       "title": "A Traves del Viento",
       "emotion": "aventura",
       "vector": {
@@ -927,7 +927,7 @@
       "id": "jamendo-1250207",
       "labelId": "jamendo-1250207",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-orquesta/06-tristeza-day-of-decision.mp3",
+      "src": "/music/v1/jamendo-orquesta/06-tristeza-day-of-decision.webm",
       "title": "Day of Decision",
       "emotion": "tristeza",
       "vector": {
@@ -957,7 +957,7 @@
       "id": "jamendo-1253685",
       "labelId": "jamendo-1253685",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-orquesta/14-combate-wrath-of-the-gods.mp3",
+      "src": "/music/v1/jamendo-orquesta/14-combate-wrath-of-the-gods.webm",
       "title": "Wrath of the Gods",
       "emotion": "combate",
       "vector": {
@@ -987,7 +987,7 @@
       "id": "jamendo-1306265",
       "labelId": "jamendo-1306265",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-orquesta/08-suspenso-black-cloud.mp3",
+      "src": "/music/v1/jamendo-orquesta/08-suspenso-black-cloud.webm",
       "title": "Black Cloud",
       "emotion": "suspenso",
       "vector": {
@@ -1017,7 +1017,7 @@
       "id": "jamendo-1363176",
       "labelId": "jamendo-1363176",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-orquesta/16-asombro-sogno-part-1.mp3",
+      "src": "/music/v1/jamendo-orquesta/16-asombro-sogno-part-1.webm",
       "title": "Sogno (part 1)",
       "emotion": "asombro",
       "vector": {
@@ -1047,7 +1047,7 @@
       "id": "jamendo-1376563",
       "labelId": "jamendo-1376563",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-orquesta/12-aventura-the-master-thief.mp3",
+      "src": "/music/v1/jamendo-orquesta/12-aventura-the-master-thief.webm",
       "title": "The Master Thief",
       "emotion": "aventura",
       "vector": {
@@ -1077,7 +1077,7 @@
       "id": "jamendo-1380591",
       "labelId": "jamendo-1380591",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-orquesta/09-misterio-dark-night-of-the-soul.mp3",
+      "src": "/music/v1/jamendo-orquesta/09-misterio-dark-night-of-the-soul.webm",
       "title": "Dark night of the soul",
       "emotion": "misterio",
       "vector": {
@@ -1107,7 +1107,7 @@
       "id": "jamendo-1389364",
       "labelId": "jamendo-1389364",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-orquesta/07-suspenso-the-museum.mp3",
+      "src": "/music/v1/jamendo-orquesta/07-suspenso-the-museum.webm",
       "title": "The Museum",
       "emotion": "suspenso",
       "vector": {
@@ -1137,7 +1137,7 @@
       "id": "jamendo-1402649",
       "labelId": "jamendo-1402649",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-orquesta/05-tristeza-adagio-albinoni.mp3",
+      "src": "/music/v1/jamendo-orquesta/05-tristeza-adagio-albinoni.webm",
       "title": "Adagio in G minor",
       "emotion": "tristeza",
       "vector": {
@@ -1168,7 +1168,7 @@
       "id": "jamendo-1402652",
       "labelId": "jamendo-1402652",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-orquesta/03-alegria-pizzicato-sylvia.mp3",
+      "src": "/music/v1/jamendo-orquesta/03-alegria-pizzicato-sylvia.webm",
       "title": "Sylvia – Pizzicato",
       "emotion": "alegria",
       "vector": {
@@ -1199,7 +1199,7 @@
       "id": "jamendo-742883",
       "labelId": "jamendo-742883",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-orquesta/01-calma-love-theme.mp3",
+      "src": "/music/v1/jamendo-orquesta/01-calma-love-theme.webm",
       "title": "Love Theme",
       "emotion": "calma",
       "vector": {
@@ -1229,7 +1229,7 @@
       "id": "jamendo-824301",
       "labelId": "jamendo-824301",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-orquesta/13-combate-criminal-fandango.mp3",
+      "src": "/music/v1/jamendo-orquesta/13-combate-criminal-fandango.webm",
       "title": "Criminal Fandango",
       "emotion": "combate",
       "vector": {
@@ -1259,7 +1259,7 @@
       "id": "jamendo-824306",
       "labelId": "jamendo-824306",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-orquesta/10-misterio-june-sonata.mp3",
+      "src": "/music/v1/jamendo-orquesta/10-misterio-june-sonata.webm",
       "title": "June Sonata",
       "emotion": "misterio",
       "vector": {
@@ -1289,7 +1289,7 @@
       "id": "jamendo-875306",
       "labelId": "jamendo-875306",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-orquesta/02-calma-nightpass-calmer.mp3",
+      "src": "/music/v1/jamendo-orquesta/02-calma-nightpass-calmer.webm",
       "title": "Nightpass (Calmer)",
       "emotion": "calma",
       "vector": {
@@ -1319,7 +1319,7 @@
       "id": "jamendo-961892",
       "labelId": "jamendo-961892",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-orquesta/04-alegria-un-raton-en-el-escenario.mp3",
+      "src": "/music/v1/jamendo-orquesta/04-alegria-un-raton-en-el-escenario.webm",
       "title": "Un ratón en el escenario",
       "emotion": "alegria",
       "vector": {
@@ -1349,7 +1349,7 @@
       "id": "jamendo-1084379",
       "labelId": "jamendo-1084379",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-piano/13-combate-legend.mp3",
+      "src": "/music/v1/jamendo-piano/13-combate-legend.webm",
       "title": "Legend",
       "emotion": "combate",
       "vector": {
@@ -1379,7 +1379,7 @@
       "id": "jamendo-1380593",
       "labelId": "jamendo-1380593",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-piano/09-misterio-cyclic-nature.mp3",
+      "src": "/music/v1/jamendo-piano/09-misterio-cyclic-nature.webm",
       "title": "Cyclic nature",
       "emotion": "misterio",
       "vector": {
@@ -1409,7 +1409,7 @@
       "id": "jamendo-1402650",
       "labelId": "jamendo-1402650",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-piano/03-alegria-rondo-alla-turca.mp3",
+      "src": "/music/v1/jamendo-piano/03-alegria-rondo-alla-turca.webm",
       "title": "Piano Sonata No. 11 – Rondo alla turca",
       "emotion": "alegria",
       "vector": {
@@ -1440,7 +1440,7 @@
       "id": "jamendo-1415221",
       "labelId": "jamendo-1415221",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-piano/04-alegria-quick-piano.mp3",
+      "src": "/music/v1/jamendo-piano/04-alegria-quick-piano.webm",
       "title": "Quick Piano",
       "emotion": "alegria",
       "vector": {
@@ -1470,7 +1470,7 @@
       "id": "jamendo-1419495",
       "labelId": "jamendo-1419495",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-piano/11-aventura-the-donut-around-the-hole.mp3",
+      "src": "/music/v1/jamendo-piano/11-aventura-the-donut-around-the-hole.webm",
       "title": "The Donut around the Hole",
       "emotion": "aventura",
       "vector": {
@@ -1500,7 +1500,7 @@
       "id": "jamendo-26439",
       "labelId": "jamendo-26439",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-piano/06-tristeza-sad.mp3",
+      "src": "/music/v1/jamendo-piano/06-tristeza-sad.webm",
       "title": "Sad",
       "emotion": "tristeza",
       "vector": {
@@ -1530,7 +1530,7 @@
       "id": "jamendo-326584",
       "labelId": "jamendo-326584",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-piano/15-asombro-un-soir-romantique.mp3",
+      "src": "/music/v1/jamendo-piano/15-asombro-un-soir-romantique.webm",
       "title": "Un Soir Romantique",
       "emotion": "asombro",
       "vector": {
@@ -1560,7 +1560,7 @@
       "id": "jamendo-345908",
       "labelId": "jamendo-345908",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-piano/01-calma-peaceful-innocence.mp3",
+      "src": "/music/v1/jamendo-piano/01-calma-peaceful-innocence.webm",
       "title": "Peaceful Innocence",
       "emotion": "calma",
       "vector": {
@@ -1589,7 +1589,7 @@
       "id": "jamendo-440619",
       "labelId": "jamendo-440619",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-piano/12-aventura-lonely-hero.mp3",
+      "src": "/music/v1/jamendo-piano/12-aventura-lonely-hero.webm",
       "title": "Lonely hero",
       "emotion": "aventura",
       "vector": {
@@ -1619,7 +1619,7 @@
       "id": "jamendo-847262",
       "labelId": "jamendo-847262",
       "provisional": true,
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-piano/02-calma-barcarola.mp3",
+      "src": "/music/v1/jamendo-piano/02-calma-barcarola.webm",
       "title": "Small Nostalgia – Barcarola",
       "emotion": "calma",
       "vector": {
@@ -1647,7 +1647,7 @@
     },
     {
       "id": "chopin-levy-1-balada-1-op23",
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/chopin-levy/1-balada-1-op23.mp3",
+      "src": "/music/v1/chopin-levy/1-balada-1-op23.webm",
       "title": "Ballade No. 1 in G minor, Op. 23",
       "emotion": "tristeza",
       "vector": {
@@ -1677,7 +1677,7 @@
     },
     {
       "id": "chopin-levy-2-balada-2-op38",
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/chopin-levy/2-balada-2-op38.mp3",
+      "src": "/music/v1/chopin-levy/2-balada-2-op38.webm",
       "title": "Ballade No. 2 in F major, Op. 38",
       "emotion": "calma",
       "vector": {
@@ -1707,7 +1707,7 @@
     },
     {
       "id": "chopin-levy-3-balada-3-op47",
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/chopin-levy/3-balada-3-op47.mp3",
+      "src": "/music/v1/chopin-levy/3-balada-3-op47.webm",
       "title": "Ballade No. 3 in A-flat major, Op. 47",
       "emotion": "alegria",
       "vector": {
@@ -1737,7 +1737,7 @@
     },
     {
       "id": "chopin-levy-4-balada-4-op52",
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/chopin-levy/4-balada-4-op52.mp3",
+      "src": "/music/v1/chopin-levy/4-balada-4-op52.webm",
       "title": "Ballade No. 4 in F minor, Op. 52",
       "emotion": "tristeza",
       "vector": {

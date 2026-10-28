@@ -13,7 +13,7 @@ const csp = [
   `script-src ${scriptSrc}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://*.public.blob.vercel-storage.com",
-  "media-src 'self' blob: https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com",
+  "media-src 'self' blob:",
   "connect-src 'self'",
   "font-src 'self'",
   'frame-src https://challenges.cloudflare.com',
@@ -35,6 +35,12 @@ const nextConfig: NextConfig = {
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
         ],
+      },
+      {
+        // Track files never change in place (a new encode gets a new
+        // version folder), so repeat visits skip the download entirely.
+        source: '/music/v1/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
       },
     ];
   },
