@@ -7,10 +7,12 @@ TRAILER='Co-authored-by: Muse Code (Meta) <muse-code@agents.noreply.invalid>'
 
 msg_file="$1"
 
-# Rescue commits carry a `Rescue: <tool>` trailer instead of the co-author one.
-if git interpret-trailers --parse <"$msg_file" 2>/dev/null | grep -q '^Rescue:'; then
+# Rescue commits carry a `Rescue: <tool>` trailer, and mechanical work written
+# directly by another agent carries `Written-by: <tool>`; neither gets the
+# co-author one.
+if git interpret-trailers --parse <"$msg_file" 2>/dev/null | grep -Eq '^(Rescue|Written-by):'; then
   exit 0
-elif grep -q '^Rescue:' "$msg_file"; then
+elif grep -Eq '^(Rescue|Written-by):' "$msg_file"; then
   exit 0
 fi
 

@@ -85,6 +85,13 @@ test('a rescue commit gets no co-author trailer', () => {
   assert.equal(trailerCount(), 0);
 });
 
+test('a Written-by commit gets no co-author trailer', () => {
+  fs.writeFileSync(path.join(repo, 'written.txt'), 'written\n');
+  git(['add', 'written.txt']);
+  git(['commit', '-q', '-m', 'docs', '-m', 'Written-by: Grok Bot']);
+  assert.equal(trailerCount(), 0);
+});
+
 test('a normal commit still gets exactly one trailer', () => {
   fs.writeFileSync(path.join(repo, 'normal.txt'), 'normal\n');
   git(['add', 'normal.txt']);

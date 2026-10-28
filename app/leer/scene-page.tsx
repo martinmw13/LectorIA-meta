@@ -10,7 +10,7 @@ import { buildNavIndex, navReducer, subPageCount, subPageKind, textPageAt } from
 import type { NavAction, SceneView } from "@/core/reader";
 import { effectiveImageStylePref, loadImageStylePref, saveImageStylePref } from "../image-style";
 import type { ImageStylePref } from "../image-style";
-import { DEFAULT_SKIN } from "../skin";
+import { useSkin } from "../use-skin";
 import { BandPager, Divider } from "../folio/chrome";
 import { figuresAfter, groupFiguresByEndN, pageOfOrdinal } from "../folio/figure-placement";
 import { ImagePane } from "../folio/image-pane";
@@ -98,7 +98,10 @@ export function ScenePage({
   nextChapter: { ch: number; firstSceneId: string } | null;
 }) {
   const [storedPref, setStoredPref] = useState<ImageStylePref | null>(null);
-  const pref = effectiveImageStylePref(storedPref, DEFAULT_SKIN);
+  // Server render uses the default so hydration matches; the live skin
+  // applies on mount via useSyncExternalStore.
+  const skin = useSkin();
+  const pref = effectiveImageStylePref(storedPref, skin);
   const pic = usePictures({ bookId, textVersion, sceneId: view.sceneId, pref });
   const router = useRouter();
   const index = useMemo(() => buildNavIndex(views), [views]);
