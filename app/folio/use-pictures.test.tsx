@@ -115,6 +115,12 @@ test("selection popover portals to the body and hides on resize", () => {
   expect(host.querySelector(".picture-float")).toBeNull();
   expect(pill?.style.top).toBe("12px");
   expect(pill?.style.left).toBe("60px");
+  // An inner scroll container moving the text moves the pill with it.
+  Range.prototype.getBoundingClientRect = () => new DOMRect(10, -80, 100, 16);
+  act(() => {
+    host.querySelector("div")!.dispatchEvent(new Event("scroll"));
+  });
+  expect(lastPopover).toEqual({ top: -88, left: 60 });
   act(() => {
     window.dispatchEvent(new Event("resize"));
   });

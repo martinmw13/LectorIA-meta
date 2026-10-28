@@ -125,6 +125,9 @@ export function usePictures({
     setViewEl(node);
   }, []);
   const popRef = useRef<HTMLButtonElement | null>(null);
+  // The selected range, kept so the portalled popover can follow it when
+  // any scroll container (window or the reading column) moves the text.
+  const rangeRef = useRef<Range | null>(null);
   const openerRef = useRef<HTMLElement | null>(null);
   const busyRef = useRef(false);
   const prefRef = useRef(pref);
@@ -262,8 +265,9 @@ export function usePictures({
           setPopover(null);
           return;
         }
-        const box = sel.getRangeAt(0).getBoundingClientRect();
-        setPopover(popoverPos(box, { x: window.scrollX, y: window.scrollY }));
+        const range = sel.getRangeAt(0);
+        rangeRef.current = range.cloneRange();
+        setPopover(popoverPos(range.getBoundingClientRect(), { x: window.scrollX, y: window.scrollY }));
       });
     };
     view.addEventListener("mouseup", onMouseUp);
@@ -281,6 +285,21 @@ export function usePictures({
   useEffect(() => {
     if (!popover) return;
     const hide = () => setPopover(null);
+    let frame = 0;
+    // Capture phase sees scrolls from inner containers too (they do not
+    // bubble), so the pill tracks the text in any reader layout.
+    const onScroll = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const box = rangeRef.current?.getBoundingClientRect();
+        if (!box || (box.width === 0 && box.height === 0)) {
+          hide();
+          return;
+        }
+        const next = popoverPos(box, { x: window.scrollX, y: window.scrollY });
+        setPopover((prev) => (prev && prev.top === next.top && prev.left === next.left ? prev : next));
+      });
+    };
     const onDown = (event: MouseEvent) => {
       if (!popRef.current?.contains(event.target as Node | null)) hide();
     };
@@ -290,7 +309,10 @@ export function usePictures({
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onKey);
     window.addEventListener("resize", hide);
+    document.addEventListener("scroll", onScroll, { capture: true, passive: true });
     return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener("scroll", onScroll, { capture: true });
       document.removeEventListener("mousedown", onDown);
       document.removeEventListener("keydown", onKey);
       window.removeEventListener("resize", hide);
