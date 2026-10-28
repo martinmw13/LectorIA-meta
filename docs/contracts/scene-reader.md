@@ -1,7 +1,7 @@
 ## Scene reader
 
 One static route per scene (`app/leer/[sceneId]`, `dynamicParams`
-false); `/` redirects to the first scene. The layout mounts the music
+false); `/read/oz` redirects to the first scene. The layout mounts the music
 container once and passes slim metadata for all scenes: id, chapter,
 and emotion triple only. Each scene page builds its view with
 `buildSceneView` and ships only that scene's text, its chapter title,

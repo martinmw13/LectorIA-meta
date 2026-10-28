@@ -1,11 +1,21 @@
-import { redirect } from "next/navigation";
-import { buildReaderModel } from "@/core/reader";
-import { loadOzBook } from "@/server/books";
+import type { Metadata } from "next";
+import { Hero } from "./home/hero";
+import { UploadSection } from "./home/upload";
+import "./home/home.css";
 
-// The book opens at its first scene. Scene ids are the addresses.
+export const metadata: Metadata = { title: "Lectoria" };
+
 export default function Home() {
-  const { book, scenes } = loadOzBook();
-  const model = buildReaderModel(book, { scenes });
-  const first = model.chapters[0]?.scenes[0];
-  redirect(`/leer/${first?.id ?? ""}`);
+  return (
+    <main className="home-root">
+      <div className="home-wrap">
+        <header>
+          <span className="home-brand">LECTORIA</span>
+          <hr className="home-rule" />
+        </header>
+        <Hero />
+        <UploadSection />
+      </div>
+    </main>
+  );
 }

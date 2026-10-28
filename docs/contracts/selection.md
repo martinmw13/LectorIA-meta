@@ -8,7 +8,7 @@ the best same-style tracks when the emotion is missing) within
 it is eligible, and avoids an immediate repeat otherwise. The style is
 the user's choice, changed with the style selector. The default style is
 the first listed style with tracks; a stored style with tracks wins. The
-session persists `{ style, volume, muted }` in localStorage under
+session persists `{ style, volume, muted, playlist }` in localStorage under
 `lectoria.music.v1`. Old values with `mode` or `soundtrackId` load by
 `style` alone and ignore unknown fields; a stored object without
 `volume` or `muted` loads `volume: null` and `muted: false`. A bad

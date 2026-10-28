@@ -10,10 +10,14 @@ import { buildNavIndex, navReducer, subPageCount, subPageKind, textPageAt } from
 import type { NavAction, SceneView } from "@/core/reader";
 import { effectiveImageStylePref, loadImageStylePref, saveImageStylePref } from "../image-style";
 import type { ImageStylePref } from "../image-style";
+import { DEFAULT_SKIN } from "../skin";
 import { BandPager, Divider } from "../folio/chrome";
+import { figuresAfter, groupFiguresByEndN, pageOfOrdinal } from "../folio/figure-placement";
 import { ImagePane } from "../folio/image-pane";
 import { InlineFigureView, SelectionPopover } from "../folio/inline-figures";
 import { Lightbox } from "../folio/lightbox";
+import { edges, readOnLabel, wheelTurn } from "../folio/scroll-turn";
+import type { WheelTurnState } from "../folio/scroll-turn";
 import { usePictures } from "../folio/use-pictures";
 import type { InlineFigure } from "../folio/use-pictures";
 import { PictureVault } from "../folio/vault";
@@ -40,9 +44,29 @@ import {
 // always starts at page 0.
 let enterAtEnd = false;
 
+// Survives scene remounts so one swipe never turns twice.
+let wheelState: WheelTurnState = { acc: 0, lockedUntil: 0, lastAt: 0 };
+
 // Set on every in-app scene push. The heading takes focus only when this
 // is set, so first load shows no focus ring.
 let hasNavigated = false;
+
+// True when the wheel target sits inside a nested scroller (picture
+// vault, player bar, modal grids): those scroll natively and never turn
+// pages. The reading column itself is not a nested scroller.
+function inNestedScroller(target: HTMLElement | null, readCol: HTMLElement | null): boolean {
+  let el: HTMLElement | null = target;
+  while (el !== null) {
+    if (el !== readCol) {
+      const overflowY = window.getComputedStyle(el).overflowY;
+      if ((overflowY === "auto" || overflowY === "scroll") && el.scrollHeight > el.clientHeight) {
+        return true;
+      }
+    }
+    el = el.parentElement;
+  }
+  return false;
+}
 
 function pulse(el: HTMLElement | null) {
   if (!el) return;
@@ -73,9 +97,9 @@ export function ScenePage({
   panels: ChapterPanel[];
   nextChapter: { ch: number; firstSceneId: string } | null;
 }) {
-  const pic = usePictures({ bookId, textVersion, sceneId: view.sceneId });
   const [storedPref, setStoredPref] = useState<ImageStylePref | null>(null);
-  const pref = effectiveImageStylePref(storedPref, undefined);
+  const pref = effectiveImageStylePref(storedPref, DEFAULT_SKIN);
+  const pic = usePictures({ bookId, textVersion, sceneId: view.sceneId, pref });
   const router = useRouter();
   const index = useMemo(() => buildNavIndex(views), [views]);
   const cover = view.isChapterFirst;
@@ -102,6 +126,16 @@ export function ScenePage({
   const textIndex = textPageAt(page, cover);
   const atStart = view.prevSceneId === null && page === 0;
   const atBookEnd = view.nextSceneId === null && page === lastPage;
+  const readOn =
+    kind === "text"
+      ? readOnLabel({
+          textIndex,
+          textCount: view.pages.length,
+          hasEndPage: end,
+          hasNextSceneInChapter: view.k < view.n,
+          ch: view.ch,
+        })
+      : null;
 
   useEffect(() => {
     setStoredPref(loadImageStylePref());
@@ -149,23 +183,10 @@ export function ScenePage({
     router.push(`/leer/${nextChapter.firstSceneId}`);
   }
 
-  const figsByN = useMemo(() => {
-    const grouped = new Map<number, InlineFigure[]>();
-    for (const fig of pic.figures) {
-      const list = grouped.get(fig.endN) ?? [];
-      list.push(fig);
-      grouped.set(fig.endN, list);
-    }
-    return grouped;
-  }, [pic.figures]);
-
-  function pageOf(n: number): number {
-    const found = view.pages.findIndex((p) => p.paragraphs.some((para) => para.n === n));
-    return found;
-  }
+  const figsByN = useMemo(() => groupFiguresByEndN(pic.figures), [pic.figures]);
 
   function gotoFigure(fig: InlineFigure) {
-    const at = pageOf(fig.endN);
+    const at = pageOfOrdinal(view.pages, fig.endN);
     if (at < 0) return;
     setPage(at + (cover ? 1 : 0));
     readColRef.current?.scrollTo(0, 0);
@@ -233,11 +254,64 @@ export function ScenePage({
       } else if (event.key === "ArrowLeft") {
         event.preventDefault();
         goPrev();
+      } else if (
+        event.key === " " ||
+        event.key === "PageDown" ||
+        event.key === "ArrowDown" ||
+        event.key === "PageUp" ||
+        event.key === "ArrowUp"
+      ) {
+        if (target !== null && target.tagName === "BUTTON") return;
+        const forward =
+          event.key === "PageDown" || event.key === "ArrowDown" || (event.key === " " && !event.shiftKey);
+        event.preventDefault();
+        const col = readColRef.current;
+        if (col !== null) {
+          const at = edges(col);
+          if ((forward && !at.atBottom) || (!forward && !at.atTop)) {
+            col.scrollBy({ top: (forward ? 1 : -1) * col.clientHeight * 0.85, behavior: "smooth" });
+            return;
+          }
+        }
+        if (forward) goNext();
+        else goPrev();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [page, view.sceneId, index, router]);
+
+  // Wheel and trackpad turn pages: at a column edge, an accumulated swipe
+  // calls goNext/goPrev. preventDefault only on a turn, so the column
+  // keeps scrolling natively until it rests on its edge.
+  useEffect(() => {
+    const onWheel = (event: WheelEvent) => {
+      if (panelsOpen || gateOpen || pic.lightbox.item !== null) return;
+      if (event.ctrlKey) return;
+      if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
+      const target = event.target instanceof HTMLElement ? event.target : null;
+      const readCol = readColRef.current;
+      if (inNestedScroller(target, readCol)) return;
+      const at = readCol === null ? { atTop: true, atBottom: true } : edges(readCol);
+      const result = wheelTurn(wheelState, {
+        deltaY: event.deltaY,
+        deltaMode: event.deltaMode,
+        now: performance.now(),
+        atTop: at.atTop,
+        atBottom: at.atBottom,
+      });
+      wheelState = result.state;
+      if (result.turn === "next") {
+        event.preventDefault();
+        goNext();
+      } else if (result.turn === "prev") {
+        event.preventDefault();
+        goPrev();
+      }
+    };
+    window.addEventListener("wheel", onWheel, { passive: false });
+    return () => window.removeEventListener("wheel", onWheel);
+  }, [page, view.sceneId, index, router, panelsOpen, gateOpen, pic.lightbox.item]);
 
   return (
     <>
@@ -245,10 +319,10 @@ export function ScenePage({
         // The cover always shows the placeholder: nothing to picture yet,
         // and a cached scene picture would spoil the chapter.
         card={kind === "cover" ? { phase: "idle" } : pic.card}
-        onPicture={() => pic.illustrateScene(pref)}
-        onRetry={() => pic.illustrateScene(pref)}
+        onPicture={() => pic.illustrateScene()}
+        onRetry={() => pic.illustrateScene()}
         onClear={pic.clearScene}
-        onOpen={pic.openLightbox}
+        onOpen={pic.lightbox.open}
         bare={kind === "cover"}
         onPictureChapter={
           kind === "cover" ? null : kind === "end" ? () => setPanelsOpen(true) : requestPanels
@@ -280,6 +354,7 @@ export function ScenePage({
             <button type="button" className="cover-begin" onClick={goNext}>
               Begin the chapter →
             </button>
+            <span className="read-on-hint">or just scroll</span>
           </>
         ) : kind === "end" ? (
           <>
@@ -320,13 +395,13 @@ export function ScenePage({
                     {p.text}
                   </p>
                   {/* A figure for n lands after its last visible fragment. */}
-                  {(arr[i + 1]?.n !== p.n ? (figsByN.get(p.n) ?? []) : []).map((fig) => (
+                  {figuresAfter(arr, i, figsByN).map((fig) => (
                     <InlineFigureView
                       key={fig.id}
                       figure={fig}
                       onRemove={() => pic.removeFigure(fig.id)}
-                      onRetry={() => pic.retryFigure(fig.id, pref)}
-                      onOpen={pic.openLightbox}
+                      onRetry={() => pic.retryFigure(fig.id)}
+                      onOpen={pic.lightbox.open}
                       refCb={(el) => {
                         if (el) figEls.current.set(fig.id, el);
                         else figEls.current.delete(fig.id);
@@ -339,8 +414,17 @@ export function ScenePage({
                 <SelectionPopover
                   pos={pic.popover}
                   popRef={pic.popRef}
-                  onPick={() => pic.illustratePassage(pref)}
+                  onPick={() => pic.illustratePassage()}
                 />
+              ) : null}
+              {/* Every read-on label ends with " ↓"; the arrow gets its own span for the hover nudge. */}
+              {readOn !== null ? (
+                <button type="button" className="read-on" onClick={goNext}>
+                  {readOn.slice(0, -1)}
+                  <span className="read-on-arrow" aria-hidden="true">
+                    ↓
+                  </span>
+                </button>
               ) : null}
             </div>
           </>
@@ -351,7 +435,7 @@ export function ScenePage({
         figures={pic.figures}
         onGotoScene={gotoScenePicture}
         onGotoFigure={gotoFigure}
-        onOpen={pic.openLightbox}
+        onOpen={pic.lightbox.open}
         pref={pref}
         onPrefChange={changePref}
       />
@@ -365,7 +449,7 @@ export function ScenePage({
         atStart={atStart}
         atBookEnd={atBookEnd}
       />
-      <Lightbox item={pic.lightbox} onClose={pic.closeLightbox} />
+      <Lightbox item={pic.lightbox.item} onClose={pic.lightbox.close} />
       {gateOpen ? <SpoilerGateDialog onShow={showAnyway} onNotYet={notYet} /> : null}
       {panelsOpen ? (
         <PanelsModal
@@ -373,7 +457,7 @@ export function ScenePage({
           chapterTitle={view.chapterTitle}
           panels={panels}
           onClose={() => setPanelsOpen(false)}
-          onOpenArt={pic.openLightbox}
+          onOpenArt={pic.lightbox.open}
         />
       ) : null}
     </>

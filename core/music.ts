@@ -6,5 +6,6 @@
 export * from "./music-types";
 export * from "./music-similarity";
 export * from "./music-selection";
+export * from "./music-modes";
 export * from "./music-manifest";
 export * from "./music-credit";

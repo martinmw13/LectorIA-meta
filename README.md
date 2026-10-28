@@ -18,6 +18,10 @@ npm run typecheck
 npm run build
 ```
 
+## Checks
+
+Opt-in scroll e2e (Python Playwright, not in CI): `python3 scripts/e2e-scroll.py [base_url]`.
+
 ## Docs
 
 - [AGENTS.md](AGENTS.md): agent instructions

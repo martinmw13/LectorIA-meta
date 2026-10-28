@@ -42,6 +42,25 @@ describe("completeJson retries", () => {
     expect(calls).toBe(2);
   });
 
+  it("posts to a custom url and labels Modal errors", async () => {
+    const seen: string[] = [];
+    const client = createMetaClient({
+      apiKey: "k",
+      model: "meta-models/Muse-Spark-Open-816B-A42B",
+      url: "https://example.test/v1/chat/completions",
+      provider: "modal",
+      fetchFn: (async (url: string | URL | Request) => {
+        seen.push(String(url));
+        return okResponse("");
+      }) as typeof fetch,
+    });
+    expect(client.provider).toBe("modal");
+    await expect(client.completeJson({ system: "s", user: "u", schemaName: "n", schema: SCHEMA })).rejects.toThrow(
+      /Modal returned empty content/,
+    );
+    expect(seen).toEqual(["https://example.test/v1/chat/completions", "https://example.test/v1/chat/completions"]);
+  });
+
   it("lets fetchWithRetry own a dropped connection", async () => {
     let calls = 0;
     const client = createMetaClient({

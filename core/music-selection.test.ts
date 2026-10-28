@@ -102,13 +102,17 @@ describe("resolveInitialSelection", () => {
   });
 
   it("a valid persisted style wins", () => {
-    expect(resolveInitialSelection(manifest, { style: "piano", volume: null, muted: false })).toEqual({
+    expect(
+      resolveInitialSelection(manifest, { style: "piano", volume: null, muted: false, playlist: false }),
+    ).toEqual({
       style: "piano",
     });
   });
 
   it("ignores a stored style with no tracks", () => {
-    expect(resolveInitialSelection(manifest, { style: "koto", volume: null, muted: false })).toEqual({
+    expect(
+      resolveInitialSelection(manifest, { style: "koto", volume: null, muted: false, playlist: false }),
+    ).toEqual({
       style: "orchestral",
     });
   });
@@ -118,6 +122,7 @@ describe("resolveInitialSelection", () => {
       style: string;
       volume: null;
       muted: false;
+      playlist: false;
     };
     expect(resolveInitialSelection(manifest, prefs)).toEqual({ style: "piano" });
   });

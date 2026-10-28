@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { MUSIC_CONFIG, nowPlaying } from "@/core/music";
+import { marqueeDurationMs } from "./marquee";
 import { displayTitle } from "@/core/music-credit";
 import { effectiveEnd, gainVolume } from "@/core/music-playback";
-import type { StyleInfo, Track } from "@/core/music";
+import type { MusicMode, MusicModeId, Track } from "@/core/music";
 import { MusicStyleControl } from "./folio/music-style-control";
+import { RainAmbience } from "./rain-button";
 
 // Two audio elements with equal-power crossfades. Volume lives in a
 // ref, so the slider never re-runs the track effect or touches src.
@@ -23,14 +25,11 @@ export function Player({
   muted,
   onVolumeChange,
   onMutedChange,
-  styles,
-  styleId,
-  onStyleChange,
+  modes,
+  current,
+  onAdvance,
   onEnded,
   playlistOn,
-  playlistLabel,
-  onTogglePlaylist,
-  controlsDisabled,
 }: {
   track: Track | null;
   replayNonce: number;
@@ -43,14 +42,11 @@ export function Player({
   muted: boolean;
   onVolumeChange: (volume: number) => void;
   onMutedChange: (muted: boolean) => void;
-  styles: StyleInfo[];
-  styleId: string | null;
-  onStyleChange: (style: string) => void;
+  modes: MusicMode[];
+  current: MusicModeId | null;
+  onAdvance: (to?: MusicModeId) => void;
   onEnded: (trackId: string) => void;
   playlistOn: boolean;
-  playlistLabel: string | null;
-  onTogglePlaylist: () => void;
-  controlsDisabled: boolean;
 }) {
   const firstRef = useRef<HTMLAudioElement | null>(null);
   const secondRef = useRef<HTMLAudioElement | null>(null);
@@ -298,6 +294,33 @@ export function Player({
     : null;
   const showSource =
     !!track?.sourceUrl && !!track.artist && !!track.composer && track.artist !== track.composer;
+  const slotRef = useRef<HTMLSpanElement | null>(null);
+  const innerRef = useRef<HTMLSpanElement | null>(null);
+
+  // Fixed-width slot: measure overflow and drive the marquee via CSS vars.
+  useLayoutEffect(() => {
+    const slot = slotRef.current;
+    const inner = innerRef.current;
+    if (!slot || !inner) return;
+    const update = () => {
+      const shift = inner.scrollWidth - slot.clientWidth;
+      if (shift > 0) {
+        slot.dataset.overflow = "1";
+        slot.style.setProperty("--marquee-shift", `${shift}px`);
+        slot.style.setProperty("--marquee-duration", `${marqueeDurationMs(shift)}ms`);
+      } else {
+        delete slot.dataset.overflow;
+        slot.style.removeProperty("--marquee-shift");
+        slot.style.removeProperty("--marquee-duration");
+      }
+    };
+    update();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(update);
+    ro.observe(slot);
+    ro.observe(inner);
+    return () => ro.disconnect();
+  }, [trackId, head]);
 
   return (
     <div className="player" role="region" aria-label="Music player" data-reduced-motion={reducedMotion}>
@@ -367,35 +390,30 @@ export function Player({
           aria-label="Volume"
         />
       </label>
-      <span className="player-track" aria-live="polite" title={now?.full}>
-        {head ?? "The music is resting"}
-        {showSource && track?.sourceUrl ? (
-          <>
-            {" · "}
-            <a
-              href={track.sourceUrl}
-              rel="noopener noreferrer"
-              target="_blank"
-              aria-label={`${track.artist} (opens in new tab)`}
-              title={`${track.artist} (opens in new tab)`}
-            >
-              {track.artist}{" "}
-              <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden="true">
-                <path d="M3 9 9 3M4.5 3H9v4.5" />
-              </svg>
-            </a>
-          </>
-        ) : null}
+      <RainAmbience muted={muted} />
+      <span className="player-track" aria-live="polite" title={now?.full} ref={slotRef}>
+        <span className="player-track-inner" ref={innerRef}>
+          {head ?? "The music is resting"}
+          {showSource && track?.sourceUrl ? (
+            <>
+              {" · "}
+              <a
+                href={track.sourceUrl}
+                rel="noopener noreferrer"
+                target="_blank"
+                aria-label={`${track.artist} (opens in new tab)`}
+                title={`${track.artist} (opens in new tab)`}
+              >
+                {track.artist}{" "}
+                <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden="true">
+                  <path d="M3 9 9 3M4.5 3H9v4.5" />
+                </svg>
+              </a>
+            </>
+          ) : null}
+        </span>
       </span>
-      <MusicStyleControl
-        styles={styles}
-        styleId={styleId}
-        onStyleChange={onStyleChange}
-        playlistLabel={playlistLabel}
-        playlistOn={playlistOn}
-        onTogglePlaylist={onTogglePlaylist}
-        controlsDisabled={controlsDisabled}
-      />
+      <MusicStyleControl modes={modes} current={current} onAdvance={onAdvance} />
     </div>
   );
 }

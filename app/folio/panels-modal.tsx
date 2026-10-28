@@ -3,27 +3,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Icon } from "../icons";
 import { PANELS_NAME } from "./panels";
 import type { ChapterPanel } from "./panels";
 import { getCachedScenePicture } from "./use-pictures";
 
 export const SPOILER_LINE = "The whole chapter, told in pictures. It gives away what happens, so you may want to read first.";
-
-function EyeOffIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
-      <path d="M2.5 2.5l11 11M6.6 3.2c.5-.1 1-.2 1.4-.2 2.8 0 5.2 2.4 6 5-1 3.2-3.2 5-6 5-1 0-2-.3-2.8-.7M4 4.6C2.7 5.7 2 7 2 8c.8 2.6 3.2 5 6 5 1 0 2-.3 2.9-.8" />
-    </svg>
-  );
-}
-
-function PencilIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true">
-      <path d="M11.5 2.5l2 2L5 13l-2.7.7L3 11l8.5-8.5Z" />
-    </svg>
-  );
-}
 
 // Blurred strip of the chapter's thumbs: spoiler-safe, decorative only.
 export function BlurredThumbs({ panels, unblurredCount }: { panels: ChapterPanel[]; unblurredCount?: number }) {
@@ -45,7 +30,7 @@ export function PanelsOfferCard({ panels, onShowAnyway, onReadFirst }: { panels:
       <BlurredThumbs panels={panels} />
       <div className="panels-offer-row">
         <span className="panels-eye">
-          <EyeOffIcon />
+          <Icon name="eye-off" />
         </span>
         <div>
           <p className="panels-name">{PANELS_NAME}</p>
@@ -190,7 +175,7 @@ export function PanelsModal({
                   {i + 1}
                 </span>
                 <span className="panel-hatch" aria-hidden="true">
-                  <PencilIcon />
+                  <Icon name="pencil" />
                 </span>
                 <span className="panel-cap">{p.caption}</span>
               </div>

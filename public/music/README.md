@@ -75,6 +75,13 @@ tracks. The Chopin tracks use `playlistOnly: true`. They still need
 their emotion. The player loops that order until the user turns the
 button off.
 
+## Rain ambience
+
+The rain button next to the music volume cycles one CC0 loop per level
+(off, drizzle, moderate, storm). Levels and fades are in
+[docs/tasks/25-rain-ambience.md](../../docs/tasks/25-rain-ambience.md);
+file credits are in [../ambience/SOURCES.md](../ambience/SOURCES.md).
+
 ## License note
 
 The first placeholder tracks were MusicGen output, and those weights are

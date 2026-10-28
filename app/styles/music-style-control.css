@@ -2,6 +2,8 @@
    the control design means replacing this file and
    app/folio/music-style-control.tsx only. */
 
+/* The icon is the button: no box, frame, or fill on any of the three
+   buttons. The 40px hit area is the button itself. */
 .stickers {
   display: inline-flex;
   align-items: flex-end;
@@ -19,6 +21,7 @@
 .sticker {
   background: none;
   border: 0;
+  box-shadow: none;
   padding: 0;
   cursor: pointer;
   line-height: 0;
@@ -44,20 +47,32 @@
   transform: rotate(5deg);
 }
 
-.sticker:hover img {
-  transform: rotate(0deg) translateY(-2px);
-  filter: saturate(1) drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff)
-    drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff)
-    drop-shadow(1.4px 1.4px 0 #fff) drop-shadow(-1.4px -1.4px 0 #fff)
-    drop-shadow(1.4px -1.4px 0 #fff) drop-shadow(-1.4px 1.4px 0 #fff)
-    drop-shadow(0 3px 5px rgba(0, 0, 0, 0.22));
-  opacity: 1;
+/* Still at rest: hover lift and tilt run on hover-capable devices only. */
+@media (hover: hover) {
+  .sticker:hover img {
+    transform: rotate(0deg) translateY(-2px);
+    filter: saturate(1) drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff)
+      drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff)
+      drop-shadow(1.4px 1.4px 0 #fff) drop-shadow(-1.4px -1.4px 0 #fff)
+      drop-shadow(1.4px -1.4px 0 #fff) drop-shadow(-1.4px 1.4px 0 #fff)
+      drop-shadow(0 3px 5px rgba(0, 0, 0, 0.22));
+    opacity: 1;
+  }
+
+  .player .chopin:hover img {
+    filter: saturate(1);
+    opacity: 1;
+  }
 }
 
 .sticker:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
   border-radius: 6px;
+}
+
+.sticker:focus:not(:focus-visible) {
+  outline: none;
 }
 
 .sticker[aria-pressed="true"] img {
@@ -70,13 +85,22 @@
   opacity: 1;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .sticker img,
-  .sticker:hover img,
-  .sticker[aria-pressed="true"] img {
-    transform: none;
-    transition: none;
+/* One-shot pop on the button whose mode just became current, while
+   data-anim is set. No idle loop. */
+@keyframes sticker-pop {
+  from {
+    transform: scale(1) rotate(0deg);
   }
+  40% {
+    transform: scale(1.12) rotate(0deg);
+  }
+  to {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.sticker[data-anim="1"] img {
+  animation: sticker-pop 400ms ease;
 }
 
 .sticker-dot {
@@ -86,20 +110,24 @@
   background: transparent;
 }
 
-.sticker[aria-pressed="true"] + .sticker-dot {
+.sticker[aria-pressed="true"] + .sticker-dot,
+.chopin[aria-pressed="true"] + .sticker-dot {
   background: var(--color-accent);
 }
 
 .player .chopin {
   flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 44px;
   height: 44px;
   padding: 0;
-  border: 2px solid transparent;
-  border-radius: 50%;
-  background: transparent;
-  overflow: hidden;
+  border: 0;
+  background: none;
+  box-shadow: none;
   cursor: pointer;
+  line-height: 0;
 }
 
 .player .chopin img {
@@ -107,21 +135,42 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
+  filter: saturate(0.6);
+  opacity: 0.85;
+  transition: transform 150ms ease, filter var(--motion-duration) ease, opacity
+    var(--motion-duration) ease;
 }
 
-.player .chopin:hover {
-  border-color: var(--color-accent);
+.player .chopin[aria-pressed="true"] img {
+  filter: saturate(1);
+  opacity: 1;
 }
 
-.player .chopin[aria-pressed="true"] {
-  background: transparent;
-  border-color: transparent;
+.player .chopin[data-anim="1"] img {
+  animation: sticker-pop 400ms ease;
+}
+
+.player .chopin:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
-  transform: scale(1.05);
+  border-radius: 50%;
 }
 
-.player .chopin[aria-pressed="true"]:hover {
-  background: transparent;
-  border-color: transparent;
+.player .chopin:focus:not(:focus-visible) {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sticker img,
+  .sticker:hover img,
+  .sticker[aria-pressed="true"] img,
+  .sticker[data-anim="1"] img,
+  .player .chopin img,
+  .player .chopin:hover img,
+  .player .chopin[aria-pressed="true"] img,
+  .player .chopin[data-anim="1"] img {
+    transform: none;
+    transition: none;
+    animation: none;
+  }
 }

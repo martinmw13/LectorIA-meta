@@ -169,6 +169,12 @@ scrolls at desktop size; the reading column scrolls inside itself. */
   outline: none;
 }
 
+/* Non-interactive heading (tabindex -1), focused only for screen-reader orientation. */
+#scene-heading:focus,
+#scene-heading:focus-visible {
+  outline: none;
+}
+
 .kicker {
   font-family: var(--font-ui);
   font-size: 12.5px;
