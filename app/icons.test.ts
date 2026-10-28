@@ -13,8 +13,6 @@ import { DEFAULT_SKIN, SKINS } from "./skin";
 // app/home/home-defs.tsx holds SVG filter defs, not icons.
 // app/home/spread.tsx holds decorative per-skin art (lantern, ink
 // underline, read arrows), shown per skin through page CSS.
-// app/style-stamp.tsx holds the dynamic skin-name ring: a textPath whose
-// text changes per skin cannot live in the static registry.
 const ALLOWLIST = new Set([
   "app/icons.tsx",
   "app/player.tsx",
@@ -22,7 +20,6 @@ const ALLOWLIST = new Set([
   "app/folio/picture-button.tsx",
   "app/home/home-defs.tsx",
   "app/home/spread.tsx",
-  "app/style-stamp.tsx",
 ]);
 
 function walk(dir: string, out: string[] = []): string[] {

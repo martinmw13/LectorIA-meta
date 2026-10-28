@@ -80,10 +80,3 @@ html[data-skin="engraving"] .ob-wait, html[data-skin="pencil"] .ob-wait { font-s
 html[data-skin="comic"] .ob-wait { font-weight: 400; letter-spacing: .03em; }
 .ob-wait:hover { color: var(--color-accent-hover); }
 
-/* The shared style stamp (app/style-stamp.tsx) takes the home's per-skin
-   label and display fonts on the spread, as in the prototype. */
-.ob-desk .style-stamp-ringtxt { font-family: var(--label); font-style: normal; }
-html[data-skin="watercolor"] .ob-desk .style-stamp-ringtxt { font-size: 15px; letter-spacing: .04em; font-weight: 700; }
-html[data-skin="pencil"] .ob-desk .style-stamp-ringtxt { letter-spacing: .14em; }
-html[data-skin="comic"] .ob-desk .style-stamp-ringtxt { font-family: var(--display); font-size: 14px; letter-spacing: .08em; font-weight: 400; }
-html[data-skin="chihiro"] .ob-desk .style-stamp-ringtxt { font-size: 12px; font-weight: 600; fill: #9C2F1E; }
