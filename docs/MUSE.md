@@ -6,21 +6,21 @@ A Muse commit is a non-merge commit on main that carries the trailer `Co-authore
 
 ## Commits
 
-- Muse commits: 289 of 302 non-merge commits (96%).
+- Muse commits: 299 of 321 non-merge commits (93%).
 - Date range (UTC-3): 2026-10-27 to 2026-10-28.
 
 ## Lines
 
 | Scope | Muse added | Muse removed | Other added | Other removed | Muse share of added |
 | --- | --- | --- | --- | --- | --- |
-| Source code (`app/`, `core/`, `pipeline/`, `server/`, `scripts/`) | 34,268 | 7,272 | 216 | 56 | 99% |
-| All files | 219,333 | 11,263 | 6,465 | 78 | 97% |
+| Source code (`app/`, `core/`, `pipeline/`, `server/`, `scripts/`) | 35,871 | 7,547 | 287 | 80 | 99% |
+| All files | 222,299 | 11,548 | 10,366 | 105 | 96% |
 
 All files includes the Muse Code session transcripts in `agent-logs/`, the vendored skills in `.agents/` and `package-lock.json`.
 
 ## Pull requests
 
-46 merged PRs contain Muse commits. Each carries the `Muse Code` label.
+47 merged PRs contain Muse commits. Each carries the `Muse Code` label.
 
 | PR | Title | Merged (UTC-3) | Muse commits |
 | --- | --- | --- | --- |
@@ -70,3 +70,4 @@ All files includes the Muse Code session transcripts in `agent-logs/`, the vendo
 | [#48](https://github.com/martinmw13/LectorIA-meta/pull/48) | Rain button skins (engraving, watercolor, ink) and a single skin owner | 2026-10-28 | 13 of 13 |
 | [#49](https://github.com/martinmw13/LectorIA-meta/pull/49) | Image style follows the active skin | 2026-10-28 | 2 of 4 |
 | [#53](https://github.com/martinmw13/LectorIA-meta/pull/53) | Continuous native scroll through the whole book, no Begin gate | 2026-10-28 | 6 of 8 |
+| [#54](https://github.com/martinmw13/LectorIA-meta/pull/54) | Picture this: skin drawings while the picture loads, boxless button and popover | 2026-10-28 | 10 of 20 |

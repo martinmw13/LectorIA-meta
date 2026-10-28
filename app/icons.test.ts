@@ -7,8 +7,15 @@ import { BASE_ICONS, ICON_SETS, Icon, iconSkin, type IconName } from "./icons";
 import { DEFAULT_SKIN, SKINS } from "./skin";
 
 // app/player.tsx keeps its inline SVGs until its open PR lands, then it
-// migrates to the registry.
-const ALLOWLIST = new Set(["app/icons.tsx", "app/player.tsx"]);
+// migrates to the registry. app/folio/picture-draw.tsx is the Picture this
+// drawing canvas, not an icon. app/folio/picture-button.tsx holds the
+// per-skin button art until it moves into the registry as a skinned icon.
+const ALLOWLIST = new Set([
+  "app/icons.tsx",
+  "app/player.tsx",
+  "app/folio/picture-draw.tsx",
+  "app/folio/picture-button.tsx",
+]);
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {

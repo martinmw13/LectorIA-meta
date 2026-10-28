@@ -1,0 +1,10 @@
+# Review task 43 (Picture this drawing slot)
+
+Worktree /workspace/wt-43, branch `picture-this-draw`. Read AGENTS.md. Review `git diff origin/main...HEAD` against docs/tasks/43-picture-this-draw.md, agent-logs/prompts/43-impl.md and agent-logs/prompts/43-impl2.md. Use the `ponytail-review` and `blast-radius` skills; if a skill cannot be loaded, do the analysis yourself with grep and continue. Never stop to ask.
+Check in particular:
+- Never block on the animation: when /api/images returns ready, the drawing freezes at once (rAF cancelled, no further strokes), the img mounts immediately beneath/over it, and the reveal is short (≤ 900 ms) in both app/folio/image-pane.tsx and app/folio/inline-figures.tsx. No timer or promise waits for a drawing pass to finish. No blank flash between drawing and image; behaviour if the img errors.
+- Skins: engraving = etching needle in an oval vignette, sepia then colour; watercolor = blooming washes; ink = ballpoint doodle. `pictureSkin()` reads html data-skin, then ?skin=, unknown values (including "default") fall back to engraving; SSR-safe, no hydration mismatch.
+- The picture button has no box/frame, still reads as clickable (cursor, hover, focus-visible ring, accessible name), animates only on hover/active/state change, no idle infinite animations. prefers-reduced-motion gives a static drawing and a ≤ 200 ms fade.
+- Copy is English and warm, never "Generated"; light mode; Meta blue, no purple. No Picture this on chapter covers. No keys or secrets client-side. rAF and listeners cleaned up on unmount; no leaks when the scene changes mid-draw.
+- Tests in app/folio/*.test.tsx assert behaviour (freeze on ready, accumulate, reduced motion), not implementation details.
+Write docs/reviews/43.md in the style of docs/reviews/37.md: verdict (approve / changes needed), findings ranked with file:line, and what you ran. Run `npm test` and `npm run typecheck` (Node 22 is on PATH via $HOME/.local/node22/bin; prefix PATH if needed). Fix nothing in code; only write the review file and commit it ("Add review 43"). Do not push. Do not run `next dev` or `next start`. No network installs. No paid API calls.

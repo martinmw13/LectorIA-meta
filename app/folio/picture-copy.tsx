@@ -5,7 +5,6 @@
 import { Icon } from "../icons";
 
 export const PICTURE_COPY = {
-  loading: "Sketching…",
   retry: "Try again",
   remove: "Remove picture",
 } as const;

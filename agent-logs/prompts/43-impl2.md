@@ -1,0 +1,13 @@
+# Task 43, round 2: fixes from the visual check
+
+Same worktree /workspace/wt-43, branch `picture-this-draw`. Read AGENTS.md, docs/tasks/43-picture-this-draw.md and agent-logs/prompts/43-impl.md (round 1 brief). Same rules. Never stop to ask. Do not run `next dev`/`next start` (next dev rewrites AGENTS.md). For tests use Node 22: `export PATH=$HOME/.local/node22/bin:$PATH` before `npm test` (jsdom fails on Node 20; do not npm install anything; the network is off).
+
+The manager ran the branch in a browser at a 1440x900 viewport (image pane is ~320 px wide). Screenshots: `.muse-ref/strip-engraving.png`, `.muse-ref/strip-watercolor.png`, `.muse-ref/strip-ink.png` (left to right: idle, hover, 150 ms after click, 3 s, 7 s, reveal, ready). Fix these:
+
+1. **Idle buttons overflow.** In the narrow pane the "Picture this scene | Picture the chapter" pair is clipped off the right edge. Make the pair fit the pane at every width the pane has (e.g. stack the two buttons vertically, centred, with the art on each; no divider line needed when stacked). Keep them frameless.
+2. **Paper must fill the slot.** The drawing SVG is letterboxed (bands of the old placeholder above and below). The skin paper should cover the whole image slot like the real image will (e.g. `preserveAspectRatio="xMidYMid slice"` on the art SVG, or equivalent), with the sketch staying centred and visible.
+3. **The drawing must never erase itself.** At ~7 s the ink and engraving loops reset every path to blank and start over. Like the prototype, passes must ACCUMULATE: outline first, then shading layers on top; once all passes are drawn, keep adding further light shading passes on top (or re-trace with low opacity) so the tool keeps working, but never wipe what is already on the paper while the picture is still coming.
+4. **No blank flash between drawing and picture.** When the card turns ready, keep the paper/drawing visible beneath the <img> until the image has actually loaded (`onLoad` / `complete`), then play the short skin reveal over it (<= ~900 ms) and remove the drawing. The drawing must stop animating the instant the card turns ready (freeze in place), never block on the animation. If the image errors, behave as today. Apply to both the pane and inline figures. Reduced motion: frozen still drawing, <= 200 ms fade.
+5. Keep everything else from round 1. Update/add the jsdom test so it covers: ready -> drawing frozen (no further rAF work), image present immediately, drawing removed after load. Keep files under the size hook.
+
+Done when typecheck, npm test (Node 22), check:secrets, check:size, check:isolation and `npm run build` pass. Commit with clear messages (hook adds trailer). Do not push.
