@@ -69,7 +69,7 @@
 }
 
 /* Word mark: an absolutely positioned overlay that never touches flow,
-// so pagination never reflows under the highlight. */
+   so pagination never reflows under the highlight. */
 .narr-mark {
   position: absolute;
   pointer-events: none;
