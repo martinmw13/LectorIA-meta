@@ -29,7 +29,14 @@ function pickSource(sources: AmbienceSource[]): AmbienceSource | null {
 }
 
 export class WebAmbienceEngine implements AmbienceEngine {
+  private createContext: () => AudioContext;
+
+  constructor(options: { context?: () => AudioContext } = {}) {
+    this.createContext = options.context ?? context;
+  }
+
   load(sources: AmbienceSource[]): Promise<AudioBuffer> {
+    const ctx = this.createContext();
     const picked = pickSource(sources);
     if (!picked) return Promise.reject(new Error("no ambience sources"));
     let pending = decoded.get(picked.src);
@@ -37,7 +44,7 @@ export class WebAmbienceEngine implements AmbienceEngine {
       pending = (async () => {
         const response = await fetch(picked.src);
         if (!response.ok) throw new Error(`ambience fetch failed: ${picked.src}`);
-        return context().decodeAudioData(await response.arrayBuffer());
+        return ctx.decodeAudioData(await response.arrayBuffer());
       })();
       decoded.set(picked.src, pending);
       pending.then(null, () => void decoded.delete(picked.src));
@@ -46,41 +53,75 @@ export class WebAmbienceEngine implements AmbienceEngine {
   }
 
   start(handle: unknown, gain: number, fadeSec: number): AmbienceVoice {
-    const ctx = context();
+    const ctx = this.createContext();
     const source = ctx.createBufferSource();
     source.buffer = handle as AudioBuffer;
     source.loop = true;
-    const out = ctx.createGain();
-    out.gain.value = 0;
-    source.connect(out);
-    out.connect(ctx.destination);
+    // One curve per node, so a later event never overlaps an active curve.
+    const fadeIn = ctx.createGain();
+    const fadeOut = ctx.createGain();
+    const level = ctx.createGain();
     const at = ctx.currentTime;
+    fadeOut.gain.value = 1;
+    level.gain.value = gain;
     if (fadeSec > 0) {
-      // Sine curve in, so the crossfade keeps equal power with the
-      // outgoing voice fading out over the same span.
-      const curve = new Float32Array(32).map((_, i) => gain * Math.sin(((i / 31) * Math.PI) / 2));
-      out.gain.setValueCurveAtTime(curve, at, fadeSec);
+      // Sine in, matching the outgoing voice's cosine out for equal power.
+      fadeIn.gain.value = 0;
+      const curve = new Float32Array(32).map((_, i) => Math.sin(((i / 31) * Math.PI) / 2));
+      try {
+        fadeIn.gain.setValueCurveAtTime(curve, at, fadeSec);
+      } catch {
+        fadeIn.gain.value = 1;
+      }
     } else {
-      out.gain.setValueAtTime(gain, at);
+      fadeIn.gain.value = 1;
     }
+    source.connect(fadeIn);
+    fadeIn.connect(fadeOut);
+    fadeOut.connect(level);
+    level.connect(ctx.destination);
     source.start(at);
+    let stopped = false;
+    const disconnect = () => {
+      source.disconnect();
+      fadeIn.disconnect();
+      fadeOut.disconnect();
+      level.disconnect();
+    };
     return {
       ramp(next: number, sec: number) {
+        // Level never holds a curve, so cancel + anchor + ramp cannot overlap one.
         const now = ctx.currentTime;
-        out.gain.cancelScheduledValues(now);
-        out.gain.setValueAtTime(out.gain.value, now);
-        out.gain.linearRampToValueAtTime(next, now + Math.max(0, sec));
+        try {
+          level.gain.cancelScheduledValues(now);
+          level.gain.setValueAtTime(level.gain.value, now);
+          level.gain.linearRampToValueAtTime(next, now + Math.max(0, sec));
+        } catch {
+          level.gain.value = next;
+        }
       },
       stop(sec: number) {
+        if (stopped) return;
+        stopped = true;
         const now = ctx.currentTime;
         const span = Math.max(0, sec);
-        out.gain.cancelScheduledValues(now);
-        out.gain.setValueAtTime(out.gain.value, now);
-        out.gain.linearRampToValueAtTime(0, now + span);
-        source.onended = () => {
-          source.disconnect();
-          out.disconnect();
-        };
+        if (span <= 0) {
+          try {
+            source.stop(now);
+          } catch {
+            // Already stopped.
+          }
+          disconnect();
+          return;
+        }
+        // Cosine out over the same span: sin^2 + cos^2 keeps equal power.
+        const curve = new Float32Array(32).map((_, i) => Math.cos(((i / 31) * Math.PI) / 2));
+        try {
+          fadeOut.gain.setValueCurveAtTime(curve, now, span);
+        } catch {
+          fadeOut.gain.value = 0;
+        }
+        source.onended = () => disconnect();
         try {
           source.stop(now + span);
         } catch {
@@ -91,6 +132,6 @@ export class WebAmbienceEngine implements AmbienceEngine {
   }
 
   unlock(): Promise<void> {
-    return context().resume().then(() => undefined);
+    return this.createContext().resume().then(() => undefined);
   }
 }
