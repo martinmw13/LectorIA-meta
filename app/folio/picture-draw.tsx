@@ -1,6 +1,6 @@
-// Skin-matched drawing shown while the picture loads. The parent
-// mounts this in the loading phase and unmounts it the instant the
-// image is ready, so the drawing always stops wherever it is.
+// Skin-matched drawing shown while the picture loads. The parent keeps
+// a frozen still mounted under the image until it loads, so the drawing
+// stops the instant the card turns ready.
 "use client";
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
@@ -92,16 +92,25 @@ interface FlatStroke {
 }
 
 export function usePictureLoaded(url: string) {
-  // True once the ready image has actually loaded. Resets per url; a
-  // cached image reports complete on mount, otherwise onLoad fires.
-  const [loaded, setLoaded] = useState(false);
-  useEffect(() => {
-    setLoaded(false);
-  }, [url]);
-  const imgRef = useCallback((el: HTMLImageElement | null) => {
-    if (el && el.complete && el.naturalWidth > 0) setLoaded(true);
-  }, []);
-  const markLoaded = useCallback(() => setLoaded(true), []);
+  // True once the ready image has actually loaded. The url sits next to
+  // the flag so a cached ready-to-ready swap resets in the same render,
+  // never flashing the new image as revealed.
+  const [state, setState] = useState({ url, loaded: false });
+  if (state.url !== url) setState({ url, loaded: false });
+  // Derived, so even the resetting render reports the new url as waiting.
+  const loaded = state.url === url && state.loaded;
+  const imgRef = useCallback(
+    (el: HTMLImageElement | null) => {
+      if (el && el.complete && el.naturalWidth > 0)
+        setState((s) => (s.url === url ? { ...s, loaded: true } : s));
+    },
+    [url],
+  );
+  // Late events from a previous image must not mark the new url loaded.
+  const markLoaded = useCallback(
+    () => setState((s) => (s.url === url ? { ...s, loaded: true } : s)),
+    [url],
+  );
   return { loaded, imgRef, markLoaded };
 }
 
