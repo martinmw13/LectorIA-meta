@@ -29,7 +29,7 @@ scene id with letter-suffixed later parts; provenance lands under
 `final_left`/`final_right` from the re-classified parts,
 `decided_by`), plus `merged_back` (parts re-classified to the same top
 emotion and folded back), `rejected` (Muse declined), and
-`window_failures` (Jev failed, scene left whole).
+`window_failures` (Jev failed, scene left whole) and `muse_failures` (Muse resplit call or titles failed, scene left whole).
 
 ## Scene reader
 

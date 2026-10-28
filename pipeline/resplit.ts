@@ -1,6 +1,7 @@
 // Step: re-split scenes where the dominant emotion changes strongly
 // along the text. Reads book.json and analysis.json, rewrites
 // scenes.json and analysis.json. Skips when provenance.resplit exists.
+// A Muse resplit failure keeps the scene whole and lands in muse_failures.
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { renormalize8 } from "../core/emotion";
@@ -93,6 +94,11 @@ function newUsage(model: string): Usage {
   return { jevRequests: 0, jevInputTokens: 0, jevOutputTokens: 0, meta: { model, requests: 0, promptTokens: 0, cachedTokens: 0, completionTokens: 0, costUsd: 0 } };
 }
 
+function museFailureReason(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.slice(0, 200);
+}
+
 function trackMeta(usage: Usage, result: { promptTokens: number; cachedTokens: number; completionTokens: number }): void {
   usage.meta.requests += 1;
   usage.meta.promptTokens += result.promptTokens;
@@ -134,6 +140,7 @@ export async function runResplit(ctx: StepCtx, deps: { jev: JevClient; meta: Met
   const candidates = analysisFile.scenes.filter((s) => isResplitCandidate(wordsOf(s), s.final));
   let windowsClassified = 0;
   const windowFailures: string[] = [];
+  const museFailures: { from: string; reason: string }[] = [];
   const rejected: ResplitRejected[] = [];
   const mergedBack: ResplitMergedBack[] = [];
 
@@ -165,50 +172,62 @@ export async function runResplit(ctx: StepCtx, deps: { jev: JevClient; meta: Met
     if (windows.length < 2) return null;
     const taken: { call: SplitCall; by: "rule" | "muse" }[] = [];
     const reasons = new Map<number, string>();
-    const cuts = await planSplits(
-      windows,
-      async (call) => {
-        const boundaryN = windows[call.index]?.startN ?? 0;
-        const before = paragraphs.filter((p) => p.n < boundaryN).slice(-2);
-        const after = paragraphs.filter((p) => p.n >= boundaryN).slice(0, 2);
-        const left = meanVector(windows.slice(0, call.index));
-        const right = meanVector(windows.slice(call.index));
-        const result = await deps.meta.completeJson({
-          system: "You judge whether a scene needs two music tracks. Answer with JSON only.",
-          user:
-            `Scene "${scene.title}" may change mood at paragraph ${windows[call.index]?.startN}. ` +
-            `Left mood ${call.left} ${JSON.stringify(left)}, right mood ${call.right} ${JSON.stringify(right)}. ` +
-            `Split only when the dominant feeling changes strongly and stays changed, not for a mixed blend. ` +
-            `Before: ${before.map((p) => `[${p.n}] ${p.text}`).join("\n")}\nAfter: ${after.map((p) => `[${p.n}] ${p.text}`).join("\n")}`,
-          schemaName: "resplit_decision",
-          schema: DECISION_SCHEMA,
-        });
-        trackMeta(usage, result);
-        const data = result.data as { split?: unknown; reason?: unknown };
-        const split = data.split === true;
-        const reason = String(data.reason ?? "");
-        if (split) reasons.set(call.index, reason);
-        else rejected.push({ from: scene.id, at_n: boundaryN, margin: call.margin, window_left: call.left, window_right: call.right, reason });
-        return split;
-      },
-      (call, by) => taken.push({ call, by }),
-    );
+    let cuts: number[];
+    try {
+      cuts = await planSplits(
+        windows,
+        async (call) => {
+          const boundaryN = windows[call.index]?.startN ?? 0;
+          const before = paragraphs.filter((p) => p.n < boundaryN).slice(-2);
+          const after = paragraphs.filter((p) => p.n >= boundaryN).slice(0, 2);
+          const left = meanVector(windows.slice(0, call.index));
+          const right = meanVector(windows.slice(call.index));
+          const result = await deps.meta.completeJson({
+            system: "You judge whether a scene needs two music tracks. Answer with JSON only.",
+            user:
+              `Scene "${scene.title}" may change mood at paragraph ${windows[call.index]?.startN}. ` +
+              `Left mood ${call.left} ${JSON.stringify(left)}, right mood ${call.right} ${JSON.stringify(right)}. ` +
+              `Split only when the dominant feeling changes strongly and stays changed, not for a mixed blend. ` +
+              `Before: ${before.map((p) => `[${p.n}] ${p.text}`).join("\n")}\nAfter: ${after.map((p) => `[${p.n}] ${p.text}`).join("\n")}`,
+            schemaName: "resplit_decision",
+            schema: DECISION_SCHEMA,
+          });
+          trackMeta(usage, result);
+          const data = result.data as { split?: unknown; reason?: unknown };
+          const split = data.split === true;
+          const reason = String(data.reason ?? "");
+          if (split) reasons.set(call.index, reason);
+          else rejected.push({ from: scene.id, at_n: boundaryN, margin: call.margin, window_left: call.left, window_right: call.right, reason });
+          return split;
+        },
+        (call, by) => taken.push({ call, by }),
+      );
+    } catch (err) {
+      museFailures.push({ from: scene.id, reason: museFailureReason(err) });
+      return null;
+    }
     if (cuts.length === 0) return null;
     const bounds = [0, ...cuts, windows.length];
     const ranges = bounds.slice(1).map((end, i) => ({ startN: windows[bounds[i] ?? 0]?.startN ?? 0, endN: windows[end - 1]?.endN ?? 0 }));
-    const result = await deps.meta.completeJson({
-      system: "You split a book scene into ordered parts. Answer with JSON only, English titles in the style of the existing scene titles.",
-      user:
-        `Scene "${scene.title}" (${scene.id}, summary: ${scene.summary}) splits into ${ranges.length} parts. ` +
-        `Give each part start_n, end_n, title, summary, and characters.\n` +
-        ranges.map((r, i) => `PART ${i + 1} [${r.startN}..${r.endN}]:\n${paragraphs.filter((p) => p.n >= r.startN && p.n <= r.endN).map((p) => `[${p.n}] ${p.text}`).join("\n")}`).join("\n"),
-      schemaName: "resplit_titles",
-      schema: TITLES_SCHEMA,
-    });
-    trackMeta(usage, result);
-    const parts = (result.data as { parts?: { start_n: number; end_n: number; title: string; summary: string; characters: unknown }[] }).parts ?? [];
-    if (parts.length !== ranges.length || parts.some((p, i) => p.start_n !== ranges[i]?.startN || p.end_n !== ranges[i]?.endN)) {
-      throw new Error(`scene ${scene.id} titles do not cover the split ranges`);
+    let parts: { start_n: number; end_n: number; title: string; summary: string; characters: unknown }[];
+    try {
+      const result = await deps.meta.completeJson({
+        system: "You split a book scene into ordered parts. Answer with JSON only, English titles in the style of the existing scene titles.",
+        user:
+          `Scene "${scene.title}" (${scene.id}, summary: ${scene.summary}) splits into ${ranges.length} parts. ` +
+          `Give each part start_n, end_n, title, summary, and characters.\n` +
+          ranges.map((r, i) => `PART ${i + 1} [${r.startN}..${r.endN}]:\n${paragraphs.filter((p) => p.n >= r.startN && p.n <= r.endN).map((p) => `[${p.n}] ${p.text}`).join("\n")}`).join("\n"),
+        schemaName: "resplit_titles",
+        schema: TITLES_SCHEMA,
+      });
+      trackMeta(usage, result);
+      parts = (result.data as { parts?: { start_n: number; end_n: number; title: string; summary: string; characters: unknown }[] }).parts ?? [];
+      if (parts.length !== ranges.length || parts.some((p, i) => p.start_n !== ranges[i]?.startN || p.end_n !== ranges[i]?.endN)) {
+        throw new Error("titles do not cover the split ranges");
+      }
+    } catch (err) {
+      museFailures.push({ from: scene.id, reason: museFailureReason(err) });
+      return null;
     }
     const bases = parts.map((part) => ({
       ch: scene.ch,
@@ -374,6 +393,7 @@ export async function runResplit(ctx: StepCtx, deps: { jev: JevClient; meta: Met
           merged_back: mergedBack,
           rejected: rejected,
           window_failures: windowFailures,
+          muse_failures: museFailures,
           jev: { model: deps.jev.model, requests: usage.jevRequests, input_tokens: usage.jevInputTokens, output_tokens: usage.jevOutputTokens, cost_usd: jevCost },
           meta: { model: usage.meta.model, requests: usage.meta.requests, prompt_tokens: usage.meta.promptTokens, cached_tokens: usage.meta.cachedTokens, completion_tokens: usage.meta.completionTokens, cost_usd: usage.meta.costUsd },
         },

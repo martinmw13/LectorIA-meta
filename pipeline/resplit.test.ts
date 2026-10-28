@@ -299,4 +299,71 @@ describe("runResplit with fake clients", () => {
       expect(entry.margin).toBeGreaterThanOrEqual(0.3);
     }
   });
+
+  const museFailJev = (): JevClient => ({
+    model: "jev-1.14.0",
+    classify: async ({ scene }) => {
+      const marker = ["meadow", "storm", "uneasy", "tense", "quiet"].find((m) => scene.includes(m)) ?? "quiet";
+      const vector = V[marker];
+      if (!vector) throw new Error(`no fake vector for ${marker}`);
+      return jevResult(vector, marker === "storm" || marker === "tense" ? "combate" : "calma");
+    },
+  });
+  const titlesParts = (user: string) =>
+    [...user.matchAll(/PART \d+ \[(\d+)\.\.(\d+)\]/g)].map((m, i) => ({ start_n: Number(m[1]), end_n: Number(m[2]), title: `Part ${i + 1}`, summary: "s", characters: [] }));
+  const okTitles = (user: string) => ({ data: { parts: titlesParts(user) }, promptTokens: 1, cachedTokens: 0, completionTokens: 1 });
+  const okDecision = () => ({ data: { split: true, reason: "Mood shifts and stays." }, promptTokens: 1, cachedTokens: 0, completionTokens: 1 });
+  const readMuseFailures = (dir: string) =>
+    (JSON.parse(readFileSync(join(dir, "analysis.json"), "utf8")) as { provenance: { resplit: { muse_failures: unknown } } }).provenance.resplit.muse_failures;
+  const expectOtherSceneSplit = (dir: string, scenes: AnalyzedScene[]) => {
+    expect(scenes.map((s) => s.id)).toEqual(["c1s1", "c1s2", "c1s2b", "c1s3"]);
+    expect(scenes.map((s) => [s.start_n, s.end_n])).toEqual([[1, 4], [5, 6], [7, 8], [9, 10]]);
+    const book = JSON.parse(readFileSync(join(dir, "book.json"), "utf8"));
+    expect(validateBookCoverage(book, scenes)).toEqual([]);
+  };
+
+  it("keeps the scene whole when titles do not cover the split ranges", async () => {
+    const dir = setupDir();
+    const meta: MetaClient = {
+      model: "meta-test",
+      completeJson: async ({ schemaName, user }) => {
+        if (schemaName === "resplit_decision") return okDecision();
+        const parts = titlesParts(user);
+        if (user.includes("c1s1")) parts[0]!.start_n += 1;
+        return { data: { parts }, promptTokens: 1, cachedTokens: 0, completionTokens: 1 };
+      },
+    };
+    const scenes = await runResplit({ bookKey: "oz", force: true, dir }, { jev: museFailJev(), meta });
+    expectOtherSceneSplit(dir, scenes);
+    expect(readMuseFailures(dir)).toEqual([{ from: "c1s1", reason: "titles do not cover the split ranges" }]);
+  });
+
+  it("keeps the scene whole when the titles call rejects", async () => {
+    const dir = setupDir();
+    const meta: MetaClient = {
+      model: "meta-test",
+      completeJson: async ({ schemaName, user }) => {
+        if (schemaName === "resplit_decision") return okDecision();
+        if (user.includes("c1s1")) throw new Error("titles boom");
+        return okTitles(user);
+      },
+    };
+    const scenes = await runResplit({ bookKey: "oz", force: true, dir }, { jev: museFailJev(), meta });
+    expectOtherSceneSplit(dir, scenes);
+    expect(readMuseFailures(dir)).toEqual([{ from: "c1s1", reason: "titles boom" }]);
+  });
+
+  it("keeps the scene whole when the resplit decision ask rejects", async () => {
+    const dir = setupDir();
+    const meta: MetaClient = {
+      model: "meta-test",
+      completeJson: async ({ schemaName, user }) => {
+        if (schemaName === "resplit_decision") throw new Error("decision down");
+        return okTitles(user);
+      },
+    };
+    const scenes = await runResplit({ bookKey: "oz", force: true, dir }, { jev: museFailJev(), meta });
+    expect(scenes.map((s) => s.id)).toEqual(["c1s1", "c1s1b", "c1s2", "c1s3"]);
+    expect(readMuseFailures(dir)).toEqual([{ from: "c1s2", reason: "decision down" }]);
+  });
 });
