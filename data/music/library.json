@@ -44,7 +44,7 @@
   ],
   "entries": {
     "grieg-peer-gynt-morning": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/grieg-peer-gynt-morning.mp3",
+      "src": "/music/v1/cnso/grieg-peer-gynt-morning.webm",
       "soundtrack": "cnso",
       "durationSec": 229.22,
       "title": "Peer Gynt Suite No. 1 – I. Morning Mood",
@@ -56,7 +56,7 @@
       "source": "recording"
     },
     "brahms-sym3-2": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/brahms-sym3-2.mp3",
+      "src": "/music/v1/cnso/brahms-sym3-2.webm",
       "soundtrack": "cnso",
       "durationSec": 529.32,
       "title": "Symphony No. 3 – II",
@@ -68,7 +68,7 @@
       "source": "recording"
     },
     "borodin-steppes": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/borodin-steppes.mp3",
+      "src": "/music/v1/cnso/borodin-steppes.webm",
       "soundtrack": "cnso",
       "durationSec": 458.27,
       "title": "In the Steppes of Central Asia",
@@ -80,7 +80,7 @@
       "source": "recording"
     },
     "mendelssohn-italian-1": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/mendelssohn-italian-1.mp3",
+      "src": "/music/v1/cnso/mendelssohn-italian-1.webm",
       "soundtrack": "cnso",
       "durationSec": 463.05,
       "title": "Symphony No. 4 \"Italian\" – I",
@@ -92,7 +92,7 @@
       "source": "recording"
     },
     "mozart-magic-flute-overture": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/mozart-magic-flute-overture.mp3",
+      "src": "/music/v1/cnso/mozart-magic-flute-overture.webm",
       "soundtrack": "cnso",
       "durationSec": 400.82,
       "title": "The Magic Flute – Overture",
@@ -104,7 +104,7 @@
       "source": "recording"
     },
     "mendelssohn-scottish-2": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/mendelssohn-scottish-2.mp3",
+      "src": "/music/v1/cnso/mendelssohn-scottish-2.webm",
       "soundtrack": "cnso",
       "durationSec": 264.05,
       "title": "Symphony No. 3 \"Scottish\" – II",
@@ -116,7 +116,7 @@
       "source": "recording"
     },
     "grieg-peer-gynt-aase": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/grieg-peer-gynt-aase.mp3",
+      "src": "/music/v1/cnso/grieg-peer-gynt-aase.webm",
       "soundtrack": "cnso",
       "durationSec": 273.84,
       "title": "Peer Gynt Suite No. 1 – II. The Death of Åse",
@@ -128,7 +128,7 @@
       "source": "recording"
     },
     "brahms-sym3-3": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/brahms-sym3-3.mp3",
+      "src": "/music/v1/cnso/brahms-sym3-3.webm",
       "soundtrack": "cnso",
       "durationSec": 370.13,
       "title": "Symphony No. 3 – III",
@@ -140,7 +140,7 @@
       "source": "recording"
     },
     "tchaikovsky-sym6-4": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/tchaikovsky-sym6-4.mp3",
+      "src": "/music/v1/cnso/tchaikovsky-sym6-4.webm",
       "soundtrack": "cnso",
       "durationSec": 619.02,
       "title": "Symphony No. 6 \"Pathétique\" – IV",
@@ -152,7 +152,7 @@
       "source": "recording"
     },
     "beethoven-coriolan": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/beethoven-coriolan.mp3",
+      "src": "/music/v1/cnso/beethoven-coriolan.webm",
       "soundtrack": "cnso",
       "durationSec": 498.76,
       "title": "Coriolan Overture",
@@ -164,7 +164,7 @@
       "source": "recording"
     },
     "brahms-tragic-overture": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/brahms-tragic-overture.mp3",
+      "src": "/music/v1/cnso/brahms-tragic-overture.webm",
       "soundtrack": "cnso",
       "durationSec": 829.75,
       "title": "Tragic Overture",
@@ -176,7 +176,7 @@
       "source": "recording"
     },
     "grieg-peer-gynt-mountain-king": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/grieg-peer-gynt-mountain-king.mp3",
+      "src": "/music/v1/cnso/grieg-peer-gynt-mountain-king.webm",
       "soundtrack": "cnso",
       "durationSec": 154.12,
       "title": "Peer Gynt Suite No. 1 – IV. In the Hall of the Mountain King",
@@ -188,7 +188,7 @@
       "source": "recording"
     },
     "grieg-peer-gynt-anitra": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/grieg-peer-gynt-anitra.mp3",
+      "src": "/music/v1/cnso/grieg-peer-gynt-anitra.webm",
       "soundtrack": "cnso",
       "durationSec": 239.7,
       "title": "Peer Gynt Suite No. 1 – III. Anitra's Dance",
@@ -200,7 +200,7 @@
       "source": "recording"
     },
     "mendelssohn-scottish-1": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/mendelssohn-scottish-1.mp3",
+      "src": "/music/v1/cnso/mendelssohn-scottish-1.webm",
       "soundtrack": "cnso",
       "durationSec": 845.87,
       "title": "Symphony No. 3 \"Scottish\" – I",
@@ -212,7 +212,7 @@
       "source": "recording"
     },
     "brahms-sym4-2": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/brahms-sym4-2.mp3",
+      "src": "/music/v1/cnso/brahms-sym4-2.webm",
       "soundtrack": "cnso",
       "durationSec": 674.19,
       "title": "Symphony No. 4 – II",
@@ -224,7 +224,7 @@
       "source": "recording"
     },
     "mendelssohn-hebrides": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/mendelssohn-hebrides.mp3",
+      "src": "/music/v1/cnso/mendelssohn-hebrides.webm",
       "soundtrack": "cnso",
       "durationSec": 682.63,
       "title": "The Hebrides Overture",
@@ -236,7 +236,7 @@
       "source": "recording"
     },
     "smetana-vltava": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/smetana-vltava.mp3",
+      "src": "/music/v1/cnso/smetana-vltava.webm",
       "soundtrack": "cnso",
       "durationSec": 770.9,
       "title": "Má vlast – Vltava",
@@ -248,7 +248,7 @@
       "source": "recording"
     },
     "mendelssohn-italian-4": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/mendelssohn-italian-4.mp3",
+      "src": "/music/v1/cnso/mendelssohn-italian-4.webm",
       "soundtrack": "cnso",
       "durationSec": 367.57,
       "title": "Symphony No. 4 \"Italian\" – IV",
@@ -260,7 +260,7 @@
       "source": "recording"
     },
     "tchaikovsky-sym6-3": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/tchaikovsky-sym6-3.mp3",
+      "src": "/music/v1/cnso/tchaikovsky-sym6-3.webm",
       "soundtrack": "cnso",
       "durationSec": 593.08,
       "title": "Symphony No. 6 \"Pathétique\" – III",
@@ -272,7 +272,7 @@
       "source": "recording"
     },
     "brahms-sym3-4": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/brahms-sym3-4.mp3",
+      "src": "/music/v1/cnso/brahms-sym3-4.webm",
       "soundtrack": "cnso",
       "durationSec": 586.37,
       "title": "Symphony No. 3 – IV",
@@ -284,7 +284,7 @@
       "source": "recording"
     },
     "brahms-sym2-4": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/cnso/brahms-sym2-4.mp3",
+      "src": "/music/v1/cnso/brahms-sym2-4.webm",
       "soundtrack": "cnso",
       "durationSec": 585.38,
       "title": "Symphony No. 2 – IV",
@@ -296,7 +296,7 @@
       "source": "recording"
     },
     "holst-mars-skidmore": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/holst/holst-mars-skidmore.mp3",
+      "src": "/music/v1/holst/holst-mars-skidmore.webm",
       "soundtrack": "holst",
       "durationSec": 498.26,
       "gainDb": -5.0,
@@ -309,7 +309,7 @@
       "source": "recording"
     },
     "holst-jupiter-skidmore": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/holst/holst-jupiter-skidmore.mp3",
+      "src": "/music/v1/holst/holst-jupiter-skidmore.webm",
       "soundtrack": "holst",
       "durationSec": 508.5,
       "gainDb": -2.5,
@@ -322,7 +322,7 @@
       "source": "recording"
     },
     "jamendo-742883": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-orquesta/01-calma-love-theme.mp3",
+      "src": "/music/v1/jamendo-orquesta/01-calma-love-theme.webm",
       "soundtrack": "jamendo-orquesta",
       "durationSec": 174.97,
       "gainDb": -2.8,
@@ -334,7 +334,7 @@
       "source": "jamendo"
     },
     "jamendo-875306": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-orquesta/02-calma-nightpass-calmer.mp3",
+      "src": "/music/v1/jamendo-orquesta/02-calma-nightpass-calmer.webm",
       "soundtrack": "jamendo-orquesta",
       "durationSec": 183.9,
       "gainDb": -2.4,
@@ -346,7 +346,7 @@
       "source": "jamendo"
     },
     "jamendo-1402652": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-orquesta/03-alegria-pizzicato-sylvia.mp3",
+      "src": "/music/v1/jamendo-orquesta/03-alegria-pizzicato-sylvia.webm",
       "soundtrack": "jamendo-orquesta",
       "durationSec": 108.64,
       "gainDb": 0.6,
@@ -360,7 +360,7 @@
       "noDerivatives": true
     },
     "jamendo-961892": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-orquesta/04-alegria-un-raton-en-el-escenario.mp3",
+      "src": "/music/v1/jamendo-orquesta/04-alegria-un-raton-en-el-escenario.webm",
       "soundtrack": "jamendo-orquesta",
       "durationSec": 160.78,
       "gainDb": -4.0,
@@ -373,7 +373,7 @@
       "noDerivatives": true
     },
     "jamendo-1402649": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-orquesta/05-tristeza-adagio-albinoni.mp3",
+      "src": "/music/v1/jamendo-orquesta/05-tristeza-adagio-albinoni.webm",
       "soundtrack": "jamendo-orquesta",
       "durationSec": 246.8,
       "gainDb": -1.7,
@@ -387,7 +387,7 @@
       "noDerivatives": true
     },
     "jamendo-1250207": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-orquesta/06-tristeza-day-of-decision.mp3",
+      "src": "/music/v1/jamendo-orquesta/06-tristeza-day-of-decision.webm",
       "soundtrack": "jamendo-orquesta",
       "durationSec": 123.45,
       "gainDb": -7.4,
@@ -400,7 +400,7 @@
       "noDerivatives": true
     },
     "jamendo-1389364": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-orquesta/07-suspenso-the-museum.mp3",
+      "src": "/music/v1/jamendo-orquesta/07-suspenso-the-museum.webm",
       "soundtrack": "jamendo-orquesta",
       "durationSec": 217.05,
       "gainDb": -5.6,
@@ -413,7 +413,7 @@
       "noDerivatives": true
     },
     "jamendo-1306265": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-orquesta/08-suspenso-black-cloud.mp3",
+      "src": "/music/v1/jamendo-orquesta/08-suspenso-black-cloud.webm",
       "soundtrack": "jamendo-orquesta",
       "durationSec": 140.04,
       "gainDb": -6.8,
@@ -425,7 +425,7 @@
       "source": "jamendo"
     },
     "jamendo-1380591": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-orquesta/09-misterio-dark-night-of-the-soul.mp3",
+      "src": "/music/v1/jamendo-orquesta/09-misterio-dark-night-of-the-soul.webm",
       "soundtrack": "jamendo-orquesta",
       "durationSec": 105.9,
       "gainDb": -6.0,
@@ -437,7 +437,7 @@
       "source": "jamendo"
     },
     "jamendo-824306": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-orquesta/10-misterio-june-sonata.mp3",
+      "src": "/music/v1/jamendo-orquesta/10-misterio-june-sonata.webm",
       "soundtrack": "jamendo-orquesta",
       "durationSec": 298.71,
       "gainDb": -9.8,
@@ -450,7 +450,7 @@
       "noDerivatives": true
     },
     "jamendo-1157349": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-orquesta/11-aventura-a-traves-del-viento.mp3",
+      "src": "/music/v1/jamendo-orquesta/11-aventura-a-traves-del-viento.webm",
       "soundtrack": "jamendo-orquesta",
       "durationSec": 179.28,
       "gainDb": -10.0,
@@ -462,7 +462,7 @@
       "source": "jamendo"
     },
     "jamendo-1376563": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-orquesta/12-aventura-the-master-thief.mp3",
+      "src": "/music/v1/jamendo-orquesta/12-aventura-the-master-thief.webm",
       "soundtrack": "jamendo-orquesta",
       "durationSec": 199.37,
       "gainDb": -3.7,
@@ -475,7 +475,7 @@
       "noDerivatives": true
     },
     "jamendo-824301": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-orquesta/13-combate-criminal-fandango.mp3",
+      "src": "/music/v1/jamendo-orquesta/13-combate-criminal-fandango.webm",
       "soundtrack": "jamendo-orquesta",
       "durationSec": 206.71,
       "gainDb": -7.2,
@@ -488,7 +488,7 @@
       "noDerivatives": true
     },
     "jamendo-1253685": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-orquesta/14-combate-wrath-of-the-gods.mp3",
+      "src": "/music/v1/jamendo-orquesta/14-combate-wrath-of-the-gods.webm",
       "soundtrack": "jamendo-orquesta",
       "durationSec": 298.87,
       "gainDb": -5.3,
@@ -500,7 +500,7 @@
       "source": "jamendo"
     },
     "jamendo-1015565": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-orquesta/15-asombro-the-land.mp3",
+      "src": "/music/v1/jamendo-orquesta/15-asombro-the-land.webm",
       "soundtrack": "jamendo-orquesta",
       "durationSec": 158.43,
       "gainDb": -4.9,
@@ -512,7 +512,7 @@
       "source": "jamendo"
     },
     "jamendo-1363176": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-orquesta/16-asombro-sogno-part-1.mp3",
+      "src": "/music/v1/jamendo-orquesta/16-asombro-sogno-part-1.webm",
       "soundtrack": "jamendo-orquesta",
       "durationSec": 96.55,
       "gainDb": -3.4,
@@ -525,7 +525,7 @@
       "noDerivatives": true
     },
     "jamendo-345908": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-piano/01-calma-peaceful-innocence.mp3",
+      "src": "/music/v1/jamendo-piano/01-calma-peaceful-innocence.webm",
       "soundtrack": "jamendo-piano",
       "durationSec": 253.1,
       "title": "Peaceful Innocence",
@@ -536,7 +536,7 @@
       "source": "jamendo"
     },
     "jamendo-847262": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-piano/02-calma-barcarola.mp3",
+      "src": "/music/v1/jamendo-piano/02-calma-barcarola.webm",
       "soundtrack": "jamendo-piano",
       "durationSec": 291.63,
       "gainDb": -6.0,
@@ -548,7 +548,7 @@
       "source": "jamendo"
     },
     "jamendo-1402650": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-piano/03-alegria-rondo-alla-turca.mp3",
+      "src": "/music/v1/jamendo-piano/03-alegria-rondo-alla-turca.webm",
       "soundtrack": "jamendo-piano",
       "durationSec": 219.19,
       "gainDb": -4.8,
@@ -562,7 +562,7 @@
       "noDerivatives": true
     },
     "jamendo-1415221": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-piano/04-alegria-quick-piano.mp3",
+      "src": "/music/v1/jamendo-piano/04-alegria-quick-piano.webm",
       "soundtrack": "jamendo-piano",
       "durationSec": 47.44,
       "gainDb": -6.4,
@@ -575,7 +575,7 @@
       "noDerivatives": true
     },
     "jamendo-26439": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-piano/06-tristeza-sad.mp3",
+      "src": "/music/v1/jamendo-piano/06-tristeza-sad.webm",
       "soundtrack": "jamendo-piano",
       "durationSec": 114.44,
       "gainDb": -1.3,
@@ -587,7 +587,7 @@
       "source": "jamendo"
     },
     "jamendo-1380593": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-piano/09-misterio-cyclic-nature.mp3",
+      "src": "/music/v1/jamendo-piano/09-misterio-cyclic-nature.webm",
       "soundtrack": "jamendo-piano",
       "durationSec": 176.95,
       "gainDb": -4.3,
@@ -599,7 +599,7 @@
       "source": "jamendo"
     },
     "jamendo-1419495": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-piano/11-aventura-the-donut-around-the-hole.mp3",
+      "src": "/music/v1/jamendo-piano/11-aventura-the-donut-around-the-hole.webm",
       "soundtrack": "jamendo-piano",
       "durationSec": 113.06,
       "gainDb": -6.1,
@@ -611,7 +611,7 @@
       "source": "jamendo"
     },
     "jamendo-440619": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-piano/12-aventura-lonely-hero.mp3",
+      "src": "/music/v1/jamendo-piano/12-aventura-lonely-hero.webm",
       "soundtrack": "jamendo-piano",
       "durationSec": 242.36,
       "gainDb": -1.2,
@@ -624,7 +624,7 @@
       "noDerivatives": true
     },
     "jamendo-1084379": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-piano/13-combate-legend.mp3",
+      "src": "/music/v1/jamendo-piano/13-combate-legend.webm",
       "soundtrack": "jamendo-piano",
       "durationSec": 265.8,
       "gainDb": -5.8,
@@ -637,7 +637,7 @@
       "noDerivatives": true
     },
     "jamendo-326584": {
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/jamendo-piano/15-asombro-un-soir-romantique.mp3",
+      "src": "/music/v1/jamendo-piano/15-asombro-un-soir-romantique.webm",
       "soundtrack": "jamendo-piano",
       "durationSec": 252.19,
       "gainDb": -6.4,
@@ -653,7 +653,7 @@
   "extraTracks": [
     {
       "id": "chopin-levy-1-balada-1-op23",
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/chopin-levy/1-balada-1-op23.mp3",
+      "src": "/music/v1/chopin-levy/1-balada-1-op23.webm",
       "title": "Ballade No. 1 in G minor, Op. 23",
       "emotion": "tristeza",
       "vector": {
@@ -683,7 +683,7 @@
     },
     {
       "id": "chopin-levy-2-balada-2-op38",
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/chopin-levy/2-balada-2-op38.mp3",
+      "src": "/music/v1/chopin-levy/2-balada-2-op38.webm",
       "title": "Ballade No. 2 in F major, Op. 38",
       "emotion": "calma",
       "vector": {
@@ -713,7 +713,7 @@
     },
     {
       "id": "chopin-levy-3-balada-3-op47",
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/chopin-levy/3-balada-3-op47.mp3",
+      "src": "/music/v1/chopin-levy/3-balada-3-op47.webm",
       "title": "Ballade No. 3 in A-flat major, Op. 47",
       "emotion": "alegria",
       "vector": {
@@ -743,7 +743,7 @@
     },
     {
       "id": "chopin-levy-4-balada-4-op52",
-      "src": "https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/chopin-levy/4-balada-4-op52.mp3",
+      "src": "/music/v1/chopin-levy/4-balada-4-op52.webm",
       "title": "Ballade No. 4 in F minor, Op. 52",
       "emotion": "tristeza",
       "vector": {

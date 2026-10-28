@@ -12,7 +12,7 @@ manifest migrates inline to one implicit `default` soundtrack of style
 the display name. `Soundtrack = { id, name, style }` plus
 optional `credit`. `Track = { id, src, title, emotion, vector,
 intensity, tempo, durationSec, soundtrack, style }` plus optional
-`startSec` (default 0, where playback starts on first play and on each
+`fallbackSrc`, `startSec` (default 0, where playback starts on first play and on each
 loop), `endSec` (default the media end, where the track stops or loops),
 `gainDb` (default 0, a loudness trim in dB, in -24..12),
 `loop` (default true), `source` (`generated`, `jamendo`, or
@@ -35,9 +35,13 @@ values, a non-boolean
 that is not a `/music/` path or `https` URL. Unknown fields stay
 ignored. A soundtrack with no
 tracks parses. The reader calls it on every fetch, so a bad drop-in
-fails loudly in dev. Remote audio lives on one Blob store, so
-`media-src` in `next.config.ts` lists exactly
-`https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com`. Build the
+fails loudly in dev. Track audio ships from `public/music/v1/`
+as Opus in WebM, so `media-src` in `next.config.ts` is `'self' blob:`
+with no remote host. Optional `fallbackSrc` (a `/music/` path or
+`https` URL) names the same audio in a second container; the reader
+runs `choosePlayableSources` with `canPlayAudio` (the rain loops'
+`canPlayType` probe) and swaps `src` to `fallbackSrc` only when the
+browser cannot play `src` but can play the fallback. Build the
 manifest with `npm run build:music data/music/labels.json
 data/music/library.json --out public/music/manifest.json`, which runs
 `pipeline/labels-to-manifest.ts` and validates the result before

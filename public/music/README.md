@@ -1,18 +1,20 @@
 # Music files
 
 The reader fetches `manifest.json` from the client and plays the listed
-files. Real recordings live in the `lectoria-images` Blob store under
-`music/v1/<soundtrack>/`, never in this repo. No code change is needed
+files. Real recordings live in this repo under
+`public/music/v1/<soundtrack>/` as Opus in WebM (see Track fields), not
+in Blob: Blob transfer is metered at 10 GB a month on the free tier. No code change is needed
 to ship new tracks.
 
 ## Add or relabel tracks
 
-1. Upload the finished file to the store under `music/v1/<soundtrack>/`.
-   Upload ND-licensed tracks unedited. Every track should play at about
+1. Encode the finished file to `public/music/v1/<soundtrack>/<name>.webm`.
+   ND-licensed tracks get only that format change, which CC licenses
+   allow as a technical modification; never cut or remix them. Every track should play at about
    -20 LUFS integrated: either normalize the file, or upload it as is and
    set `gainDb` to `-20 - measured LUFS`. Gain above about +1 dB clips
    at full volume, so a quiet ND track that needs more is left out.
-2. Add one `entries` row in `data/music/library.json` with the Blob `src`,
+2. Add one `entries` row in `data/music/library.json` with the `/music/v1/` `src`,
    the manifest `soundtrack`, the file `durationSec`, and the credit
    fields (`title`, `composer`, `artist`, `license`, `attribution`,
    `sourceUrl`, `source`). Set `gainDb` when the file needs a trim and
@@ -53,9 +55,20 @@ Each track carries the segment `emotion` and vector plus `intensity` and
 `tempo`. `durationSec` is the playable length. `startSec` defaults to 0
 and `endSec` to the media end. `gainDb` trims loud ones down and quiet
 ones up within -24..12 dB. `loop: true` crossfades at `endSec`; `loop:
-false` hands the next pick to the scheduler. `src` values stay as
-`https` Blob URLs. The store host is the only entry in `media-src` in
-`next.config.ts`.
+false` hands the next pick to the scheduler. `src` values are local
+paths under `public/music/v1/<soundtrack>/<name>.webm`: Opus in WebM at
+64 kbps VBR stereo, re-encoded from the original MP3s with no loudness
+change (`gainDb` still applies). Serving from `public/` counts against
+Fast Data Transfer instead of the metered Blob transfer. Safari plays
+Opus in WebM from 17.5 (macOS and iOS), so there is no second file. If
+older Safari ever matters, add an AAC `.m4a` next to each file and a
+`fallbackSrc` in `data/music/library.json`; the reader picks it with
+`canPlayType`. Encode a new track with:
+
+    ffmpeg -i in.mp3 -vn -map_metadata -1 -ac 2 -c:a libopus -b:a 64k \
+      -vbr on -application audio out.webm
+
+Keep each file under 25 MiB.
 
 Validate with `npm test`. The manifest test loads the committed file
 through `parseManifest`. Local `src` values must exist under `public/`;
