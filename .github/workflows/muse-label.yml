@@ -25,5 +25,5 @@ jobs:
             | awk '{s+=$1} END {print s+0}')
           echo "Muse commits: $count"
           if [ "$count" -gt 0 ]; then
-            gh pr edit "$PR" -R "$GITHUB_REPOSITORY" --add-label 'Muse Code'
+            gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$PR/labels" -f 'labels[]=Muse Code' >/dev/null
           fi
