@@ -93,7 +93,7 @@ describe("readImageEnv redis fallback", () => {
     expect(readImageEnv().dailySpendCapMicro).toBe(3_000_000);
   });
 
-  it.each(["abc", "-3", "Infinity"])(
+  it.each(["abc", "-3", "Infinity", "", "  "])(
     "falls back to 2 USD for %s",
     (value) => {
       process.env.UPSTASH_REDIS_REST_URL = "https://upstash-url";
@@ -117,7 +117,7 @@ describe("readImageEnv redis fallback", () => {
     expect(readImageEnv().spendCapMicro).toBe(3_000_000);
   });
 
-  it.each(["abc", "-3", "Infinity"])(
+  it.each(["abc", "-3", "Infinity", "", "  "])(
     "falls back to 10 USD for total cap %s",
     (value) => {
       process.env.UPSTASH_REDIS_REST_URL = "https://upstash-url";

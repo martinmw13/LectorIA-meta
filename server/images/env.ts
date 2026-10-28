@@ -26,10 +26,11 @@ const REQUIRED = [
 ] as const;
 
 // One rule for both caps: a finite, non-negative USD value wins,
-// anything else (missing, non-numeric, negative, Infinity) falls back.
+// anything else (missing, blank, non-numeric, negative, Infinity) falls back.
 // Zero stays valid so a zero cap can intentionally block spend.
 function parseCapUsd(raw: string | undefined, fallback: number): number {
-  const value = Number(raw ?? String(fallback));
+  if (raw === undefined || raw.trim() === "") return fallback;
+  const value = Number(raw);
   return Number.isFinite(value) && value >= 0 ? value : fallback;
 }
 
