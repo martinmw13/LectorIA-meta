@@ -30,15 +30,21 @@ export interface ReaderModel {
   chapters: ReaderChapter[];
 }
 
-// 1280x800 fit: ~560 px of text area at the 19 px / 1.7 book line holds
-// 17 lines; the 65ch column fits ~68 chars per line, so each paragraph
-// costs ceil(chars / 68) lines and short dialogue lines each take a full
-// line. Page one also carries the scene heading, so it budgets one less.
-// Paragraphs stay whole; one over budget takes its own page.
+// 1280x800 fit: the reading column is 595 px tall and the heading block
+// (kicker, title, Scene/Page line) takes ~115 px of it on every page,
+// leaving ~480 px for text. At 20.5px/1.7 each line costs 34.85 px, so a
+// page holds 13 lines; the ~538 px measure fits ~58 chars per line, so
+// each paragraph costs ceil(chars / 58) lines and short dialogue lines
+// each take a full line. Page one also carries the drop cap, so it
+// budgets one less. Paragraphs stay whole; one over budget takes its own
+// page.
 export const PAGE_WORD_BUDGET = 250;
-export const CHARS_PER_LINE = 68;
-export const LINES_PER_PAGE = 17;
-export const FIRST_PAGE_LINES = 16;
+const READ_COL_PX = 595;
+const HEADING_PX = 115;
+const LINE_PX = 20.5 * 1.7;
+export const CHARS_PER_LINE = 58;
+export const LINES_PER_PAGE = Math.floor((READ_COL_PX - HEADING_PX) / LINE_PX);
+export const FIRST_PAGE_LINES = LINES_PER_PAGE - 1;
 
 export interface SubPage {
   paragraphs: ReaderParagraph[];
