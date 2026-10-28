@@ -1,93 +1,10 @@
-// Chapter panels: the offer card on the cover, the spoiler gate, and
-// the comic-page modal. Port of the .proto/v3 panels look, not its code.
+// Chapter panels: the comic-page modal, opened on demand from the pane. Port of the .proto/v3 panels look, not its code.
 "use client";
 
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "../icons";
-import { PANELS_NAME } from "./panels";
 import type { ChapterPanel } from "./panels";
 import { getCachedScenePicture } from "./use-pictures";
-
-export const SPOILER_LINE = "The whole chapter, told in pictures. It gives away what happens, so you may want to read first.";
-
-// Blurred strip of the chapter's thumbs: spoiler-safe, decorative only.
-export function BlurredThumbs({ panels, unblurredCount }: { panels: ChapterPanel[]; unblurredCount?: number }) {
-  const show = unblurredCount === undefined ? panels : panels.slice(0, unblurredCount);
-  return (
-    <div className={unblurredCount === undefined ? "thumb-strip" : "thumb-strip open"} aria-hidden="true">
-      {show.map((p) => (
-        <span key={p.sceneId} className="thumb-tile">
-          {p.art ? <img src={p.art} alt="" loading="lazy" decoding="async" /> : <span className="thumb-empty" />}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-// The cover card, laid out like the skin prototypes: a kicker, the name,
-// the spoiler line, the veiled strip, then reading first as the main choice.
-export function PanelsOfferCard({ panels, onShowAnyway, onReadFirst }: { panels: ChapterPanel[]; onShowAnyway: () => void; onReadFirst: () => void }) {
-  return (
-    <section className="panels-offer" aria-label={PANELS_NAME}>
-      <p className="panels-kicker">Before you begin</p>
-      <p className="panels-name">{PANELS_NAME}</p>
-      <p className="panels-spoiler">{SPOILER_LINE}</p>
-      <div className="panels-veiled">
-        <BlurredThumbs panels={panels} />
-        <span className="panels-veil" aria-hidden="true">
-          <Icon name="eye-off" />
-          Hidden until you&apos;re ready
-        </span>
-      </div>
-      <div className="panels-btns">
-        <button type="button" className="panels-primary" onClick={onReadFirst}>
-          Start reading
-        </button>
-        <button type="button" className="panels-quiet" onClick={onShowAnyway}>
-          <Icon name="eye-off" />
-          Show me anyway
-        </button>
-      </div>
-    </section>
-  );
-}
-
-export function PanelsQuietLink({ onOpen }: { onOpen: (opener: HTMLElement | null) => void }) {
-  return (
-    <button type="button" className="panels-link" onClick={(e) => onOpen(e.currentTarget)}>
-      {PANELS_NAME}
-    </button>
-  );
-}
-
-// Small gate in front of the panels: the spoiler line plus a choice.
-// It never repeats the panels name.
-export function SpoilerGateDialog({ onShow, onNotYet }: { onShow: () => void; onNotYet: () => void }) {
-  const showRef = useRef<HTMLButtonElement | null>(null);
-  useEffect(() => {
-    showRef.current?.focus();
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onNotYet();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onNotYet]);
-  return (
-    <div className="gate-wrap" role="dialog" aria-modal="true" aria-label="Before you look ahead">
-      <div className="gate-card">
-        <p>{SPOILER_LINE}</p>
-        <div className="panels-btns">
-          <button ref={showRef} type="button" className="panels-primary" onClick={onShow}>
-            Show me anyway
-          </button>
-          <button type="button" className="panels-quiet" onClick={onNotYet}>
-            Not yet
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 interface ResolvedPanel extends ChapterPanel {
   url: string | null;
@@ -143,7 +60,7 @@ export function PanelsModal({
     document.addEventListener("keydown", onKey, true);
     return () => {
       document.removeEventListener("keydown", onKey, true);
-      opener?.focus?.();
+      opener?.focus?.({ preventScroll: true });
     };
   }, [onClose]);
 

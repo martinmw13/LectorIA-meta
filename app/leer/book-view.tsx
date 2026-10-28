@@ -17,16 +17,9 @@ import { Lightbox } from "../folio/lightbox";
 import { usePictures } from "../folio/use-pictures";
 import type { InlineFigure } from "../folio/use-pictures";
 import { PictureVault } from "../folio/vault";
-import {
-  chapterSetAside,
-  coverTitleLong,
-  markChapterEndReached,
-  markChapterSetAside,
-  markPanelsShownAnyway,
-  panelsUnlocked,
-} from "../folio/panels";
+import { coverTitleLong } from "../folio/panels";
 import type { ChapterPanel } from "../folio/panels";
-import { PanelsModal, PanelsOfferCard, PanelsQuietLink, SpoilerGateDialog } from "../folio/panels-modal";
+import { PanelsModal } from "../folio/panels-modal";
 import { GOTO_SCENE_EVENT, setCurrentSceneId } from "./current-scene";
 import { attachFollowPause, pickCurrentScene, scrollToSceneId } from "./scroll-helpers";
 import { ReadAlong } from "../narration/read-along";
@@ -55,12 +48,8 @@ export function BookView({
   const pref = effectiveImageStylePref(storedPref, skin);
   const [currentId, setCurrentId] = useState(initialSceneId);
   const [panelsCh, setPanelsCh] = useState<number | null>(null);
-  const [gateCh, setGateCh] = useState<number | null>(null);
-  const [aside, setAside] = useState<Record<number, boolean>>({});
-  const gateOpener = useRef<HTMLElement | null>(null);
   const readColRef = useRef<HTMLDivElement | null>(null);
   const figEls = useRef(new Map<string, HTMLElement>());
-  const maxChRef = useRef(0);
   const pic = usePictures({ bookId: model.bookId, textVersion: model.textVersion, sceneId: currentId, pref });
   const order = useMemo(() => model.chapters.flatMap((c) => c.scenes.map((s) => s.id)), [model]);
   const sceneOf = useMemo(() => {
@@ -86,19 +75,6 @@ export function BookView({
     setCurrentSceneId(id);
     window.history.replaceState(null, "", `/leer/${id}`);
   }, []);
-
-  // Reading past a chapter unlocks its panels, like reaching the old end
-  // page did. Backward scrolling never relocks.
-  useEffect(() => {
-    const at = model.chapters.findIndex((c) => c.ch === info?.ch);
-    if (at > maxChRef.current) {
-      for (let i = maxChRef.current; i < at; i++) {
-        const ch = model.chapters[i]?.ch;
-        if (ch !== undefined) markChapterEndReached(ch);
-      }
-      maxChRef.current = at;
-    }
-  }, [info, model.chapters]);
 
   // Land on the deep-linked scene with no animation, focus the column so
   // native keys scroll it, and pause narration follow on user input.
@@ -153,37 +129,7 @@ export function BookView({
     saveImageStylePref(next);
   }
 
-  function requestPanels(ch: number, opener: HTMLElement | null) {
-    if (panelsUnlocked(ch)) {
-      setPanelsCh(ch);
-      return;
-    }
-    gateOpener.current = opener;
-    setGateCh(ch);
-  }
-
-  function showAnyway() {
-    if (gateCh === null) return;
-    markPanelsShownAnyway(gateCh);
-    setGateCh(null);
-    setPanelsCh(gateCh);
-  }
-
-  function notYet() {
-    setGateCh(null);
-    gateOpener.current?.focus?.();
-    gateOpener.current = null;
-  }
-
-  function readFirst(ch: number) {
-    markChapterSetAside(ch);
-    setAside((prev) => ({ ...prev, [ch]: true }));
-  }
-
-  function showChapterAnyway(ch: number) {
-    markPanelsShownAnyway(ch);
-    setPanelsCh(ch);
-  }
+  const closePanels = useCallback(() => setPanelsCh(null), []);
 
   const figsByN = useMemo(() => groupFiguresByEndN(pic.figures), [pic.figures]);
 
@@ -228,15 +174,13 @@ export function BookView({
         onRetry={() => pic.illustrateScene()}
         onClear={pic.clearScene}
         onOpen={pic.lightbox.open}
-        onPictureChapter={info ? (opener) => requestPanels(info.ch, opener) : null}
+        onPictureChapter={info ? () => setPanelsCh(info.ch) : null}
       />
       <Divider />
       <div className="read-col" ref={readColRef} tabIndex={-1} aria-label="Reading column" onMouseUp={onReadMouseUp}>
         <ReadAlong columnRef={readColRef} />
         {model.chapters.map((chapter) => {
-          const panels = panelsOf.get(chapter.ch) ?? [];
           const coverLong = coverTitleLong(chapter.title);
-          const setAside = aside[chapter.ch] ?? chapterSetAside(chapter.ch);
           return (
             <div className="chapter-block" key={chapter.ch}>
               <div className="kicker">Chapter</div>
@@ -247,15 +191,6 @@ export function BookView({
                 {chapter.title}
               </h1>
               <hr className="cover-rule" />
-              {setAside ? (
-                <PanelsQuietLink onOpen={(el) => requestPanels(chapter.ch, el)} />
-              ) : (
-                <PanelsOfferCard
-                  panels={panels}
-                  onShowAnyway={() => showChapterAnyway(chapter.ch)}
-                  onReadFirst={() => readFirst(chapter.ch)}
-                />
-              )}
               {chapter.scenes.map((s, si) => (
                 <section
                   key={s.id}
@@ -307,7 +242,7 @@ export function BookView({
                   <button
                     type="button"
                     className="panels-link"
-                    onClick={(e) => requestPanels(chapter.ch, e.currentTarget)}
+                    onClick={() => setPanelsCh(chapter.ch)}
                   >
                     Relive this chapter in panels
                   </button>
@@ -337,13 +272,12 @@ export function BookView({
         atBookEnd={bookIndex >= order.length - 1}
       />
       <Lightbox item={pic.lightbox.item} onClose={pic.lightbox.close} />
-      {gateCh !== null ? <SpoilerGateDialog onShow={showAnyway} onNotYet={notYet} /> : null}
       {panelsCh !== null ? (
         <PanelsModal
           ch={panelsCh}
           chapterTitle={titles.get(panelsCh) ?? ""}
           panels={panelsOf.get(panelsCh) ?? []}
-          onClose={() => setPanelsCh(null)}
+          onClose={closePanels}
           onOpenArt={pic.lightbox.open}
         />
       ) : null}

@@ -12,15 +12,17 @@ import { BookView } from "./book-view";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const counts = vi.hoisted(() => ({ book: 0, probe: 0 }));
+const counts = vi.hoisted(() => ({ book: 0, probe: 0, pictureChapter: null as null | ((o: HTMLElement | null) => void) }));
 
 vi.mock("../folio/image-pane", () => ({
-  ImagePane: () => {
+  ImagePane: (props: { onPictureChapter?: ((o: HTMLElement | null) => void) | null }) => {
     counts.book += 1;
+    counts.pictureChapter = props.onPictureChapter ?? null;
     return null;
   },
 }));
 vi.mock("../folio/use-pictures", () => ({
+  getCachedScenePicture: () => null,
   usePictures: () => ({
     card: { phase: "idle" },
     figures: [],
@@ -185,4 +187,30 @@ test("each scene section carries its number and its chapter's scene count, past 
   expect(sections[1]!.style.getPropertyValue("--scene-n")).toBe('"2"');
   expect(sections[30]!.style.getPropertyValue("--scene-n")).toBe('"31"');
   expect(sections[30]!.style.getPropertyValue("--scene-of")).toBe('" of 31"');
+});
+
+test("chapter text shows at once and the pane opens the panels on demand", async () => {
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  const root = createRoot(host);
+  const panels = [{ ch: 1, panels: [{ sceneId: "c1s1", caption: "The cyclone", art: null }] }];
+  await act(async () => {
+    root.render(
+      <NarrationProvider entries={[]} scenes={SCENES} musicLevel={0.5}>
+        <BookView model={MODEL} initialSceneId="c1s1" panelsByChapter={panels} />
+      </NarrationProvider>,
+    );
+  });
+  const text = host.textContent ?? "";
+  expect(host.querySelector("#p1")).not.toBeNull();
+  expect(host.querySelector(".panels-offer")).toBeNull();
+  expect(text).not.toContain("Start reading");
+  expect(document.querySelector(".panels-modal")).toBeNull();
+
+  await act(async () => counts.pictureChapter!(null));
+  expect(document.querySelector(".panels-modal")?.textContent).toContain("The cyclone");
+
+  await act(async () => (document.querySelector(".panels-x") as HTMLButtonElement).click());
+  expect(document.querySelector(".panels-modal")).toBeNull();
+  await act(async () => root.unmount());
 });
