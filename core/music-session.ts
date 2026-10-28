@@ -254,13 +254,9 @@ export function dispatch(session: MusicSession, intent: MusicIntent, ctx: Sessio
         return settle(session, { ...baseOf(session), replayNonce: session.replayNonce + 1 }, ctx);
       }
       const base = { ...baseOf(session), history: popped.hist };
-      const decision = requestManualTrack(
-        session.scheduler,
-        ctx.manifest,
-        popped.id,
-        ctx.nowSec,
-        session.selection,
-      );
+      // Audible scope, not style scope: Previous may return to a track
+      // from before a style change, as it always could.
+      const decision = requestManualTrack(session.scheduler, ctx.manifest, popped.id, ctx.nowSec);
       return settle(session, foldSwitch(base, decision, false), ctx);
     }
     case "styleChanged": {
