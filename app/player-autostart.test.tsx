@@ -60,7 +60,7 @@ async function mount() {
     );
   });
   const button = host.querySelector<HTMLButtonElement>("button.play")!;
-  return { button, root };
+  return { button, root, host };
 }
 
 test("music starts on load without a press", async () => {
@@ -80,6 +80,36 @@ test("blocked autoplay starts on the first gesture, once", async () => {
   expect(button.getAttribute("aria-label")).toBe("Pause");
   await act(async () => {
     document.body.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+  });
+  expect(play).toHaveBeenCalledTimes(2);
+});
+
+test("a first press on the rain button starts blocked music", async () => {
+  play.mockImplementationOnce(blocked);
+  const { button, host } = await mount();
+  expect(button.getAttribute("aria-label")).toBe("Play");
+  const rain = host.querySelector(".rain-group button")!;
+  await act(async () => {
+    rain.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+  });
+  expect(play).toHaveBeenCalledTimes(2);
+  expect(button.getAttribute("aria-label")).toBe("Pause");
+});
+
+test("a press on Play itself leaves the gesture armed for its click", async () => {
+  play.mockImplementationOnce(blocked);
+  const { button } = await mount();
+  await act(async () => {
+    button.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+  });
+  expect(play).toHaveBeenCalledTimes(1);
+  await act(async () => {
+    button.click();
+  });
+  expect(button.getAttribute("aria-label")).toBe("Pause");
+  expect(play).toHaveBeenCalledTimes(2);
+  await act(async () => {
+    document.body.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true }));
   });
   expect(play).toHaveBeenCalledTimes(2);
 });

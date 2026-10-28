@@ -1,7 +1,6 @@
 // Music autostart: reading begins with music unless the user paused it.
 // Blocked autoplay arms a one-shot gesture listener that starts playback.
 import { useEffect, useRef, type RefObject } from "react";
-import type { Track } from "@/core/music";
 
 // An explicit pause sticks across visits: the reader never auto-starts
 // music the user stopped.
@@ -28,36 +27,25 @@ export function rememberPaused(paused: boolean) {
 export function useMusicAutostart({
   trackId,
   rootRef,
-  trackRef,
-  playingRef,
-  startedRef,
-  setStarted,
-  setPlaying,
-  requestPlayRef,
+  startPlayback,
 }: {
   trackId: string | null;
   rootRef: RefObject<HTMLDivElement | null>;
-  trackRef: RefObject<Track | null>;
-  playingRef: RefObject<boolean>;
-  startedRef: RefObject<boolean>;
-  setStarted: (v: boolean) => void;
-  setPlaying: (v: boolean) => void;
-  requestPlayRef: RefObject<(next: Track, durSec: number) => void>;
+  startPlayback: () => void;
 }): { armGestureStart: () => void; disarmGesture: () => void } {
   const disarmRef = useRef<(() => void) | null>(null);
 
-  // Autoplay with sound was blocked: the first gesture anywhere starts the
-  // music once. A gesture on the player itself is left to its own buttons.
+  // Autoplay with sound was blocked: the first gesture anywhere, including
+  // the player's own controls, starts the music once; only the Play/Pause
+  // button is left to its own click.
   function armGestureStart() {
     if (disarmRef.current || pausedByUser()) return;
     const onGesture = (event: Event) => {
+      const playButton = (event.target as Element | null)?.closest?.("button.play");
+      if (playButton && rootRef.current?.contains(playButton)) return;
       disarm();
-      if (rootRef.current?.contains(event.target as Node) || playingRef.current || pausedByUser()) return;
-      const next = trackRef.current;
-      if (!next) return;
-      playingRef.current = true;
-      setPlaying(true);
-      requestPlayRef.current(next, 0);
+      if (pausedByUser()) return;
+      startPlayback();
     };
     const disarm = () => {
       for (const type of GESTURES) document.removeEventListener(type, onGesture, true);
@@ -69,14 +57,14 @@ export function useMusicAutostart({
 
   const disarmGesture = () => disarmRef.current?.();
 
+  const triedRef = useRef(false);
+
   // Reading begins with music: try to start as soon as the first track is
   // known, unless the user paused it before.
   useEffect(() => {
-    if (startedRef.current || trackId === null || pausedByUser()) return;
-    startedRef.current = true;
-    setStarted(true);
-    playingRef.current = true;
-    setPlaying(true);
+    if (triedRef.current || trackId === null || pausedByUser()) return;
+    triedRef.current = true;
+    startPlayback();
   }, [trackId]);
 
   useEffect(
