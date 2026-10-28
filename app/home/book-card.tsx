@@ -5,23 +5,23 @@ import { approxPages } from "@/core/upload-policy";
 export function BookCard({ book, coverUrl }: { book: EpubBook; coverUrl: string | null }) {
   const initial = book.title.trim().charAt(0).toUpperCase() || "B";
   return (
-    <div className="home-card">
+    <div className="ob-mini">
       {coverUrl ? (
-        <img className="home-card-cover" src={coverUrl} alt="" width={72} height={72} />
+        <img className="ob-mini-cover" src={coverUrl} alt="" width={56} height={56} />
       ) : (
-        <span className="home-card-mono" aria-hidden="true">
+        <span className="ob-mini-mono" aria-hidden="true">
           {initial}
         </span>
       )}
       <div>
-        <h3 className="home-card-title">{book.title}</h3>
-        <p className="home-card-meta">
+        <h3 className="ob-mini-title">{book.title}</h3>
+        <p className="ob-mini-meta">
           {book.author ?? "Unknown author"} · {book.chapters.length}{" "}
           {book.chapters.length === 1 ? "chapter" : "chapters"} · About {approxPages(book.words)}{" "}
           pages
         </p>
         {book.chapters.slice(0, 3).map((chapter, index) => (
-          <p className="home-card-meta" key={index}>
+          <p className="ob-mini-meta" key={index}>
             {chapter}
           </p>
         ))}

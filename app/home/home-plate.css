@@ -1,0 +1,89 @@
+/* Right-page plate. */
+
+.ob-plate { position: relative; margin: auto 0; width: 100%; min-height: 0; padding: 14px 16px 16px; background: var(--paper-2); overflow: hidden; text-align: center; --art-h: clamp(200px, calc(100vh - 440px), 430px); }
+html[data-skin="engraving"] .ob-plate { background: #F1E8CF; border: 1px solid var(--rule); box-shadow: 5px 5px 0 rgba(42, 36, 28, .22); }
+html[data-skin="watercolor"] .ob-plate { background: radial-gradient(120% 120% at 30% 20%, rgba(220, 233, 255, .9), rgba(255, 253, 248, .6) 70%); border-radius: 8px; }
+html[data-skin="ink"] .ob-plate { background: #fff; transform: rotate(1.2deg); box-shadow: 4px 6px 0 rgba(8, 102, 255, .14); }
+html[data-skin="pencil"] .ob-plate { background: #FDFDFB; border: 1px solid rgba(44, 47, 52, .35); box-shadow: 0 10px 28px rgba(40, 42, 46, .12); }
+html[data-skin="comic"] .ob-plate { background: #fff; border: 3px solid #14161C; border-radius: 4px; box-shadow: 5px 5px 0 rgba(20, 22, 28, .85); }
+html[data-skin="chihiro"] .ob-plate { background: radial-gradient(120% 120% at 30% 20%, rgba(255, 251, 244, .98), rgba(253, 239, 217, .9) 75%); border-radius: 14px; box-shadow: 0 0 0 4px #FFFBF4, 0 0 0 5px rgba(156, 47, 30, .35), 0 14px 30px rgba(170, 80, 40, .25); }
+
+.ob-badge { display: inline-flex; align-items: center; gap: 6px; color: var(--color-accent); margin-bottom: 8px; }
+html[data-skin="engraving"] .ob-badge { font-family: var(--label); font-size: 12.5px; letter-spacing: .14em; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding: 2px 10px; }
+html[data-skin="watercolor"] .ob-badge { font-family: var(--display); font-size: 20px; font-weight: 700; background: radial-gradient(80% 90% at 50% 55%, rgba(141, 184, 255, .6), transparent 80%); padding: 0 12px; }
+html[data-skin="ink"] .ob-badge { font-family: var(--label); font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; border: 2.2px solid var(--color-accent); border-radius: 4px; padding: 2px 9px 1px; transform: rotate(-3deg); }
+html[data-skin="pencil"] .ob-badge { font-family: var(--label); font-size: 13px; letter-spacing: .2em; text-transform: uppercase; color: #5D6168; border-top: 1px solid rgba(44, 47, 52, .5); border-bottom: 1px solid rgba(44, 47, 52, .5); padding: 2px 10px; }
+html[data-skin="comic"] .ob-badge { font-family: var(--display); font-size: 16px; letter-spacing: .06em; color: #14161C; background: #FFE45C; border: 2px solid #14161C; padding: 1px 10px; transform: rotate(-2deg); }
+html[data-skin="chihiro"] .ob-badge { font-family: var(--label); font-size: 14px; font-weight: 600; color: #9C2F1E; background: radial-gradient(80% 90% at 50% 55%, rgba(255, 210, 120, .7), transparent 80%); padding: 2px 12px; }
+.ob-badge svg { width: 14px; height: 14px; }
+
+.ob-plate .ob-art { display: block; margin: 0 auto; height: var(--art-h); width: auto; max-width: 100%; object-fit: contain; aspect-ratio: 3/4; }
+.ob-plate .ob-art.oz-art { aspect-ratio: 1/1; }
+html[data-skin="watercolor"] .ob-plate .ob-art { border-radius: 6px; box-shadow: 0 18px 30px -18px rgba(31, 42, 68, .5); }
+html[data-skin="engraving"] .ob-plate .ob-art { border: 1px solid var(--rule); }
+html[data-skin="ink"] .ob-plate .ob-art { outline: 2px solid #0866FF; outline-offset: -1px; border-radius: 3px; }
+html[data-skin="pencil"] .ob-plate .ob-art { border: 1px solid rgba(44, 47, 52, .45); box-shadow: 0 12px 26px rgba(40, 42, 46, .16); }
+html[data-skin="comic"] .ob-plate .ob-art { border: 3px solid #14161C; border-radius: 2px; box-shadow: 4px 4px 0 rgba(20, 22, 28, .85); }
+html[data-skin="chihiro"] .ob-plate .ob-art { border-radius: 8px; box-shadow: 0 0 0 4px #FFFBF4, 0 0 0 5px rgba(156, 47, 30, .4), 0 14px 30px rgba(170, 80, 40, .3); }
+/* The Oz panel repaints per skin; the shelf covers ship pre-painted. */
+html[data-skin="engraving"] .oz-art { filter: sepia(.12) contrast(1.02); }
+html[data-skin="watercolor"] .oz-art { filter: url(#img-wc) saturate(1.45); }
+html[data-skin="watercolor"] .lb-item img.oz-art { filter: saturate(1.35) contrast(1.03); }
+html[data-skin="ink"] .oz-art { filter: url(#img-ink); }
+html[data-skin="pencil"] .oz-art { filter: grayscale(.85) contrast(1.05); }
+html[data-skin="comic"] .oz-art { filter: saturate(1.35) contrast(1.12); }
+html[data-skin="chihiro"] .oz-art { filter: sepia(.28) saturate(1.25) brightness(1.02); }
+
+.ob-corner { position: absolute; width: 30px; height: 30px; display: none; }
+html[data-skin="engraving"] .ob-corner { display: block; border: 0; border-top: 2px solid var(--rule); border-left: 2px solid var(--rule); }
+.ob-corner.tl { top: 10px; left: 10px; }
+.ob-corner.tr { top: 10px; right: 10px; transform: rotate(90deg); }
+.ob-corner.bl { bottom: 10px; left: 10px; transform: rotate(-90deg); }
+.ob-corner.br { bottom: 10px; right: 10px; transform: rotate(180deg); }
+.ob-tape { position: absolute; top: -12px; width: 80px; height: 24px; display: none; background: rgba(220, 233, 255, .75); box-shadow: 0 1px 3px rgba(31, 42, 68, .2); }
+html[data-skin="ink"] .ob-tape { display: block; filter: url(#f-wob-s); }
+.ob-tape.tl { left: 8px; transform: rotate(-38deg); }
+.ob-tape.tr { right: 8px; transform: rotate(38deg); }
+
+.ob-plate h2 { font-family: var(--display); font-size: 27px; font-weight: 700; line-height: 1.05; margin: 10px 0 2px; }
+html[data-skin="engraving"] .ob-plate h2 { font-weight: 400; font-style: italic; }
+html[data-skin="pencil"] .ob-plate h2 { font-weight: 600; font-style: italic; }
+html[data-skin="comic"] .ob-plate h2 { font-weight: 400; font-size: 32px; letter-spacing: .03em; }
+html[data-skin="chihiro"] .ob-plate h2 { color: #9C2F1E; }
+.ob-by { font-size: 14px; color: var(--muted); margin: 0; }
+.ob-line { font-size: 14.5px; line-height: 1.5; max-width: 46ch; margin: 8px auto 10px; min-height: 3em; }
+.ob-line .ob-ready { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
+.ob-plate.ob-swap .ob-art, .ob-plate.ob-swap .ob-txt { animation: ob-swap 420ms var(--ease); }
+html[data-skin="ink"] .ob-plate.ob-swap .ob-art, html[data-skin="comic"] .ob-plate.ob-swap .ob-art { animation: ob-swap-ink 420ms var(--ease); }
+
+.ob-read { position: relative; display: inline-flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 700; font-size: 23px; color: var(--color-accent); text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1.5px; }
+html[data-skin="engraving"] .ob-read { font-style: italic; font-weight: 400; font-size: 22px; }
+html[data-skin="pencil"] .ob-read { font-style: italic; font-weight: 600; font-size: 22px; }
+html[data-skin="comic"] .ob-read { font-weight: 400; font-size: 25px; letter-spacing: .03em; }
+html[data-skin="chihiro"] .ob-read { font-weight: 600; font-size: 22px; }
+.ob-read:hover { color: var(--color-accent-hover); }
+html[data-skin="engraving"] .ob-read:hover, html[data-skin="pencil"] .ob-read:hover { animation: engrave-press 380ms var(--ease); }
+html[data-skin="watercolor"] .ob-read:hover, html[data-skin="chihiro"] .ob-read:hover { animation: bleed 600ms var(--ease); }
+html[data-skin="ink"] .ob-read:hover { animation: wiggle-r 420ms ease; }
+html[data-skin="comic"] .ob-read:hover { animation: wiggle 420ms ease; }
+.ob-read svg { width: 96px; height: 24px; overflow: visible; }
+.ob-arr { display: none; }
+html[data-skin="engraving"] .ob-arr--e, html[data-skin="pencil"] .ob-arr--e { display: block; }
+html[data-skin="watercolor"] .ob-arr--w, html[data-skin="chihiro"] .ob-arr--w { display: block; }
+html[data-skin="ink"] .ob-arr--i, html[data-skin="comic"] .ob-arr--i { display: block; }
+html[data-skin="watercolor"] .ob-read svg, html[data-skin="chihiro"] .ob-read svg { filter: url(#f-wc-s); }
+html[data-skin="ink"] .ob-read svg, html[data-skin="comic"] .ob-read svg { filter: url(#f-wob-s); }
+.ob-cta-soon { display: flex; flex-direction: column; gap: 2px; align-items: center; margin: 0; }
+.ob-soon { font-size: 15px; color: var(--muted); font-family: var(--note); font-style: var(--note-style); }
+.ob-wait { font-family: var(--display); font-weight: 700; font-size: 20px; color: var(--color-accent); text-decoration: underline; text-underline-offset: 4px; }
+html[data-skin="engraving"] .ob-wait, html[data-skin="pencil"] .ob-wait { font-style: italic; }
+html[data-skin="comic"] .ob-wait { font-weight: 400; letter-spacing: .03em; }
+.ob-wait:hover { color: var(--color-accent-hover); }
+
+/* The shared style stamp (app/style-stamp.tsx) takes the home's per-skin
+   label and display fonts on the spread, as in the prototype. */
+.ob-desk .style-stamp-ringtxt { font-family: var(--label); font-style: normal; }
+html[data-skin="watercolor"] .ob-desk .style-stamp-ringtxt { font-size: 15px; letter-spacing: .04em; font-weight: 700; }
+html[data-skin="pencil"] .ob-desk .style-stamp-ringtxt { letter-spacing: .14em; }
+html[data-skin="comic"] .ob-desk .style-stamp-ringtxt { font-family: var(--display); font-size: 14px; letter-spacing: .08em; font-weight: 400; }
+html[data-skin="chihiro"] .ob-desk .style-stamp-ringtxt { font-size: 12px; font-weight: 600; fill: #9C2F1E; }

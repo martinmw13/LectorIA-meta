@@ -1,0 +1,14 @@
+# Task 65 round 2: inline key field in the home picks
+
+Repo martinmw13/LectorIA-meta, worktree /workspace/wt-home, branch `home-library`. Read AGENTS.md and follow every repo rule (hooks add the co-author trailer; file-size hook under 5000 tokens per staged file; check:secrets). No paid API calls, no `next dev`/`next start`, do not push. Use Node 22: `npx -y -p node@22 npm test` / `npm run typecheck`.
+
+The open-book home (app/home/spread.tsx, app/home/upload.tsx, app/home/byok.tsx) is already built and committed. One gap is left versus the chosen prototype `.proto-ref/05a-library-grid.html` (see its `.ob-keybox` / `.ob-keyrow` / `#obKey` / `#obEye` markup, CSS and the "Show / hide key" script, and `.proto-ref/shots/05a-clicked-1280.png`).
+
+## Build
+1. In `app/home/upload.tsx`, when the "Bring your own key!" pick is pressed in the idle state, the keybox shows a real key field like the prototype: a visually hidden label "Paste your API key", a `type="password"` input (placeholder "Paste your API key", autoComplete="off", spellCheck false, name not suggesting a saved credential), and a boxless eye button that toggles show/hide (aria-label "Show API key"/"Hide API key", aria-pressed). Under it one fine line: "It stays in this tab only. We never save it." Use the shared icon registry (`app/icons.tsx` via `HomeIcon`) for the eye; add an `eye` icon there if missing (there is `eye-off`).
+2. The key typed there lives only in React state of `UploadSection`. Pass it to `ByokStep` as an optional `initialKey` prop so the key step after parsing starts prefilled (Meta provider). Clear it from state when: the Free pick is chosen, the user resets/chooses another book, ByokStep submits, and on unmount (state dies with the component; no refs/globals/storage). Never put it in localStorage/sessionStorage, URLs, logs, console, or any network call. Keep every existing behaviour and copy of byok.tsx, including the exact label "Bring your own key!".
+3. Styling for the field in `app/home/home-bring.css` per skin from the prototype (underline input, transparent background, per-skin border). Boxless eye button that still reads clickable (accent colour on hover). No idle animation; reduced-motion respected.
+4. Fit: the idle left page must still fit with no page scroll at 1440x900 and 1280x800 when the keybox is open (keep it compact, like the prototype).
+5. Tests (vitest, jsdom, like app/home tests): pressing the key pick reveals the field; eye toggles input type and aria-label; Free pick hides and clears it; a typed key prefills ByokStep via initialKey (render ByokStep directly with initialKey and assert the input value). Existing tests stay green.
+
+Done when typecheck and tests pass and `node scripts/check-secrets.mjs --all` passes. Commit in one or two small commits (imperative subject, body says why). Short report at the end.
