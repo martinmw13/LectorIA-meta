@@ -52,6 +52,15 @@ body {
   color: var(--color-text-muted);
 }
 
+@media (min-width: 60rem) {
+  .companion {
+    position: sticky;
+    top: var(--space-md);
+    max-height: calc(100vh - var(--space-md) * 2);
+    overflow: auto;
+  }
+}
+
 .book section[data-scene-id] + section[data-scene-id] {
   border-top: 1px solid var(--color-border);
   margin-top: var(--space-md);
