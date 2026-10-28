@@ -250,7 +250,9 @@ h1.chapter-title:focus-visible {
   margin-left: 18px;
   margin-top: 16px;
   padding-left: 16px;
-  padding-bottom: 12px;
+  /* Chat launcher clearance: launcher height (50px) plus 16px, so the last
+     thumbnail scrolls clear of the fixed launcher pinned over this column. */
+  padding-bottom: calc(50px + 16px);
   overflow-y: auto;
   min-height: 0;
   min-width: 0;

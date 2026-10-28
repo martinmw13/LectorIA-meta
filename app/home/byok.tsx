@@ -12,12 +12,20 @@ const REASONS: Record<"too_long" | "free_used", (pages: number) => string> = {
 // on submit, on reset, and on unmount; never stored, logged, or shared.
 export function ByokStep({
   reason,
+  note,
+  privacyNote,
+  actionLabel,
+  metaOnly,
   initialKey,
   onSubmit,
 }: {
-  reason: "too_long" | "free_used";
+  reason?: "too_long" | "free_used";
+  note?: string;
+  privacyNote?: string;
+  actionLabel?: string;
+  metaOnly?: boolean;
   initialKey?: string;
-  onSubmit: () => void;
+  onSubmit: (key: string) => void;
 }) {
   const [provider, setProvider] = useState<Provider>("meta");
   const [key, setKey] = useState(initialKey ?? "");
@@ -32,10 +40,13 @@ export function ByokStep({
   const ready =
     key.trim() !== "" && (provider === "meta" || (urlOk && baseUrl.trim() !== "" && model.trim() !== ""));
 
+  const shownProvider = metaOnly ? "meta" : provider;
+  const reasonLine = note ?? (reason ? REASONS[reason](freePages) : "");
   return (
     <div>
       <h3 className="ob-byok-t">Bring your own key!</h3>
-      <p className="ob-note">{REASONS[reason](freePages)}</p>
+      <p className="ob-note">{reasonLine}</p>
+      {!metaOnly && (
       <div className="ob-radio-row" role="radiogroup" aria-label="Key provider">
         <label className="ob-radio">
           <input
@@ -56,7 +67,8 @@ export function ByokStep({
           OpenAI-compatible
         </label>
       </div>
-      {provider === "openai" && (
+      )}
+      {shownProvider === "openai" && (
         <>
           <label className="ob-field" htmlFor={urlId}>
             Base URL
@@ -100,8 +112,8 @@ export function ByokStep({
         />
       </label>
       <p className="ob-note" id={privacyId}>
-        Your key stays in this browser tab. It&apos;s never stored on our servers, and it&apos;s
-        only used to process this book.
+        {privacyNote ??
+          "Your key stays in this browser tab. It's never stored on our servers, and it's only used to process this book."}
       </p>
       <div className="ob-actions">
         <button
@@ -109,11 +121,12 @@ export function ByokStep({
           type="button"
           disabled={!ready}
           onClick={() => {
+            const entered = key;
             setKey("");
-            onSubmit();
+            onSubmit(entered);
           }}
         >
-          Read with soundtrack
+          {actionLabel ?? "Read with soundtrack"}
         </button>
       </div>
     </div>
