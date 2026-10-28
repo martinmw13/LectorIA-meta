@@ -23,3 +23,5 @@ scene id with letter-suffixed later parts; provenance lands under
 emotion and folded back), `rejected` (Muse declined), and
 `window_failures` (Jev failed, scene left whole), `muse_failures` (Muse resplit call or titles failed, scene left whole), and `reclassify_failures` (a part re-classified to null, scene left whole).
 
+
+Chapter narration (one mp3 plus sentence timings per chapter) is described in [narration](narration.md).
