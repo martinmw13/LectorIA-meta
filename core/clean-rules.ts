@@ -279,9 +279,9 @@ const PRINTER_PATTERNS = [
 ];
 
 // Suffix length of the last kept section that rule 10 removes right after
-// the judge runs: trailing printer lines, everything after THE END/FINIS,
-// or the whole section when it sits past the END mark with no confident
-// section after it.
+// the judge runs: trailing printer lines, the THE END/FINIS block plus
+// everything after it, or the whole section when it sits past the END
+// mark with no confident section after it.
 export function deterministicTailOverlap(kept: RawSection[], lastIdx: number): number {
   const last = kept[lastIdx];
   if (last === undefined) return 0;
@@ -296,8 +296,8 @@ export function deterministicTailOverlap(kept: RawSection[], lastIdx: number): n
   ) {
     overlap += 1;
   }
-  if (endSec === lastIdx && endIdx < last.blocks.length - 1) {
-    overlap = Math.max(overlap, last.blocks.length - 1 - endIdx);
+  if (endSec === lastIdx) {
+    overlap = Math.max(overlap, last.blocks.length - endIdx);
   }
   return overlap;
 }
@@ -316,22 +316,21 @@ function findEndMark(kept: RawSection[]): { endSec: number; endIdx: number } {
   return { endSec, endIdx };
 }
 
-// Rule 10: cut everything after the last THE END/FINIS mark in any kept
-// section (Cottage Folk hides it mid-file with ad pages below), and drop
-// every later section, unless a later section carries a confident chapter
-// heading. Trailing printer lines go separately in every kept section.
-// Printer lines hide mid-list too (a merged "Sussex." + printer line lands
-// in a story the ad sections below used to follow). Sign-offs stay.
+// Rule 10: cut from the last THE END/FINIS mark in any kept section,
+// mark included (Cottage Folk hides it mid-file with ad pages below),
+// and drop every later section, unless a later section carries a
+// confident chapter heading. Trailing printer lines go separately in
+// every kept section. Printer lines hide mid-list too (a merged "Sussex."
+// + printer line lands in a story the ad sections below used to follow).
+// Sign-offs stay.
 export function applyTailCut(kept: RawSection[], removed: RemovedItem[]): RawSection[] {
   const { endSec, endIdx } = findEndMark(kept);
   if (endSec === -1) return kept;
   const endSection = kept[endSec];
   if (endSection === undefined) return kept;
   const out = kept.slice(0, endSec + 1);
-  if (endIdx < endSection.blocks.length - 1) {
-    removed.push(removedFor(endSection, "tail-cut", "back_matter", "after THE END", [endIdx + 1, endSection.blocks.length - 1]));
-    out[endSec] = { ...endSection, blocks: endSection.blocks.slice(0, endIdx + 1) };
-  }
+  removed.push(removedFor(endSection, "tail-cut", "back_matter", "from THE END", [endIdx, endSection.blocks.length - 1]));
+  out[endSec] = { ...endSection, blocks: endSection.blocks.slice(0, endIdx) };
   const later = kept.slice(endSec + 1);
   if (later.some(isConfident)) return [...out, ...later];
   for (const sec of later) {

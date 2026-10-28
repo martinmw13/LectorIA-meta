@@ -121,8 +121,9 @@ describe("pg63361 Cottage Folk", () => {
     // h-2 drops the repeated "THE HOPPERS" plain block after the heading.
     const hoppers = chapters.find((c) => c.title === "THE HOPPERS");
     expect(hoppers?.paragraphs[0]).toBe("The girl didn’t stop.");
+    // The tail cut takes the THE END block itself, not just what follows.
     const lastStory = chapters[chapters.length - 1];
-    expect(lastStory?.paragraphs[lastStory.paragraphs.length - 1]).toBe("THE END");
+    expect(lastStory?.paragraphs).not.toContain("THE END");
     expect(lastStory?.paragraphs.some((p) => /MANXMAN|HEINEMANN/.test(p))).toBe(false);
   });
 });
@@ -183,7 +184,7 @@ describe("cross-section tail cut", () => {
     const ads = inlineSec("s2", [b("Ad page one."), b("Ad page two.")], { docTitle: "Ads" });
     const { chapters, report } = await cleanSections("Book", [story, ads], contentJudge());
     expect(chapters).toHaveLength(1);
-    expect(chapters[0]?.paragraphs).toEqual(["Story one.", "THE END"]);
+    expect(chapters[0]?.paragraphs).toEqual(["Story one."]);
     expect(removedRule(report, "s2")).toBe("tail-cut");
   });
 
@@ -192,7 +193,7 @@ describe("cross-section tail cut", () => {
     const next = inlineSec("s2", [b("CHAPTER II", true), b("Next story.")]);
     const { chapters, report } = await cleanSections("Book", [first, next], contentJudge());
     expect(chapters).toHaveLength(2);
-    expect(chapters[0]?.paragraphs).toEqual(["Story.", "THE END"]);
+    expect(chapters[0]?.paragraphs).toEqual(["Story."]);
     expect(chapters[1]?.paragraphs).toEqual(["Next story."]);
     expect(report.removed.filter((r) => r.sectionId === "s2")).toHaveLength(0);
   });
@@ -242,6 +243,29 @@ describe("block-drop placeholders", () => {
   });
 });
 
+describe("plain prose parity", () => {
+  it("leaves an all-prose section byte-identical through tail and title-duplicate rules", async () => {
+    const prose = [
+      "Dorothy lived in the midst of the great Kansas prairies.",
+      "The end of the journey was nowhere in sight.",
+      "Tales of the road kept them walking.",
+      "Tales of the road kept them walking.",
+      "The Cyclone",
+    ];
+    const sec = inlineSec(
+      "oz-like",
+      prose.map((text) => b(text)),
+      { docTitle: "The Cyclone" },
+    );
+    const judge = vi.fn(contentJudge());
+    const { chapters, report } = await cleanSections("Oz", [sec], judge);
+    // No heading means no duplicate-title drop and no exact END mark:
+    // the tail cut and rule 11 leave plain prose alone, like Oz.
+    expect(chapters[0]?.paragraphs).toEqual(prose);
+    expect(report.removed.filter((r) => r.sectionId === "oz-like")).toHaveLength(0);
+  });
+});
+
 describe("judge cut overlap", () => {
   it("skips judge tailCut covered by deterministic tail rules", async () => {
     const story = inlineSec("s1", [b("CHAPTER I", true), b("Story one."), b("THE END"), b("Buy more books.")]);
@@ -255,7 +279,7 @@ describe("judge cut overlap", () => {
     const { chapters, report } = await cleanSections("Book", [story, ads], judge);
     expect(report.removed.filter((r) => r.rule === "llm")).toHaveLength(0);
     expect(removedRule(report, "s2")).toBe("tail-cut");
-    expect(chapters[0]?.paragraphs).toEqual(["Story one.", "THE END"]);
+    expect(chapters[0]?.paragraphs).toEqual(["Story one."]);
   });
 
   it("clips judge tailCut to blocks deterministic rules keep", async () => {
