@@ -87,13 +87,40 @@ describe("followIntoView", () => {
     expect(scroller.scrollTop).toBe(0);
   });
 
-  test("scrolls elements above or below the band into it", () => {
+  test("scrolls elements above or below the band to 35%", () => {
+    const scroller = fakeCol(0, 1000, 1000);
+    expect(followIntoView(fakeEl(50, 20), scroller, 10_000)).toBe(true);
+    expect(scroller.scrollTop).toBe(700);
+    const fresh = fakeCol(0, 1000);
+    expect(followIntoView(fakeEl(900, 20), fresh, 10_000)).toBe(true);
+    expect(fresh.scrollTop).toBe(550);
+  });
+
+  test("never scrolls above the top", () => {
     const scroller = fakeCol(0, 1000);
     expect(followIntoView(fakeEl(50, 20), scroller, 10_000)).toBe(true);
-    expect(scroller.scrollTop).toBe(-150);
-    scroller.scrollTop = 0;
+    expect(scroller.scrollTop).toBe(0);
+  });
+
+  test("judges the band against an in-flight smooth scroll, so frames never stack scrolls", () => {
+    const calls: number[] = [];
+    const scroller = {
+      ...fakeCol(0, 1000),
+      scrollTo: ({ top }: { top: number }) => void calls.push(top),
+    } as unknown as HTMLElement;
+    // The smooth scroll has not moved yet: the word still reads at 900.
     expect(followIntoView(fakeEl(900, 20), scroller, 10_000)).toBe(true);
-    expect(scroller.scrollTop).toBe(120);
+    expect(followIntoView(fakeEl(900, 20), scroller, 10_016)).toBe(true);
+    expect(followIntoView(fakeEl(930, 20), scroller, 10_032)).toBe(true);
+    expect(calls).toEqual([550]);
+  });
+
+  test("a box taller than the band follows its top and never tugs back down", () => {
+    const scroller = fakeCol(0, 1000);
+    // Top inside the band, bottom far below: the old rule scrolled it
+    // down, then up on the next frame, over and over.
+    expect(followIntoView(fakeEl(300, 1400), scroller, 10_000)).toBe(false);
+    expect(scroller.scrollTop).toBe(0);
   });
 
   test("pauses after a user scroll", () => {
