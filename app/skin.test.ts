@@ -106,10 +106,12 @@ describe("skin runtime", () => {
   const g = globalThis as unknown as Record<string, unknown>;
   const OLD_DOCUMENT = g.document;
   const OLD_STORAGE = g.localStorage;
+  const OLD_WINDOW = g.window;
 
   afterEach(() => {
     g.document = OLD_DOCUMENT;
     g.localStorage = OLD_STORAGE;
+    g.window = OLD_WINDOW;
   });
 
   function fakeDom(skin: unknown): { saved: Record<string, string> } {
@@ -146,6 +148,33 @@ describe("skin runtime", () => {
     unsub();
     setSkin("watercolor");
     expect(seen).toEqual(["ink"]);
+  });
+
+  it("syncs valid cross-tab storage events and ignores the rest", () => {
+    fakeDom("engraving");
+    const handlers = new Map<string, (e: { key?: string | null; newValue?: string | null }) => void>();
+    g.window = {
+      addEventListener: (type: string, cb: (e: { key?: string | null; newValue?: string | null }) => void) => {
+        handlers.set(type, cb);
+      },
+    };
+    const seen: string[] = [];
+    const unsub = subscribe(() => {
+      seen.push(getSkin());
+    });
+    try {
+      const onStorage = handlers.get("storage");
+      expect(onStorage).toBeDefined();
+      onStorage!({ key: SKIN_KEY, newValue: "ink" });
+      expect(getSkin()).toBe("ink");
+      expect(seen).toEqual(["ink"]);
+      onStorage!({ key: SKIN_KEY, newValue: "garbage" });
+      onStorage!({ key: "other.key", newValue: "watercolor" });
+      expect(getSkin()).toBe("ink");
+      expect(seen).toEqual(["ink"]);
+    } finally {
+      unsub();
+    }
   });
 
   it("cycleSkin wraps around SKINS order", () => {
