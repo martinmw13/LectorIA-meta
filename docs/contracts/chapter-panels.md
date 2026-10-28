@@ -1,7 +1,7 @@
-# Contracts addendum: chapter covers, end pages, panels
+# Chapter covers, end pages, panels
 
-Authoritative where it differs from `contracts.md` (which is frozen
-for another task). Everything else in `contracts.md` still holds.
+Where this differs from another contract file (for example the
+scene reader's "no other scenes' summaries" rule), this file wins.
 
 ## Cover and end sub-pages
 

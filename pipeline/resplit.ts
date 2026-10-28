@@ -101,12 +101,12 @@ export interface ResplitWindowFailure {
   reason: string;
 }
 
-function museFailureReason(err: unknown): string {
+export function museFailureReason(err: unknown): string {
   const msg = err instanceof Error ? err.message : String(err);
   const reason = msg
     .replace(/https?:\/\/\S+/g, "[url]")
     .replace(/www\.\S+/g, "[url]")
-    .replace(/(?:bearer|api[_-]?key|token|secret|password)\s*[:=]\s*\S+/gi, "$1 [redacted]")
+    .replace(/(bearer|api[_-]?key|token|secret|password)\s*[:=]\s*\S+/gi, "$1 [redacted]")
     .replace(/[A-Za-z0-9_\-+/=]{24,}/g, "[redacted]")
     .replace(/\s+/g, " ")
     .trim()
@@ -157,6 +157,7 @@ export async function runResplit(ctx: StepCtx, deps: { jev: JevClient; meta: Met
   let windowsClassified = 0;
   const windowFailures: ResplitWindowFailure[] = [];
   const museFailures: { from: string; reason: string }[] = [];
+  const reclassifyFailures: ResplitWindowFailure[] = [];
   const rejected: ResplitRejected[] = [];
   const mergedBack: ResplitMergedBack[] = [];
 
@@ -279,6 +280,7 @@ export async function runResplit(ctx: StepCtx, deps: { jev: JevClient; meta: Met
       return null;
     }
     const finals: { base: (typeof bases)[number]; emotion: SceneEmotion }[] = [];
+    const localMerged: ResplitMergedBack[] = [];
     for (const group of groups) {
       if (group.length === 1) {
         const i = group[0] ?? 0;
@@ -296,8 +298,14 @@ export async function runResplit(ctx: StepCtx, deps: { jev: JevClient; meta: Met
         usage.jevOutputTokens += emotion.jev.output_tokens;
       }
       finals.push({ base, emotion });
-      mergedBack.push({ from: scene.id, top: emotion.final ? topOf(emotion.final.vector).id : null });
+      localMerged.push({ from: scene.id, top: emotion.final ? topOf(emotion.final.vector).id : null });
     }
+    // A null final keeps the whole scene; usage above is already counted.
+    if (finals.some((f) => f.emotion.final === null)) {
+      reclassifyFailures.push({ from: scene.id, reason: "null-final" });
+      return null;
+    }
+    mergedBack.push(...localMerged);
     const ids = splitIds(scene.id, finals.length);
     const byCut = new Map(taken.map((t) => [t.call.index, t]));
     const finalTops = finals.map((f) => (f.emotion.final ? topOf(f.emotion.final.vector).id : null));
@@ -413,6 +421,7 @@ export async function runResplit(ctx: StepCtx, deps: { jev: JevClient; meta: Met
           rejected: rejected,
           window_failures: windowFailures,
           muse_failures: museFailures,
+          reclassify_failures: reclassifyFailures,
           jev: { model: deps.jev.model, requests: usage.jevRequests, input_tokens: usage.jevInputTokens, output_tokens: usage.jevOutputTokens, cost_usd: jevCost },
           meta: { model: usage.meta.model, requests: usage.meta.requests, prompt_tokens: usage.meta.promptTokens, cached_tokens: usage.meta.cachedTokens, completion_tokens: usage.meta.completionTokens, cost_usd: usage.meta.costUsd },
         },

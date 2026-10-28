@@ -1,6 +1,6 @@
 // Chapter panels data: bundled art plus the per-session spoiler state.
 // The client receives the current chapter's short captions only, never
-// other chapters' or full summaries (see docs/contracts-chapters.md).
+// other chapters' or full summaries (see docs/contracts/chapter-panels.md).
 export const PANELS_NAME = "Chapter in panels";
 
 export const PANEL_ART: Record<string, string> = {

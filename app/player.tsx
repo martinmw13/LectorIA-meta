@@ -6,6 +6,7 @@ import { displayTitle } from "@/core/music-credit";
 import { effectiveEnd, gainVolume } from "@/core/music-playback";
 import type { StyleInfo, Track } from "@/core/music";
 import { MusicStyleControl } from "./folio/music-style-control";
+import { RainAmbience } from "./rain-button";
 
 // Two audio elements with equal-power crossfades. Volume lives in a
 // ref, so the slider never re-runs the track effect or touches src.
@@ -367,6 +368,7 @@ export function Player({
           aria-label="Volume"
         />
       </label>
+      <RainAmbience muted={muted} />
       <span className="player-track" aria-live="polite" title={now?.full}>
         {head ?? "The music is resting"}
         {showSource && track?.sourceUrl ? (
