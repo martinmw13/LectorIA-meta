@@ -16,6 +16,7 @@ import {
 import "./globals.css";
 import { DEFAULT_SKIN, SKIN_SCRIPT } from "./skin";
 import { THEME_SCRIPT } from "./theme";
+import { WARMTH_SCRIPT } from "./warmth";
 
 const newsreader = Newsreader({
   subsets: ["latin"],
@@ -122,6 +123,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: SKIN_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: WARMTH_SCRIPT }} />
       </head>
       <body>{children}</body>
     </html>
