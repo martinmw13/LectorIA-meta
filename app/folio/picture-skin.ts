@@ -1,37 +1,40 @@
-// Which drawing skin to use for the "Picture this" loading slot.
-// A skin seam (data-skin on <html>, ?skin= param) lives on another
-// branch; until it lands this reads the same sources directly and
-// falls back to engraving. SSR-safe: no document means engraving.
+// Drawing variant for the "Picture this" loading slot. The skin owner
+// (app/skin.ts) holds the live skin; this maps it to a drawing variant.
 "use client";
 
-import { useEffect, useState } from "react";
+import { getSkin } from "../skin";
+import { useSkin } from "../use-skin";
 
 export type PictureSkin = "engraving" | "watercolor" | "ink";
 
-const SKINS: readonly string[] = ["engraving", "watercolor", "ink"];
+// One entry per skin id. A skin's own animation later means changing its
+// value here from the shared variant to a new one.
+const VARIANTS: Record<string, PictureSkin> = {
+  engraving: "engraving",
+  watercolor: "watercolor",
+  ink: "ink",
+  comic: "ink",
+  "anime-ghibli": "watercolor",
+  chihiro: "watercolor",
+  pencil: "engraving",
+  graphite: "engraving",
+  "graphite-pencil": "engraving",
+};
 
-function fromValue(value: string | null | undefined): PictureSkin {
-  return value && (SKINS as readonly string[]).includes(value) ? (value as PictureSkin) : "engraving";
+export function pictureVariant(skin: string | null | undefined): PictureSkin {
+  return (skin && VARIANTS[skin]) || "engraving";
 }
 
 export function pictureSkin(): PictureSkin {
-  if (typeof document === "undefined") return "engraving";
-  const attr = document.documentElement?.dataset?.skin;
-  if (attr) return fromValue(attr);
-  try {
-    const param = new URLSearchParams(window.location.search).get("skin");
-    return fromValue(param);
-  } catch {
-    return "engraving";
-  }
+  return pictureVariant(getSkin());
 }
 
-// First paint is always engraving so SSR HTML matches; the real skin
-// applies in an effect once mounted.
 export function usePictureSkin(): PictureSkin {
-  const [skin, setSkin] = useState<PictureSkin>("engraving");
-  useEffect(() => {
-    setSkin(pictureSkin());
-  }, []);
-  return skin;
+  return pictureVariant(useSkin());
+}
+
+// Raw skin id for the data-picture-skin slot hook; per-skin CSS keys off
+// it while the drawing uses the shared variant above.
+export function usePictureSkinId(): string {
+  return useSkin();
 }

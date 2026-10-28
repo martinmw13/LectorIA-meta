@@ -6,7 +6,7 @@ import { useRef, useState } from "react";
 import { PICTURE_COPY } from "./picture-copy";
 import { PictureButton } from "./picture-button";
 import { PictureDraw, usePictureLoaded } from "./picture-draw";
-import { usePictureSkin } from "./picture-skin";
+import { usePictureSkin, usePictureSkinId } from "./picture-skin";
 import type { SceneCard } from "./use-pictures";
 
 export function ImagePane({
@@ -31,6 +31,7 @@ export function ImagePane({
   const [expanded, setExpanded] = useState(false);
   const timer = useRef<number | null>(null);
   const skin = usePictureSkin();
+  const skinId = usePictureSkinId();
   // Frozen drawing stays under the image until it loads; the reveal
   // class only applies after load so it plays over the paper, not a gap.
   const { loaded, imgRef, markLoaded } = usePictureLoaded(card.phase === "ready" ? card.url : "");
@@ -76,13 +77,13 @@ export function ImagePane({
             )}
           </>
         ) : card.phase === "loading" ? (
-          <div className="pane-loading" role="status">
+          <div className="pane-loading" role="status" data-picture-skin={skinId}>
             <PictureDraw skin={skin} />
           </div>
         ) : card.phase === "ready" ? (
           <>
             {loaded ? null : (
-              <div className="pane-loading">
+              <div className="pane-loading" data-picture-skin={skinId}>
                 <PictureDraw skin={skin} frozen />
               </div>
             )}

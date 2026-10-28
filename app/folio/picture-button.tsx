@@ -3,7 +3,7 @@
 // hover (:hover) and press (:active); nothing loops at rest.
 "use client";
 
-import type { PictureSkin } from "./picture-skin";
+import { usePictureSkinId, type PictureSkin } from "./picture-skin";
 
 function ButtonArt({ skin }: { skin: PictureSkin }) {
   if (skin === "watercolor") {
@@ -55,8 +55,15 @@ export function PictureButton({
   label: string;
   onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
 }) {
+  // Raw skin rides along for future per-skin CSS; art uses the variant.
+  const skinId = usePictureSkinId();
   return (
-    <button type="button" className={`pic-btn pic-btn-${skin}`} onClick={onClick}>
+    <button
+      type="button"
+      className={`pic-btn pic-btn-${skin}`}
+      data-picture-skin={skinId}
+      onClick={onClick}
+    >
       <span className="pic-btn-art" aria-hidden="true">
         <ButtonArt skin={skin} />
       </span>
