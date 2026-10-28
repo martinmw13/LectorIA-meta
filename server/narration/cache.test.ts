@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createMemoryKV, dailySpendKey, spendKey } from "@/core/images";
 import { NARRATION_FORMAT, NARRATION_MODEL, NARRATION_SPEED, NARRATION_VOICE } from "@/core/narration";
 import type { ChapterNarration } from "@/core/narration";
@@ -72,5 +72,20 @@ describe("narration server adapters", () => {
 
   it("keeps the manifest format at 2", () => {
     expect(NARRATION_FORMAT).toBe(2);
+  });
+  it("refunds the daily counter of the reserve day across UTC midnight", async () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2026-10-27T23:59:59Z"));
+      const kv = createMemoryKV();
+      const deps = createNarrationDeps({ kv, env: ENV, synthesize: async () => { throw new Error("unused"); } });
+      expect(await deps.budget?.reserve(100)).toBe(true);
+      vi.setSystemTime(new Date("2026-10-28T00:00:01Z"));
+      await deps.budget?.refund(100);
+      expect(Number(await kv.get(dailySpendKey("2026-10-27")))).toBe(0);
+      expect(await kv.get(dailySpendKey("2026-10-28"))).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

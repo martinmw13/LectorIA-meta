@@ -9,6 +9,7 @@ export function createRestKV(url: string, token: string): KV {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify(args),
+      signal: AbortSignal.timeout(5_000),
     });
     if (!res.ok) throw new Error(`kv status ${res.status}`);
     const json = (await res.json()) as { result?: T; error?: string };

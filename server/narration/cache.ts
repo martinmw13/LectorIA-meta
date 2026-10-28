@@ -38,6 +38,8 @@ export function createNarrationDeps(args: {
   synthesize: NarrationDeps["synthesize"];
 }): NarrationDeps {
   const { kv, env, synthesize } = args;
+  // Refund the day that was charged, even if the job crosses UTC midnight.
+  let reservedDay = utcDay();
   return {
     sha256Hex: async (text: string) => {
       const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
@@ -108,6 +110,7 @@ export function createNarrationDeps(args: {
           return false;
         }
         const day = utcDay();
+        reservedDay = day;
         const dailyTotal = await kv.incrBy(dailySpendKey(day), micro);
         await kv.expire(dailySpendKey(day), DAILY_SPEND_TTL_SEC);
         if (budgetExceeded(dailyTotal, env.dailySpendCapMicro)) {
@@ -119,7 +122,7 @@ export function createNarrationDeps(args: {
       },
       refund: async (micro: number) => {
         await kv.decrBy(spendKey(), micro);
-        await kv.decrBy(dailySpendKey(utcDay()), micro);
+        await kv.decrBy(dailySpendKey(reservedDay), micro);
       },
     },
     synthesize,
