@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { MUSIC_CONFIG, nowPlaying } from "@/core/music";
+import { displayTitle } from "@/core/music-credit";
 import { effectiveEnd, gainVolume } from "@/core/music-playback";
 import type { StyleInfo, Track } from "@/core/music";
 import { PlayerControls } from "./player-controls";
@@ -290,6 +291,13 @@ export function Player({
   }
 
   const now = track ? nowPlaying(track) : null;
+  const head = track
+    ? [displayTitle(track.title), track.composer ?? track.artist]
+        .filter((part): part is string => typeof part === "string" && part.length > 0)
+        .join(" · ")
+    : null;
+  const showSource =
+    !!track?.sourceUrl && !!track.artist && !!track.composer && track.artist !== track.composer;
 
   return (
     <div className="player" role="region" aria-label="Music player" data-reduced-motion={reducedMotion}>
@@ -301,7 +309,7 @@ export function Player({
           <path d="M13.5 3.5v9L6 8z" />
         </svg>
       </button>
-      <button type="button" className="skip" onClick={toggle} aria-label={playing ? "Pause" : "Play"} title={playing ? "Pause" : "Play"}>
+      <button type="button" className="skip play" onClick={toggle} aria-label={playing ? "Pause" : "Play"} title={playing ? "Pause" : "Play"}>
         {playing ? (
           <svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
             <rect x="4" y="3" width="2.6" height="10" rx="0.5" />
@@ -319,9 +327,6 @@ export function Player({
           <rect x="11.5" y="3" width="2" height="10" rx="0.5" />
         </svg>
       </button>
-      <span className="player-track" aria-live="polite" title={now?.full}>
-        {now?.line ?? "Music unavailable"}
-      </span>
       <button
         type="button"
         className="skip"
@@ -362,6 +367,26 @@ export function Player({
           aria-label="Volume"
         />
       </label>
+      <span className="player-track" aria-live="polite" title={now?.full}>
+        {head ?? "Music unavailable"}
+        {showSource && track?.sourceUrl ? (
+          <>
+            {" · "}
+            <a
+              href={track.sourceUrl}
+              rel="noopener noreferrer"
+              target="_blank"
+              aria-label={`${track.artist} (opens in new tab)`}
+              title={`${track.artist} (opens in new tab)`}
+            >
+              {track.artist}{" "}
+              <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden="true">
+                <path d="M3 9 9 3M4.5 3H9v4.5" />
+              </svg>
+            </a>
+          </>
+        ) : null}
+      </span>
       <PlayerControls
         styles={styles}
         styleId={styleId}
@@ -371,21 +396,6 @@ export function Player({
         onTogglePlaylist={onTogglePlaylist}
         controlsDisabled={controlsDisabled}
       />
-      {track?.sourceUrl ? (
-        <a
-          className="skip"
-          href={track.sourceUrl}
-          rel="noopener noreferrer"
-          target="_blank"
-          aria-label="Music source (opens in new tab)"
-          title="Music source (opens in new tab)"
-        >
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-            <path d="M6.5 3.5H3.5v9h9V9.5" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M9.5 3.5h3v3M12.2 3.8 7.5 8.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </a>
-      ) : null}
     </div>
   );
 }

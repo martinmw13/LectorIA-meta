@@ -12,16 +12,16 @@ export const LOCK_TTL_SEC = 150;
 export const MAX_PASSAGE_CHARS = 600;
 export const MAX_SCENE_CLIP_CHARS = 1200;
 
-export const MSG_BAD_REQUEST = "That request was not valid. Try again.";
-export const MSG_QUOTA = "You reached your limit of 5 images per day. Come back tomorrow.";
+export const MSG_BAD_REQUEST = "Something went wrong there. Try again?";
+export const MSG_QUOTA = "That's all five pictures for today. More tomorrow.";
 export const MSG_CREDITS_OUT =
   "So many people loved this that we've run out of credits to share. " +
   "Feel free to bring your own key! Meanwhile, The Wonderful Wizard of Oz " +
   "is ready to read, with its soundtrack and illustrations.";
 export const CREDITS_OUT_LIBRARY_HREF = "/";
-export const MSG_UNAVAILABLE = "Images are unavailable right now.";
-export const MSG_FAILED = "Could not generate the image. Try again.";
-export const MSG_RETRY = "The image is taking longer than expected. Try again.";
+export const MSG_UNAVAILABLE = "Pictures aren't available right now.";
+export const MSG_FAILED = "That picture didn't come out. Try again?";
+export const MSG_RETRY = "This one is taking a while. Try again in a moment.";
 
 export class ImageValidationError extends Error {
   constructor() {

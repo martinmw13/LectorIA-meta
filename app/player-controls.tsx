@@ -1,8 +1,13 @@
-// Player extras: style select and the Chopin playlist toggle. Transport
-// lives in the player so the bar reads prev, play, next, then the
-// now-playing line. No audio here, so the bar layout can change without
+// Player extras: Orchestra / Piano sticker buttons and the Chopin
+// playlist toggle. No audio here, so the bar layout can change without
 // touching the engine.
 import type { StyleInfo } from "@/core/music";
+
+function stickerFor(style: StyleInfo): string {
+  return /piano/i.test(style.id) || /piano/i.test(style.name)
+    ? "/art/stickers/piano.svg"
+    : "/art/stickers/violin.svg";
+}
 
 export function PlayerControls({
   styles,
@@ -24,20 +29,24 @@ export function PlayerControls({
   return (
     <>
       {styles.length >= 2 ? (
-        <label className="player-note">
-          <select
-            value={styleId ?? ""}
-            onChange={(e) => onStyleChange(e.target.value)}
-            aria-label="Orchestra / Piano"
-            disabled={controlsDisabled}
-          >
-            {styles.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <span className="stickers" role="group" aria-label="Music style">
+          {styles.map((s) => (
+            <span className="sticker-wrap" key={s.id}>
+              <button
+                type="button"
+                className="sticker"
+                onClick={() => onStyleChange(s.id)}
+                aria-pressed={styleId === s.id}
+                aria-label={s.name}
+                title={s.name}
+                disabled={controlsDisabled}
+              >
+                <img src={stickerFor(s)} alt="" width={34} height={34} />
+              </button>
+              <span className="sticker-dot" aria-hidden="true" />
+            </span>
+          ))}
+        </span>
       ) : null}
       {playlistLabel !== null ? (
         <button
