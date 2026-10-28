@@ -1,0 +1,68 @@
+/* Scene marks: each scene section learns its number and its chapter's
+   scene count from CSS alone, as --scene-n and --scene-of, so a skin can
+   print "Scene 2 of 4" at a scene break without new markup. Counters
+   cannot do it: sections use content-visibility, whose style containment
+   scopes counters to each section. Chapters past 30 scenes print just
+   "Scene N". Extend both lists together if a book needs more. */
+
+.book-section:nth-child(1 of .book-section) { --scene-n: "1"; }
+.book-section:nth-child(2 of .book-section) { --scene-n: "2"; }
+.book-section:nth-child(3 of .book-section) { --scene-n: "3"; }
+.book-section:nth-child(4 of .book-section) { --scene-n: "4"; }
+.book-section:nth-child(5 of .book-section) { --scene-n: "5"; }
+.book-section:nth-child(6 of .book-section) { --scene-n: "6"; }
+.book-section:nth-child(7 of .book-section) { --scene-n: "7"; }
+.book-section:nth-child(8 of .book-section) { --scene-n: "8"; }
+.book-section:nth-child(9 of .book-section) { --scene-n: "9"; }
+.book-section:nth-child(10 of .book-section) { --scene-n: "10"; }
+.book-section:nth-child(11 of .book-section) { --scene-n: "11"; }
+.book-section:nth-child(12 of .book-section) { --scene-n: "12"; }
+.book-section:nth-child(13 of .book-section) { --scene-n: "13"; }
+.book-section:nth-child(14 of .book-section) { --scene-n: "14"; }
+.book-section:nth-child(15 of .book-section) { --scene-n: "15"; }
+.book-section:nth-child(16 of .book-section) { --scene-n: "16"; }
+.book-section:nth-child(17 of .book-section) { --scene-n: "17"; }
+.book-section:nth-child(18 of .book-section) { --scene-n: "18"; }
+.book-section:nth-child(19 of .book-section) { --scene-n: "19"; }
+.book-section:nth-child(20 of .book-section) { --scene-n: "20"; }
+.book-section:nth-child(21 of .book-section) { --scene-n: "21"; }
+.book-section:nth-child(22 of .book-section) { --scene-n: "22"; }
+.book-section:nth-child(23 of .book-section) { --scene-n: "23"; }
+.book-section:nth-child(24 of .book-section) { --scene-n: "24"; }
+.book-section:nth-child(25 of .book-section) { --scene-n: "25"; }
+.book-section:nth-child(26 of .book-section) { --scene-n: "26"; }
+.book-section:nth-child(27 of .book-section) { --scene-n: "27"; }
+.book-section:nth-child(28 of .book-section) { --scene-n: "28"; }
+.book-section:nth-child(29 of .book-section) { --scene-n: "29"; }
+.book-section:nth-child(30 of .book-section) { --scene-n: "30"; }
+
+.chapter-block:has(> .book-section:nth-child(1 of .book-section):nth-last-child(1 of .book-section)) { --scene-of: " of 1"; }
+.chapter-block:has(> .book-section:nth-child(2 of .book-section):nth-last-child(1 of .book-section)) { --scene-of: " of 2"; }
+.chapter-block:has(> .book-section:nth-child(3 of .book-section):nth-last-child(1 of .book-section)) { --scene-of: " of 3"; }
+.chapter-block:has(> .book-section:nth-child(4 of .book-section):nth-last-child(1 of .book-section)) { --scene-of: " of 4"; }
+.chapter-block:has(> .book-section:nth-child(5 of .book-section):nth-last-child(1 of .book-section)) { --scene-of: " of 5"; }
+.chapter-block:has(> .book-section:nth-child(6 of .book-section):nth-last-child(1 of .book-section)) { --scene-of: " of 6"; }
+.chapter-block:has(> .book-section:nth-child(7 of .book-section):nth-last-child(1 of .book-section)) { --scene-of: " of 7"; }
+.chapter-block:has(> .book-section:nth-child(8 of .book-section):nth-last-child(1 of .book-section)) { --scene-of: " of 8"; }
+.chapter-block:has(> .book-section:nth-child(9 of .book-section):nth-last-child(1 of .book-section)) { --scene-of: " of 9"; }
+.chapter-block:has(> .book-section:nth-child(10 of .book-section):nth-last-child(1 of .book-section)) { --scene-of: " of 10"; }
+.chapter-block:has(> .book-section:nth-child(11 of .book-section):nth-last-child(1 of .book-section)) { --scene-of: " of 11"; }
+.chapter-block:has(> .book-section:nth-child(12 of .book-section):nth-last-child(1 of .book-section)) { --scene-of: " of 12"; }
+.chapter-block:has(> .book-section:nth-child(13 of .book-section):nth-last-child(1 of .book-section)) { --scene-of: " of 13"; }
+.chapter-block:has(> .book-section:nth-child(14 of .book-section):nth-last-child(1 of .book-section)) { --scene-of: " of 14"; }
+.chapter-block:has(> .book-section:nth-child(15 of .book-section):nth-last-child(1 of .book-section)) { --scene-of: " of 15"; }
+.chapter-block:has(> .book-section:nth-child(16 of .book-section):nth-last-child(1 of .book-section)) { --scene-of: " of 16"; }
+.chapter-block:has(> .book-section:nth-child(17 of .book-section):nth-last-child(1 of .book-section)) { --scene-of: " of 17"; }
+.chapter-block:has(> .book-section:nth-child(18 of .book-section):nth-last-child(1 of .book-section)) { --scene-of: " of 18"; }
+.chapter-block:has(> .book-section:nth-child(19 of .book-section):nth-last-child(1 of .book-section)) { --scene-of: " of 19"; }
+.chapter-block:has(> .book-section:nth-child(20 of .book-section):nth-last-child(1 of .book-section)) { --scene-of: " of 20"; }
+.chapter-block:has(> .book-section:nth-child(21 of .book-section):nth-last-child(1 of .book-section)) { --scene-of: " of 21"; }
+.chapter-block:has(> .book-section:nth-child(22 of .book-section):nth-last-child(1 of .book-section)) { --scene-of: " of 22"; }
+.chapter-block:has(> .book-section:nth-child(23 of .book-section):nth-last-child(1 of .book-section)) { --scene-of: " of 23"; }
+.chapter-block:has(> .book-section:nth-child(24 of .book-section):nth-last-child(1 of .book-section)) { --scene-of: " of 24"; }
+.chapter-block:has(> .book-section:nth-child(25 of .book-section):nth-last-child(1 of .book-section)) { --scene-of: " of 25"; }
+.chapter-block:has(> .book-section:nth-child(26 of .book-section):nth-last-child(1 of .book-section)) { --scene-of: " of 26"; }
+.chapter-block:has(> .book-section:nth-child(27 of .book-section):nth-last-child(1 of .book-section)) { --scene-of: " of 27"; }
+.chapter-block:has(> .book-section:nth-child(28 of .book-section):nth-last-child(1 of .book-section)) { --scene-of: " of 28"; }
+.chapter-block:has(> .book-section:nth-child(29 of .book-section):nth-last-child(1 of .book-section)) { --scene-of: " of 29"; }
+.chapter-block:has(> .book-section:nth-child(30 of .book-section):nth-last-child(1 of .book-section)) { --scene-of: " of 30"; }
