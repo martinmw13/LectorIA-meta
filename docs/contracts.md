@@ -45,7 +45,7 @@ manifest migrates inline to one implicit `default` soundtrack of style
 
 `MusicManifest = { version, styles, soundtracks, tracks, playlists }`.
 `StyleInfo = { id, name }` where `id` is a lowercase slug and `name` is
-the Spanish display name. `Soundtrack = { id, name, style }` plus
+the display name. `Soundtrack = { id, name, style }` plus
 optional `credit`. `Track = { id, src, title, emotion, vector,
 intensity, tempo, durationSec, soundtrack, style }` plus optional
 `startSec` (default 0, where playback starts on first play and on each

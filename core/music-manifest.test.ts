@@ -31,20 +31,20 @@ function track(overrides: Record<string, unknown> = {}): Record<string, unknown>
 function manifestWith(tracks: Record<string, unknown>[]): unknown {
   return {
     version: 3,
-    styles: [{ id: "orchestral", name: "Orquesta" }],
+    styles: [{ id: "orchestral", name: "Orchestra" }],
     soundtracks: [{ id: "placeholder-musicgen", name: "Placeholder", style: "orchestral" }],
     tracks,
   };
 }
 
-// The committed placeholder manifest must parse and every src must exist.
+// The committed manifest must parse and every src must exist.
 describe("committed music manifest", () => {
   it("parses and every file src exists under public/", () => {
     const raw = readFileSync(join(__dirname, "..", "public", "music", "manifest.json"), "utf8");
     const manifest = parseManifest(JSON.parse(raw));
     expect(manifest.version).toBe(3);
     expect(manifest.styles).toEqual([
-      { id: "orchestral", name: "Orquesta" },
+      { id: "orchestral", name: "Orchestra" },
       { id: "piano", name: "Piano" },
     ]);
     expect(manifest.tracks.length).toBeGreaterThan(0);
@@ -53,17 +53,18 @@ describe("committed music manifest", () => {
         expect(existsSync(join(__dirname, "..", "public", track.src))).toBe(true);
       }
     }
-    const ids = manifest.tracks.map((t) => t.id);
-    expect(manifest.tracks[0]?.gainDb).toBe(0);
-    expect(manifest.tracks[0]?.endSec).toBeUndefined();
-    expect(ids).toContain("oz-test-01");
-    expect(ids).toContain("oz-test-02");
-    const suspenso = manifest.tracks.find((t) => t.id === "oz-test-02");
-    expect(suspenso?.emotion).toBe("suspenso");
-    expect(suspenso?.loop).toBe(true);
-    expect(suspenso?.startSec).toBe(0);
-    expect(suspenso?.source).toBe("generated");
-    expect(suspenso?.license).toBe("CC-BY-NC-4.0");
+    // Real recordings: every track credits its source, remote audio
+    // comes only from the Blob store host allowed in media-src.
+    for (const track of manifest.tracks) {
+      if (track.src.startsWith("https://")) {
+        expect(new URL(track.src).host).toBe("3vuhzq2wmortnuxj.public.blob.vercel-storage.com");
+      }
+      expect(track.attribution).toBeTruthy();
+      expect(track.sourceUrl).toMatch(/^https:\/\//);
+    }
+    const chopin = manifest.playlists.find((p) => p.id === "just-play-chopin");
+    expect(chopin?.label).toBe("Just play Chopin");
+    expect(chopin?.trackIds).toHaveLength(4);
   });
 });
 

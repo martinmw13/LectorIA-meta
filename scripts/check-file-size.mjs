@@ -36,6 +36,8 @@ export const IGNORE_PATTERNS = [
   // Processed book data (book.json is generated, about 230 KB).
   'data/books/',
   'pipeline/out/',
+  // Music library data: track metadata and an etiquetar export, not code.
+  'data/music/',
   // Agent and session logs (the project log dir is agent-logs/).
   'agent-logs/',
   // Vendored third-party skills.
