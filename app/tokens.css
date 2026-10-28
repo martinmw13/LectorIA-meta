@@ -1,7 +1,8 @@
 /* Design tokens: two layers.
  *
  * Skin layer (this file's first block): fonts, sizes, measure, spacing,
- * motion. A future skin adds an `html[data-skin="x"]` block (plus an
+ * motion. Shared by every skin (`html[data-skin]`); a skin adds an
+ * `html[data-skin="x"]` block (plus an
  * `html[data-skin="x"][data-theme="dark"]` block for dark-mode tweaks)
  * overriding these same names. Components only read tokens, so switching
  * skins never touches component code.
@@ -10,7 +11,7 @@
  * selected by `data-theme`. Skins do not redefine colours here. */
 
 :root,
-html[data-skin="default"] {
+html[data-skin] {
   --font-ui: var(--font-instrument, "Instrument Sans"), -apple-system, blinkmacsystemfont,
     "Segoe UI", system-ui, sans-serif;
   --font-book: var(--font-newsreader, "Newsreader"), georgia, "Times New Roman", charter, serif;
