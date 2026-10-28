@@ -1,0 +1,474 @@
+/* Ink skin ("Ink doodle"), ported from the approved prototype (prototipos/
+   decidido/skins, Oct 28): a ruled notebook page, Newsreader for the book,
+   Caveat for titles and Kalam for labels and buttons, everything drawn in
+   Meta blue ballpoint. Boxes become wobbly pen outlines, primary words get
+   a scribbled underline. Colours apply in light mode only; type and
+   ornaments apply in both. Nothing loops: motion is hover, click or a
+   state change only. */
+
+html[data-skin="ink"] {
+  --font-book: var(--font-newsreader, "Newsreader"), georgia, serif;
+  --font-ui: var(--font-kalam, "Kalam"), cursive;
+  --font-ink-title: var(--font-caveat, "Caveat"), cursive;
+}
+
+html[data-skin="ink"]:not([data-theme="dark"]) {
+  --color-text: #1b1f2a;
+  --color-text-muted: #5b6474;
+  --color-surface: #fffef9;
+  --color-surface-soft: #ffffff;
+  --color-border: rgba(8, 102, 255, 0.45);
+  --color-paper-dim: #f7f6f0;
+  --color-select: #d6e5ff;
+  --narration-sentence: rgba(8, 102, 255, 0.1);
+  --narration-glow: rgba(8, 102, 255, 0.18);
+  --narration-mark: #0866ff;
+}
+
+/* Notebook paper: faint blue rules every 32px. */
+html[data-skin="ink"]:not([data-theme="dark"]) body {
+  background: var(--color-surface) repeating-linear-gradient(180deg, transparent 0 31px, rgba(8, 102, 255, 0.06) 31px 32px);
+}
+
+/* ---------- Type: Kalam labels, Caveat titles, Newsreader body ---------- */
+html[data-skin="ink"] :is(.kicker, .mlabel, .panels-kicker, .top-center, .pager-label, .tick-label, .chapter-jump-text) {
+  font-family: var(--font-ui);
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+html[data-skin="ink"] :is(.kicker, .mlabel, .panels-kicker) {
+  font-size: 13.5px;
+  color: var(--color-text-muted);
+}
+
+html[data-skin="ink"] .top-center {
+  font-size: 14px;
+  text-align: left;
+  color: var(--color-text-muted);
+}
+
+html[data-skin="ink"] :is(.wordmark, .home-brand) {
+  font-family: var(--font-ink-title);
+  font-weight: 700;
+  font-size: 30px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--color-text);
+}
+
+html[data-skin="ink"] :is(.wordmark, .home-brand) em {
+  font-style: normal;
+  color: var(--color-accent);
+}
+
+html[data-skin="ink"] .body-text {
+  font-size: 20px;
+  line-height: 1.68;
+}
+
+html[data-skin="ink"] .body-text > p {
+  text-align: left;
+}
+
+html[data-skin="ink"] .body-text > p + p {
+  text-indent: 0;
+}
+
+html[data-skin="ink"] .body-text > p + p:not([data-cont]) {
+  margin-top: 1.05em;
+}
+
+html[data-skin="ink"] h1.chapter-title {
+  font-family: var(--font-ink-title);
+  font-weight: 700;
+  font-style: normal;
+  letter-spacing: 0;
+}
+
+html[data-skin="ink"] .cover-title {
+  font-size: 80px;
+  line-height: 1;
+}
+
+html[data-skin="ink"] .cover-num {
+  font-family: var(--font-ink-title);
+  font-weight: 400;
+  color: var(--color-accent);
+}
+
+html[data-skin="ink"] .player-track {
+  font-family: var(--font-ui);
+}
+
+/* ---------- Pen rules ---------- */
+html[data-skin="ink"] .top-line {
+  border-bottom: 2px solid var(--color-accent);
+}
+
+html[data-skin="ink"] :is(.band-pager, .band-play) {
+  border-top: 2px solid var(--color-accent);
+}
+
+html[data-skin="ink"] .vault {
+  border-left: 1.5px dashed rgba(8, 102, 255, 0.45);
+}
+
+/* ---------- Drop cap: a bold blue Caveat letter in a pen circle ---------- */
+html[data-skin="ink"] .book-section .body-text > p:first-of-type:not([data-cont])::first-letter {
+  float: left;
+  font-family: var(--font-ink-title);
+  font-weight: 700;
+  font-size: 3.1em;
+  line-height: 1;
+  color: var(--color-accent);
+  padding: 8px 20px 6px 18px;
+  margin: 4px 14px 0 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 60' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='f' x='-10%25' y='-10%25' width='120%25' height='120%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.045' numOctaves='2' seed='9' result='n'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='n' scale='2.6' xChannelSelector='R' yChannelSelector='G'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23f)'%3E%3Cpath d='M30 5C46 4 56 16 55 31S44 56 29 55 5 45 6 30 15 6 32 6C38 6 42 8 45 10' stroke='%230866FF' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E") center / 100% 100% no-repeat;
+}
+
+/* ---------- Ornaments: a wavy pen line ---------- */
+html[data-skin="ink"] .cover-rule,
+html[data-skin="ink"] .book-section + .book-section::before {
+  border: 0;
+  height: 12px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 12' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='f' x='-10%25' y='-10%25' width='120%25' height='120%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.045' numOctaves='2' seed='9' result='n'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='n' scale='2.6' xChannelSelector='R' yChannelSelector='G'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23f)'%3E%3Cpath d='M4 7C40 3 60 10 100 6S170 3 196 7' stroke='%230866FF' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E") center / 100% 100% no-repeat;
+}
+
+html[data-skin="ink"] .cover-rule {
+  width: 150px;
+  max-width: 150px;
+  margin: 14px 0 18px;
+}
+
+/* Scene break: "Scene 2 of 4" in Kalam between two pen lines. The number
+   and count come from scene-marks.css. */
+html[data-skin="ink"] .book-section + .book-section::before {
+  content: "Scene " var(--scene-n, "") var(--scene-of, "");
+  width: max-content;
+  height: auto;
+  margin: 34px auto;
+  padding: 0 136px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--color-text-muted);
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 12' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='f' x='-10%25' y='-10%25' width='120%25' height='120%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.045' numOctaves='2' seed='9' result='n'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='n' scale='2.6' xChannelSelector='R' yChannelSelector='G'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23f)'%3E%3Cpath d='M4 7C40 3 60 10 100 6S170 3 196 7' stroke='%230866FF' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E") left center / 120px 12px no-repeat,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 12' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='f' x='-10%25' y='-10%25' width='120%25' height='120%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.045' numOctaves='2' seed='9' result='n'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='n' scale='2.6' xChannelSelector='R' yChannelSelector='G'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23f)'%3E%3Cpath d='M4 7C40 3 60 10 100 6S170 3 196 7' stroke='%230866FF' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E") right center / 120px 12px no-repeat;
+}
+
+/* ---------- Picture pane: a dashed, hand-drawn frame ---------- */
+html[data-skin="ink"] .frame {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 300' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='f' x='-10%25' y='-10%25' width='120%25' height='120%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.045' numOctaves='2' seed='9' result='n'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='n' scale='2.6' xChannelSelector='R' yChannelSelector='G'/%3E%3C/filter%3E%3C/defs%3E%3Cpath d='M5 6C100 3 200 8 295 5L294 294C200 297 100 292 6 295Z' fill='none' stroke='%230866FF' stroke-opacity='.5' stroke-width='2' stroke-dasharray='7 6' filter='url(%23f)' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+}
+
+html[data-skin="ink"] .paper-grain .blob {
+  display: none;
+}
+
+html[data-skin="ink"] :is(.paper-grain, .paper-grain .grain) {
+  background: none;
+}
+
+html[data-skin="ink"] .pane-divider::before {
+  width: 1.5px;
+  background: repeating-linear-gradient(180deg, rgba(8, 102, 255, 0.45) 0 6px, transparent 6px 11px);
+}
+
+html[data-skin="ink"] .pane-divider:hover::before {
+  background: var(--color-accent);
+}
+
+html[data-skin="ink"] .pic-btn {
+  font-family: var(--font-ui);
+  font-size: 15px;
+  color: var(--color-text);
+}
+
+/* ---------- Cards: a wobbly pen outline on white ---------- */
+html[data-skin="ink"] .panels-offer {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='f' x='-10%25' y='-10%25' width='120%25' height='120%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.045' numOctaves='2' seed='9' result='n'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='n' scale='3' xChannelSelector='R' yChannelSelector='G'/%3E%3C/filter%3E%3C/defs%3E%3Cpath d='M6 8C120 4 280 10 394 6L392 292C280 296 120 290 8 294Z' fill='%23fff' stroke='%230866FF' stroke-width='2.2' stroke-linejoin='round' filter='url(%23f)' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+}
+
+html[data-skin="ink"] .panels-name {
+  font-family: var(--font-ink-title);
+  font-weight: 700;
+  font-size: 30px;
+  letter-spacing: 0;
+}
+
+html[data-skin="ink"] .panels-spoiler {
+  font-family: var(--font-book);
+  font-size: 15.5px;
+  color: var(--color-text);
+}
+
+html[data-skin="ink"] .panels-veil {
+  background: rgba(255, 254, 249, 0.75);
+  border-radius: 0;
+}
+
+/* Margin rows: blue pen icons, Kalam titles. Kept pictures are plain
+   doodles on the page, no frame. */
+html[data-skin="ink"] .mtool-icon {
+  color: var(--color-accent);
+}
+
+html[data-skin="ink"] .mtool-title {
+  font-family: var(--font-ui);
+  font-size: 15px;
+}
+
+html[data-skin="ink"] .mtool-sub {
+  font-style: italic;
+}
+
+html[data-skin="ink"] .style-picker select {
+  border-bottom: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 8' preserveAspectRatio='none'%3E%3Cdefs%3E%3C/defs%3E%3Cpath d='M2 5C22 2 40 7 60 4S100 2 118 5' fill='none' stroke='%230866FF' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") 0 100% / 100% 5px no-repeat;
+}
+
+html[data-skin="ink"] .vault-item {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+html[data-skin="ink"] :is(.thumb-tile, .vault-thumb, .panel) {
+  border-radius: 6px;
+}
+
+/* Boxless buttons: the word is the button, in Kalam. The primary one is
+   inked in caps, tilted, over a scribbled underline. */
+html[data-skin="ink"] :is(.panels-primary, .panels-quiet, .panels-link, .pane-chapter) {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 4px 2px;
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--color-text);
+}
+
+html[data-skin="ink"] .panels-primary {
+  color: var(--color-accent);
+  font-weight: 700;
+  font-size: 14.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding-bottom: 8px;
+  transform: rotate(-1.2deg);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 8' preserveAspectRatio='none'%3E%3Cdefs%3E%3C/defs%3E%3Cpath d='M2 5C22 2 40 7 60 4S100 2 118 5' fill='none' stroke='%230866FF' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") 0 100% / 100% 7px no-repeat;
+}
+
+/* ---------- Player: blue ballpoint icons, no boxes ---------- */
+html[data-skin="ink"] .player .skip:not(.rain) {
+  border: 0;
+  background: none;
+  border-radius: 50% 45% 55% 48%;
+  color: var(--color-accent);
+}
+
+html[data-skin="ink"] .player .skip:not(.rain) svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+html[data-skin="ink"] .player .play {
+  color: var(--color-accent);
+  border: 0;
+  background: none;
+}
+
+html[data-skin="ink"] .player .play svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: var(--color-accent);
+}
+
+html[data-skin="ink"] .player .skip.rain svg {
+  width: 46px;
+  height: 46px;
+}
+
+html[data-skin="ink"] .player .skip.rain {
+  width: 50px;
+  height: 50px;
+}
+
+/* Range: a wavy pen track and a hollow round thumb */
+html[data-skin="ink"] :is(.player-volume, .read-aloud-volume) input,
+html[data-skin="ink"] .player .rain-volume {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 16px;
+  background: none;
+  accent-color: var(--color-accent);
+}
+
+html[data-skin="ink"] :is(.player-volume, .read-aloud-volume, .player) input[type="range"]::-webkit-slider-runnable-track {
+  height: 8px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 8'%3E%3Cdefs%3E%3C/defs%3E%3Cpath d='M0 4q5-3 10 0t10 0 10 0 10 0' fill='none' stroke='%230866FF' stroke-opacity='.45' stroke-width='1.4'/%3E%3C/svg%3E") repeat-x center;
+}
+
+html[data-skin="ink"] :is(.player-volume, .read-aloud-volume, .player) input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -4px;
+  border-radius: 50% 45% 55% 48%;
+  background: #fff;
+  border: 2px solid var(--color-accent);
+  box-shadow: none;
+}
+
+html[data-skin="ink"] :is(.player-volume, .read-aloud-volume, .player) input[type="range"]::-moz-range-track {
+  height: 8px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 8'%3E%3Cdefs%3E%3C/defs%3E%3Cpath d='M0 4q5-3 10 0t10 0 10 0 10 0' fill='none' stroke='%230866FF' stroke-opacity='.45' stroke-width='1.4'/%3E%3C/svg%3E") repeat-x center;
+}
+
+html[data-skin="ink"] :is(.player-volume, .read-aloud-volume, .player) input[type="range"]::-moz-range-progress {
+  height: 2px;
+  background: var(--color-accent);
+}
+
+html[data-skin="ink"] :is(.player-volume, .read-aloud-volume, .player) input[type="range"]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50% 45% 55% 48%;
+  background: #fff;
+  border: 2px solid var(--color-accent);
+}
+
+html[data-skin="ink"] .ticks i {
+  border-radius: 2px 4px 2px 5px;
+  background: rgba(8, 102, 255, 0.3);
+}
+
+html[data-skin="ink"] .ticks i.on {
+  background: var(--color-accent);
+}
+
+/* ---------- Hero art buttons: pen-drawn music and read-aloud art ---------- */
+html[data-skin="ink"] .stickers[data-art="hero"] .sticker img,
+html[data-skin="ink"] .player .chopin img {
+  width: 46px;
+  height: 46px;
+  transform: none;
+  filter: none;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+html[data-skin="ink"] .sticker-dot {
+  border-radius: 50% 40% 55% 45%;
+  width: 5px;
+  height: 5px;
+}
+
+/* Captions: each art button names itself in Caveat beneath, so a boxless
+   doodle still reads as a control. */
+html[data-skin="ink"] :is(.sticker, .chopin, .player .skip.rain) {
+  position: relative;
+}
+
+html[data-skin="ink"] :is(.sticker, .chopin, .player .skip.rain)::after {
+  content: attr(title);
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 8px);
+  transform: translateX(-50%);
+  font-family: var(--font-ink-title);
+  font-size: 17px;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--color-accent);
+  pointer-events: none;
+}
+
+html[data-skin="ink"] .player .skip.rain::after {
+  top: calc(100% + 1px);
+}
+
+html[data-skin="ink"] .player .sticker-wrap .chopin::after {
+  content: "Just Chopin!";
+}
+
+html[data-skin="ink"] .stickers[data-art="hero"] {
+  gap: 21px;
+}
+
+html[data-skin="ink"] .stickers[data-art="hero"] + .sticker-wrap {
+  margin-left: 14px;
+}
+
+html[data-skin="ink"] .read-aloud-art {
+  width: 42px;
+  height: 42px;
+  display: block;
+}
+
+html[data-skin="ink"] .read-aloud-label {
+  font-family: var(--font-ink-title);
+  font-weight: 700;
+  font-size: 21px;
+  color: var(--color-accent);
+}
+
+@media (hover: hover) {
+  html[data-skin="ink"] .player .skip:not(.rain):hover:not(:disabled) {
+    background: rgba(8, 102, 255, 0.08);
+  }
+
+  html[data-skin="ink"] :is(.panels-quiet, .panels-link, .pane-chapter, .pic-btn):hover {
+    color: var(--color-accent);
+  }
+
+  html[data-skin="ink"] .panels-primary:hover {
+    animation: ink-scribble 380ms cubic-bezier(0.5, 0.1, 0.3, 1);
+  }
+
+  html[data-skin="ink"] :is(.sticker, .chopin, .read-aloud-btn):hover img {
+    animation: ink-wiggle 420ms ease;
+  }
+}
+
+@keyframes ink-scribble {
+  from {
+    background-size: 0% 7px;
+  }
+  to {
+    background-size: 100% 7px;
+  }
+}
+
+@keyframes ink-wiggle {
+  30% {
+    transform: rotate(-4deg);
+  }
+  65% {
+    transform: rotate(3deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-skin="ink"] .panels-primary:hover,
+  html[data-skin="ink"] :is(.sticker, .chopin, .read-aloud-btn):hover img {
+    animation: none;
+  }
+}
