@@ -28,6 +28,8 @@ jobs:
         run: npm run typecheck
       - name: Hook tests
         run: npm run test:hooks
+      - name: Processed book data
+        run: npm run check:data
       - name: Unit tests
         run: npm test
       - name: Build

@@ -20,6 +20,7 @@ export type IconName =
   | "book"
   | "brush"
   | "check-box"
+  | "vault"
   | RainIconName;
 
 export interface IconDef {
@@ -116,6 +117,19 @@ export const BASE_ICONS: Record<string, IconDef> = {
         <path d="M20.5 3.5 14 10" />
         <path d="M13.2 10.8C10 12 6.6 15 5.2 19.3L4.5 21l1.7-.7c4.3-1.4 7.3-4.8 8.5-8Z" />
         <path d="M12.6 9.4l2.1 2.1" />
+      </>
+    ),
+  },
+  // Keepsake box for the Picture Vault row in the margin.
+  vault: {
+    width: 18,
+    height: 18,
+    viewBox: "0 0 24 24",
+    body: (
+      <>
+        <path d="M4 9h16v10.5H4z" />
+        <path d="M4 9l2.2-3.6h11.6L20 9" />
+        <path d="M9.5 13h5" />
       </>
     ),
   },

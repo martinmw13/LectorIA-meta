@@ -171,3 +171,27 @@ describe("ambience controller", () => {
     expect(starts[0]!.voice.stops).toEqual([0]);
   });
 });
+
+describe("ambience controller load failure", () => {
+  it("swallows a failed load and retries on the next unlock", async () => {
+    let calls = 0;
+    const starts: unknown[] = [];
+    const engine: AmbienceEngine = {
+      load: () => (++calls === 1 ? Promise.reject(new Error("404")) : Promise.resolve("h")),
+      start: (handle) => {
+        starts.push(handle);
+        return { ramp: () => undefined, stop: () => undefined };
+      },
+      unlock: () => Promise.reject(new Error("resume blocked")),
+    };
+    const controller = new AmbienceController(engine);
+    controller.setLevel("drizzle");
+    await controller.unlock();
+    await tick();
+    expect(starts).toHaveLength(0);
+    await controller.unlock();
+    await tick();
+    expect(calls).toBe(2);
+    expect(starts).toEqual(["h"]);
+  });
+});

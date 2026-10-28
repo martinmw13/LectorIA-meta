@@ -24,25 +24,28 @@ export function BlurredThumbs({ panels, unblurredCount }: { panels: ChapterPanel
   );
 }
 
+// The cover card, laid out like the skin prototypes: a kicker, the name,
+// the spoiler line, the veiled strip, then reading first as the main choice.
 export function PanelsOfferCard({ panels, onShowAnyway, onReadFirst }: { panels: ChapterPanel[]; onShowAnyway: () => void; onReadFirst: () => void }) {
   return (
     <section className="panels-offer" aria-label={PANELS_NAME}>
-      <BlurredThumbs panels={panels} />
-      <div className="panels-offer-row">
-        <span className="panels-eye">
+      <p className="panels-kicker">Before you begin</p>
+      <p className="panels-name">{PANELS_NAME}</p>
+      <p className="panels-spoiler">{SPOILER_LINE}</p>
+      <div className="panels-veiled">
+        <BlurredThumbs panels={panels} />
+        <span className="panels-veil" aria-hidden="true">
           <Icon name="eye-off" />
+          Hidden until you&apos;re ready
         </span>
-        <div>
-          <p className="panels-name">{PANELS_NAME}</p>
-          <p className="panels-spoiler">{SPOILER_LINE}</p>
-        </div>
       </div>
       <div className="panels-btns">
-        <button type="button" className="panels-primary" onClick={onShowAnyway}>
-          Show me anyway
+        <button type="button" className="panels-primary" onClick={onReadFirst}>
+          Start reading
         </button>
-        <button type="button" className="panels-quiet" onClick={onReadFirst}>
-          I&apos;ll read first
+        <button type="button" className="panels-quiet" onClick={onShowAnyway}>
+          <Icon name="eye-off" />
+          Show me anyway
         </button>
       </div>
     </section>

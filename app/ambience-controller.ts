@@ -70,6 +70,9 @@ export class AmbienceController {
       // From off there is nothing to crossfade, so fade in instead.
       if (prev) prev.stop(CROSSFADE_SEC);
       this.voice = this.engine.start(handle, this.targetGain(levelId), prev ? CROSSFADE_SEC : FADE_IN_SEC);
+    }, () => {
+      // A failed load stays silent; clearing pendingId lets the next unlock retry.
+      if (at === this.seq) this.pendingId = null;
     });
   }
 
@@ -100,7 +103,7 @@ export class AmbienceController {
 
   async unlock(): Promise<void> {
     this.unlocked = true;
-    await this.engine.unlock();
+    await this.engine.unlock().catch(() => undefined);
     if (this.levelId !== "off" && !this.voice && !this.pendingId) this.play(this.levelId);
   }
 
