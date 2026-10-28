@@ -25,7 +25,7 @@ import {
 import type { SchedulerState } from "@/core/music-schedule";
 import { popHistory, pushHistory } from "@/core/music-history";
 import { nextSceneEntry } from "@/core/reader";
-import { loadMusicPrefs, saveMusicPrefs } from "./music-prefs";
+import { DEFAULT_VOLUME, loadMusicPrefs, saveMusicPrefs } from "./music-prefs";
 import { Player } from "./player";
 
 export interface SlimScene {
@@ -60,6 +60,15 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
   const [replayNonce, setReplayNonce] = useState(0);
   const [fadeSec, setFadeSec] = useState(0);
   const [playlistOn, setPlaylistOn] = useState(false);
+  // Volume and mute persist next to the style in one prefs object; the
+  // player stays a controlled view over them.
+  const [volume, setVolume] = useState(() => loadMusicPrefs()?.volume ?? DEFAULT_VOLUME);
+  const [muted, setMuted] = useState(() => loadMusicPrefs()?.muted ?? false);
+  // Ref mirrors so persist handlers always save fresh sound values.
+  const volumeRef = useRef(volume);
+  volumeRef.current = volume;
+  const mutedRef = useRef(muted);
+  mutedRef.current = muted;
   const byId = useMemo(() => new Map(scenes.map((s) => [s.id, s.emotion])), [scenes]);
   const schedRef = useRef<SchedulerState>(initScheduler());
   const historyRef = useRef<string[]>([]);
@@ -99,10 +108,17 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
     [],
   );
 
-  const persist = useCallback((next: MusicSelection) => {
-    setSelection(next);
-    saveMusicPrefs({ style: next.style });
-  }, []);
+  const persist = useCallback(
+    (next: MusicSelection, sound?: { volume: number; muted: boolean }) => {
+      setSelection(next);
+      saveMusicPrefs({
+        style: next.style,
+        volume: sound?.volume ?? volumeRef.current,
+        muted: sound?.muted ?? mutedRef.current,
+      });
+    },
+    [],
+  );
 
   const observe = useCallback(
     (sceneId: string) => {
@@ -223,6 +239,26 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
     setPlaylistOn(true);
   }
 
+  function changeVolume(next: number) {
+    setVolume(next);
+    volumeRef.current = next;
+    saveMusicPrefs({
+      style: liveRef.current.selection?.style ?? null,
+      volume: next,
+      muted: mutedRef.current,
+    });
+  }
+
+  function changeMuted(next: boolean) {
+    setMuted(next);
+    mutedRef.current = next;
+    saveMusicPrefs({
+      style: liveRef.current.selection?.style ?? null,
+      volume: volumeRef.current,
+      muted: next,
+    });
+  }
+
   function changeStyle(style: string) {
     const st = liveRef.current;
     if (!st.manifest || !st.selection || !st.routeSceneId || st.playlistOn) return;
@@ -267,29 +303,36 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
 
   return (
     <>
-      <div className="player-bar">
-        {musicFailed || empty ? (
-          <p className="player-note">Music unavailable. The reader works without it.</p>
-        ) : (
-          <Player
-            track={track}
-            replayNonce={replayNonce}
-            fadeSec={fadeSec}
-            canPrev={canPrev}
-            onPrev={goPrev}
-            canSkip={canSkip}
-            onSkip={skip}
-            styles={stylesWithTracks}
-            styleId={selection?.style ?? null}
-            onStyleChange={changeStyle}
-            onEnded={ended}
-            playlistOn={playlistOn}
-            playlistLabel={activePlaylist?.label ?? null}
-            onTogglePlaylist={togglePlaylist}
-            controlsDisabled={playlistOn}
-          />
-        )}
-      </div>
+      <header className="topbar">
+        <div className="bar-inner">
+          <span className="wordmark">Lectoria</span>
+          {musicFailed || empty ? (
+            <p className="player-note">Music unavailable. The reader works without it.</p>
+          ) : (
+            <Player
+              track={track}
+              replayNonce={replayNonce}
+              fadeSec={fadeSec}
+              canPrev={canPrev}
+              onPrev={goPrev}
+              canSkip={canSkip}
+              onSkip={skip}
+              volume={volume}
+              muted={muted}
+              onVolumeChange={changeVolume}
+              onMutedChange={changeMuted}
+              styles={stylesWithTracks}
+              styleId={selection?.style ?? null}
+              onStyleChange={changeStyle}
+              onEnded={ended}
+              playlistOn={playlistOn}
+              playlistLabel={activePlaylist?.label ?? null}
+              onTogglePlaylist={togglePlaylist}
+              controlsDisabled={playlistOn}
+            />
+          )}
+        </div>
+      </header>
       {children}
     </>
   );

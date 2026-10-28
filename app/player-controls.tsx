@@ -1,7 +1,7 @@
-// Player extras: style select and playlist toggle. Transport lives in
-// the player so the bar reads prev, play, next, then the now-playing
-// line. No audio here, so the bar layout can change without touching
-// the engine.
+// Player extras: style select and the Chopin playlist toggle. Transport
+// lives in the player so the bar reads prev, play, next, then the
+// now-playing line. No audio here, so the bar layout can change without
+// touching the engine.
 import type { StyleInfo } from "@/core/music";
 
 export function PlayerControls({
@@ -45,8 +45,15 @@ export function PlayerControls({
           className="chopin"
           onClick={onTogglePlaylist}
           aria-pressed={playlistOn}
+          aria-label="Just play Chopin"
+          title="Just play Chopin"
         >
-          {playlistLabel}
+          <img
+            src="/art/chopin-just-play-me.png"
+            alt="Just play Chopin"
+            width={40}
+            height={40}
+          />
         </button>
       ) : null}
     </>
