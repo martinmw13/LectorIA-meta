@@ -8,7 +8,7 @@ import type {
   SceneSignal,
   Track,
 } from "./music-types";
-import { compareTrackId, dominantEmotion, rankScored, rankTracks, resolveConfig } from "./music-similarity";
+import { compareTrackId, dominantEmotion, rankScored, resolveConfig } from "./music-similarity";
 import type { RankedTrack } from "./music-similarity";
 
 // The one audible-scope filter: playlist-only tracks never enter emotion
@@ -55,13 +55,12 @@ export function nextTrack(
   const scope = candidatesFor(selection ?? { style: null }, manifest);
   if (scope.length <= 1) return null;
   const config = resolveConfig(override);
-  const scoped = { ...manifest, tracks: scope };
   if (scene === null) {
     const ids = [...scope].sort(compareTrackId);
     const at = ids.findIndex((t) => t.id === currentTrackId);
     return ids[(at + 1) % ids.length] as Track;
   }
-  const ranked = rankTracks(scene, scoped, config);
+  const ranked = rankScored(scene, scope, config).map((entry) => entry.track);
   const same = ranked.filter((t) => t.emotion === dominantEmotion(scene));
   const others = same.filter((t) => t.id !== currentTrackId);
   if (others.length > 0) {
@@ -105,32 +104,6 @@ export function selectScheduled(draw: ScheduledDraw): Track | null {
   const picked = (drawFrom[Math.floor(rng() * drawFrom.length)] as RankedTrack).track;
   if (currentId !== null && draw.nowSec - draw.currentStartedSec < config.minTrackSec) return null;
   return picked;
-}
-
-// Random mode draw: the scheduled draw without the min-track hold, which
-// only the scheduler owns. An infinite clock always passes the hold.
-export function pickRandomTrack(
-  cands: Track[],
-  scene: SceneSignal | null,
-  excludeId: string | null,
-  rng: Rng,
-  override?: Partial<MusicConfig>,
-): Track | null {
-  if (cands.length === 0) return null;
-  if (scene === null) {
-    const ids = [...cands].sort(compareTrackId);
-    const at = ids.findIndex((t) => t.id === excludeId);
-    return ids[(at + 1) % ids.length] as Track;
-  }
-  return selectScheduled({
-    cands,
-    scene,
-    currentId: excludeId,
-    currentStartedSec: 0,
-    nowSec: Number.POSITIVE_INFINITY,
-    rng,
-    override,
-  });
 }
 
 // True when the style has at least one emotion-selectable track. The style
