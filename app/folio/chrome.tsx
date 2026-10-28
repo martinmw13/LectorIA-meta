@@ -2,27 +2,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Icon } from "../icons";
 import { clampSplitWidth, SPLIT_MIN_PX } from "./helpers";
 
 export { THEME_KEY } from "../theme";
 export const SPLIT_KEY = "lectoria.split";
-
-function MoonIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-      <path d="M13.5 9.5A5.8 5.8 0 0 1 6.5 2.5a5.8 5.8 0 1 0 7 7Z" />
-    </svg>
-  );
-}
-
-function SunIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-      <circle cx="8" cy="8" r="3.2" />
-      <path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M12.6 3.4l-1.4 1.4M4.8 11.2 3.4 12.6" />
-    </svg>
-  );
-}
 
 export function TopLine({
   bookTitle,
@@ -69,7 +53,7 @@ export function TopLine({
         aria-pressed={theme === "dark"}
         title={theme === "dark" ? "Light mode" : "Dark mode"}
       >
-        {theme === "dark" ? <SunIcon /> : <MoonIcon />}
+        {theme === "dark" ? <Icon name="sun" /> : <Icon name="moon" />}
       </button>
     </header>
   );

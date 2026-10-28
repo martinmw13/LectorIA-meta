@@ -3,18 +3,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Icon } from "../icons";
 import { STYLE_OTHER_VALUE, STYLE_PRESETS, resolveStyleSelect } from "../image-style";
 import type { ImageStylePref } from "../image-style";
 import { truncateCaption } from "./helpers";
 import type { InlineFigure } from "./use-pictures";
-
-function ExpandIcon() {
-  return (
-    <svg width="11" height="11" viewBox="0 0 16 16" aria-hidden="true">
-      <path d="M9.5 2.5h4v4M13.5 2.5 9 7M6.5 13.5h-4v-4M2.5 13.5 7 9" />
-    </svg>
-  );
-}
 
 export function StylePicker({
   pref,
@@ -130,7 +123,7 @@ export function PictureVault({
                   aria-label="View larger"
                   onClick={() => onOpen(scene.url, scene.caption, null)}
                 >
-                  <ExpandIcon />
+                  <Icon name="expand" />
                 </button>
               </div>
             </div>
@@ -157,7 +150,7 @@ export function PictureVault({
                     if (f.url) onOpen(f.url, f.quote, null);
                   }}
                 >
-                  <ExpandIcon />
+                  <Icon name="expand" />
                 </button>
               </div>
             </div>
