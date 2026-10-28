@@ -15,7 +15,8 @@ html[data-skin="engraving"] {
 
 html[data-skin="engraving"]:not([data-theme="dark"]) {
   --color-text: #2a241c;
-  --color-text-muted: #75684f;
+  --color-text-muted-base: #75684f;
+  --color-text-muted: var(--color-text-muted-base);
   --color-surface: #efe6ce;
   --color-surface-soft: #f7f1de;
   --color-border: rgba(42, 36, 28, 0.28);
