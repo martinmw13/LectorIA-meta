@@ -10,6 +10,11 @@ export interface ReaderParagraph {
   // Set on fragments after the first when paginateScene splits one
   // paragraph across pages. Fragments share n; ids stay unique.
   cont?: boolean;
+  // Char offset into the original paragraph where this fragment starts.
+  // Whole paragraphs and first fragments carry 0; later fragments carry
+  // the cut point, so read-along highlights can map word timings (which
+  // are paragraph-relative) onto the visible fragment text.
+  from?: number;
 }
 
 export interface ReaderScene {
@@ -146,11 +151,13 @@ export function paginateScene(
     words = 0;
     lines = 0;
   };
-  const pushFrag = (p: ReaderParagraph, text: string, fragNo: number, indented: boolean) => {
+  const pushFrag = (p: ReaderParagraph, text: string, fragNo: number, indented: boolean, from: number) => {
     const w = countWords(text);
     const l = estimateLines(text, indented);
     current.push(
-      fragNo === 0 ? { id: p.id, n: p.n, text } : { id: `${p.id}~${fragNo + 1}`, n: p.n, text, cont: true },
+      fragNo === 0
+        ? { id: p.id, n: p.n, text, from }
+        : { id: `${p.id}~${fragNo + 1}`, n: p.n, text, cont: true, from },
     );
     words += w;
     lines += l;
@@ -168,8 +175,9 @@ export function paginateScene(
       const remainingWords = budgetWords - words;
       const wRest = countWords(rest);
       const lRest = estimateLines(rest, indented);
+      const from = p.text.length - rest.length;
       if (lRest <= remainingLines && wRest <= remainingWords) {
-        pushFrag(p, rest, fragNo, indented);
+        pushFrag(p, rest, fragNo, indented, from);
         rest = "";
       } else if (remainingLines <= 0 || remainingWords <= 0) {
         flush();
@@ -177,7 +185,7 @@ export function paginateScene(
         flush();
       } else {
         const cut = findCut(rest, remainingLines * CHARS_PER_LINE - (indented ? INDENT_CHARS : 0), remainingWords);
-        pushFrag(p, rest.slice(0, cut), fragNo, indented);
+        pushFrag(p, rest.slice(0, cut), fragNo, indented, from);
         fragNo += 1;
         rest = rest.slice(cut);
         flush();

@@ -299,6 +299,34 @@ describe("chapter cover and end pages", () => {
   });
 });
 
+describe("fragment from offsets", () => {
+  it("starts whole paragraphs at 0 and chains split fragments exactly", () => {
+    const text = "The cyclone came swiftly across the prairie, howling loud. ".repeat(14);
+    const pages = paginateScene([{ id: "c1p1", n: 1, text }]);
+    const frags = pages.flatMap((p) => p.paragraphs);
+    expect(frags.length).toBeGreaterThan(1);
+    expect(frags[0]?.from).toBe(0);
+    let cursor = 0;
+    for (const frag of frags) {
+      expect(frag.from).toBe(cursor);
+      expect(text.slice(frag.from, (frag.from ?? 0) + frag.text.length)).toBe(frag.text);
+      cursor += frag.text.length;
+    }
+    expect(cursor).toBe(text.length);
+  });
+
+  it("keeps from at 0 for paragraphs that move whole", () => {
+    const pages = paginateScene([
+      { id: "a", n: 1, text: "short one" },
+      { id: "b", n: 2, text: "short two" },
+    ]);
+    for (const frag of pages.flatMap((p) => p.paragraphs)) {
+      expect(frag.from).toBe(0);
+      expect(frag.cont).toBeUndefined();
+    }
+  });
+});
+
 describe("panelCaption", () => {
   it("keeps a short summary whole", () => {
     expect(panelCaption("Dorothy wakes to bright sunshine.")).toBe("Dorothy wakes to bright sunshine.");
