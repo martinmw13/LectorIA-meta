@@ -291,53 +291,44 @@ holds a manual pick.
 
 `POST /api/images` (Node runtime, `maxDuration` 120). Request is a
 discriminated union: `{ kind: "passage", bookId, textVersion, n }` names
-the paragraph where the selection starts, `{ kind: "scene", bookId,
-textVersion, sceneId }` names the scene. Validation is strict: known
-book, matching `textVersion`, integer `n` inside the book, known
-`sceneId`. Any other body is a 400 with a generic English message.
-The client sends ordinals and ids only, never text. "Illustrate
-scene" uses the scene id from the route.
+the start paragraph, `{ kind: "scene", bookId, textVersion, sceneId }`
+names the scene. Validation is strict: known book, matching
+`textVersion`, integer `n` in the book, known `sceneId`. Anything else
+is a 400 with a generic English message. The client sends ordinals
+and ids, never passage text. "Illustrate scene" uses the scene id from
+the route.
 
 Responses (typed in `core/types.ts`): `{ status: "ready", url, cached,
 caption }` with a Vercel Blob URL, never bytes; `{ status: "pending" }`
-when another request holds the lock, in which case the client reposts
-every 3 s up to about 2 minutes; `{ status: "error", code, message }`
-where code is `quota`, `budget`, `unavailable`, or `bad_request` with a
-friendly English message. Caption is the scene title for scenes and the
-first words of the paragraph for passages, built server-side.
+when another request holds the lock, so the client reposts
+every 3 s up to 2 minutes; `{ status: "error", code, message }`
+with code `quota`, `budget`, `unavailable`, or `bad_request` and an
+English message. Caption is the scene title (scene) or first
+paragraph words (passage), built server-side.
 
-The passage cache key is book plus start paragraph plus `textVersion`
-plus `PROMPT_VERSION` (`v1`); the scene key is book plus scene id plus
-the same versions. Both map to a deterministic Blob path
+Cache keys hold book, `textVersion`, `PROMPT_VERSION` (`v1`), start
+paragraph (passage) or scene id (scene), and an optional `style-<id>` /
+`style-c<hex>` segment. Each maps to a deterministic Blob path
 (`addRandomSuffix: false`, `allowOverwrite: false`). An Upstash Redis
-index maps key to Blob URL, so hits are one GET; on an index miss the
-server lists by exact path prefix (head equivalent) before generating
-and backfills the index.
+index maps key to Blob URL (hits: one GET); on an index miss the server
+lists by exact path prefix before generating and backfills the index.
 
 Optional `style`: `{ preset: <id> }` or `{ custom: "<text>" }`
-(`denslow` equals omitted):
-
-| id | label |
-|----|-------|
-| `denslow` | Classic 1900 (default) |
-| `realistic` | Realistic |
-| `anime` | Anime |
-| `pencil` | Pencil sketch |
-| `watercolor` | Watercolor |
-| `storybook` | Storybook |
-| `comic` | Comic book |
-| `oil` | Oil painting |
-| `woodcut` | Woodcut |
-
-Custom: 2-60 chars, letters/numbers/space/`, . ' & -`, lowercased;
-denylisted text gets the style message. Keys insert `style-<id>` or
-`style-c<hex>`; omitted styles key as today. Guards unchanged; stored in
-`lectoria.imageStyle.v1` for new images; panels share one snapshot.
+(`denslow` equals omitted). Preset ids: `denslow`, `realistic`, `anime`,
+`pencil`, `watercolor`, `storybook`, `comic`, `oil`, `woodcut` (labels,
+`MAX_CUSTOM_STYLE_CHARS` in `IMAGE_STYLE_PRESETS`, `@/core/image-style`).
+Stored under `lectoria.imageStyle.v1` (`saveImageStyle`/`loadImageStyle`);
+custom input `maxLength` 60. Custom: 2-60 chars of
+letters/numbers/space plus `, . ' & -`, lowercased; denylisted text is
+rejected. Rejections are 400 `bad_request` with message "That style
+can't be used. Try a different one." (`MSG_STYLE`, shape above).
+Omitted styles keep today's keys, new images only. Panels: style read
+once at open, one scene request per panel, reposted on re-polls.
 A Redis lock per key returns `pending` to concurrent requests. Quota is
-5 new images per person per day by hashed IP and signed cookie,
-whichever runs out first; a shared spend counter in integer
-micro-dollars sits under `SPEND_CAP_USD` (default 10). Failures refund
-quota and budget and release the lock.
+5 new images per person per day by hashed IP and signed cookie (either
+refuses); a shared spend counter in integer micro-dollars under
+`SPEND_CAP_USD` (default 10). Failures refund quota and budget and
+release the lock.
 
 ## Chat api
 
