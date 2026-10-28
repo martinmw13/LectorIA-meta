@@ -34,7 +34,7 @@ export interface SlimScene {
   emotion: SceneSignal | null;
 }
 
-// Route entries use the short dwell; scoring and hysteresis are untouched.
+// Route entries use the short dwell; the draw and the holds are unchanged.
 function entryDwell(): { dwellSec: number } {
   return { dwellSec: MUSIC_CONFIG.sceneEntryDwellSec };
 }
@@ -61,9 +61,11 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
   const [fadeSec, setFadeSec] = useState(0);
   const [playlistOn, setPlaylistOn] = useState(false);
   // Volume and mute persist next to the style in one prefs object; the
-  // player stays a controlled view over them.
-  const [volume, setVolume] = useState(() => loadMusicPrefs()?.volume ?? DEFAULT_VOLUME);
-  const [muted, setMuted] = useState(() => loadMusicPrefs()?.muted ?? false);
+  // player stays a controlled view over them. Prefs load once so mount
+  // parses localStorage a single time.
+  const [initialPrefs] = useState(loadMusicPrefs);
+  const [volume, setVolume] = useState(() => initialPrefs?.volume ?? DEFAULT_VOLUME);
+  const [muted, setMuted] = useState(() => initialPrefs?.muted ?? false);
   // Ref mirrors so persist handlers always save fresh sound values.
   const volumeRef = useRef(volume);
   volumeRef.current = volume;
@@ -108,17 +110,14 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
     [],
   );
 
-  const persist = useCallback(
-    (next: MusicSelection, sound?: { volume: number; muted: boolean }) => {
-      setSelection(next);
-      saveMusicPrefs({
-        style: next.style,
-        volume: sound?.volume ?? volumeRef.current,
-        muted: sound?.muted ?? mutedRef.current,
-      });
-    },
-    [],
-  );
+  const persist = useCallback((next: MusicSelection) => {
+    setSelection(next);
+    saveMusicPrefs({
+      style: next.style,
+      volume: volumeRef.current,
+      muted: mutedRef.current,
+    });
+  }, []);
 
   const observe = useCallback(
     (sceneId: string) => {
@@ -146,7 +145,7 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
         if (cancelled) return;
         const parsed = parseManifest(json);
         setManifest(parsed);
-        setSelection(resolveInitialSelection(parsed, loadMusicPrefs()));
+        setSelection(resolveInitialSelection(parsed, initialPrefs));
       })
       .catch(() => {
         if (!cancelled) setMusicFailed(true);
@@ -154,7 +153,7 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [initialPrefs]);
 
   // Scene entry: exactly one observe call per scene id, once the manifest
   // lands. The first scene cues at once, so it plays on the first press.
