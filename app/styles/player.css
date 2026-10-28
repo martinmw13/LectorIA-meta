@@ -69,10 +69,58 @@
   font-style: italic;
   font-size: 15.5px;
   line-height: 1.35;
-  flex: 1 1 auto;
+  flex: 0 1 300px;
+  width: 300px;
   min-width: 0;
   max-width: 300px;
+  overflow: hidden;
+}
+
+.player-track-inner {
+  display: inline-block;
   white-space: nowrap;
+}
+
+.player-track[data-overflow="1"] {
+  mask-image: linear-gradient(to right, #000 calc(100% - 16px), transparent);
+}
+
+.player-track[data-overflow="1"] .player-track-inner {
+  animation: player-marquee var(--marquee-duration, 6000ms) linear infinite alternate;
+}
+
+@keyframes player-marquee {
+  0%,
+  15% {
+    transform: translateX(0);
+  }
+  85%,
+  100% {
+    transform: translateX(calc(-1 * var(--marquee-shift, 0px)));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .player-track[data-overflow="1"] {
+    mask-image: none;
+  }
+  .player-track[data-overflow="1"] .player-track-inner {
+    animation: none;
+    transform: none;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.player[data-reduced-motion="true"] .player-track[data-overflow="1"] {
+  mask-image: none;
+}
+
+.player[data-reduced-motion="true"] .player-track[data-overflow="1"] .player-track-inner {
+  animation: none;
+  transform: none;
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
 }
