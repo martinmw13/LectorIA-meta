@@ -170,7 +170,7 @@ export function UploadSection() {
           <div className="home-fineprint">
             <p className="home-muted">
               Your first book is on us, up to about {freePages} pages. Longer books or more of them?
-              Bring your own key.
+              Bring your own key!
             </p>
             <p className="home-muted">
               EPUB only, up to 20 MB. Nothing leaves your computer until you choose to read it.
