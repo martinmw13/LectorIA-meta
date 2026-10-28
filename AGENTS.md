@@ -90,7 +90,7 @@ Owner decisions. Short and binding.
 - A chapter holds several scenes. Each scene has its own emotion.
 - Paragraph ids carry a global ordinal `n`. Compare `n`, never id strings.
 - `book.json` is frozen with a `textVersion` hash. Every cache key includes it.
-- Scenes cover each chapter's paragraphs with no gaps and no overlaps. No scene crosses a chapter boundary.
+- Scenes cover each chapter's paragraphs with no gaps and no overlaps. No scene crosses a chapter boundary. Scenes split at strong sequential emotion shifts; blends stay in the vector.
 - Emotions are distributions. Each scene stores the full Jev probability vector over the 8 ids, plus `intensity` (0 to 1) and `tempo` (energy, 0 to 1). The Muse override on low confidence edits the vector and records that it did. It never swaps in a single label.
 - Music is about 15 tracks, pre-generated offline with MusicGen on Modal as one coherent soundtrack: same orchestra and instrumentation, same leitmotif style. Each track is a weighted blend of emotions and carries an emotion vector plus intensity and tempo. The proposed way to pick the blends: cluster the Oz scene vectors and use the centroids as track prompts.
 - The player picks the track nearest to the scene vector, by cosine similarity over the vector plus intensity and tempo. Hysteresis stops it from flipping on small changes. Skip or change track overrides until the next scene.

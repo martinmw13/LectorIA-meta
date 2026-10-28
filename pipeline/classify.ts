@@ -36,7 +36,7 @@ export interface ClassifyMetaUsage {
   costUsd: number;
 }
 
-async function classifyScene(
+export async function classifyScene(
   scene: Scene,
   text: string,
   bookTitle: string,
@@ -94,6 +94,13 @@ export async function runClassify(ctx: StepCtx, deps: { jev: JevClient; meta: Me
   const metaUsage: ClassifyMetaUsage = { model: deps.meta.model, requests: 0, promptTokens: 0, cachedTokens: 0, completionTokens: 0, costUsd: 0 };
   const byN = new Map(book.paragraphs.map((p) => [p.n, p]));
   const chapterTitle = new Map(book.chapters.map((c) => [c.ch, c.title]));
+  let resplit: unknown;
+  try {
+    const prev = JSON.parse(readFileSync(outPath, "utf8")) as { provenance?: { resplit?: unknown } };
+    resplit = prev.provenance?.resplit;
+  } catch {
+    resplit = undefined; // no previous analysis yet
+  }
   let jevInputTokens = 0;
   let jevOutputTokens = 0;
   let jevRequests = 0;
@@ -119,6 +126,8 @@ export async function runClassify(ctx: StepCtx, deps: { jev: JevClient; meta: Me
     completion_tokens: segment.completion_tokens + metaUsage.completionTokens,
     cost_usd: segment.cost_usd + metaUsage.costUsd,
   };
+  const seen = new Set(scenes.map((s) => s.id));
+  if (seen.size !== scenes.length) throw new Error("classify found duplicate scene ids");
   const overrides = scenes.filter((s) => s.muse_override !== null).length;
   writeFileSync(
     outPath,
@@ -132,6 +141,7 @@ export async function runClassify(ctx: StepCtx, deps: { jev: JevClient; meta: Me
         jev: { model: deps.jev.model, requests: jevRequests, input_tokens: jevInputTokens, output_tokens: jevOutputTokens, cost_usd: jevCost },
         meta: metaTotal,
         total_cost_usd: jevCost + metaTotal.cost_usd,
+        ...(resplit !== undefined ? { resplit } : {}),
       },
     })}\n`,
   );
