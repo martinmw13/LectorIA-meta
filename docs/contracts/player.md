@@ -47,7 +47,10 @@ Motion stays under 200 ms, except the image hover expand at 260 ms.
 `app/player.tsx` keeps the audio engine, transport, and band layout;
 `app/folio/music-style-control.tsx` holds the stickers and Chopin
 button behind `{ modes, current, onAdvance }`;
-`app/music-prefs.ts` owns storage, including the Chopin mode. The heading keeps
+`app/music-prefs.ts` owns storage, including the Chopin mode, through
+one store: `createMusicPrefsStore` loads the full prefs once and every
+partial `update` merges over them, so a volume or mute change never
+clobbers the stored style or Chopin mode. The heading keeps
 `:focus:not(:focus-visible){outline:none}`. No user-visible emotion
 labels exist; ids stay as they are. `core/music-credit.ts` builds the
 line as a pure function with tests. `core/music-history.ts` is the
