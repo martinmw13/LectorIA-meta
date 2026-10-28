@@ -6,6 +6,7 @@ import { RAIN_ICONS_EXTRA } from "./icons-rain-extra";
 export type IconName =
   | "moon"
   | "sun"
+  | "eye"
   | "eye-off"
   | "pencil"
   | "picture"
@@ -45,6 +46,17 @@ export const BASE_ICONS: Record<string, IconDef> = {
       <>
         <circle cx="8" cy="8" r="3.2" />
         <path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M12.6 3.4l-1.4 1.4M4.8 11.2 3.4 12.6" />
+      </>
+    ),
+  },
+  eye: {
+    width: 24,
+    height: 24,
+    viewBox: "0 0 24 24",
+    body: (
+      <>
+        <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+        <circle cx="12" cy="12" r="2.8" />
       </>
     ),
   },

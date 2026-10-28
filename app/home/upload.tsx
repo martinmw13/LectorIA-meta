@@ -23,6 +23,9 @@ export function UploadSection() {
   const [freeUsed, setFreeUsed] = useState(false);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [keyOpen, setKeyOpen] = useState(false);
+  // Tab-only scratch: never stored, logged, or sent; dies with this component.
+  const [idleKey, setIdleKey] = useState("");
+  const [showKey, setShowKey] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const freePages = approxPages(FREE_BOOK_MAX_WORDS);
@@ -59,6 +62,8 @@ export function UploadSection() {
 
   function reset() {
     if (inputRef.current) inputRef.current.value = "";
+    setIdleKey("");
+    setShowKey(false);
     setStatus({ step: "idle" });
   }
 
@@ -104,7 +109,12 @@ export function UploadSection() {
             <div>
               <ByokStep
                 reason={route.reason}
-                onSubmit={() => setStatus({ step: "processing", book: status.book })}
+                initialKey={idleKey}
+                onSubmit={() => {
+                  setIdleKey("");
+                  setShowKey(false);
+                  setStatus({ step: "processing", book: status.book });
+                }}
               />
               <div className="ob-actions">
                 <button className="ob-quiet" type="button" onClick={reset}>
@@ -175,7 +185,11 @@ export function UploadSection() {
               type="button"
               className="ob-pickbtn"
               aria-pressed={!keyOpen}
-              onClick={() => setKeyOpen(false)}
+              onClick={() => {
+                setKeyOpen(false);
+                setIdleKey("");
+                setShowKey(false);
+              }}
             >
               <span className="ob-box" aria-hidden="true">
                 <HomeIcon name="check-box" />
@@ -191,7 +205,13 @@ export function UploadSection() {
               aria-pressed={keyOpen}
               aria-expanded={keyOpen}
               aria-controls="obKeybox"
-              onClick={() => setKeyOpen((open) => !open)}
+              onClick={() => {
+                if (keyOpen) {
+                  setIdleKey("");
+                  setShowKey(false);
+                }
+                setKeyOpen(!keyOpen);
+              }}
             >
               <span className="ob-keydoodle" aria-hidden="true">
                 <HomeIcon name="key" />
@@ -206,6 +226,31 @@ export function UploadSection() {
             <p className="ob-fine">
               After your book opens, longer ones ask for your own Meta key. It stays in this tab only.
             </p>
+            <div className="ob-keyrow">
+              <label className="sr-only" htmlFor="obKey">
+                Paste your API key
+              </label>
+              <input
+                id="obKey"
+                type={showKey ? "text" : "password"}
+                placeholder="Paste your API key"
+                autoComplete="off"
+                spellCheck={false}
+                name="transient-key"
+                value={idleKey}
+                onChange={(event) => setIdleKey(event.target.value)}
+              />
+              <button
+                type="button"
+                className="ob-eye"
+                aria-label={showKey ? "Hide API key" : "Show API key"}
+                aria-pressed={showKey}
+                onClick={() => setShowKey((show) => !show)}
+              >
+                <HomeIcon name={showKey ? "eye-off" : "eye"} />
+              </button>
+            </div>
+            <p className="ob-fine">It stays in this tab only. We never save it.</p>
           </div>
         </div>
       )}

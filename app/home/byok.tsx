@@ -12,13 +12,15 @@ const REASONS: Record<"too_long" | "free_used", (pages: number) => string> = {
 // on submit, on reset, and on unmount; never stored, logged, or shared.
 export function ByokStep({
   reason,
+  initialKey,
   onSubmit,
 }: {
   reason: "too_long" | "free_used";
+  initialKey?: string;
   onSubmit: () => void;
 }) {
   const [provider, setProvider] = useState<Provider>("meta");
-  const [key, setKey] = useState("");
+  const [key, setKey] = useState(initialKey ?? "");
   const [baseUrl, setBaseUrl] = useState("");
   const [model, setModel] = useState("");
   const privacyId = useId();

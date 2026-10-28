@@ -54,6 +54,18 @@ html[data-skin="comic"] .ob-pickbtn[aria-pressed="true"] { background: rgba(255,
 html[data-skin="chihiro"] .ob-pickbtn[aria-pressed="true"] { background: radial-gradient(90% 90% at 50% 50%, rgba(255, 210, 120, .55), transparent 80%); }
 .ob-keybox { margin-top: 2px; }
 .ob-keybox[hidden] { display: none; }
+.ob-keyrow { display: flex; gap: 6px; align-items: center; margin-top: 4px; }
+.ob-keyrow input { flex: 1; min-width: 0; color: var(--text); background: transparent; border: 0; border-bottom: 1px solid var(--muted); border-radius: 0; padding: 4px 2px; font-size: 14px; font-family: var(--font-book); }
+html[data-skin="engraving"] .ob-keyrow input { border-bottom-color: var(--rule); font-style: italic; }
+html[data-skin="watercolor"] .ob-keyrow input { border-bottom: 2px solid rgba(127, 176, 255, .7); }
+html[data-skin="ink"] .ob-keyrow input { border-bottom: 2px solid var(--color-accent); }
+html[data-skin="pencil"] .ob-keyrow input { border-bottom-color: rgba(44, 47, 52, .55); }
+html[data-skin="comic"] .ob-keyrow input { border: 2px solid #14161C; border-radius: 4px; background: #fff; padding: 4px 8px; }
+html[data-skin="chihiro"] .ob-keyrow input { border-bottom: 2px solid rgba(156, 47, 30, .55); }
+.ob-eye { flex: none; width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; background: none; border: 0; padding: 0; cursor: pointer; color: var(--muted); }
+.ob-eye svg { width: 18px; height: 18px; }
+.ob-eye:hover { color: var(--color-accent-hover); }
+.ob-eye:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 .ob-fine { font-family: var(--note); font-style: var(--note-style); font-size: 12.5px; color: var(--muted); text-align: center; margin: 6px 0 0; }
 
 /* Footer */

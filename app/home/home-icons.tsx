@@ -1,7 +1,7 @@
 import type { SVGProps } from "react";
 import { Icon } from "../icons";
 
-export type HomeIconName = "upload" | "key" | "external" | "heart" | "book" | "brush" | "check-box";
+export type HomeIconName = "upload" | "key" | "external" | "heart" | "book" | "brush" | "check-box" | "eye" | "eye-off";
 
 // Home icons from the shared registry, stroked in the skin's ink.
 export function HomeIcon({ name, ...rest }: { name: HomeIconName } & SVGProps<SVGSVGElement>) {
