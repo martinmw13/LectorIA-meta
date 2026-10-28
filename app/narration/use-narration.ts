@@ -218,8 +218,14 @@ export function useNarrationController(opts: {
   const prevSceneCh = useRef<number | null>(null);
   useEffect(() => {
     if (scene !== null && prevSceneId.current !== scene.id) {
+      // A paused advance (the chapter ended mid-scene) falls through to
+      // the seek below, so the voice resumes at the next span start.
       const keepPlaying =
-        advancingRef.current && prevSceneCh.current === scene.ch && pendingSeek.current === null;
+        advancingRef.current &&
+        prevSceneCh.current === scene.ch &&
+        pendingSeek.current === null &&
+        audioRef.current !== null &&
+        !audioRef.current.paused;
       prevSceneId.current = scene.id;
       prevSceneCh.current = scene.ch;
       advancingRef.current = false;
@@ -282,9 +288,6 @@ export function useNarrationController(opts: {
       const span = sceneSpan(heard, current.startN, current.endN);
       if (span !== null && audio.currentTime >= span.endSec - 0.15) advance();
     };
-    const onEnded = () => {
-      advance();
-    };
     const onError = () => {
       setStatus("error");
       wantPlay.current = false;
@@ -293,14 +296,14 @@ export function useNarrationController(opts: {
     audio.addEventListener("pause", onPause);
     audio.addEventListener("loadedmetadata", onMeta);
     audio.addEventListener("timeupdate", onTime);
-    audio.addEventListener("ended", onEnded);
+    audio.addEventListener("ended", advance);
     audio.addEventListener("error", onError);
     return () => {
       audio.removeEventListener("play", onPlay);
       audio.removeEventListener("pause", onPause);
       audio.removeEventListener("loadedmetadata", onMeta);
       audio.removeEventListener("timeupdate", onTime);
-      audio.removeEventListener("ended", onEnded);
+      audio.removeEventListener("ended", advance);
       audio.removeEventListener("error", onError);
     };
   }, []);

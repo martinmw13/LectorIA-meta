@@ -181,6 +181,24 @@ test("same-chapter advance keeps playing without seeking", async () => {
   });
 });
 
+test("an ended chapter mid-scene resumes at the next span start", async () => {
+  vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => MAN1 })));
+  const { root, audio, fake } = await playLive("c1s1");
+  fake.setTime(35);
+  act(() => {
+    audio.pause();
+  });
+  act(() => {
+    audio.dispatchEvent(new Event("ended"));
+  });
+  expect(ctl!.scene?.id).toBe("c1s2");
+  expect(fake.time()).toBe(20);
+  expect(ctl!.playing).toBe(true);
+  act(() => {
+    root.unmount();
+  });
+});
+
 test("seekTo a later scene sets the scene and the next timeupdate does not jump", async () => {
   vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => MAN1 })));
   const { root, audio, fake } = await playLive("c1s1");
