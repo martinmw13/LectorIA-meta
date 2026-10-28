@@ -3,14 +3,17 @@
 "use client";
 
 import { Icon } from "../icons";
+import { heroArt } from "../skin-art";
+import { useSkin } from "../use-skin";
 import { useNarration } from "./context";
 
 export function ReadAloud() {
   const { on, status, playing, volume, toggle, setVolume } = useNarration();
   const busy = on && status !== "ready" && status !== "error";
   const label = !on ? "Read aloud" : playing ? "Pause" : "Read aloud";
+  const art = heroArt(useSkin());
   return (
-    <div className="read-aloud" data-state={status} data-on={on}>
+    <div className="read-aloud" data-state={status} data-on={on} data-art={art ? "hero" : undefined}>
       <button
         type="button"
         className="read-aloud-btn"
@@ -19,7 +22,11 @@ export function ReadAloud() {
         aria-label={label}
         title={label}
       >
-        <Icon name="read-aloud" />
+        {art ? (
+          <img className="read-aloud-art" src={art.narrate} alt="" width={40} height={40} />
+        ) : (
+          <Icon name="read-aloud" />
+        )}
         <span className="read-aloud-label">{label}</span>
       </button>
       <label className="read-aloud-volume">
