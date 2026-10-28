@@ -1,0 +1,13 @@
+Review task 9 in this worktree (branch `music-library`, commits since `origin/main`; run `git log origin/main..HEAD` and `git diff origin/main..HEAD`). Do not edit any file except creating `docs/reviews/09.md`. Do not commit. Do not run `next start` or `next dev`. You may run `npm run typecheck`, `npm test`, `npm run test:hooks`, `npm run check:secrets`, `npm run build`, and the converter (`npm run build:music data/music/labels.json data/music/library.json --out /tmp/m.json`).
+
+Scope: the spec is `agent-logs/prompts/09-spec.md`. The task replaces the MusicGen placeholder manifest with real recordings hosted in a Vercel Blob store (`https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com/music/v1/...`), adds `gainDb` and `endSec` to the manifest and player (loudness match to about -20 LUFS, play a segment of a longer file), and adds `pipeline/labels-to-manifest.ts`, which converts an etiquetar.html export (schemaVersion 2) plus `data/music/library.json` into `public/music/manifest.json`. Scales map (n-1)/4. ND-licensed tracks must play whole and unedited. All tracks are `provisional: true`. The "Just play Chopin" playlist is four Ballades, `playlistOnly`. Every user-facing string (titles, composer, artist, attribution, style, soundtrack and playlist names) must be English.
+
+Read AGENTS.md and SECURITY.md first. Apply `.agents/skills/ponytail-review/SKILL.md` and `principle-prove-it-works`. Check in particular:
+1. Player: gain math and clamping, `endSec` stop/crossfade for loop and non-loop tracks, playlist advance fires exactly once per track, no regressions for tracks without the new fields, no stale refs across track changes.
+2. Manifest parse: `gainDb` and `endSec` validation edges, `durationSec` meaning (playable length) consistent between parser, converter and docs.
+3. Converter: correctness against the spec, ND handling, segment ids, one-hot fallback, error messages, `--reviewed-only`, and that the committed manifest equals a fresh run of the converter on the committed inputs.
+4. CSP `media-src` allows exactly the Blob host and nothing broader.
+5. Committed data: English strings, licenses and attributions present for every Jamendo track, no secrets or tokens anywhere in the diff (including agent-logs/), no audio files committed.
+6. Over-engineering and dead code; docs accuracy (public/music/README.md, docs/contracts.md music section); unslop rules.
+
+Write `docs/reviews/09.md`: sentence case, no em dashes, no emoji, under 5000 tokens. Sections: verdict (one line: APPROVE or CHANGES REQUIRED), blocking findings (numbered, each with file:line and the exact fix), non-blocking findings, and what you verified. Approve if nothing blocks merge.
