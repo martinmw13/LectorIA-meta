@@ -1,4 +1,4 @@
-# Image style contract
+## Image style
 
 Optional `style` on the `POST /api/images` passage and scene bodies.
 `{ preset: <id> }` or `{ custom: "<text>" }`; `{ preset: "denslow" }`
@@ -46,4 +46,6 @@ once, inside that line.
 Chapter in panels: read the style once when the panels view opens and
 send it on every scene request of that chapter, including re-polls.
 Pending re-polls repost the same body, so one request never mixes
-styles.
+styles. Chapter panels currently only read cached scene pictures
+(`getCachedScenePicture`); any panel generation sends scene requests
+carrying one style snapshot for the whole chapter.

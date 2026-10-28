@@ -21,12 +21,18 @@ export function ImagePane({
   onRetry,
   onClear,
   onOpen,
+  bare,
+  onPictureChapter,
 }: {
   card: SceneCard;
   onPicture: () => void;
   onRetry: () => void;
   onClear: () => void;
   onOpen: (src: string, caption: string, opener: HTMLElement | null) => void;
+  // The cover shows the placeholder with no pill: nothing to picture yet.
+  bare?: boolean;
+  // On text pages the pill pairs the scene action with the chapter one.
+  onPictureChapter?: ((opener: HTMLElement | null) => void) | null;
 }) {
   const [expanded, setExpanded] = useState(false);
   const timer = useRef<number | null>(null);
@@ -58,10 +64,22 @@ export function ImagePane({
               <span className="blob b3" />
               <span className="grain" />
             </div>
-            <button type="button" className="pic-pill" onClick={onPicture}>
-              <PictureIcon />
-              Picture this scene
-            </button>
+            {bare ? null : onPictureChapter ? (
+              <span className="pic-pair" role="group" aria-label="Picture choices">
+                <button type="button" className="pic-half" onClick={onPicture}>
+                  <PictureIcon />
+                  Picture this scene
+                </button>
+                <button type="button" className="pic-half" onClick={(e) => onPictureChapter(e.currentTarget)}>
+                  Picture the chapter
+                </button>
+              </span>
+            ) : (
+              <button type="button" className="pic-pill" onClick={onPicture}>
+                <PictureIcon />
+                Picture this scene
+              </button>
+            )}
           </>
         ) : card.phase === "loading" ? (
           <div className="pane-loading" role="status">
@@ -123,6 +141,11 @@ export function ImagePane({
             ×
           </button>
         </div>
+      ) : null}
+      {card.phase === "ready" && onPictureChapter ? (
+        <button type="button" className="pane-chapter" onClick={(e) => onPictureChapter(e.currentTarget)}>
+          Picture the chapter
+        </button>
       ) : null}
     </section>
   );
