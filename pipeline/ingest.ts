@@ -4,6 +4,10 @@
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { JSDOM } from "jsdom";
+import { cleanSections } from "../core/clean";
+import type { Judge } from "../core/clean";
+import { readEpubSections } from "../core/epub-sections";
 import { buildBook, canonicalLines, splitChapters, stripGutenberg } from "../core/gutenberg";
 import type { Book } from "../core/types";
 import books from "./books.json" with { type: "json" };
@@ -14,8 +18,15 @@ export interface StepCtx {
   dir: string;
 }
 
-export function bookConfig(bookKey: string): { gutenberg: number; title: string; author: string } {
-  const config = (books as Record<string, { gutenberg: number; title: string; author: string }>)[bookKey];
+export interface BookConfig {
+  gutenberg: number;
+  title: string;
+  author: string;
+  format?: string;
+}
+
+export function bookConfig(bookKey: string): BookConfig {
+  const config = (books as Record<string, BookConfig>)[bookKey];
   if (!config) throw new Error(`unknown book "${bookKey}", valid keys: ${Object.keys(books).join(", ")}`);
   return config;
 }
@@ -33,12 +44,47 @@ async function loadRaw(bookKey: string, gutenberg: number, fetchFn: typeof fetch
   return await response.text();
 }
 
-export async function runIngest(ctx: StepCtx, deps?: { fetchFn?: typeof fetch }): Promise<Book> {
+async function loadEpub(
+  bookKey: string,
+  gutenberg: number,
+  fetchFn: typeof fetch,
+): Promise<Uint8Array> {
+  const local = join("data", "raw", bookKey, `pg${gutenberg}.epub`);
+  if (existsSync(local)) return new Uint8Array(readFileSync(local));
+  const url = `https://www.gutenberg.org/cache/epub/${gutenberg}/pg${gutenberg}-images-3.epub`;
+  const response = await fetchFn(url);
+  if (!response.ok) throw new Error(`download failed with status ${response.status}`);
+  return new Uint8Array(await response.arrayBuffer());
+}
+
+export async function runIngest(
+  ctx: StepCtx,
+  deps?: { fetchFn?: typeof fetch; judge?: Judge },
+): Promise<Book> {
   const config = bookConfig(ctx.bookKey);
+  if (config.format === "epub") {
+    const bytes = await loadEpub(ctx.bookKey, config.gutenberg, deps?.fetchFn ?? fetch);
+    const { title, sections } = readEpubSections(bytes, (text, type) => {
+      if (type === "text/html") return new JSDOM(text).window.document;
+      return new JSDOM(text, { contentType: type }).window.document;
+    });
+    void title;
+    const cleaned = await cleanSections(config.title, sections, deps?.judge);
+    writeFileSync(join(ctx.dir, "clean-report.json"), `${JSON.stringify(cleaned.report)}\n`);
+    const drafts = cleaned.chapters.map((c) => ({ title: c.title, paragraphs: c.paragraphs }));
+    return writeBook(ctx, { title: config.title, author: config.author, gutenberg: config.gutenberg, chapters: drafts });
+  }
   const raw = await loadRaw(ctx.bookKey, config.gutenberg, deps?.fetchFn ?? fetch);
   const drafts = splitChapters(stripGutenberg(raw));
   if (drafts.length === 0) throw new Error("no chapters found after ingest");
-  const book = { ...buildBook({ id: ctx.bookKey, ...config, chapters: drafts }), textVersion: "" };
+  return writeBook(ctx, { title: config.title, author: config.author, gutenberg: config.gutenberg, chapters: drafts });
+}
+
+function writeBook(
+  ctx: StepCtx,
+  input: { title: string; author: string; gutenberg: number; chapters: { title: string; paragraphs: string[] }[] },
+): Book {
+  const book = { ...buildBook({ id: ctx.bookKey, ...input }), textVersion: "" };
   book.textVersion = textVersionFor(book);
   mkdirSync(ctx.dir, { recursive: true });
   const path = join(ctx.dir, "book.json");

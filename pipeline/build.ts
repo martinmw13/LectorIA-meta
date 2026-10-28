@@ -4,6 +4,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { runClassify } from "./classify";
+import { createCleanJudge } from "./clean-judge";
 import { runCluster } from "./cluster-tracks";
 import { bookConfig, runIngest } from "./ingest";
 import type { StepCtx } from "./ingest";
@@ -61,7 +62,11 @@ async function main(): Promise<void> {
     cluster: only === "" || only === "cluster",
   };
   if (run.ingest) {
-    const book = await runIngest(ctx);
+    const epub = bookConfig(bookKey).format === "epub";
+    const judge = epub
+      ? createCleanJudge(createMetaClient({ apiKey: env("META_API_KEY"), model: process.env.CLEAN_MODEL ?? "muse-spark-1.3-contributor" }))
+      : undefined;
+    const book = await runIngest(ctx, { judge });
     console.log(`ingest: ${book.chapters.length} chapters, ${book.paragraphs.length} paragraphs, ${book.textVersion}`);
   }
   if (run.segment) {
