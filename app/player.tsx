@@ -368,7 +368,7 @@ export function Player({
         />
       </label>
       <span className="player-track" aria-live="polite" title={now?.full}>
-        {head ?? "Music unavailable"}
+        {head ?? "The music is resting"}
         {showSource && track?.sourceUrl ? (
           <>
             {" · "}
