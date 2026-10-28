@@ -162,3 +162,27 @@ test("narration updates never re-render the book", async () => {
   // ...and the book rendered not once more.
   expect(counts.book).toBe(bookBefore);
 });
+
+test("each scene section carries its number and its chapter's scene count, past 30", async () => {
+  const scenes = Array.from({ length: 31 }, (_, i) => ({
+    id: `c1s${i + 1}`,
+    title: `S${i + 1}`,
+    paragraphs: [{ id: `q${i + 1}`, n: i + 1, text: "Words." }],
+  }));
+  const model = { ...MODEL, chapters: [{ ...MODEL.chapters[0], scenes }] } as unknown as ReaderModel;
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  const root = createRoot(host);
+  await act(async () => {
+    root.render(
+      <NarrationProvider entries={ENTRIES} scenes={SCENES} musicLevel={0.5}>
+        <BookView model={model} initialSceneId="c1s1" panelsByChapter={[]} />
+      </NarrationProvider>,
+    );
+  });
+  const sections = [...host.querySelectorAll<HTMLElement>(".chapter-block > .book-section")];
+  expect(sections).toHaveLength(31);
+  expect(sections[1]!.style.getPropertyValue("--scene-n")).toBe('"2"');
+  expect(sections[30]!.style.getPropertyValue("--scene-n")).toBe('"31"');
+  expect(sections[30]!.style.getPropertyValue("--scene-of")).toBe('" of 31"');
+});
