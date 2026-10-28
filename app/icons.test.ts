@@ -3,8 +3,7 @@ import { join } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { BASE_ICONS, ICON_SETS, Icon, type IconName } from "./icons";
-import { hasRainArt } from "./icons-rain";
+import { BASE_ICONS, ICON_SETS, Icon, iconSkin, type IconName } from "./icons";
 import { DEFAULT_SKIN, SKINS } from "./skin";
 
 // app/player.tsx keeps its inline SVGs until its open PR lands, then it
@@ -50,7 +49,7 @@ describe("icon registry", () => {
         const html = renderToStaticMarkup(createElement(Icon, { name, skin }));
         expect(html).toContain('viewBox="0 0 100 100"');
         expect(html).toContain('aria-hidden="true"');
-        if (!hasRainArt(skin)) {
+        if (iconSkin(name, skin) !== skin) {
           expect(html).toBe(renderToStaticMarkup(createElement(Icon, { name, skin: DEFAULT_SKIN })));
         }
       }
@@ -58,11 +57,13 @@ describe("icon registry", () => {
   });
 
   it("ships rain art only for the three rain skins", () => {
-    expect(hasRainArt("engraving")).toBe(true);
-    expect(hasRainArt("watercolor")).toBe(true);
-    expect(hasRainArt("ink")).toBe(true);
-    expect(hasRainArt("comic")).toBe(false);
-    expect(hasRainArt("anime-ghibli")).toBe(false);
+    expect(iconSkin("rain-storm", "engraving")).toBe("engraving");
+    expect(iconSkin("rain-storm", "watercolor")).toBe("watercolor");
+    expect(iconSkin("rain-storm", "ink")).toBe("ink");
+    expect(iconSkin("rain-storm", "pencil")).toBe(DEFAULT_SKIN);
+    expect(iconSkin("rain-storm", "comic")).toBe(DEFAULT_SKIN);
+    expect(iconSkin("rain-storm", "chihiro")).toBe(DEFAULT_SKIN);
+    expect(iconSkin("moon", "watercolor")).toBe(DEFAULT_SKIN);
     const rains: IconName[] = ["rain-off", "rain-drizzle", "rain-moderate", "rain-storm"];
     const seen = new Set<string>();
     for (const name of rains) {

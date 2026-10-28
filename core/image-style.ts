@@ -26,13 +26,13 @@ export type ImageStylePresetId = (typeof IMAGE_STYLE_PRESETS)[number]["id"];
 
 export const DEFAULT_IMAGE_STYLE = "denslow" as const;
 
-// Skin ids are owned by app/skin.ts; this maps only the decided skins.
+// Skin ids are owned by app/skin.ts; pencil and chihiro fall back to
+// denslow until their image presets are decided.
 export const SKIN_DEFAULT_IMAGE_STYLE: Readonly<Partial<Record<string, ImageStylePresetId>>> = {
   engraving: "denslow",
   watercolor: "watercolor",
   ink: "pen-pencil",
-  // comic: "comic",
-  // "anime-ghibli": <new anime preset, descriptor must describe the look, never name Ghibli or any living studio/artist>,
+  comic: "comic",
 };
 
 // Explicit sticky pick wins; else the active skin's default (unknown or
