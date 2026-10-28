@@ -247,7 +247,10 @@ export function useNarrationController(opts: {
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    const onPlay = () => setPlaying(true);
+    const onPlay = () => {
+      setPlaying(true);
+      setStatus((s) => (s === "error" ? "ready" : s));
+    };
     const onPause = () => setPlaying(false);
     const onMeta = () => {
       if (pendingSeek.current !== null) {
@@ -290,7 +293,10 @@ export function useNarrationController(opts: {
     };
     const onError = () => {
       setStatus("error");
+      setPlaying(false);
       wantPlay.current = false;
+      // Forget the broken src so the next press re-sets it and reloads once.
+      delete audio.dataset.key;
     };
     audio.addEventListener("play", onPlay);
     audio.addEventListener("pause", onPause);

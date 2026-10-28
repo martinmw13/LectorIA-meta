@@ -235,3 +235,21 @@ test("seekTo an earlier scene lands inside its span", async () => {
     root.unmount();
   });
 });
+
+test("after an audio error the next press reloads the source once, then rests idle", async () => {
+  vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => MAN1 })));
+  const { audio } = await playLive("c1s1");
+  act(() => {
+    audio.dispatchEvent(new Event("error"));
+  });
+  expect(ctl!.playing).toBe(false);
+  const srcSet = vi.spyOn(audio, "src", "set");
+  audio.play = vi.fn(() => Promise.reject(new Error("still broken")));
+  act(() => {
+    ctl!.toggle();
+  });
+  await flush();
+  expect(srcSet).toHaveBeenCalledTimes(1);
+  expect(audio.play).toHaveBeenCalledTimes(1);
+  expect(ctl!.playing).toBe(false);
+});
