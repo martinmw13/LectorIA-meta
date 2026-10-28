@@ -3,6 +3,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { PANELS_LABEL } from "./panels";
 import { PICTURE_COPY } from "./picture-copy";
 import { PictureButton } from "./picture-button";
 import { usePictureSkin } from "./picture-skin";
@@ -64,7 +65,7 @@ export function ImagePane({
                 <PictureButton skin={skin} label="Picture this scene" onClick={onPicture} />
                 <PictureButton
                   skin={skin}
-                  label="Picture the chapter"
+                  label={PANELS_LABEL}
                   onClick={(e) => onPictureChapter(e.currentTarget)}
                 />
               </span>
@@ -144,7 +145,7 @@ export function ImagePane({
       ) : null}
       {card.phase === "ready" && onPictureChapter ? (
         <button type="button" className="pane-chapter" onClick={(e) => onPictureChapter(e.currentTarget)}>
-          Picture the chapter
+          {PANELS_LABEL}
         </button>
       ) : null}
     </section>

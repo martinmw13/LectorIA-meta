@@ -32,7 +32,7 @@ const PURPLES = new Set(
 describe("chapter panels copy gates", () => {
   it("names the panels view exactly once across app and core sources", () => {
     const files = sources();
-    const hits = files.filter((f) => f.text.includes("Chapter in panels")).map((f) => f.path);
+    const hits = files.filter((f) => f.text.includes("Picture the chapter in panels")).map((f) => f.path);
     expect(hits).toEqual([join(root, "app", "folio", "panels.ts")]);
   });
 
