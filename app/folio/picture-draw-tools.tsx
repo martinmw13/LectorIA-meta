@@ -23,8 +23,6 @@ export function Paper({ skin, grainId }: { skin: PictureSkin; grainId: string })
         </defs>
         <rect width="300" height="380" fill="#FFFDF4" />
         <rect width="300" height="380" fill={`url(#${dots})`} />
-        <rect x="12" y="12" width="276" height="356" fill="none" stroke="#14161C" strokeWidth="5" />
-        <rect x="12" y="12" width="96" height="26" fill="#FFE45C" stroke="#14161C" strokeWidth="2.5" />
       </g>
     );
   }

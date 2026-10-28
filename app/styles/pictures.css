@@ -835,3 +835,12 @@ html[data-theme="dark"] .expand-img {
     opacity: 1;
   }
 }
+
+/* Comic: the slot itself is the inked panel, so the frame never crops. */
+[data-picture-skin="comic"] > .pic-under::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 4px solid #14161c;
+  pointer-events: none;
+}
