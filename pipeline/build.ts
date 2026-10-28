@@ -1,4 +1,4 @@
-// CLI: npm run build:book -- oz [--step ingest|segment|classify|cluster] [--force]
+// CLI: npm run build:book -- oz [--step ingest|segment|classify|resplit|cluster] [--force]
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { runClassify } from "./classify";
@@ -7,9 +7,10 @@ import { bookConfig, runIngest } from "./ingest";
 import type { StepCtx } from "./ingest";
 import { createJevClient } from "./jev";
 import { createMetaClient } from "./meta";
+import { runResplit } from "./resplit";
 import { runSegment } from "./segment";
 
-const STEPS = ["ingest", "segment", "classify", "cluster"] as const;
+const STEPS = ["ingest", "segment", "classify", "resplit", "cluster"] as const;
 
 function loadEnv(): void {
   try {
@@ -32,7 +33,7 @@ async function main(): Promise<void> {
   const stepFlag = args.indexOf("--step");
   const stepArg = stepFlag === -1 ? undefined : args[stepFlag + 1];
   const force = args.includes("--force");
-  if (!bookKey) throw new Error("usage: build:book <book> [--step ingest|segment|classify|cluster] [--force]");
+  if (!bookKey) throw new Error("usage: build:book <book> [--step ingest|segment|classify|resplit|cluster] [--force]");
   bookConfig(bookKey); // fails fast on unknown keys with the valid list
   const only = stepArg ?? "";
   if (only !== "" && !(STEPS as readonly string[]).includes(only)) {
@@ -43,6 +44,7 @@ async function main(): Promise<void> {
     ingest: only === "" || only === "ingest",
     segment: only === "" || only === "segment",
     classify: only === "" || only === "classify",
+    resplit: only === "" || only === "resplit",
     cluster: only === "" || only === "cluster",
   };
   if (run.ingest) {
@@ -62,6 +64,12 @@ async function main(): Promise<void> {
     const overrides = scenes.filter((s) => s.muse_override !== null).length;
     const failures = scenes.filter((s) => s.final === null).length;
     console.log(`classify: ${scenes.length} scenes, ${overrides} overrides, ${failures} failures`);
+  }
+  if (run.resplit) {
+    const meta = createMetaClient({ apiKey: env("META_API_KEY"), model: process.env.META_MODEL ?? "muse-spark-1.3-contributor" });
+    const jev = createJevClient({ apiKey: env("JEV_API_KEY"), model: process.env.JEV_MODEL ?? "jev-1.14.0" });
+    const scenes = await runResplit(ctx, { jev, meta });
+    console.log(`resplit: ${scenes.length} scenes`);
   }
   if (run.cluster) {
     await runCluster(ctx);

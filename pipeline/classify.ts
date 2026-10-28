@@ -36,7 +36,7 @@ export interface ClassifyMetaUsage {
   costUsd: number;
 }
 
-async function classifyScene(
+export async function classifyScene(
   scene: Scene,
   text: string,
   bookTitle: string,

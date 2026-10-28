@@ -132,16 +132,20 @@ export function decideMargin(margin: number): "auto" | "ask" | "none" {
 }
 
 // Binary segmentation: split at the strongest boundary, then recurse
-// on each side. The asker resolves ambiguous margins.
+// on each side. The asker resolves ambiguous margins; record keeps
+// each taken boundary for provenance.
 export async function planSplits(
   windows: ResplitWindow[],
   askSplit: (call: SplitCall) => Promise<boolean>,
+  record?: (call: SplitCall, decidedBy: "rule" | "muse") => void,
 ): Promise<number[]> {
   const best = bestBoundary(windows);
   if (best === null || decideMargin(best.margin) === "none") return [];
-  if (decideMargin(best.margin) === "ask" && !(await askSplit(best))) return [];
-  const left = await planSplits(windows.slice(0, best.index), askSplit);
-  const right = (await planSplits(windows.slice(best.index), askSplit)).map((i) => i + best.index);
+  const kind = decideMargin(best.margin);
+  if (kind === "ask" && !(await askSplit(best))) return [];
+  record?.(best, kind === "ask" ? "muse" : "rule");
+  const left = await planSplits(windows.slice(0, best.index), askSplit, record);
+  const right = (await planSplits(windows.slice(best.index), askSplit, record)).map((i) => i + best.index);
   return [...left, best.index, ...right];
 }
 
