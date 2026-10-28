@@ -6,34 +6,33 @@ Builds on task 40 (core/narration.ts, docs/contracts/narration.md, data/books/oz
 
 A "Read aloud" control that plays the per-chapter Kokoro narration and follows it in the text, word by word, like Kindle/Audible read-along.
 
-- **Control.** Its own component, `app/narration/read-aloud.tsx`, placed in the reader chrome (check app/folio for the current Folio layout; other agents are editing it, so keep the touch points small) (plus a controller hook in `app/narration/`). Play/pause, a narration volume slider, and an on/off state persisted in localStorage `lectoria.narration.v1` as `{on, volume}`. Light mode is the default. Icon: a new `"read-aloud"` entry in `app/icons.tsx` (an open book with two sound-wave arcs), never an emoji, never an inline `<svg>` elsewhere. Colours only from tokens (add tokens to app/tokens.css where needed; no hex or rgb literals in components; skin-ready tests must stay green).
+- **Control.** Its own component, `app/narration/read-aloud.tsx`, placed in the reader chrome (check app/folio for the current Folio layout; other agents are editing it, so keep the touch points small) (plus a controller hook in `app/narration/`). Play/pause, a narration volume slider, and an on/off state persisted in localStorage `lectoria.narration.v1` as `{on, volume}`. Light mode is the default. The button is boxless (no border or filled box) but reads as clickable: pointer cursor, hover/focus-visible colour change from tokens, visible focus ring. Icon: a new `"read-aloud"` entry in `app/icons.tsx` (an open book with two sound-wave arcs), never an emoji, never an inline `<svg>` elsewhere. Colours only from tokens (add tokens to app/tokens.css where needed; no hex or rgb literals in components; skin-ready tests must stay green).
 - **Copy.** Warm English. Button label "Read aloud" / "Pause". While a chapter is not ready yet: "Getting the voice ready…". Error: "The voice isn't available right now." Never use the word "Generated".
 - **Where it lives.** The controller sits in the layout-level `app/reader.tsx` so it survives scene navigation. It loads each chapter's manifest lazily. data/books/oz/narration.json is about 1 MB with every manifest inline, so it must never reach the client: the server layout derives a small `{chapter → {src, manifest}}` map (the manifest URL is `src` with `.mp3` replaced by `.json`, already served from public/) and passes only that and uses one dedicated `<audio>` element. It is separate from `core/music-session.ts` except for one ducking signal.
-- **Continuity.** Playback seeks to the scene's span (`sceneSpan`) and continues into the next scene and the next chapter without user action.
-- **Auto page-turn.** When the active word leaves the current sub-page, turn the sub-page (or go to the next scene) automatically, unless the user navigated by hand in the last ~8 s; in that case keep reading and do not yank them back. Pause stays paused across turns.
-- **Ducking.** While the voice plays, the music ducks about −18 dB via a `duck` multiplier on the Player, ramped over ~400 ms down and ~800 ms back up. The rain layer is not ducked.
+- **Continuity.** Pressing play starts at the live scene (the scene most in view, via `useCurrentSceneId` / `getCurrentSceneId`), at that scene's span start, or resumes where it paused when still in that scene. Playback then seeks to each scene's span (`sceneSpan`) and continues into the next scene and the next chapter without user action. A `SceneSync` component registers every live scene with narration; narration never sets the live scene itself, so scroll keeps driving it.
+- **Ducking.** While the voice plays, the music sits about 20 dB below the voice: the effective level is min(music, voice × 10^(−20/20)), applied through the existing `duck` multiplier on the Player (computed from the live music and narration volumes, guarding zero/NaN), ramped over ~400 ms down and ~800 ms back up. The rain ambience takes the same duck through `AmbienceController.setDuck`. The level restores on pause, on the end of the book, on error, when Read aloud is turned off, and when leaving the reader.
 
 ## Word highlight
 
-- Sync in a requestAnimationFrame loop that reads `audio.currentTime` and uses `activeWordAt` / `activeChunkAt` from core/narration.ts. It must survive seek, pause and playbackRate changes (no timers that drift).
-- Map word timings to the DOM with fragment offsets: add a `from` character offset to the fragments `paginateScene` (core/reader.ts) produces, so cont fragments of a split paragraph know where they start. Build Ranges on the `<p data-n>` text nodes.
+- `useReadSync` / `ReadMark` live in `app/leer/book-view.tsx` with the reading column (`.read-col`) as both container and scroller; word ranges look up `p[data-n="<chunk.n>"]` inside it. Sync in a requestAnimationFrame loop that reads `audio.currentTime` and uses `activeWordAt` / `activeChunkAt` from core/narration.ts. It must survive seek, pause and playbackRate changes (no timers that drift). The loop only runs while the voice plays: play starts it, pause stops it, so nothing animates while paused.
+- The book is one native scroll column of whole paragraphs, so word timings map straight onto the `<p data-n>` text nodes with no fragment offsets.
 - Current sentence: soft tint via the CSS Custom Highlight API (`CSS.highlights`, `::highlight(narration-sentence)`), with a no-op fallback where unsupported.
-- Current word: an absolutely positioned overlay mark placed from `range.getClientRects()` (do not change layout; pagination must not reflow).
-- Scroll the active word into view gently only if it is off screen; instant under `prefers-reduced-motion`, and no mark transitions then.
+- Current word: an absolutely positioned overlay mark placed from `range.getClientRects()` (do not change layout).
+- Follow the voice with the existing `followIntoView` (middle band, paused 4 s after user wheel/touch/key via `attachFollowPause`); no other scroll code. When the active paragraph is off screen and follow is allowed, bring it in with `followIntoView` on the paragraph element; when follow is paused, keep reading and hide the mark rather than yanking the reader back. Instant under `prefers-reduced-motion`, and no mark transitions then.
 - Click a word to seek there (`wordAt`), only while narration is on.
 
 ### Highlight style per skin (Martin's decision)
 
-Martin picked the second treatment of each skin from /workspace/prototypes/highlight/. The style is chosen by `html[data-skin]`; any skin that is not one of the three below, including today's `"default"`, uses engraving.
+Martin picked the second treatment of each skin from /workspace/prototypes/highlight/. The style is chosen by `html[data-skin]`; any skin that is not one of the six below, including today's `"default"`, uses engraving.
 
 | skin id      | word mark | sentence tint |
 |--------------|-----------|---------------|
-| `engraving` (default fallback) | small-caps emphasis on a 1px hairline rule under the word | very faint ink tint |
-| `watercolor` | warm sienna bleed swatch with a darker pooled edge, slightly irregular border-radius, tiny blur | faint cool wash |
-| `ink-doodle` | loose hand-drawn circle (SVG path from the icon registry style, stroke from tokens) around the word | faint ink tint |
+| `engraving` (default fallback), `pencil` | small-caps emphasis on a 1px hairline rule under the word | very faint ink tint |
+| `watercolor`, `chihiro` | warm sienna bleed swatch with a darker pooled edge, slightly irregular border-radius, tiny blur | faint cool wash |
+| `ink`, `comic` | loose hand-drawn circle (SVG path from the icon registry style, stroke from tokens) around the word | faint ink tint |
 
 Implementation notes:
-- Put the treatment mapping in one small pure function, e.g. `highlightStyleFor(skin: string): "engraving" | "watercolor" | "ink-doodle"`, with a unit test (unknown → engraving).
+- Put the treatment mapping in one small pure function, e.g. `highlightStyleFor(skin: string): "engraving" | "watercolor" | "ink-doodle"`, with a unit test covering all six skins (unknown → engraving).
 - Small caps must not reflow the page: render the active word in small caps inside the overlay (a clone of the word on a paper-coloured background sized to the word's rect) rather than restyling the text in flow.
 - Mark colours, rule weight and tints are tokens (e.g. `--narration-mark`, `--narration-mark-edge`, `--narration-sentence`) with light and dark values.
 - Reference CSS from the prototype (port values into tokens; do not copy hex literals into components):
@@ -44,5 +43,5 @@ Implementation notes:
 
 ## Done when
 
-- Unit tests for: highlightStyleFor, fragment `from` offsets, word→range mapping (punctuation, curly quotes, split paragraphs), auto-turn suppression after manual navigation, prefs persistence, duck ramp.
+- Unit tests for: highlightStyleFor (all six skins), word→range mapping (punctuation, curly quotes, whole paragraphs, clipping), prefs persistence, duck multiplier (voice at 1 and 0.5, music already quieter, muted music, zero voice) and duck ramp, ambience duck.
 - npm test, typecheck, check:size, check:secrets, skin-ready/icon tests green. Do not run `next start`.
