@@ -103,16 +103,22 @@ describe("resolveInitialSelection", () => {
   });
 
   it("a valid persisted style wins", () => {
-    expect(resolveInitialSelection(manifest, { style: "piano" })).toEqual({ style: "piano" });
+    expect(resolveInitialSelection(manifest, { style: "piano", volume: null, muted: false })).toEqual({
+      style: "piano",
+    });
   });
 
   it("ignores a stored style with no tracks", () => {
-    expect(resolveInitialSelection(manifest, { style: "koto" })).toEqual({ style: "orchestral" });
+    expect(resolveInitialSelection(manifest, { style: "koto", volume: null, muted: false })).toEqual({
+      style: "orchestral",
+    });
   });
 
   it("ignores unknown persisted fields and keeps a valid style", () => {
     const prefs = { mode: "party", soundtrackId: "orch-a", style: "piano" } as unknown as {
       style: string;
+      volume: null;
+      muted: false;
     };
     expect(resolveInitialSelection(manifest, prefs)).toEqual({ style: "piano" });
   });

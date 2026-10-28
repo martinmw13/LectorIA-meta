@@ -73,6 +73,8 @@ export interface SelectEnv {
 
 export interface PersistedMusicPrefs {
   style: string | null;
+  volume: number | null;
+  muted: boolean;
 }
 
 export interface SceneSignal {
