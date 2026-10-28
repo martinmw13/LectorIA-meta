@@ -18,6 +18,8 @@ export const IMAGE_STYLE_PRESETS = [
   { id: "oil", label: "Oil painting", descriptor: "classical oil painting, rich brushwork, warm glazes" },
   { id: "woodcut", label: "Woodcut", descriptor: "woodcut print, carved black lines, two-color print" },
   { id: "pen-pencil", label: "Pen and pencil", descriptor: "blue ballpoint pen line drawing with loose pencil shading on notebook paper, hand-drawn doodle feel" },
+  { id: "graphite", label: "Graphite study", descriptor: "Careful academic graphite tonal study on smooth Bristol paper, 2B to 4B pencil, smooth blended gradients, fine parallel hatching, crisp edges, soft smudged shadows, eraser highlights, monochrome grey, no ink, no color" },
+  { id: "lantern-dusk", label: "Lantern dusk", descriptor: "Hand-painted anime evening scene, gouache and watercolor, clean thin linework, soft cel shading, warm lantern gold and vermilion glow against jade and teal, peach-to-sky-blue dusk with painted clouds over calm water, cozy and quiet, original characters, no purple" },
 ] as const;
 
 // The denslow descriptor is unused: denslow parses to undefined, so the
@@ -26,13 +28,16 @@ export type ImageStylePresetId = (typeof IMAGE_STYLE_PRESETS)[number]["id"];
 
 export const DEFAULT_IMAGE_STYLE = "denslow" as const;
 
-// Skin ids are owned by app/skin.ts; pencil and chihiro fall back to
-// denslow until their image presets are decided.
+// Skin ids are owned by app/skin.ts. Pencil and chihiro get their own
+// presets rather than reusing "pencil" or "anime", so images already cached
+// under those style keys keep matching their old prompt.
 export const SKIN_DEFAULT_IMAGE_STYLE: Readonly<Partial<Record<string, ImageStylePresetId>>> = {
   engraving: "denslow",
   watercolor: "watercolor",
   ink: "pen-pencil",
   comic: "comic",
+  pencil: "graphite",
+  chihiro: "lantern-dusk",
 };
 
 // Explicit sticky pick wins; else the active skin's default (unknown or

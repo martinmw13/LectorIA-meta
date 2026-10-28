@@ -5,8 +5,7 @@
 import { createPortal } from "react-dom";
 import { truncateCaption } from "./helpers";
 import { PICTURE_COPY, PictureIcon } from "./picture-copy";
-import { PictureDraw, usePictureLoaded } from "./picture-draw";
-import { usePictureSkin, usePictureSkinId } from "./picture-skin";
+import { PictureSlot } from "./picture-slot";
 import type { InlineFigure } from "./use-pictures";
 
 export function SelectionPopover({
@@ -51,17 +50,10 @@ export function InlineFigureView({
   onOpen: (src: string, caption: string, opener: HTMLElement | null) => void;
   refCb: (el: HTMLElement | null) => void;
 }) {
-  const skin = usePictureSkin();
-  const skinId = usePictureSkinId();
-  const { loaded, imgRef, markLoaded } = usePictureLoaded(
-    figure.phase === "ready" && figure.url ? figure.url : "",
-  );
   if (figure.phase === "loading") {
     return (
       <figure className="genfig" data-fig={figure.id} ref={refCb as React.Ref<HTMLElement>}>
-        <div className="genload" role="status" data-picture-skin={skinId}>
-          <PictureDraw skin={skin} />
-        </div>
+        <PictureSlot phase="loading" url="" alt="" className="genload" />
       </figure>
     );
   }
@@ -82,28 +74,22 @@ export function InlineFigureView({
   const captioned = `\u201C${truncateCaption(figure.quote)}\u201D`;
   return (
     <figure className="genfig" data-fig={figure.id} ref={refCb as React.Ref<HTMLElement>}>
-      <div className="genload" data-picture-skin={skinId}>
-        {loaded ? null : (
-          <div className="pic-under">
-            <PictureDraw skin={skin} frozen />
-          </div>
-        )}
-        <img
-          ref={imgRef}
-          onLoad={markLoaded}
-          onError={markLoaded}
-          className={loaded ? `rv-${skin} gen-ready` : "gen-ready pic-waiting"}
-          src={url}
-          alt={captioned}
-          loading="lazy"
-          decoding="async"
-          tabIndex={0}
-        onClick={(e) => onOpen(url, captioned, e.currentTarget)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") onOpen(url, captioned, e.currentTarget);
+      <PictureSlot
+        phase="ready"
+        url={url}
+        alt={captioned}
+        className="genload"
+        imgProps={{
+          className: "gen-ready",
+          loading: "lazy",
+          decoding: "async",
+          tabIndex: 0,
+          onClick: (e) => onOpen(url, captioned, e.currentTarget),
+          onKeyDown: (e) => {
+            if (e.key === "Enter") onOpen(url, captioned, e.currentTarget);
+          },
         }}
-        />
-      </div>
+      />
       <figcaption>
         <span className="grow">{captioned}</span>
         <span className="gcredit">{figure.credit}</span>

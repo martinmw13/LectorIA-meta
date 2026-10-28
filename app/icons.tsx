@@ -1,6 +1,7 @@
 import type { ReactNode, SVGProps } from "react";
 import { DEFAULT_SKIN, type SkinId } from "./skin";
 import { RAIN_ICONS, type RainIconName } from "./icons-rain";
+import { RAIN_ICONS_EXTRA } from "./icons-rain-extra";
 
 export type IconName = "moon" | "sun" | "eye-off" | "pencil" | "picture" | "expand" | "read-aloud" | "ink-circle" | RainIconName;
 
@@ -91,9 +92,9 @@ export const ICON_SETS: Record<SkinId, Partial<Record<IconName, IconDef>>> = {
   engraving: RAIN_ICONS.engraving ?? {},
   watercolor: RAIN_ICONS.watercolor ?? {},
   ink: RAIN_ICONS.ink ?? {},
-  pencil: {},
-  comic: {},
-  chihiro: {},
+  pencil: RAIN_ICONS_EXTRA.pencil,
+  comic: RAIN_ICONS_EXTRA.comic,
+  chihiro: RAIN_ICONS_EXTRA.chihiro,
 };
 
 // The one fallback rule: a skin draws its own icon when it has one,

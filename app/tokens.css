@@ -8,7 +8,9 @@
  * skins never touches component code.
  *
  * Theme colour layer (the blocks below): light and dark palettes,
- * selected by `data-theme`. Skins do not redefine colours here. */
+ * selected by `data-theme`. Skins do not redefine colours here; the
+ * skins with their own paper (pencil, comic, chihiro) tint the light
+ * palette in styles/skins.css. */
 
 :root,
 html[data-skin] {
