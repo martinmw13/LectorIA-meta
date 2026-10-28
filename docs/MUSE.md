@@ -6,21 +6,21 @@ A Muse commit is a non-merge commit on main that carries the trailer `Co-authore
 
 ## Commits
 
-- Muse commits: 321 of 354 non-merge commits (91%).
+- Muse commits: 326 of 360 non-merge commits (91%).
 - Date range (UTC-3): 2026-10-27 to 2026-10-28.
 
 ## Lines
 
 | Scope | Muse added | Muse removed | Other added | Other removed | Muse share of added |
 | --- | --- | --- | --- | --- | --- |
-| Source code (`app/`, `core/`, `pipeline/`, `server/`, `scripts/`) | 38,402 | 8,071 | 2,626 | 622 | 94% |
-| All files | 224,959 | 12,087 | 22,697 | 649 | 91% |
+| Source code (`app/`, `core/`, `pipeline/`, `server/`, `scripts/`) | 39,040 | 8,072 | 2,626 | 622 | 94% |
+| All files | 227,043 | 12,088 | 22,728 | 649 | 91% |
 
 All files includes the Muse Code session transcripts in `agent-logs/`, the vendored skills in `.agents/` and `package-lock.json`.
 
 ## Pull requests
 
-49 merged PRs contain Muse commits. Each carries the `Muse Code` label.
+50 merged PRs contain Muse commits. Each carries the `Muse Code` label.
 
 | PR | Title | Merged (UTC-3) | Muse commits |
 | --- | --- | --- | --- |
@@ -73,3 +73,4 @@ All files includes the Muse Code session transcripts in `agent-logs/`, the vendo
 | [#54](https://github.com/martinmw13/LectorIA-meta/pull/54) | Picture this: skin drawings while the picture loads, boxless button and popover | 2026-10-28 | 10 of 20 |
 | [#55](https://github.com/martinmw13/LectorIA-meta/pull/55) | Read aloud with word-by-word read-along (task 41) | 2026-10-28 | 18 of 23 |
 | [#59](https://github.com/martinmw13/LectorIA-meta/pull/59) | Narration: keep a new chapter's first scene, controller-owned click-to-seek | 2026-10-28 | 4 of 5 |
+| [#64](https://github.com/martinmw13/LectorIA-meta/pull/64) | Add a style switcher stamp to the home and reader | 2026-10-28 | 5 of 7 |
