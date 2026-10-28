@@ -3,7 +3,7 @@
 // re-renders only <ReadAlong>, never BookView and its paragraphs.
 // ImagePane renders once per BookView render, so it counts them.
 import { act } from "react";
-import { createRoot } from "react-dom/client";
+import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import type { ReaderModel } from "@/core/reader";
 import { NarrationProvider, useNarration } from "../narration/context";
@@ -102,7 +102,15 @@ beforeEach(() => {
     vi.fn(async () => new Response(JSON.stringify(MANIFEST), { headers: { "content-type": "application/json" } })),
   );
 });
-afterEach(() => {
+// Unmount every root so no React work runs after jsdom is torn down.
+const roots: Root[] = [];
+function mountRoot(host: HTMLElement): Root {
+  const root = createRoot(host);
+  roots.push(root);
+  return root;
+}
+afterEach(async () => {
+  for (const root of roots.splice(0)) await act(async () => root.unmount());
   vi.unstubAllGlobals();
   document.body.innerHTML = "";
   ctl = null;
@@ -111,7 +119,7 @@ afterEach(() => {
 test("narration updates never re-render the book", async () => {
   const host = document.createElement("div");
   document.body.appendChild(host);
-  const root = createRoot(host);
+  const root = mountRoot(host);
   await act(async () => {
     root.render(
       <NarrationProvider entries={ENTRIES} scenes={SCENES} musicLevel={0.5}>
@@ -174,7 +182,7 @@ test("each scene section carries its number and its chapter's scene count, past 
   const model = { ...MODEL, chapters: [{ ...MODEL.chapters[0], scenes }] } as unknown as ReaderModel;
   const host = document.createElement("div");
   document.body.appendChild(host);
-  const root = createRoot(host);
+  const root = mountRoot(host);
   await act(async () => {
     root.render(
       <NarrationProvider entries={ENTRIES} scenes={SCENES} musicLevel={0.5}>
@@ -192,7 +200,7 @@ test("each scene section carries its number and its chapter's scene count, past 
 test("chapter text shows at once and the pane opens the panels on demand", async () => {
   const host = document.createElement("div");
   document.body.appendChild(host);
-  const root = createRoot(host);
+  const root = mountRoot(host);
   const panels = [{ ch: 1, panels: [{ sceneId: "c1s1", caption: "The cyclone", art: null }] }];
   await act(async () => {
     root.render(
@@ -212,5 +220,4 @@ test("chapter text shows at once and the pane opens the panels on demand", async
 
   await act(async () => (document.querySelector(".panels-x") as HTMLButtonElement).click());
   expect(document.querySelector(".panels-modal")).toBeNull();
-  await act(async () => root.unmount());
 });
