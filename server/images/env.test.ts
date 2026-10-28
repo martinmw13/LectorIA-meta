@@ -20,9 +20,11 @@ let saved: Record<string, string | undefined>;
 
 beforeEach(() => {
   saved = {};
-  for (const k of [...Object.keys(BASE), ...REDIS_KEYS]) saved[k] = process.env[k];
+  for (const k of [...Object.keys(BASE), ...REDIS_KEYS, "SPEND_CAP_USD", "DAILY_SPEND_CAP_USD"]) {
+    saved[k] = process.env[k];
+  }
   Object.assign(process.env, BASE);
-  for (const k of REDIS_KEYS) delete process.env[k];
+  for (const k of [...REDIS_KEYS, "SPEND_CAP_USD", "DAILY_SPEND_CAP_USD"]) delete process.env[k];
 });
 
 afterEach(() => {
@@ -98,6 +100,30 @@ describe("readImageEnv redis fallback", () => {
       process.env.UPSTASH_REDIS_REST_TOKEN = "upstash-token";
       process.env.DAILY_SPEND_CAP_USD = value;
       expect(readImageEnv().dailySpendCapMicro).toBe(2_000_000);
+    },
+  );
+
+  it("defaults the total spend cap to 10 USD", () => {
+    delete process.env.SPEND_CAP_USD;
+    process.env.UPSTASH_REDIS_REST_URL = "https://upstash-url";
+    process.env.UPSTASH_REDIS_REST_TOKEN = "upstash-token";
+    expect(readImageEnv().spendCapMicro).toBe(10_000_000);
+  });
+
+  it("honors a finite non-negative SPEND_CAP_USD", () => {
+    process.env.UPSTASH_REDIS_REST_URL = "https://upstash-url";
+    process.env.UPSTASH_REDIS_REST_TOKEN = "upstash-token";
+    process.env.SPEND_CAP_USD = "3";
+    expect(readImageEnv().spendCapMicro).toBe(3_000_000);
+  });
+
+  it.each(["abc", "-3", "Infinity"])(
+    "falls back to 10 USD for total cap %s",
+    (value) => {
+      process.env.UPSTASH_REDIS_REST_URL = "https://upstash-url";
+      process.env.UPSTASH_REDIS_REST_TOKEN = "upstash-token";
+      process.env.SPEND_CAP_USD = value;
+      expect(readImageEnv().spendCapMicro).toBe(10_000_000);
     },
   );
 

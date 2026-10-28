@@ -264,6 +264,32 @@ describe("orchestrate", () => {
     expect(await d.kv.get(dailySpendKey("2026-10-27"))).toBe("10000");
   });
 
+  it("refunds both spend counters exactly once when store.save fails", async () => {
+    const d = deps();
+    d.store = {
+      findUrl: async () => null,
+      save: async () => {
+        throw new Error("blob down");
+      },
+    };
+    const totalKey = spendKey();
+    const dayKey = dailySpendKey(d.day);
+    let totalRefunds = 0;
+    let dailyRefunds = 0;
+    const inner = d.kv.decrBy.bind(d.kv);
+    d.kv.decrBy = async (key: string, by: number) => {
+      if (key === totalKey) totalRefunds += 1;
+      if (key === dayKey) dailyRefunds += 1;
+      return inner(key, by);
+    };
+    const res = await orchestrate(passage, d);
+    expect(res).toMatchObject({ status: "error", code: "unavailable" });
+    expect(await d.kv.get(totalKey)).toBe("0");
+    expect(await d.kv.get(dayKey)).toBe("0");
+    expect(totalRefunds).toBe(1);
+    expect(dailyRefunds).toBe(1);
+  });
+
   it("recovers from a lost save race through the winner file", async () => {
     const files = new Map<string, Uint8Array>();
     const d = deps();
