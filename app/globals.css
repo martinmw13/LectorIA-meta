@@ -13,6 +13,7 @@
 @import "./styles/skin-pencil.css";
 @import "./styles/skin-comic.css";
 @import "./styles/skin-chihiro.css";
+@import "./styles/warmth.css";
 
 * {
   box-sizing: border-box;
