@@ -119,8 +119,21 @@ export function usePictures({
   const busyRef = useRef(false);
   const prefRef = useRef(pref);
   prefRef.current = pref;
+  // The continuous reader reuses one hook call while the scene in view
+  // changes: track it so late poll results cannot paint another scene.
+  const sceneRef = useRef(sceneId);
+  sceneRef.current = sceneId;
 
   const hidePopover = useCallback(() => setPopover(null), []);
+
+  // The card and figures follow the scene in view through the session
+  // caches; in-flight requests keep filling the cache they started.
+  useEffect(() => {
+    const hit = sceneCache.get(sceneId);
+    setCard(hit ? { phase: "ready", url: hit.url, caption: hit.caption } : { phase: "idle" });
+    setFigures((figureCache.get(sceneId) ?? []).filter((f) => f.phase !== "loading"));
+    setPopover(null);
+  }, [sceneId]);
 
   const storeFigures = useCallback(
     (next: InlineFigure[] | ((prev: InlineFigure[]) => InlineFigure[])) => {
@@ -152,10 +165,12 @@ export function usePictures({
     void poll({ kind: "scene", bookId, textVersion, sceneId, ...requestStyleFields(prefRef.current) })
       .then(({ url, caption }) => {
         sceneCache.set(sceneId, { url, caption });
-        setCard({ phase: "ready", url, caption });
+        if (sceneRef.current === sceneId) setCard({ phase: "ready", url, caption });
       })
       .catch((err: unknown) => {
-        setCard({ phase: "error", message: err instanceof Error ? err.message : MSG_FAILED });
+        if (sceneRef.current === sceneId) {
+          setCard({ phase: "error", message: err instanceof Error ? err.message : MSG_FAILED });
+        }
       })
       .finally(() => {
         finish(busyRef);
@@ -235,37 +250,44 @@ export function usePictures({
     [storeFigures],
   );
 
+  // Re-read the live selection against the current text view. The
+  // continuous reader calls it after switching scenes under a selection
+  // that started elsewhere, so the popover follows without a second tap.
+  const rescan = useCallback(() => {
+    const view = viewNodeRef.current;
+    if (!view) return;
+    const sel = window.getSelection();
+    const text = sel?.toString().trim() ?? "";
+    if (!sel || sel.isCollapsed || text.length < 3 || !sel.rangeCount) {
+      setPopover(null);
+      return;
+    }
+    if (!view.contains(sel.anchorNode) || !view.contains(sel.focusNode)) {
+      setPopover(null);
+      return;
+    }
+    const box = sel.getRangeAt(0).getBoundingClientRect();
+    const host = view.getBoundingClientRect();
+    setPopover({
+      top: box.top - host.top - 8,
+      left: box.left - host.left + box.width / 2,
+    });
+  }, []);
+
   useEffect(() => {
     const view = viewEl;
     if (!view) return;
     let frame = 0;
     const onMouseUp = () => {
       cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
-        const sel = window.getSelection();
-        const text = sel?.toString().trim() ?? "";
-        if (!sel || sel.isCollapsed || text.length < 3 || !sel.rangeCount) {
-          setPopover(null);
-          return;
-        }
-        if (!view.contains(sel.anchorNode) || !view.contains(sel.focusNode)) {
-          setPopover(null);
-          return;
-        }
-        const box = sel.getRangeAt(0).getBoundingClientRect();
-        const host = view.getBoundingClientRect();
-        setPopover({
-          top: box.top - host.top - 8,
-          left: box.left - host.left + box.width / 2,
-        });
-      });
+      frame = requestAnimationFrame(rescan);
     };
     view.addEventListener("mouseup", onMouseUp);
     return () => {
       cancelAnimationFrame(frame);
       view.removeEventListener("mouseup", onMouseUp);
     };
-  }, [viewEl]);
+  }, [viewEl, rescan]);
 
   useEffect(() => {
     if (!popover) return;
@@ -292,6 +314,7 @@ export function usePictures({
     illustrateScene,
     illustratePassage,
     hidePopover,
+    rescan,
     clearScene,
     removeFigure,
     retryFigure,

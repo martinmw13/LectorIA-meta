@@ -1,6 +1,6 @@
 // Figure placement and picture request rules for one scene. Pure:
-// no React, no DOM, no network. scene-page.tsx owns the DOM side
-// (setPage, scroll, pulse) and use-pictures.ts owns the requests.
+// no React, no DOM, no network. book-view.tsx owns the DOM side
+// (scroll, pulse) and use-pictures.ts owns the requests.
 export function groupFiguresByEndN<F extends { endN: number }>(figures: F[]): Map<number, F[]> {
   const grouped = new Map<number, F[]>();
   for (const fig of figures) {
@@ -23,11 +23,6 @@ export function figuresAfter<P extends { n: number }, F>(
   const cur = paragraphs[i];
   if (!cur) return [];
   return paragraphs[i + 1]?.n !== cur.n ? (grouped.get(cur.n) ?? []) : [];
-}
-
-// Index of the sub-page holding paragraph ordinal n, -1 when none.
-export function pageOfOrdinal<P extends { n: number }>(pages: { paragraphs: P[] }[], n: number): number {
-  return pages.findIndex((p) => p.paragraphs.some((para) => para.n === n));
 }
 
 // One request at a time across scene and figure. The flag lives in the

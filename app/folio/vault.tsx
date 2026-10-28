@@ -112,7 +112,7 @@ export function PictureVault({
             <div className="vault-item">
               <button type="button" className="vault-goto" onClick={onGotoScene} aria-label={`Go to ${scene.caption}`}>
                 <span className="vault-thumb">
-                  <img src={scene.url} alt="" />
+                  <img src={scene.url} alt="" loading="lazy" decoding="async" />
                 </span>
                 <span className="vault-cap">{scene.caption}</span>
               </button>
@@ -137,7 +137,7 @@ export function PictureVault({
                 aria-label={`Go to picture: ${truncateCaption(f.quote)}`}
               >
                 <span className="vault-thumb">
-                  <img src={f.url ?? ""} alt="" />
+                  <img src={f.url ?? ""} alt="" loading="lazy" decoding="async" />
                 </span>
                 <span className="vault-cap">{`\u201C${truncateCaption(f.quote)}\u201D`}</span>
               </button>

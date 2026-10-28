@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { currentMode, musicModes, parseManifest } from "@/core/music";
 import type { MusicManifest, MusicModeId, SceneSignal } from "@/core/music";
 import { EMOTIONS } from "@/core/types";
 import { dispatch, startSession } from "@/core/music-session";
 import type { MusicIntent, MusicSession, SessionView } from "@/core/music-session";
 import { nextSceneEntry } from "@/core/reader";
+import { requestGotoScene, useCurrentSceneId } from "./leer/current-scene";
 import { DEFAULT_VOLUME, createMusicPrefsStore } from "./music-prefs";
 import { Player } from "./player";
 import { THEME_KEY, TopLine } from "./folio/chrome";
@@ -38,9 +39,8 @@ const DEV_LABELS: Record<(typeof EMOTIONS)[number], string> = {
 };
 
 // Client container: bridges the music session to React state. It cues
-// music on scene entry only, from the route id. Sub-page moves never
-// reach the session. Params can lag a render, so the last observed id
-// is compared before every scene entry.
+// music on scene entry only, from the scene in view. Params can lag a
+// render, so the last observed id is compared before every scene entry.
 export function Reader({
   scenes,
   chapters,
@@ -55,9 +55,11 @@ export function Reader({
   children: React.ReactNode;
 }) {
   const routeParams = useParams();
-  const router = useRouter();
   const param = routeParams?.sceneId;
-  const routeSceneId = typeof param === "string" ? param : null;
+  // The reading column publishes the scene in view through replaceState
+  // and the live store; App Router params may not follow replaceState,
+  // so the store wins and the route id is only the first-load fallback.
+  const routeSceneId = useCurrentSceneId() ?? (typeof param === "string" ? param : null);
   const [manifest, setManifest] = useState<MusicManifest | null>(null);
   const [view, setView] = useState<SessionView | null>(null);
   const [musicFailed, setMusicFailed] = useState(false);
@@ -239,7 +241,7 @@ export function Reader({
 
   function jumpChapter(ch: number) {
     const found = chapters.find((c) => c.ch === ch);
-    if (found) router.push(`/leer/${found.firstSceneId}`);
+    if (found) requestGotoScene(found.firstSceneId);
   }
 
   const currentId = view?.currentId ?? null;
