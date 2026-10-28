@@ -1,6 +1,7 @@
 // Step: re-split scenes where the dominant emotion changes strongly
 // along the text. Reads book.json and analysis.json, rewrites
-// scenes.json and analysis.json. Skips when provenance.resplit exists.
+// scenes.json and analysis.json. Reuses only when the recorded
+// resplit input matches the current scene ranges.
 // A Muse resplit failure keeps the scene whole and lands in muse_failures.
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -19,6 +20,7 @@ import {
 import type { ResplitWindow, SplitCall } from "../core/resplit";
 import { validateBookCoverage } from "../core/scenes";
 import type { AnalyzedScene, Book, EmotionId, Scene, SceneEmotion } from "../core/types";
+import { classifyInputOf, decide, resplitInputOf, resplitKeys } from "./freshness";
 import { classifyScene } from "./classify";
 import type { ClassifyMetaUsage } from "./classify";
 import type { StepCtx } from "./ingest";
@@ -126,7 +128,8 @@ export async function runResplit(ctx: StepCtx, deps: { jev: JevClient; meta: Met
       resplit?: unknown;
     };
   };
-  if (!ctx.force && analysisFile.textVersion === book.textVersion && analysisFile.provenance.resplit) {
+  const keys = resplitKeys(ctx.dir);
+  if (decide(ctx.force, keys.recorded, keys.current).reuse) {
     return analysisFile.scenes;
   }
   const usage = newUsage(deps.meta.model);
@@ -372,6 +375,7 @@ export async function runResplit(ctx: StepCtx, deps: { jev: JevClient; meta: Met
     cost_usd: prevMeta.cost_usd + usage.meta.costUsd,
   };
   const overrides = scenes.filter((s) => s.muse_override !== null).length;
+  const resplitWrote = resplitInputOf(scenes, book.textVersion);
   writeFileSync(
     join(ctx.dir, "analysis.json"),
     `${JSON.stringify({
@@ -384,7 +388,9 @@ export async function runResplit(ctx: StepCtx, deps: { jev: JevClient; meta: Met
         jev: totalJev,
         meta: totalMeta,
         total_cost_usd: totalJev.cost_usd + totalMeta.cost_usd,
+        input: classifyInputOf(scenes, book.textVersion),
         resplit: {
+          input: resplitWrote,
           auto_margin: RESPLIT_AUTO_MARGIN,
           ask_margin: RESPLIT_ASK_MARGIN,
           candidates: candidates.length,

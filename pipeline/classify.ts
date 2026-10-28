@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { EMOTIONS } from "../core/types";
 import type { AnalyzedScene, Book, EmotionId, Scene, SceneEmotion } from "../core/types";
 import { jevFinal, needsOverride, renormalize8 } from "../core/emotion";
-import { readIfFresh } from "./cache";
+import { decide, classifyKeys, resplitInputOf } from "./freshness";
 import type { StepCtx } from "./ingest";
 import { runPool } from "./http";
 import type { JevClient } from "./jev";
@@ -87,17 +87,16 @@ export async function runClassify(ctx: StepCtx, deps: { jev: JevClient; meta: Me
     provenance: { meta: { model: string; requests: number; prompt_tokens: number; cached_tokens: number; completion_tokens: number; cost_usd: number } };
   };
   const outPath = join(ctx.dir, "analysis.json");
-  if (!ctx.force) {
-    const fresh = readIfFresh<{ textVersion: string; scenes: AnalyzedScene[] }>(outPath, book.textVersion);
-    if (fresh) return fresh.scenes;
+  const keys = classifyKeys(ctx.dir);
+  if (decide(ctx.force, keys.recorded, keys.current).reuse) {
+    return (JSON.parse(readFileSync(outPath, "utf8")) as { scenes: AnalyzedScene[] }).scenes;
   }
   const metaUsage: ClassifyMetaUsage = { model: deps.meta.model, requests: 0, promptTokens: 0, cachedTokens: 0, completionTokens: 0, costUsd: 0 };
   const byN = new Map(book.paragraphs.map((p) => [p.n, p]));
   const chapterTitle = new Map(book.chapters.map((c) => [c.ch, c.title]));
   let resplit: unknown;
   try {
-    const prev = JSON.parse(readFileSync(outPath, "utf8")) as { provenance?: { resplit?: unknown } };
-    resplit = prev.provenance?.resplit;
+    resplit = (JSON.parse(readFileSync(outPath, "utf8")) as { provenance?: { resplit?: unknown } }).provenance?.resplit;
   } catch {
     resplit = undefined; // no previous analysis yet
   }
@@ -126,6 +125,9 @@ export async function runClassify(ctx: StepCtx, deps: { jev: JevClient; meta: Me
     completion_tokens: segment.completion_tokens + metaUsage.completionTokens,
     cost_usd: segment.cost_usd + metaUsage.costUsd,
   };
+  // A resplit record describes the ranges it was written from; keep it
+  // only when it still describes the scenes just written.
+  const carried = (resplit as { input?: unknown } | undefined)?.input === resplitInputOf(scenes, book.textVersion) ? resplit : undefined;
   const seen = new Set(scenes.map((s) => s.id));
   if (seen.size !== scenes.length) throw new Error("classify found duplicate scene ids");
   const overrides = scenes.filter((s) => s.muse_override !== null).length;
@@ -141,7 +143,8 @@ export async function runClassify(ctx: StepCtx, deps: { jev: JevClient; meta: Me
         jev: { model: deps.jev.model, requests: jevRequests, input_tokens: jevInputTokens, output_tokens: jevOutputTokens, cost_usd: jevCost },
         meta: metaTotal,
         total_cost_usd: jevCost + metaTotal.cost_usd,
-        ...(resplit !== undefined ? { resplit } : {}),
+        input: keys.current,
+        ...(carried !== undefined ? { resplit: carried } : {}),
       },
     })}\n`,
   );
