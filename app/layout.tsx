@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { Instrument_Sans, Newsreader } from 'next/font/google';
 import './globals.css';
+import { DEFAULT_SKIN } from './skin';
 import { THEME_SCRIPT } from './theme';
 
 const newsreader = Newsreader({
@@ -24,7 +25,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${newsreader.variable} ${instrumentSans.variable}`}>
+    <html lang="en" suppressHydrationWarning data-skin={DEFAULT_SKIN} className={`${newsreader.variable} ${instrumentSans.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>

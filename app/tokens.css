@@ -1,20 +1,16 @@
+/* Design tokens: two layers.
+ *
+ * Skin layer (this file's first block): fonts, sizes, measure, spacing,
+ * motion. A future skin adds an `html[data-skin="x"]` block (plus an
+ * `html[data-skin="x"][data-theme="dark"]` block for dark-mode tweaks)
+ * overriding these same names. Components only read tokens, so switching
+ * skins never touches component code.
+ *
+ * Theme colour layer (the blocks below): light and dark palettes,
+ * selected by `data-theme`. Skins do not redefine colours here. */
+
 :root,
-html[data-theme="light"] {
-  color-scheme: light;
-
-  --color-accent: #0866ff;
-  --color-accent-hover: #0064e0;
-  /* Fills keep white icons readable in both modes; text uses --color-accent. */
-  --color-accent-fill: #0866ff;
-  --color-on-accent: #ffffff;
-  --color-text: #1c2b33;
-  --color-text-muted: #5b6b76;
-  --color-surface: #ffffff;
-  --color-surface-soft: #f1f4f7;
-  --color-border: #d9e0e7;
-  --color-paper-dim: #e7e0cf;
-  --color-select: #cfe1ff;
-
+html[data-skin="default"] {
   --font-ui: var(--font-instrument, "Instrument Sans"), -apple-system, blinkmacsystemfont,
     "Segoe UI", system-ui, sans-serif;
   --font-book: var(--font-newsreader, "Newsreader"), georgia, "Times New Roman", charter, serif;
@@ -34,6 +30,24 @@ html[data-theme="light"] {
 
   --motion-duration: 150ms;
   --motion-expand: 260ms;
+}
+
+:root,
+html[data-theme="light"] {
+  color-scheme: light;
+
+  --color-accent: #0866ff;
+  --color-accent-hover: #0064e0;
+  /* Fills keep white icons readable in both modes; text uses --color-accent. */
+  --color-accent-fill: #0866ff;
+  --color-on-accent: #ffffff;
+  --color-text: #1c2b33;
+  --color-text-muted: #5b6b76;
+  --color-surface: #ffffff;
+  --color-surface-soft: #f1f4f7;
+  --color-border: #d9e0e7;
+  --color-paper-dim: #e7e0cf;
+  --color-select: #cfe1ff;
 }
 
 html[data-theme="dark"] {
