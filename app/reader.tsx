@@ -344,11 +344,7 @@ export function Reader({
 
 
   return (
-    <NarrationProvider
-      entries={narration}
-      scenes={scenes}
-      musicLevel={muted ? 0 : volume}
-    >
+    <NarrationProvider entries={narration} scenes={scenes}>
       <div className="folio">
         <TopLine
           bookTitle={bookTitle}

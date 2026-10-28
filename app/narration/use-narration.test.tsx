@@ -43,7 +43,7 @@ type Ctl = ReturnType<typeof useNarrationController>;
 let ctl: Ctl | null = null;
 
 function Harness() {
-  const c = useNarrationController({ entries: ENTRIES, scenes: SCENES, musicLevel: 0.5 });
+  const c = useNarrationController({ entries: ENTRIES, scenes: SCENES });
   ctl = c;
   return <audio ref={c.audioRef} />;
 }

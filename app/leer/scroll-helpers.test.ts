@@ -176,6 +176,34 @@ describe("followIntoView", () => {
     expect(followIntoView(fakeEl(50, 20), scroller, Date.now())).toBe(false);
     detach();
   });
+
+  test("a pointerdown on the scroller itself (scrollbar drag) stops a glide; one on a word does not", () => {
+    vi.stubGlobal("window", { addEventListener() {}, removeEventListener() {} });
+    for (const [onScroller, stops] of [[true, 1], [false, 0]] as const) {
+      const { scroller, cancelled } = glidingCol();
+      const handlers: Record<string, (event: unknown) => void> = {};
+      scroller.addEventListener = ((name: string, fn: (event: unknown) => void) => {
+        handlers[name] = fn;
+      }) as HTMLElement["addEventListener"];
+      const detach = attachFollowPause(scroller);
+      expect(followIntoView(fakeEl(900, 20), scroller, 10_000)).toBe(true);
+      handlers["pointerdown"]?.({ target: onScroller ? scroller : {} });
+      expect(cancelled).toHaveLength(stops);
+      detach();
+    }
+  });
+
+  test("a scene jump pauses follow", () => {
+    const { scroller } = fakeScroller({ c1s1: {} });
+    Object.assign(scroller, {
+      scrollTop: 0,
+      scrollHeight: 2000,
+      clientHeight: 1000,
+      getBoundingClientRect: () => box(0, 1000),
+    });
+    expect(scrollToSceneId(scroller, "c1s1")).toBe(true);
+    expect(followIntoView(fakeEl(900, 20), scroller)).toBe(false);
+  });
 });
 
 afterEach(() => {

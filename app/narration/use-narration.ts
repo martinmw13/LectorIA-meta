@@ -54,7 +54,6 @@ function useDuckRamp(target: number): number {
 export function useNarrationController(opts: {
   entries: NarrationChapterEntry[];
   scenes: NarrationSceneRef[];
-  musicLevel: number;
 }) {
   const [prefs, setPrefs] = useState<NarrationPrefs>(DEFAULT_NARRATION_PREFS);
   const [status, setStatus] = useState<NarrationStatus>("idle");

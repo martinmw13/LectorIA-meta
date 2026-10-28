@@ -11,15 +11,13 @@ const NarrationContext = createContext<NarrationController | null>(null);
 export function NarrationProvider({
   entries,
   scenes,
-  musicLevel,
   children,
 }: {
   entries: NarrationChapterEntry[];
   scenes: NarrationSceneRef[];
-  musicLevel: number;
   children: React.ReactNode;
 }) {
-  const controller = useNarrationController({ entries, scenes, musicLevel });
+  const controller = useNarrationController({ entries, scenes });
   return (
     <NarrationContext.Provider value={controller}>
       <audio ref={controller.audioRef} preload="auto" aria-label="Read aloud" />

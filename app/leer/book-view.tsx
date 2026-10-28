@@ -21,7 +21,7 @@ import { coverTitleLong } from "../folio/panels";
 import type { ChapterPanel } from "../folio/panels";
 import { PanelsModal } from "../folio/panels-modal";
 import { GOTO_SCENE_EVENT, setCurrentSceneId } from "./current-scene";
-import { attachFollowPause, pickCurrentScene, scrollToSceneId } from "./scroll-helpers";
+import { attachFollowPause, noteUserScroll, pickCurrentScene, scrollToSceneId } from "./scroll-helpers";
 import { ReadAlong } from "../narration/read-along";
 
 function pulse(el: HTMLElement | null) {
@@ -135,6 +135,8 @@ export function BookView({
 
   function gotoFigure(fig: InlineFigure) {
     const el = figEls.current.get(fig.id) ?? null;
+    const col = readColRef.current;
+    if (col) noteUserScroll(col);
     el?.scrollIntoView({ block: "nearest" });
     pulse(el);
   }
