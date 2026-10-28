@@ -54,6 +54,16 @@ export function getCachedScenePicture(sceneId: string): { url: string; caption: 
 const figureCache = new Map<string, InlineFigure[]>();
 let figureSeq = 1;
 
+// Document coordinates from the selection rect plus page scroll, so the
+// popover stays on the selection however scenes are laid out (paged or
+// continuous scroll, several scenes mounted at once).
+export function popoverPos(
+  rect: { top: number; left: number; width: number },
+  scroll: { x: number; y: number },
+): { top: number; left: number } {
+  return { top: rect.top + scroll.y - 8, left: rect.left + scroll.x + rect.width / 2 };
+}
+
 function paraOf(node: Node | null): Element | null {
   if (!node) return null;
   const el = node.nodeType === Node.TEXT_NODE ? node.parentElement : (node as Element);
@@ -253,11 +263,7 @@ export function usePictures({
           return;
         }
         const box = sel.getRangeAt(0).getBoundingClientRect();
-        const host = view.getBoundingClientRect();
-        setPopover({
-          top: box.top - host.top - 8,
-          left: box.left - host.left + box.width / 2,
-        });
+        setPopover(popoverPos(box, { x: window.scrollX, y: window.scrollY }));
       });
     };
     view.addEventListener("mouseup", onMouseUp);
@@ -267,19 +273,27 @@ export function usePictures({
     };
   }, [viewEl]);
 
+  // A new scene owns a fresh popover; a stale one never follows along.
+  useEffect(() => {
+    setPopover(null);
+  }, [sceneId]);
+
   useEffect(() => {
     if (!popover) return;
+    const hide = () => setPopover(null);
     const onDown = (event: MouseEvent) => {
-      if (!popRef.current?.contains(event.target as Node | null)) setPopover(null);
+      if (!popRef.current?.contains(event.target as Node | null)) hide();
     };
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setPopover(null);
+      if (event.key === "Escape") hide();
     };
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onKey);
+    window.addEventListener("resize", hide);
     return () => {
       document.removeEventListener("mousedown", onDown);
       document.removeEventListener("keydown", onKey);
+      window.removeEventListener("resize", hide);
     };
   }, [popover]);
 

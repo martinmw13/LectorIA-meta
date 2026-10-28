@@ -452,26 +452,43 @@ html[data-theme="dark"] .expand-img {
   outline-offset: 2px;
 }
 
+/* Selection popover: boxless like the Picture this button. Meta-blue
+   text and icon over a soft paper halo, so it reads over book text.
+   Motion only on press; hover just underlines. */
 .picture-float {
   position: absolute;
-  z-index: 2;
+  z-index: 60;
   transform: translate(-50%, -100%);
-  border: 1px solid var(--color-accent-fill);
-  border-radius: 6px;
-  background: var(--color-accent-fill);
-  color: #fff;
+  background: none;
+  border: 0;
+  border-radius: 4px;
+  padding: 6px 8px;
+  color: var(--color-accent);
   font-family: var(--font-ui);
   font-size: 12.5px;
-  padding: 7px 12px;
   cursor: pointer;
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
+  text-shadow:
+    0 0 6px var(--color-surface),
+    0 0 2px var(--color-surface),
+    0 1px 2px var(--color-surface);
+}
+
+.picture-float-lbl {
+  text-decoration: underline transparent 1.5px;
+  text-underline-offset: 4px;
 }
 
 .picture-float:hover {
-  background: var(--color-accent-hover);
+  color: var(--color-accent-hover);
+}
+
+.picture-float:hover .picture-float-lbl,
+.picture-float:focus-visible .picture-float-lbl {
+  text-decoration-color: currentColor;
 }
 
 .picture-float:focus-visible {
@@ -479,10 +496,21 @@ html[data-theme="dark"] .expand-img {
   outline-offset: 2px;
 }
 
+.picture-float:active {
+  animation: picfloat-press 300ms ease;
+}
+
+@keyframes picfloat-press {
+  35% {
+    transform: translate(-50%, -100%) scale(0.94);
+  }
+}
+
 .picture-float svg {
   stroke: currentColor;
   fill: none;
   stroke-width: 1.5;
+  filter: drop-shadow(0 0 3px var(--color-surface));
 }
 
 .genfig {
@@ -676,7 +704,8 @@ html[data-theme="dark"] .expand-img {
   /* No drawing or button motion; the image swaps in within 200 ms. */
   .pic-btn:active .pic-btn-art,
   .pic-btn-engraving:hover .pic-btn-glint,
-  .pic-btn-ink:hover .pic-btn-art svg {
+  .pic-btn-ink:hover .pic-btn-art svg,
+  .picture-float:active {
     animation: none;
   }
 
