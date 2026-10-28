@@ -8,14 +8,37 @@ import type {
   SceneSignal,
   Track,
 } from "./music-types";
-import { dominantEmotion, rankTracks, resolveConfig } from "./music-similarity";
+import { compareTrackId, dominantEmotion, rankScored, rankTracks, resolveConfig } from "./music-similarity";
+import type { RankedTrack } from "./music-similarity";
 
-// Style scope for every pick, minus playlist-only tracks. Playlist tracks
-// never enter emotion selection, so the filter lives here, not in callers.
+// The one audible-scope filter: playlist-only tracks never enter emotion
+// selection, so every scope below goes through here.
+export function audibleTracks(manifest: MusicManifest): Track[] {
+  return manifest.tracks.filter((t) => t.playlistOnly !== true);
+}
+
+// Style scope for every pick. A null style means the whole audible set.
 export function candidatesFor(selection: MusicSelection, manifest: MusicManifest): Track[] {
-  const audible = manifest.tracks.filter((t) => t.playlistOnly !== true);
+  const audible = audibleTracks(manifest);
   if (selection.style === null) return audible;
   return audible.filter((t) => t.style === selection.style);
+}
+
+// Best match by score, ties to the lower id. A null scene takes the
+// first track in id order. Skips one id (the ended track) when given.
+export function bestRanked(
+  scene: SceneSignal | null,
+  tracks: Track[],
+  excludeId?: string | null,
+  override?: Partial<MusicConfig>,
+): Track | null {
+  const eligible =
+    excludeId === null || excludeId === undefined
+      ? tracks
+      : tracks.filter((t) => t.id !== excludeId);
+  if (eligible.length === 0) return null;
+  if (scene === null) return [...eligible].sort(compareTrackId)[0] ?? null;
+  return rankScored(scene, eligible, override)[0]?.track ?? null;
 }
 
 // Next track: the next same-emotion track in score order across the whole
@@ -29,15 +52,12 @@ export function nextTrack(
   override?: Partial<MusicConfig>,
   selection?: MusicSelection | null,
 ): Track | null {
-  const scope =
-    selection == null
-      ? manifest.tracks.filter((t) => t.playlistOnly !== true)
-      : candidatesFor(selection, manifest);
+  const scope = candidatesFor(selection ?? { style: null }, manifest);
   if (scope.length <= 1) return null;
   const config = resolveConfig(override);
   const scoped = { ...manifest, tracks: scope };
   if (scene === null) {
-    const ids = [...scope].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    const ids = [...scope].sort(compareTrackId);
     const at = ids.findIndex((t) => t.id === currentTrackId);
     return ids[(at + 1) % ids.length] as Track;
   }
@@ -52,10 +72,43 @@ export function nextTrack(
   return ranked.find((t) => t.id !== currentTrackId) ?? null;
 }
 
-// Random mode draw: same-style tracks with the scene's dominant emotion
-// (or the whole style set when none matches), scored, kept within
-// randomTolerance of the best. The current track stays when eligible;
-// otherwise the draw skips it when an alternative exists.
+export interface ScheduledDraw {
+  cands: Track[];
+  scene: SceneSignal | null;
+  currentId: string | null;
+  currentStartedSec: number;
+  nowSec: number;
+  rng: Rng;
+  override?: Partial<MusicConfig>;
+}
+
+// The one scheduled draw: same-style tracks with the scene's dominant
+// emotion (or the whole style set when none matches), kept within
+// randomTolerance of the best. The current track stays when eligible
+// with no rng call; otherwise the draw runs first (one rng call, its
+// pick discarded under the min-track hold), matching evaluateRandom.
+export function selectScheduled(draw: ScheduledDraw): Track | null {
+  const { cands, scene, currentId, rng } = draw;
+  if (cands.length === 0 || scene === null) return null;
+  const config = resolveConfig(draw.override);
+  const ranked = rankScored(scene, cands, config);
+  const dom = dominantEmotion(scene);
+  const pool = ranked.filter((entry) => entry.track.emotion === dom);
+  const kept = pool.length > 0 ? pool : ranked;
+  const best = kept[0]?.score ?? 0;
+  const eligible = kept.filter((entry) => entry.score >= best - config.randomTolerance);
+  const current = currentId !== null ? eligible.find((entry) => entry.track.id === currentId) : undefined;
+  if (current) return current.track;
+  const rest = eligible.filter((entry) => entry.track.id !== currentId);
+  const drawFrom = rest.length > 0 ? rest : eligible;
+  if (drawFrom.length === 0) return null;
+  const picked = (drawFrom[Math.floor(rng() * drawFrom.length)] as RankedTrack).track;
+  if (currentId !== null && draw.nowSec - draw.currentStartedSec < config.minTrackSec) return null;
+  return picked;
+}
+
+// Random mode draw: the scheduled draw without the min-track hold, which
+// only the scheduler owns. An infinite clock always passes the hold.
 export function pickRandomTrack(
   cands: Track[],
   scene: SceneSignal | null,
@@ -65,33 +118,25 @@ export function pickRandomTrack(
 ): Track | null {
   if (cands.length === 0) return null;
   if (scene === null) {
-    const ids = [...cands].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    const ids = [...cands].sort(compareTrackId);
     const at = ids.findIndex((t) => t.id === excludeId);
     return ids[(at + 1) % ids.length] as Track;
   }
-  const config = resolveConfig(override);
-  const scoped = { version: 3, styles: [], soundtracks: [], playlists: [], tracks: cands };
-  const ranked = rankTracks(scene, scoped, config);
-  const dom = dominantEmotion(scene);
-  const pool = ranked.filter((t) => t.emotion === dom);
-  const kept = (pool.length > 0 ? pool : ranked).map((t) => ({
-    track: t,
-    score: config.similarity(scene, t, config.weights),
-  }));
-  const best = kept[0]?.score ?? 0;
-  const eligible = kept.filter((e) => e.score >= best - config.randomTolerance);
-  const current = excludeId !== null ? eligible.find((e) => e.track.id === excludeId) : undefined;
-  if (current) return current.track;
-  const rest = eligible.filter((e) => e.track.id !== excludeId);
-  const drawFrom = rest.length > 0 ? rest : eligible;
-  if (drawFrom.length === 0) return null;
-  return (drawFrom[Math.floor(rng() * drawFrom.length)] as { track: Track }).track;
+  return selectScheduled({
+    cands,
+    scene,
+    currentId: excludeId,
+    currentStartedSec: 0,
+    nowSec: Number.POSITIVE_INFINITY,
+    rng,
+    override,
+  });
 }
 
 // True when the style has at least one emotion-selectable track. The style
 // selector uses this, so a style with only playlist tracks stays hidden.
 export function styleHasTracks(manifest: MusicManifest, style: string): boolean {
-  return manifest.tracks.some((t) => t.style === style && t.playlistOnly !== true);
+  return audibleTracks(manifest).some((t) => t.style === style);
 }
 
 // Session defaults on load. A stored style with no tracks falls back to
@@ -118,13 +163,8 @@ export function requestStyleChange(
   scene: SceneSignal | null,
   override?: Partial<MusicConfig>,
 ): { track: Track } | null {
-  const scoped = manifest.tracks.filter((t) => t.style === style && t.playlistOnly !== true);
+  const scoped = audibleTracks(manifest).filter((t) => t.style === style);
   if (scoped.length === 0) return null;
-  const config = resolveConfig(override);
-  if (scene === null) {
-    const first = [...scoped].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))[0] as Track;
-    return { track: first };
-  }
-  const track = rankTracks(scene, { ...manifest, tracks: scoped }, config)[0] as Track;
-  return { track };
+  const track = bestRanked(scene, scoped, null, override);
+  return track ? { track } : null;
 }

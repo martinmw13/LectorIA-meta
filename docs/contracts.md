@@ -168,16 +168,34 @@ a weights override changes the ranking. `cosineSimilarity` over
 `sceneEntryDwellSec` (5), `minTrackSec` (45), `crossfadeSec` (3), and
 `randomTolerance` (0.05). Everything else reads from it. Ranking ties go
 to the lower track id. Route entries use `sceneEntryDwellSec` as the
-dwell override; scoring and overrides are unchanged.
+dwell override; scoring and overrides are unchanged. One path scopes,
+ranks, and draws: `audibleTracks` is the one playlist-only filter,
+`compareTrackId` the one tie-break, `rankScored` scores each track once
+(best first, ties to lower id), and `selectScheduled` runs the tolerance
+window, keep-current, and min-track hold with one rng call per draw.
+
+## Music session
+
+`core/music-session.ts` is the single policy owner behind the reader.
+The reader sends intents (`sceneEntered`, `tick`, `skip`, `previous`,
+`styleChanged`, `trackEnded`, `playlistToggled`) through
+`startSession` and `dispatch` with explicit `nowSec` and `rng` values,
+so all timing is testable without timers or a render. `dispatch`
+returns the same session object when nothing changed, so the 1 s tick
+rerenders nothing. The reader cues music on scene entry only: one
+`sceneEntered` per route id, gated by an id comparison, so sub-page
+moves never reach the session. The session holds the scheduler state,
+the Previous history, the selection, the fade, and the replay nonce,
+and derives the view the player renders: track id, fade, nonce,
+canPrev/canSkip, playlist flag, style.
 
 ## Selection scheduler
 
-`core/music-schedule.ts` is a pure state machine. The reader calls
-`observeScene`, `tickScheduler`, `requestNext`, and `noteTrackEnded`
-with explicit `nowSec` values, so all timing is testable without
-timers. The reader cues music on scene entry only: one `observeScene`
-call per route id, gated by an id comparison, so sub-page moves never
-reach the scheduler. State holds the current track id and when it started, the active
+`core/music-schedule.ts` is a pure state machine. The session calls
+`observeScene`, `tickScheduler`, `requestNext`, `noteTrackEnded`,
+`requestManualTrack`, `switchStyle`, `enterPlaylist`, and
+`exitPlaylist` with explicit `nowSec` values, so all timing is testable
+without timers. State holds the current track id and when it started, the active
 scene id, the pending scene id and since when, and the skip override
 with the scene it belongs to.
 
@@ -265,8 +283,9 @@ so mouse navigation shows no box while keyboard focus keeps its ring.
 No user-visible emotion labels exist; ids stay as they are.
 `core/music-credit.ts` builds the line as a pure function with tests,
 including the pure `displayTitle`.
-`core/music-history.ts` is the bounded history stack and
-`requestManualTrack` in `core/music-schedule.ts` holds a manual pick.
+`core/music-history.ts` is the bounded history stack the session banks
+automatic switches on; `requestManualTrack` in `core/music-schedule.ts`
+holds a manual pick.
 
 ## Image api
 
