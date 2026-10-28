@@ -2,7 +2,7 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, expect, test } from "vitest";
-import { LEGACY_WARMTH_KEY, WARMTH_KEY, easeWarmth, loadWarmth, parseWarmth, warmthBand } from "../warmth";
+import { LEGACY_WARMTH_KEY, WARMTH_KEY, WARMTH_SCRIPT, easeWarmth, loadWarmth, parseWarmth, warmthBand } from "../warmth";
 import { WarmthControl } from "./warmth-control";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -48,6 +48,25 @@ test("an old step index migrates once to the continuous value", () => {
   localStorage.clear();
   localStorage.setItem(LEGACY_WARMTH_KEY, "junk");
   expect(loadWarmth(localStorage)).toBe(0);
+});
+
+test("the pre-paint script and loadWarmth agree, including legacy steps", () => {
+  const cases: Array<[string | null, string | null]> = [
+    [null, "2"],
+    ["0.64", null],
+    ["0.64", "3"],
+    [null, "7"],
+    ["junk", null],
+  ];
+  for (const [current, legacy] of cases) {
+    localStorage.clear();
+    document.documentElement.style.removeProperty("--warmth");
+    if (current !== null) localStorage.setItem(WARMTH_KEY, current);
+    if (legacy !== null) localStorage.setItem(LEGACY_WARMTH_KEY, legacy);
+    new Function(WARMTH_SCRIPT)();
+    const painted = Number(document.documentElement.style.getPropertyValue("--warmth") || 0);
+    expect(painted).toBeCloseTo(easeWarmth(loadWarmth(localStorage)), 6);
+  }
 });
 
 test("parsing clamps, and the curve keeps the low end subtle", () => {
