@@ -70,6 +70,7 @@ export const ICON_SETS: Record<SkinId, Partial<Record<IconName, IconDef>>> = {
   watercolor: RAIN_ICONS.watercolor ?? {},
   ink: RAIN_ICONS.ink ?? {},
   pencil: {},
+  comic: {},
   chihiro: {},
 };
 

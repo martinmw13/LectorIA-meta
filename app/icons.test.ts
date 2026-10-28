@@ -61,6 +61,7 @@ describe("icon registry", () => {
     expect(iconSkin("rain-storm", "watercolor")).toBe("watercolor");
     expect(iconSkin("rain-storm", "ink")).toBe("ink");
     expect(iconSkin("rain-storm", "pencil")).toBe(DEFAULT_SKIN);
+    expect(iconSkin("rain-storm", "comic")).toBe(DEFAULT_SKIN);
     expect(iconSkin("rain-storm", "chihiro")).toBe(DEFAULT_SKIN);
     expect(iconSkin("moon", "watercolor")).toBe(DEFAULT_SKIN);
     const rains: IconName[] = ["rain-off", "rain-drizzle", "rain-moderate", "rain-storm"];

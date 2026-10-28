@@ -13,8 +13,8 @@ import {
 } from "./skin";
 
 describe("skin", () => {
-  it("ships five skins with engraving first", () => {
-    expect(SKINS).toEqual(["engraving", "watercolor", "ink", "pencil", "chihiro"]);
+  it("ships the final six skins with engraving first", () => {
+    expect(SKINS).toEqual(["engraving", "watercolor", "ink", "pencil", "comic", "chihiro"]);
     expect(DEFAULT_SKIN).toBe("engraving");
   });
 
@@ -34,6 +34,7 @@ describe("initialSkin", () => {
   it("falls back to a valid stored value without a param", () => {
     expect(initialSkin("ink", "")).toBe("ink");
     expect(initialSkin("pencil")).toBe("pencil");
+    expect(initialSkin("comic")).toBe("comic");
   });
 
   it("ignores invalid params and stored values", () => {
