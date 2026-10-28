@@ -42,14 +42,18 @@ function asString(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
-export function classifyInputOf(scenes: { id: unknown; ch: unknown; start_n: unknown; end_n: unknown; title: unknown; summary: unknown; characters: unknown }[]): string {
-  return fingerprint(
-    scenes.map((s) => ({ id: s.id, ch: s.ch, start_n: s.start_n, end_n: s.end_n, title: s.title, summary: s.summary, characters: s.characters })),
-  );
+export function classifyInputOf(
+  scenes: { id: unknown; ch: unknown; start_n: unknown; end_n: unknown; title: unknown; summary: unknown; characters: unknown }[],
+  textVersion: unknown,
+): string {
+  return fingerprint({
+    textVersion,
+    scenes: scenes.map((s) => ({ id: s.id, ch: s.ch, start_n: s.start_n, end_n: s.end_n, title: s.title, summary: s.summary, characters: s.characters })),
+  });
 }
 
-export function resplitInputOf(scenes: { id: unknown; start_n: unknown; end_n: unknown }[]): string {
-  return fingerprint(scenes.map((s) => ({ id: s.id, start_n: s.start_n, end_n: s.end_n })));
+export function resplitInputOf(scenes: { id: unknown; start_n: unknown; end_n: unknown }[], textVersion: unknown): string {
+  return fingerprint({ textVersion, scenes: scenes.map((s) => ({ id: s.id, start_n: s.start_n, end_n: s.end_n })) });
 }
 
 export function clusterInputOf(scenes: { id: unknown; final: unknown }[]): string {
@@ -63,16 +67,18 @@ export function segmentKeys(dir: string): StepKeys {
 }
 
 export function classifyKeys(dir: string): StepKeys {
+  const book = asRecord(readJson(join(dir, "book.json")));
   const scenes = asRecord(readJson(join(dir, "scenes.json")));
   const analysis = asRecord(readJson(join(dir, "analysis.json")));
   const list = Array.isArray(scenes.scenes) ? (scenes.scenes as { id: unknown; ch: unknown; start_n: unknown; end_n: unknown; title: unknown; summary: unknown; characters: unknown }[]) : undefined;
-  return { recorded: asString(asRecord(analysis.provenance).input), current: list === undefined ? "" : classifyInputOf(list) };
+  return { recorded: asString(asRecord(analysis.provenance).input), current: list === undefined ? "" : classifyInputOf(list, asString(book.textVersion) ?? "") };
 }
 
 export function resplitKeys(dir: string): StepKeys {
+  const book = asRecord(readJson(join(dir, "book.json")));
   const analysis = asRecord(readJson(join(dir, "analysis.json")));
   const list = Array.isArray(analysis.scenes) ? (analysis.scenes as { id: unknown; start_n: unknown; end_n: unknown }[]) : undefined;
-  return { recorded: asString(asRecord(asRecord(analysis.provenance).resplit).input), current: list === undefined ? "" : resplitInputOf(list) };
+  return { recorded: asString(asRecord(asRecord(analysis.provenance).resplit).input), current: list === undefined ? "" : resplitInputOf(list, asString(book.textVersion) ?? "") };
 }
 
 export function clusterKeys(dir: string): StepKeys {

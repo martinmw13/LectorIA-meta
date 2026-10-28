@@ -161,7 +161,7 @@ describe("the force sequence", () => {
     // The old resplit record described the single old scene, so it is gone.
     const analysis = readJson(dir, "analysis.json");
     expect((analysis.provenance as Record<string, unknown>).resplit).toBeUndefined();
-    expect((analysis.provenance as Record<string, unknown>).input).toBe(classifyInputOf(scenes));
+    expect((analysis.provenance as Record<string, unknown>).input).toBe(classifyInputOf(scenes, readJson(dir, "book.json").textVersion));
 
     // Resplit must not skip: no record matches the new ranges, so it
     // runs and writes a record for exactly these ranges.
@@ -169,7 +169,7 @@ describe("the force sequence", () => {
     const after = readJson(dir, "analysis.json");
     const resplit = (after.provenance as Record<string, Record<string, unknown> | undefined>).resplit;
     if (!resplit) throw new Error("resplit ran but wrote no record");
-    expect(resplit.input).toBe(resplitInputOf(after.scenes as { id: unknown; start_n: unknown; end_n: unknown }[]));
+    expect(resplit.input).toBe(resplitInputOf(after.scenes as { id: unknown; start_n: unknown; end_n: unknown }[], readJson(dir, "book.json").textVersion));
 
     // Rerunning resplit on its own output reuses: same scenes, same bytes.
     const bytes = readFileSync(join(dir, "analysis.json"), "utf8");
@@ -204,6 +204,46 @@ describe("the force sequence", () => {
 
     await runCluster({ bookKey: "oz", force: false, dir });
     expect(readFileSync(join(dir, "music-clusters.json"), "utf8")).toBe(second);
+  });
+});
+
+describe("changed textVersion", () => {
+  it("redoes classify and resplit when the scenes are identical", async () => {
+    const dir = setupDir();
+    await runSegment({ bookKey: "oz", force: true, dir }, { meta: segmentFake([[1, 4]]) });
+    await runClassify({ bookKey: "oz", force: true, dir }, { jev: jevOk(), meta: throwMeta });
+    await runResplit({ bookKey: "oz", force: true, dir }, { jev: throwJev, meta: throwMeta });
+    const stamped = readJson(dir, "analysis.json");
+    const oldInput = (stamped.provenance as Record<string, unknown>).input;
+    const oldResplit = ((stamped.provenance as Record<string, unknown>).resplit as Record<string, unknown>).input;
+
+    // Corrected book text, same scene boundaries: segment rewrites
+    // the same scene under the new textVersion.
+    const book = readJson(dir, "book.json");
+    writeFileSync(join(dir, "book.json"), JSON.stringify({ ...book, textVersion: "sha256:y" }));
+    await runSegment({ bookKey: "oz", force: false, dir }, { meta: segmentFake([[1, 4]]) });
+    expect((readJson(dir, "scenes.json").scenes as unknown[]).length).toBe(1);
+
+    // Classify must redo: with text out of the key this would reuse
+    // and never call Jev.
+    let jevCalls = 0;
+    const countingJev: JevClient = {
+      model: "jev-1.14.0",
+      classify: async (input) => {
+        jevCalls += 1;
+        return jevOk().classify(input);
+      },
+    };
+    await runClassify({ bookKey: "oz", force: false, dir }, { jev: countingJev, meta: throwMeta });
+    expect(jevCalls).toBe(1);
+
+    const afterClassify = readJson(dir, "analysis.json");
+    expect((afterClassify.provenance as Record<string, unknown>).input).not.toBe(oldInput);
+    expect((afterClassify.provenance as Record<string, unknown>).resplit).toBeUndefined();
+
+    await runResplit({ bookKey: "oz", force: false, dir }, { jev: throwJev, meta: throwMeta });
+    const afterResplit = readJson(dir, "analysis.json");
+    expect(((afterResplit.provenance as Record<string, unknown>).resplit as Record<string, unknown>).input).not.toBe(oldResplit);
   });
 });
 

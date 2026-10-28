@@ -127,7 +127,7 @@ export async function runClassify(ctx: StepCtx, deps: { jev: JevClient; meta: Me
   };
   // A resplit record describes the ranges it was written from; keep it
   // only when it still describes the scenes just written.
-  const carried = (resplit as { input?: unknown } | undefined)?.input === resplitInputOf(scenes) ? resplit : undefined;
+  const carried = (resplit as { input?: unknown } | undefined)?.input === resplitInputOf(scenes, book.textVersion) ? resplit : undefined;
   const seen = new Set(scenes.map((s) => s.id));
   if (seen.size !== scenes.length) throw new Error("classify found duplicate scene ids");
   const overrides = scenes.filter((s) => s.muse_override !== null).length;

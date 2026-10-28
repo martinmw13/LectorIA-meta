@@ -375,7 +375,7 @@ export async function runResplit(ctx: StepCtx, deps: { jev: JevClient; meta: Met
     cost_usd: prevMeta.cost_usd + usage.meta.costUsd,
   };
   const overrides = scenes.filter((s) => s.muse_override !== null).length;
-  const resplitWrote = resplitInputOf(scenes);
+  const resplitWrote = resplitInputOf(scenes, book.textVersion);
   writeFileSync(
     join(ctx.dir, "analysis.json"),
     `${JSON.stringify({
@@ -388,7 +388,7 @@ export async function runResplit(ctx: StepCtx, deps: { jev: JevClient; meta: Met
         jev: totalJev,
         meta: totalMeta,
         total_cost_usd: totalJev.cost_usd + totalMeta.cost_usd,
-        input: classifyInputOf(scenes),
+        input: classifyInputOf(scenes, book.textVersion),
         resplit: {
           input: resplitWrote,
           auto_margin: RESPLIT_AUTO_MARGIN,

@@ -7,8 +7,8 @@ the step. The rule lives in `pipeline/freshness.ts`:
 | Step | Current input | Recorded key |
 |---|---|---|
 | segment | book textVersion | scenes.json textVersion |
-| classify | fingerprint of scenes (id, ch, start_n, end_n, title, summary, characters) | analysis.json `provenance.input` |
-| resplit | fingerprint of analysis scene ranges (id, start_n, end_n) | analysis.json `provenance.resplit.input` |
+| classify | fingerprint of the book textVersion plus scenes (id, ch, start_n, end_n, title, summary, characters) | analysis.json `provenance.input` |
+| resplit | fingerprint of the book textVersion plus analysis scene ranges (id, start_n, end_n) | analysis.json `provenance.resplit.input` |
 | cluster | fingerprint of analysis scenes (id, final) | music-clusters.json `provenance.input` |
 
 Classify carries the old `provenance.resplit` only when its `input`

@@ -142,7 +142,7 @@ describe("runClassify with fake clients", () => {
     };
     await runClassify({ bookKey: "oz", force: true, dir }, { jev, meta });
     const scenes = (JSON.parse(readFileSync(join(dir, "scenes.json"), "utf8")) as { scenes: { id: unknown; start_n: unknown; end_n: unknown }[] }).scenes;
-    const matching = { input: resplitInputOf(scenes), auto_margin: 0.3, splits: [] };
+    const matching = { input: resplitInputOf(scenes, "sha256:x"), auto_margin: 0.3, splits: [] };
     const first = JSON.parse(readFileSync(join(dir, "analysis.json"), "utf8")) as { provenance: Record<string, unknown> };
     writeFileSync(join(dir, "analysis.json"), JSON.stringify({ ...first, provenance: { ...first.provenance, resplit: matching } }));
     await runClassify({ bookKey: "oz", force: true, dir }, { jev, meta });
