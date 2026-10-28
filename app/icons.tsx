@@ -3,7 +3,7 @@ import { DEFAULT_SKIN, type SkinId } from "./skin";
 import { RAIN_ICONS, type RainIconName } from "./icons-rain";
 import { RAIN_ICONS_EXTRA } from "./icons-rain-extra";
 
-export type IconName = "moon" | "sun" | "eye-off" | "pencil" | "picture" | "expand" | "read-aloud" | "ink-circle" | RainIconName;
+export type IconName = "moon" | "sun" | "eye-off" | "pencil" | "picture" | "expand" | "read-aloud" | "ink-circle" | "brush" | RainIconName;
 
 export interface IconDef {
   width: number;
@@ -75,6 +75,19 @@ export const BASE_ICONS: Record<string, IconDef> = {
         <path d="M5.5 4.2v7.8" />
         <path d="M10.8 6.4a2.4 2.4 0 0 1 0 3.2" />
         <path d="M12.4 4.9a4.6 4.6 0 0 1 0 6.2" />
+      </>
+    ),
+  },
+  // Paintbrush for the style-stamp medal. Callers set the stroke.
+  brush: {
+    width: 24,
+    height: 24,
+    viewBox: "0 0 24 24",
+    body: (
+      <>
+        <path d="M20.5 3.5 14 10" />
+        <path d="M13.2 10.8C10 12 6.6 15 5.2 19.3L4.5 21l1.7-.7c4.3-1.4 7.3-4.8 8.5-8Z" />
+        <path d="M12.6 9.4l2.1 2.1" />
       </>
     ),
   },
