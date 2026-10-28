@@ -9,6 +9,7 @@
 @import "./styles/scene-marks.css";
 @import "./styles/skins.css";
 @import "./styles/skin-engraving.css";
+@import "./styles/skin-watercolor.css";
 
 * {
   box-sizing: border-box;

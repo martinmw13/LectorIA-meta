@@ -30,7 +30,7 @@ html[data-skin="engraving"]:not([data-theme="dark"]) body {
 }
 
 /* ---------- Type: small-caps labels, Garamond body ---------- */
-html[data-skin="engraving"] :is(.kicker, .mlabel, .top-center, .pager-label, .tick-label, .panels-name) {
+html[data-skin="engraving"] :is(.kicker, .mlabel, .panels-kicker, .top-center, .pager-label, .tick-label, .panels-name) {
   font-family: var(--font-eng-label);
   font-weight: 400;
   text-transform: none;
@@ -38,7 +38,8 @@ html[data-skin="engraving"] :is(.kicker, .mlabel, .top-center, .pager-label, .ti
 }
 
 html[data-skin="engraving"] .kicker,
-html[data-skin="engraving"] .mlabel {
+html[data-skin="engraving"] .mlabel,
+html[data-skin="engraving"] .panels-kicker {
   font-size: 13px;
   color: var(--color-text-muted);
 }

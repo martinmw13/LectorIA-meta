@@ -1,0 +1,465 @@
+/* Watercolor skin, ported from the approved prototype (prototipos/decidido/
+   skins, Oct 28): warm cotton paper, Lora for the book, Caveat for labels
+   and buttons, soft blue washes in place of rules and boxes, a blot under
+   each drop cap and a bleeding wash under the primary word. Colours apply
+   in light mode only; type and ornaments apply in both. Nothing loops:
+   motion is hover, click or a state change only. */
+
+html[data-skin="watercolor"] {
+  --font-book: var(--font-lora, "Lora"), georgia, serif;
+  --font-ui: var(--font-lora, "Lora"), georgia, serif;
+  --font-wc-hand: var(--font-caveat, "Caveat"), cursive;
+}
+
+html[data-skin="watercolor"]:not([data-theme="dark"]) {
+  --color-text: #1f2a44;
+  --color-text-muted: #5d6a85;
+  --color-surface: #fbf8f1;
+  --color-surface-soft: #fffdf8;
+  --color-border: rgba(127, 176, 255, 0.45);
+  --color-paper-dim: #f5f1e6;
+  --color-select: #cfe1ff;
+  --narration-sentence: rgba(141, 184, 255, 0.32);
+  --narration-glow: rgba(141, 184, 255, 0.35);
+  --narration-mark: rgba(141, 184, 255, 0.6);
+  --wc-texture: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.55' numOctaves='3' seed='8'/%3E%3CfeColorMatrix values='0 0 0 0 .55 0 0 0 0 .6 0 0 0 0 .72 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+html[data-skin="watercolor"]:not([data-theme="dark"]) body {
+  background: var(--color-surface) var(--wc-texture);
+}
+
+/* ---------- Type: Caveat labels, Lora body ---------- */
+html[data-skin="watercolor"] :is(.kicker, .mlabel, .panels-kicker, .top-center, .pager-label, .tick-label, .chapter-jump-text) {
+  font-family: var(--font-wc-hand);
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+html[data-skin="watercolor"] :is(.kicker, .mlabel, .panels-kicker) {
+  font-size: 18px;
+  color: var(--color-text-muted);
+}
+
+html[data-skin="watercolor"] .top-center {
+  font-size: 17px;
+  text-align: left;
+  color: var(--color-text-muted);
+}
+
+html[data-skin="watercolor"] :is(.wordmark, .home-brand) {
+  font-family: var(--font-wc-hand);
+  font-weight: 700;
+  font-size: 30px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--color-text);
+}
+
+html[data-skin="watercolor"] :is(.wordmark, .home-brand) em {
+  font-style: normal;
+  color: var(--color-accent);
+}
+
+html[data-skin="watercolor"] .body-text {
+  font-size: 19px;
+  line-height: 1.72;
+}
+
+html[data-skin="watercolor"] .body-text > p {
+  text-align: left;
+}
+
+html[data-skin="watercolor"] .body-text > p + p {
+  text-indent: 0;
+}
+
+html[data-skin="watercolor"] .body-text > p + p:not([data-cont]) {
+  margin-top: 1.05em;
+}
+
+html[data-skin="watercolor"] h1.chapter-title {
+  font-family: var(--font-wc-hand);
+  font-weight: 700;
+  font-style: normal;
+  letter-spacing: 0;
+}
+
+html[data-skin="watercolor"] .cover-title {
+  font-size: 84px;
+  line-height: 1;
+}
+
+html[data-skin="watercolor"] .cover-num {
+  font-family: var(--font-wc-hand);
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+html[data-skin="watercolor"] .player-track {
+  font-family: var(--font-book);
+}
+
+/* ---------- Washes in place of rules ---------- */
+html[data-skin="watercolor"] .top-line {
+  border-bottom: 0;
+}
+
+html[data-skin="watercolor"]:not([data-theme="dark"]) .top-line {
+  background: linear-gradient(180deg, rgba(220, 233, 255, 0.55), transparent);
+}
+
+html[data-skin="watercolor"] :is(.band-pager, .band-play) {
+  border-top: 0;
+}
+
+html[data-skin="watercolor"]:not([data-theme="dark"]) :is(.band-pager, .band-play) {
+  background: linear-gradient(0deg, rgba(220, 233, 255, 0.6), rgba(251, 248, 241, 0));
+}
+
+html[data-skin="watercolor"] .vault {
+  border-left: 1.5px solid rgba(127, 176, 255, 0.4);
+}
+
+/* ---------- Drop cap: a bold Caveat letter on a pale blue blot ----------
+   Every scene opens with one, as each prototype page does. */
+html[data-skin="watercolor"] .book-section .body-text > p:first-of-type:not([data-cont])::first-letter {
+  float: left;
+  font-family: var(--font-wc-hand);
+  font-weight: 700;
+  font-size: 3.05em;
+  line-height: 1;
+  color: #1f2a44;
+  padding: 10px 21px 6px 19px;
+  margin: 4px 14px 0 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 60' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='f' x='-25%25' y='-25%25' width='150%25' height='150%25' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.07' numOctaves='3' seed='5' result='n'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='n' scale='7' xChannelSelector='R' yChannelSelector='G' result='d'/%3E%3CfeGaussianBlur in='d' stdDeviation='0.9' result='b'/%3E%3CfeMorphology in='d' operator='erode' radius='1.3' result='e'/%3E%3CfeComposite in='b' in2='e' operator='arithmetic' k1='0' k2='1.15' k3='-0.45' k4='0' result='edge'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='1' seed='2' result='g'/%3E%3CfeColorMatrix in='g' type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -0.6 1.15' result='ga'/%3E%3CfeComposite in='edge' in2='ga' operator='in'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23f)'%3E%3Cpath d='M30 4C46 3 58 16 57 31S44 57 29 56 3 45 4 30 14 5 30 4Z' fill='%239FC4FF' opacity='.7'/%3E%3C/g%3E%3C/svg%3E") center / 100% 100% no-repeat;
+}
+
+/* ---------- Ornaments: a soft blue brushstroke ---------- */
+html[data-skin="watercolor"] .cover-rule,
+html[data-skin="watercolor"] .book-section + .book-section::before {
+  border: 0;
+  height: 12px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 12' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='f' x='-25%25' y='-25%25' width='150%25' height='150%25' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.07' numOctaves='3' seed='5' result='n'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='n' scale='7' xChannelSelector='R' yChannelSelector='G' result='d'/%3E%3CfeGaussianBlur in='d' stdDeviation='0.9' result='b'/%3E%3CfeMorphology in='d' operator='erode' radius='1.3' result='e'/%3E%3CfeComposite in='b' in2='e' operator='arithmetic' k1='0' k2='1.15' k3='-0.45' k4='0' result='edge'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='1' seed='2' result='g'/%3E%3CfeColorMatrix in='g' type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -0.6 1.15' result='ga'/%3E%3CfeComposite in='edge' in2='ga' operator='in'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23f)'%3E%3Cpath d='M4 7C50 3 150 10 196 5' stroke='%237FB0FF' stroke-width='5' fill='none' opacity='.6' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E") center / 100% 100% no-repeat;
+}
+
+html[data-skin="watercolor"] .cover-rule {
+  width: 160px;
+  max-width: 160px;
+  margin: 14px 0 18px;
+}
+
+/* Scene break: "Scene 2 of 4" in Caveat between two brushstrokes. The
+   number and count come from scene-marks.css. */
+html[data-skin="watercolor"] .book-section + .book-section::before {
+  content: "Scene " var(--scene-n, "") var(--scene-of, "");
+  width: max-content;
+  height: auto;
+  margin: 34px auto;
+  padding: 0 136px;
+  font-family: var(--font-wc-hand);
+  font-size: 19px;
+  line-height: 1.2;
+  color: var(--color-text-muted);
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 12' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='f' x='-25%25' y='-25%25' width='150%25' height='150%25' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.07' numOctaves='3' seed='5' result='n'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='n' scale='7' xChannelSelector='R' yChannelSelector='G' result='d'/%3E%3CfeGaussianBlur in='d' stdDeviation='0.9' result='b'/%3E%3CfeMorphology in='d' operator='erode' radius='1.3' result='e'/%3E%3CfeComposite in='b' in2='e' operator='arithmetic' k1='0' k2='1.15' k3='-0.45' k4='0' result='edge'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='1' seed='2' result='g'/%3E%3CfeColorMatrix in='g' type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -0.6 1.15' result='ga'/%3E%3CfeComposite in='edge' in2='ga' operator='in'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23f)'%3E%3Cpath d='M4 7C50 3 150 10 196 5' stroke='%237FB0FF' stroke-width='5' fill='none' opacity='.6' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E") left center / 120px 12px no-repeat,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 12' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='f' x='-25%25' y='-25%25' width='150%25' height='150%25' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.07' numOctaves='3' seed='5' result='n'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='n' scale='7' xChannelSelector='R' yChannelSelector='G' result='d'/%3E%3CfeGaussianBlur in='d' stdDeviation='0.9' result='b'/%3E%3CfeMorphology in='d' operator='erode' radius='1.3' result='e'/%3E%3CfeComposite in='b' in2='e' operator='arithmetic' k1='0' k2='1.15' k3='-0.45' k4='0' result='edge'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='1' seed='2' result='g'/%3E%3CfeColorMatrix in='g' type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -0.6 1.15' result='ga'/%3E%3CfeComposite in='edge' in2='ga' operator='in'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23f)'%3E%3Cpath d='M4 7C50 3 150 10 196 5' stroke='%237FB0FF' stroke-width='5' fill='none' opacity='.6' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E") right center / 120px 12px no-repeat;
+}
+
+/* ---------- Picture pane: a wash, no frame ---------- */
+html[data-skin="watercolor"] .frame {
+  border: 0;
+  background: transparent;
+  border-radius: 22px 14px 26px 12px / 14px 24px 12px 26px;
+  box-shadow: none;
+}
+
+html[data-skin="watercolor"] .paper-grain .blob {
+  display: none;
+}
+
+html[data-skin="watercolor"]:not([data-theme="dark"]) .paper-grain {
+  background: radial-gradient(80% 80% at 50% 50%, rgba(220, 233, 255, 0.8), rgba(255, 253, 248, 0) 80%);
+}
+
+html[data-skin="watercolor"] .pic-btn {
+  font-family: var(--font-wc-hand);
+  font-size: 19px;
+  color: var(--color-text);
+}
+
+/* ---------- Cards: a torn-edge wash instead of a box ---------- */
+html[data-skin="watercolor"] .panels-offer {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='f' x='-5%25' y='-10%25' width='110%25' height='120%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.025' numOctaves='3' seed='5' result='n'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='n' scale='9' xChannelSelector='R' yChannelSelector='G' result='d'/%3E%3CfeGaussianBlur in='d' stdDeviation='1.2'/%3E%3C/filter%3E%3CradialGradient id='g' cx='.25' cy='.1' r='1.2'%3E%3Cstop offset='0' stop-color='%238DB8FF' stop-opacity='.35'/%3E%3Cstop offset='.55' stop-color='%23DCE9FF' stop-opacity='.5'/%3E%3Cstop offset='1' stop-color='%23FFFDF8' stop-opacity='.9'/%3E%3C/radialGradient%3E%3C/defs%3E%3Crect x='8' y='8' width='384' height='284' fill='url(%23g)' filter='url(%23f)'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+}
+
+html[data-skin="watercolor"] .panels-name {
+  font-family: var(--font-wc-hand);
+  font-weight: 700;
+  font-size: 30px;
+  letter-spacing: 0;
+}
+
+/* Margin rows: Lora titles, ink-blue wash icons, picture thumbs on a
+   soft white deckle instead of a bordered card. */
+html[data-skin="watercolor"] .mtool-icon {
+  color: var(--color-accent);
+  filter: drop-shadow(1px 1px 0 rgba(127, 176, 255, 0.55));
+}
+
+html[data-skin="watercolor"] .mtool-title {
+  font-size: 16px;
+}
+
+html[data-skin="watercolor"] .style-picker select {
+  border-bottom: 0;
+  background: linear-gradient(90deg, rgba(127, 176, 255, 0.45), rgba(127, 176, 255, 0.08)) 0 100% / 100% 2px no-repeat;
+}
+
+html[data-skin="watercolor"] .vault-item {
+  border: 0;
+  background: #fff;
+  border-radius: 14px 9px 16px 8px;
+  padding: 4px;
+  box-shadow: 0 1px 6px rgba(31, 42, 68, 0.12);
+}
+
+html[data-skin="watercolor"] .panels-spoiler {
+  font-family: var(--font-book);
+  font-size: 15px;
+  color: var(--color-text);
+}
+
+html[data-skin="watercolor"] .panels-veil {
+  background: rgba(255, 253, 248, 0.6);
+  border-radius: 14px 9px 16px 8px;
+}
+
+html[data-skin="watercolor"] :is(.thumb-tile, .vault-thumb, .panel) {
+  border-radius: 14px 9px 16px 8px;
+}
+
+/* Boxless buttons: the word is the button, in Caveat. The primary one
+   sits on a blue wash that bleeds wider on hover. */
+html[data-skin="watercolor"] :is(.panels-primary, .panels-quiet, .panels-link, .pane-chapter) {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 4px 2px;
+  font-family: var(--font-wc-hand);
+  font-size: 22px;
+  letter-spacing: 0;
+  color: var(--color-text);
+}
+
+html[data-skin="watercolor"] .panels-primary {
+  color: var(--color-accent);
+  padding-bottom: 6px;
+  background: radial-gradient(60% 50% at 50% 60%, rgba(8, 102, 255, 0.42), rgba(8, 102, 255, 0.18) 70%, transparent 100%)
+    50% 100% / 110% 12px no-repeat;
+}
+
+/* ---------- Player: soft hand-inked icons, no boxes ---------- */
+html[data-skin="watercolor"] .player .skip:not(.rain) {
+  border: 0;
+  background: none;
+  border-radius: 50% 46% 52% 44%;
+  color: var(--color-text);
+}
+
+html[data-skin="watercolor"] .player .skip:not(.rain) svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+html[data-skin="watercolor"] .player .play {
+  color: var(--color-accent);
+  border: 0;
+  background: none;
+}
+
+html[data-skin="watercolor"] .player .play svg {
+  width: 22px;
+  height: 22px;
+  fill: var(--color-accent);
+  stroke: var(--color-accent);
+}
+
+html[data-skin="watercolor"] .player .skip.rain svg {
+  width: 46px;
+  height: 46px;
+}
+
+html[data-skin="watercolor"] .player .skip.rain {
+  width: 50px;
+  height: 50px;
+}
+
+/* Range: a painted track and a blob thumb in Meta blue */
+html[data-skin="watercolor"] :is(.player-volume, .read-aloud-volume) input,
+html[data-skin="watercolor"] .player .rain-volume {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 16px;
+  background: none;
+  accent-color: var(--color-accent);
+}
+
+html[data-skin="watercolor"] :is(.player-volume, .read-aloud-volume, .player) input[type="range"]::-webkit-slider-runnable-track {
+  height: 7px;
+  border-radius: 6px 3px 7px 3px;
+  background: linear-gradient(90deg, #5c9bff, #8db8ff 60%, #dce9ff);
+}
+
+html[data-skin="watercolor"] :is(.player-volume, .read-aloud-volume, .player) input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 17px;
+  height: 16px;
+  margin-top: -4.5px;
+  border: 0;
+  border-radius: 55% 45% 50% 50%;
+  background: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(141, 184, 255, 0.5);
+}
+
+html[data-skin="watercolor"] :is(.player-volume, .read-aloud-volume, .player) input[type="range"]::-moz-range-track {
+  height: 7px;
+  border-radius: 6px 3px 7px 3px;
+  background: #dce9ff;
+}
+
+html[data-skin="watercolor"] :is(.player-volume, .read-aloud-volume, .player) input[type="range"]::-moz-range-progress {
+  height: 7px;
+  border-radius: 6px 3px 7px 3px;
+  background: #5c9bff;
+}
+
+html[data-skin="watercolor"] :is(.player-volume, .read-aloud-volume, .player) input[type="range"]::-moz-range-thumb {
+  width: 17px;
+  height: 16px;
+  border: 0;
+  border-radius: 55% 45% 50% 50%;
+  background: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(141, 184, 255, 0.5);
+}
+
+html[data-skin="watercolor"] .ticks i {
+  border-radius: 3px;
+  background: rgba(141, 184, 255, 0.45);
+}
+
+html[data-skin="watercolor"] .ticks i.on {
+  background: var(--color-accent);
+}
+
+/* ---------- Hero art buttons: painted music and read-aloud art ---------- */
+html[data-skin="watercolor"] .stickers[data-art="hero"] .sticker img,
+html[data-skin="watercolor"] .player .chopin img {
+  width: 46px;
+  height: 46px;
+  transform: none;
+  filter: none;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+html[data-skin="watercolor"] .sticker-dot {
+  border-radius: 50% 40% 55% 45%;
+  width: 5px;
+  height: 5px;
+}
+
+/* Captions: each art button names itself in Caveat beneath, in the
+   folio's bottom margin, so a boxless icon still reads as a control. */
+html[data-skin="watercolor"] :is(.sticker, .chopin, .player .skip.rain) {
+  position: relative;
+}
+
+html[data-skin="watercolor"] :is(.sticker, .chopin, .player .skip.rain)::after {
+  content: attr(title);
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 8px);
+  transform: translateX(-50%);
+  font-family: var(--font-wc-hand);
+  font-size: 16px;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--color-accent);
+  pointer-events: none;
+}
+
+html[data-skin="watercolor"] .player .skip.rain::after {
+  top: calc(100% + 1px);
+}
+
+html[data-skin="watercolor"] .player .sticker-wrap .chopin::after {
+  content: "Just Chopin!";
+}
+
+html[data-skin="watercolor"] .stickers[data-art="hero"] {
+  gap: 24px;
+}
+
+html[data-skin="watercolor"] .stickers[data-art="hero"] + .sticker-wrap {
+  margin-left: 14px;
+}
+
+html[data-skin="watercolor"] .read-aloud-art {
+  width: 42px;
+  height: 42px;
+  display: block;
+}
+
+html[data-skin="watercolor"] .read-aloud-label {
+  font-family: var(--font-wc-hand);
+  font-size: 20px;
+  color: var(--color-accent);
+}
+
+@media (hover: hover) {
+  html[data-skin="watercolor"] .player .skip:not(.rain):hover:not(:disabled) {
+    color: var(--color-accent);
+    background: radial-gradient(circle at 40% 40%, rgba(141, 184, 255, 0.45), rgba(220, 233, 255, 0) 70%);
+  }
+
+  html[data-skin="watercolor"] :is(.panels-quiet, .panels-link, .pane-chapter, .pic-btn):hover {
+    color: var(--color-text);
+    background: radial-gradient(60% 70% at 50% 55%, rgba(141, 184, 255, 0.45), transparent 75%);
+  }
+
+  html[data-skin="watercolor"] .panels-primary:hover {
+    animation: wc-mark-bleed 520ms cubic-bezier(0.25, 0.8, 0.25, 1);
+  }
+
+  html[data-skin="watercolor"] :is(.sticker, .chopin, .read-aloud-btn):hover img {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes wc-mark-bleed {
+  from {
+    background-size: 60% 8px;
+  }
+  to {
+    background-size: 110% 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-skin="watercolor"] .panels-primary:hover {
+    animation: none;
+  }
+
+  html[data-skin="watercolor"] :is(.sticker, .chopin, .read-aloud-btn):hover img {
+    transform: none;
+  }
+}

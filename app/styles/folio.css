@@ -369,18 +369,74 @@ h1.chapter-title:focus-visible {
   font-family: var(--font-ui);
   font-size: 12.5px;
   color: var(--color-text-muted);
-  margin-top: 8px;
+  margin: 8px 0 0 28px;
   line-height: 1.55;
 }
 
-.style-picker {
-  margin-top: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+/* Margin tool rows, as in the skin prototypes: an icon, a title, and a
+   quiet line under it (the style picker's select is that line). */
+.vault > .mlabel:not(:first-child) {
+  margin-top: 20px;
 }
 
-.style-picker select,
+.mtool {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.mtool-icon {
+  flex: none;
+  line-height: 0;
+  margin-top: 2px;
+  color: var(--color-text);
+}
+
+.mtool-icon svg {
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.5;
+}
+
+.mtool-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.mtool-title {
+  font-family: var(--font-book);
+  font-size: 15px;
+  line-height: 1.3;
+  color: var(--color-text);
+}
+
+.mtool-sub {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.style-picker select {
+  border: 0;
+  border-bottom: 1px dashed var(--color-border);
+  background: transparent;
+  padding: 1px 0 2px;
+  max-width: 100%;
+  cursor: pointer;
+}
+
+.style-picker select:hover {
+  color: var(--color-accent);
+}
+
+.style-custom {
+  margin-top: 6px;
+}
+
 .style-custom input {
   font-family: var(--font-ui);
   font-size: 12.5px;
@@ -514,6 +570,58 @@ h1.chapter-title:focus-visible {
   border-top: 1px solid var(--color-text);
   margin-top: 12px;
   padding-top: 10px;
+}
+
+/* Read aloud keeps its width; the track title is the part that gives way.
+   Without this the narration slider slid under the Previous button. */
+.band-play > .read-aloud {
+  flex: none;
+}
+
+/* Narrow band (laptops around 1024 to 1200px wide): every control keeps
+   its own room. Sliders and gaps tighten; the read-aloud word, the track
+   title and the art captions step aside. Each button keeps its name as
+   aria-label and tooltip, and the track is still announced. The html:is()
+   prefix outranks the skin files, which load later. */
+.band-play {
+  container: band / inline-size;
+}
+
+@container band (max-width: 799px) {
+  html:is([data-skin], :not([data-skin])) .band-play,
+  html:is([data-skin], :not([data-skin])) .band-play .player {
+    gap: 4px;
+  }
+
+  html:is([data-skin], :not([data-skin])) .band-play .read-aloud-label,
+  html:is([data-skin], :not([data-skin])) .band-play .player-track {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  html:is([data-skin], :not([data-skin])) .band-play :is(.read-aloud-volume, .player-volume) input {
+    width: 44px;
+  }
+
+  html:is([data-skin], :not([data-skin])) .band-play .player .rain-volume {
+    width: 36px;
+  }
+
+  html:is([data-skin], :not([data-skin])) .band-play .stickers {
+    gap: 6px;
+  }
+
+  html:is([data-skin], :not([data-skin])) .band-play .stickers + .sticker-wrap {
+    margin-left: 2px;
+  }
+
+  html:is([data-skin], :not([data-skin])) .band-play :is(.sticker, .chopin, .player .skip.rain)::after {
+    display: none;
+  }
 }
 
 .dev-panel {
