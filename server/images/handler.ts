@@ -31,7 +31,11 @@ export async function handleImagesPost(req: Request): Promise<Response> {
   let env;
   try {
     env = readImageEnv();
-  } catch {
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "";
+    const prefix = "missing image env:";
+    const names = message.startsWith(prefix) ? message.slice(prefix.length).trim() : "";
+    console.warn(`image env missing: ${names}`);
     return Response.json(
       { status: "error", code: "unavailable", message: MSG_UNAVAILABLE } satisfies ImageResponse,
       { status: 503 },
