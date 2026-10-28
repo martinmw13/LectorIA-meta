@@ -187,21 +187,27 @@ export async function handleChatPost(req: Request, deps: ChatHandlerDeps = {}): 
       await refundChatQuota(kv, keys);
     };
 
-    if (!byok) {
-      reserved = estimateCostMicro(messages.reduce((sum, m) => sum + m.content.length, 0));
-      const total = await kv.incrBy(spendKey(), reserved);
-      spendTaken = true;
-      if (budgetExceeded(total, env.spendCapMicro)) {
-        await refundAll();
-        return fail("byok_required", chapter.ch, cookies);
+    // A Redis failure between reserves must give back what was taken.
+    try {
+      if (!byok) {
+        reserved = estimateCostMicro(messages.reduce((sum, m) => sum + m.content.length, 0));
+        const total = await kv.incrBy(spendKey(), reserved);
+        spendTaken = true;
+        if (budgetExceeded(total, env.spendCapMicro)) {
+          await refundAll();
+          return fail("byok_required", chapter.ch, cookies);
+        }
+        const dailyTotal = await kv.incrBy(dayKey, reserved);
+        dailyTaken = true;
+        await kv.expire(dayKey, DAILY_SPEND_TTL_SEC);
+        if (budgetExceeded(dailyTotal, env.dailySpendCapMicro)) {
+          await refundAll();
+          return fail("byok_required", chapter.ch, cookies);
+        }
       }
-      const dailyTotal = await kv.incrBy(dayKey, reserved);
-      dailyTaken = true;
-      await kv.expire(dayKey, DAILY_SPEND_TTL_SEC);
-      if (budgetExceeded(dailyTotal, env.dailySpendCapMicro)) {
-        await refundAll();
-        return fail("byok_required", chapter.ch, cookies);
-      }
+    } catch {
+      await refundAll().catch(() => undefined);
+      return fail("unavailable", chapter.ch, cookies);
     }
 
     const createStreamer = deps.createStreamer ?? createChatStreamer;
@@ -292,7 +298,8 @@ export async function handleChatPost(req: Request, deps: ChatHandlerDeps = {}): 
         }
         if (!byok) {
           try {
-            const diff = (usageState ? usageCostMicro(usageState) : 0) - reserved;
+            // No usage block: keep the whole reserve rather than refund a real answer.
+            const diff = usageState ? usageCostMicro(usageState) - reserved : 0;
             if (diff !== 0) {
               await kv.incrBy(spendKey(), diff);
               await kv.incrBy(dayKey, diff);

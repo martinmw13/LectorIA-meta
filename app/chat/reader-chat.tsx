@@ -5,6 +5,7 @@ import { ChatPanel } from "./chat-panel";
 import { CHAT_COPY, CHAT_LABEL } from "./copy";
 import { questionsForChapter, SUGGESTION_FILE, type SuggestionFile } from "./suggestions";
 import { useChat } from "./use-chat";
+import { ChatBubble } from "./chat-bubble";
 
 // Launcher + panel shell. Mounted once inside the reader folio; the key it
 // holds lives in state only, so reload and panel close clear it.
@@ -73,19 +74,7 @@ export function ReaderChat({
         onClick={() => (open ? close() : setOpen(true))}
       >
         <span className="chat-launch-label">{open ? CHAT_COPY.close : CHAT_LABEL}</span>
-        <svg className="chat-bub" viewBox="0 0 46 42" aria-hidden="true">
-          <path className="bub-body" d="M8 6h30a6 6 0 0 1 6 6v14a6 6 0 0 1-6 6H20l-9 7v-7H8a6 6 0 0 1-6-6V12a6 6 0 0 1 6-6z" />
-          <path className="bub-inner" d="M8 6h30a6 6 0 0 1 6 6v14a6 6 0 0 1-6 6H20l-9 7v-7H8a6 6 0 0 1-6-6V12a6 6 0 0 1 6-6z" transform="translate(3.2 3) scale(.86)" />
-          {open ? (
-            <path className="bub-glyph" d="M16 17l7 6 7-6" fill="none" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-          ) : (
-            <g className="bub-glyph" fill="currentColor">
-              <circle cx="15" cy="19" r="2.1" />
-              <circle cx="23" cy="19" r="2.1" />
-              <circle cx="31" cy="19" r="2.1" />
-            </g>
-          )}
-        </svg>
+        <ChatBubble open={open} />
       </button>
     </div>
   );

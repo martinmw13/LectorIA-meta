@@ -213,6 +213,38 @@ describe("handleChatPost", () => {
     expect(Number(await kv.get(dailySpendKey(DAY)))).toBe(0);
   });
 
+  it("keeps the spend reserve when the stream ends without usage", async () => {
+    const kv = createMemoryKV();
+    const res = await handleChatPost(post(validBody()), {
+      env: ENV,
+      kv,
+      now: NOW,
+      createStreamer: factoryFor([{ type: "delta", text: "Hello" }]),
+    });
+    expect(res.status).toBe(200);
+    await res.text();
+    expect(Number(await kv.get(spendKey()))).toBeGreaterThan(0);
+    expect(Number(await kv.get(dailySpendKey(DAY)))).toBe(Number(await kv.get(spendKey())));
+  });
+
+  it("gives back the spend reserve when Redis fails between reserves", async () => {
+    const kv = createMemoryKV();
+    const realIncrBy = kv.incrBy.bind(kv);
+    kv.incrBy = async (key: string, by: number) => {
+      if (key === dailySpendKey(DAY)) throw new Error("redis down");
+      return realIncrBy(key, by);
+    };
+    const res = await handleChatPost(post(validBody()), {
+      env: ENV,
+      kv,
+      now: NOW,
+      createStreamer: factoryFor(OK_CHUNKS),
+    });
+    expect(res.status).toBe(503);
+    expect((await errBody(res)).code).toBe("unavailable");
+    expect(Number(await kv.get(spendKey()))).toBe(0);
+  });
+
   it("sends an error event when upstream fails mid-stream", async () => {
     const kv = createMemoryKV();
     const res = await handleChatPost(post(validBody()), {

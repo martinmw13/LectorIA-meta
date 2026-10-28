@@ -114,6 +114,8 @@ export function createChatStreamer(args: {
             });
           }
         } finally {
+          // Also runs when the consumer stops early (client cancel): drop the upstream call.
+          ctrl.abort();
           clearTimeout(firstTimer);
           clearTimeout(totalTimer);
           signal?.removeEventListener("abort", onCallerAbort);

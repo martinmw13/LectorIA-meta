@@ -22,6 +22,7 @@ export type IconName =
   | "chevron-down"
   | "check"
   | "vault"
+  | "send"
   | RainIconName;
 
 export interface IconDef {
@@ -212,6 +213,21 @@ export const BASE_ICONS: Record<string, IconDef> = {
           strokeLinejoin="round"
         />
       </>
+    ),
+  },
+  send: {
+    width: 24,
+    height: 24,
+    viewBox: "0 0 24 24",
+    body: (
+      <path
+        d="M4 12h14M13 6l6 6-6 6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     ),
   },
 };

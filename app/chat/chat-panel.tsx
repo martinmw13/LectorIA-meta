@@ -6,6 +6,7 @@ import { ByokStep } from "../home/byok";
 import { CHAT_COPY } from "./copy";
 import { TurnstileWidget } from "./turnstile";
 import type { useChat } from "./use-chat";
+import { Icon } from "../icons";
 
 type Chat = ReturnType<typeof useChat>;
 
@@ -267,16 +268,7 @@ export function ChatPanel({
               disabled={draft.trim() === "" || !!chat.byok}
               onClick={sendDraft}
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M4 12h14M13 6l6 6-6 6"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+              <Icon name="send" width={20} height={20} />
             </button>
           )}
         </div>

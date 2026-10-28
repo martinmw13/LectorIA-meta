@@ -63,7 +63,7 @@ export async function verifyTurnstile(
   fetchFn: typeof fetch = fetch,
 ): Promise<boolean> {
   try {
-    const res = await fetchFn("https://challenges.cloudflare.com/turnstile/siteverify", {
+    const res = await fetchFn("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({ secret, response: token, remoteip: ip }).toString(),
