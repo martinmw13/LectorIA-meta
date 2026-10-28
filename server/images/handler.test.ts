@@ -47,12 +47,43 @@ function post(body: unknown): Request {
 describe("handleImagesPost", () => {
   it("returns unavailable without touching quota when env is missing", async () => {
     for (const k of ALL_ENV) delete process.env[k];
-    const fetchSpy = vi.fn().mockRejectedValue(new Error("must not be called"));
-    vi.stubGlobal("fetch", fetchSpy);
-    const res = await handleImagesPost(post(passageBody()));
-    expect(res.status).toBe(503);
-    expect(await res.json()).toMatchObject({ status: "error", code: "unavailable" });
-    expect(fetchSpy).not.toHaveBeenCalled();
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const fetchSpy = vi.fn().mockRejectedValue(new Error("must not be called"));
+      vi.stubGlobal("fetch", fetchSpy);
+      const res = await handleImagesPost(post(passageBody()));
+      expect(res.status).toBe(503);
+      expect(await res.json()).toMatchObject({ status: "error", code: "unavailable" });
+      expect(fetchSpy).not.toHaveBeenCalled();
+      expect(warnSpy).toHaveBeenCalledOnce();
+      const line = String(warnSpy.mock.calls[0]?.[0] ?? "");
+      expect(line).toContain("image env missing:");
+      expect(line).toContain("UPSTASH_REDIS_REST_URL|KV_REST_API_URL");
+      expect(line).toContain("UPSTASH_REDIS_REST_TOKEN|KV_REST_API_TOKEN");
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it("warns names only and never logs values when env is partly missing", async () => {
+    for (const k of ALL_ENV) delete process.env[k];
+    process.env.UPSTASH_REDIS_REST_URL = "secret-canary-url";
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const fetchSpy = vi.fn().mockRejectedValue(new Error("must not be called"));
+      vi.stubGlobal("fetch", fetchSpy);
+      const res = await handleImagesPost(post(passageBody()));
+      expect(res.status).toBe(503);
+      expect(await res.json()).toMatchObject({ status: "error", code: "unavailable" });
+      expect(fetchSpy).not.toHaveBeenCalled();
+      expect(warnSpy).toHaveBeenCalledOnce();
+      const line = String(warnSpy.mock.calls[0]?.[0] ?? "");
+      expect(line).toContain("image env missing:");
+      expect(line).toContain("UPSTASH_REDIS_REST_TOKEN|KV_REST_API_TOKEN");
+      expect(line).not.toContain("secret-canary-url");
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 
   it("returns generic text when KV throws", async () => {
