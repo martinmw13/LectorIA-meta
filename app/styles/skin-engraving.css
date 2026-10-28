@@ -155,7 +155,7 @@ html[data-skin="engraving"] .cover-rule {
 }
 
 /* Scene break: "Scene 2 of 4" in small caps between two half ornaments.
-   The number and count come from scene-marks.css. */
+   The number and count are inline styles set by book-view.tsx. */
 html[data-skin="engraving"] .book-section + .book-section::before {
   content: "Scene " var(--scene-n, "") var(--scene-of, "");
   width: max-content;

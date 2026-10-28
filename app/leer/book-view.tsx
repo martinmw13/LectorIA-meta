@@ -4,7 +4,7 @@
 // scrolling only: no wheel hijacking, no sub-pages, no page-turn keys.
 "use client";
 
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { ReaderModel } from "@/core/reader";
 import { effectiveImageStylePref, loadImageStylePref, saveImageStylePref } from "../image-style";
 import type { ImageStylePref } from "../image-style";
@@ -257,7 +257,19 @@ export function BookView({
                 />
               )}
               {chapter.scenes.map((s, si) => (
-                <section key={s.id} className="book-section" data-scene-id={s.id} aria-label={s.title}>
+                <section
+                  key={s.id}
+                  className="book-section"
+                  data-scene-id={s.id}
+                  aria-label={s.title}
+                  // Strings for the skin's `content:`; counters can't cross content-visibility.
+                  style={
+                    {
+                      "--scene-n": `"${si + 1}"`,
+                      "--scene-of": `" of ${chapter.scenes.length}"`,
+                    } as CSSProperties
+                  }
+                >
                   <div
                     className={si === 0 ? "body-text dropcap" : "body-text"}
                     ref={s.id === currentId ? pic.viewRef : undefined}
