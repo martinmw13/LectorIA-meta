@@ -2,6 +2,7 @@
 @import "./styles/folio.css";
 @import "./styles/pictures.css";
 @import "./styles/player.css";
+@import "./styles/music-style-control.css";
 
 * {
   box-sizing: border-box;
