@@ -1,7 +1,8 @@
 import type { ReactNode, SVGProps } from "react";
 import { DEFAULT_SKIN, type SkinId } from "./skin";
+import { RAIN_ICONS, type RainIconName } from "./icons-rain";
 
-export type IconName = "moon" | "sun" | "eye-off" | "pencil" | "picture" | "expand";
+export type IconName = "moon" | "sun" | "eye-off" | "pencil" | "picture" | "expand" | RainIconName;
 
 export interface IconDef {
   width: number;
@@ -10,8 +11,9 @@ export interface IconDef {
   body: ReactNode;
 }
 
-// Verbatim copies of the inline SVGs the folio call sites had.
-const defaultSet: Record<IconName, IconDef> = {
+// Verbatim copies of the inline SVGs the folio call sites had. The base set
+// renders byte-identical markup for every skin.
+export const BASE_ICONS: Record<string, IconDef> = {
   moon: {
     width: 16,
     height: 16,
@@ -64,7 +66,11 @@ const defaultSet: Record<IconName, IconDef> = {
 };
 
 export const ICON_SETS: Record<SkinId, Partial<Record<IconName, IconDef>>> = {
-  default: defaultSet,
+  engraving: RAIN_ICONS.engraving ?? {},
+  watercolor: RAIN_ICONS.watercolor ?? {},
+  ink: RAIN_ICONS.ink ?? {},
+  comic: {},
+  "anime-ghibli": {},
 };
 
 export function Icon({
@@ -73,7 +79,7 @@ export function Icon({
   skin = DEFAULT_SKIN,
   ...rest
 }: { name: IconName; size?: number; skin?: SkinId } & SVGProps<SVGSVGElement>) {
-  const def = ICON_SETS[skin]?.[name] ?? ICON_SETS.default[name];
+  const def = ICON_SETS[skin]?.[name] ?? ICON_SETS[DEFAULT_SKIN]?.[name] ?? BASE_ICONS[name];
   if (!def) throw new Error(`unknown icon: ${name}`);
   return (
     <svg width={size ?? def.width} height={size ?? def.height} viewBox={def.viewBox} aria-hidden="true" {...rest}>

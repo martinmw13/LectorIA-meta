@@ -1,0 +1,3 @@
+# Review task 46 (rain skins + skin owner)
+
+Review `git diff origin/main..HEAD` (excluding agent-logs). Write findings to docs/reviews/46.md, same format as earlier files in docs/reviews/. Check: app/skin.ts is the sole writer of data-skin, and its pre-paint script, persistence and ?skin= override (not persisted) are correct; no hydration mismatch; the icon registry fallback chain; the rain button keeps the audio engine, prefs, the 34px hit area, focus-visible and reduced motion; animations run only on hover and state change; no secrets; nothing in the music module touched; tests meaningful. Fix any real bug you find (small commits), then record it in the review. Run npm test, typecheck, build, check:size, check:isolation. Do not push. Never run next start/dev.

@@ -11,34 +11,15 @@ import {
 import { loadAmbiencePrefs, saveAmbiencePrefs } from "./ambience-prefs";
 import { AmbienceController } from "./ambience-controller";
 import { WebAmbienceEngine } from "./ambience-engine";
+import { Icon } from "./icons";
+import { hasRainArt, type RainIconName } from "./icons-rain";
+import { DEFAULT_SKIN } from "./skin";
+import { useSkin } from "./use-skin";
 
 const RAIN = AMBIENCES[0]!;
 
 // One drop cycle: how long the button replays its animation after a click.
 const ANIM_MS = 1400;
-
-const DROPS: Record<string, Array<[number, number]>> = {
-  drizzle: [
-    [7.5, 14.2],
-    [10, 14.2],
-    [12.5, 14.2],
-  ],
-  moderate: [
-    [6.5, 13.8],
-    [10, 13.8],
-    [13.5, 13.8],
-    [6.5, 15.9],
-    [10, 15.9],
-    [13.5, 15.9],
-  ],
-  storm: [
-    [6, 14],
-    [8, 14],
-    [13.5, 14],
-    [15.5, 14],
-    [6, 16.2],
-  ],
-};
 
 // The button owns its controller: it loads prefs once, saves on change,
 // and starts the stored level on the first gesture anywhere in the page.
@@ -47,6 +28,11 @@ export function RainAmbience({ muted }: { muted: boolean }) {
   const [level, setLevel] = useState("off");
   const [volume, setVolume] = useState(DEFAULT_AMBIENCE_VOLUME);
   const [burst, setBurst] = useState(0);
+  // Server render uses the default so hydration matches; the live skin
+  // applies on mount via useSyncExternalStore.
+  const skin = useSkin();
+  // Rain art exists only for three skins; the rest render the default.
+  const artSkin = hasRainArt(skin) ? skin : DEFAULT_SKIN;
   const burstTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -109,43 +95,16 @@ export function RainAmbience({ muted }: { muted: boolean }) {
         type="button"
         className="skip rain"
         data-level={level}
+        data-art={artSkin}
         data-anim={burst ? "1" : undefined}
         onClick={cycle}
         aria-label={label}
         title={label}
       >
         {/* key replays the one-shot animation on rapid clicks */}
-        <svg
-          key={burst}
-          width="20"
-          height="20"
-          viewBox="0 0 20 20"
-          aria-hidden="true"
-        >
-          <path
-            className="rain-cloud"
-            d="M14.5 12.2h-8.3a3.4 3.4 0 0 1-.6-6.7 4.6 4.6 0 0 1 9-1.1 3 3 0 0 1-.1 7.8z"
-            strokeLinejoin="round"
-          />
-          {(DROPS[level] ?? []).map(([x, y], i) => (
-            <line
-              key={i}
-              className="rain-drop"
-              x1={x}
-              y1={y}
-              x2={x}
-              y2={y + (level === "drizzle" ? 1.8 : 1.5)}
-            />
-          ))}
-          {level === "storm" ? (
-            <polygon
-              className="rain-bolt"
-              points="11.3,13.4 9.3,16.2 10.6,16.2 10,18.8 12.5,15.6 11.2,15.6"
-              fill="#f2c230"
-              stroke="none"
-            />
-          ) : null}
-        </svg>
+        <span className="face" key={burst}>
+          <Icon name={`rain-${level}` as RainIconName} skin={artSkin} />
+        </span>
       </button>
       {level !== "off" ? (
         <input

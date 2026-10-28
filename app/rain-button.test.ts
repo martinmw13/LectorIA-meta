@@ -11,29 +11,61 @@ describe("rain button still and frameless", () => {
     expect(css).not.toMatch(/infinite/);
   });
 
-  it("limits animation to hover and data-anim only", () => {
+  it("plays hover animations only under hover media", () => {
     expect(css).toMatch(/@media \(hover: hover\)/);
-    expect(css).toMatch(/\[data-anim\] \.rain-drop/);
-    expect(css).toMatch(/\[data-anim\] \.rain-bolt/);
+    const withoutHoverBlock = css.replace(/@media \(hover: hover\) \{[\s\S]*?\n\}\n/, "");
+    expect(withoutHoverBlock).not.toMatch(/\.skip\.rain:hover/);
   });
 
-  it("keeps the button frameless with the glow on the icon", () => {
+  it("keys state-change animations on data-anim, never on mount", () => {
+    for (const cls of ["face", "drop", "bolt", "etch", "draw", "bloom", "wet"]) {
+      expect(css).toMatch(new RegExp(`\\[data-anim\\][\\s\\S]*?\\.${cls}[\\s,{]`));
+    }
+    expect(css).not.toMatch(/\.skip\.rain \.face\s*\{[^}]*animation:/);
+  });
+
+  it("keeps the button boxless with the art sized inside the hit area", () => {
     expect(css).toMatch(/\.skip\.rain \{[^}]*border: none/);
     expect(css).toMatch(/\.skip\.rain \{[^}]*background: transparent/);
     expect(css).toMatch(/\.skip\.rain \{[^}]*box-shadow: none/);
-    for (const level of ["drizzle", "moderate", "storm"]) {
-      expect(css).toMatch(`[data-level="${level}"] svg`);
-    }
-    expect(css).toMatch(/drop-shadow\(0 0 3px var\(--rain-/);
-    expect(css).toMatch(/:focus-visible/);
-    expect(css).toMatch(/:focus:not\(:focus-visible\)/);
+    expect(css).toMatch(/\.skip\.rain svg \{[^}]*width: 30px/);
+    expect(css).toMatch(/\.skip\.rain svg \{[^}]*overflow: visible/);
+    expect(css).toMatch(/svg \[fill\]:not\(\[stroke\]\) \{\s*stroke: none;\s*\}/);
+    expect(css).toMatch(
+      /\.player \.skip\.rain:focus-visible \{\s*outline: 2px solid var\(--color-accent\);\s*outline-offset: 2px;\s*border-radius: 6px;\s*\}/,
+    );
+    expect(css).toMatch(/\.player \.skip\.rain:focus:not\(:focus-visible\) \{\s*outline: none;\s*\}/);
   });
 
-  it("disables hover and click animations under reduced motion", () => {
+  it("disables rain animations under reduced motion, allowing only a short fade", () => {
     const reduced = css.slice(css.indexOf("prefers-reduced-motion"));
-    expect(reduced).toMatch(/:hover/);
-    expect(reduced).toMatch(/data-anim/);
     expect(reduced).toMatch(/animation: none/);
+    expect(reduced).toMatch(/transition: none/);
+    expect(reduced).toMatch(/\[data-anim\] \.face/);
+    expect(reduced).toMatch(/200ms/);
+    expect(reduced).not.toMatch(/infinite/);
+  });
+
+  it("renders the registry icon for the level with no inline svg", () => {
+    expect(button).toMatch(/<Icon name=\{`rain-\$\{level\}`/);
+    expect(button).toMatch(/<span className="face" key=\{burst\}>/);
+    expect(button).not.toContain("<svg");
+  });
+
+  it("reads the skin from the skin owner with the default for hydration", () => {
+    expect(button).toMatch(/const skin = useSkin\(\);/);
+    expect(button).toMatch(/hasRainArt\(skin\) \? skin : DEFAULT_SKIN/);
+    expect(button).not.toMatch(/document\.documentElement\.dataset\.skin/);
+  });
+
+  it("renders the resolved art skin and keys the rain CSS on it", () => {
+    expect(button).toMatch(/data-art=\{artSkin\}/);
+    expect(button).toMatch(/skin=\{artSkin\}/);
+    expect(css).not.toMatch(/html\[data-skin/);
+    for (const art of ["engraving", "watercolor", "ink"]) {
+      expect(css).toMatch(new RegExp(`\\.skip\\.rain\\[data-art="${art}"\\]`));
+    }
+    expect(css).toMatch(/html\[data-theme="dark"\] \.player \.skip\.rain\[data-art=/);
   });
 
   it("sets data-anim on click and clears it on a timeout with cleanup", () => {
