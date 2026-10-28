@@ -182,11 +182,15 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
   }
 
   // Previous: back to the last played track, held like a Next. With no
-  // history the current track restarts from zero through the replay path.
+  // history the current track restarts from zero through the replay path,
+  // including in playlist mode.
   function goPrev() {
     const st = liveRef.current;
     if (!st.manifest || !st.selection) return;
-    if (st.playlistOn) return;
+    if (st.playlistOn) {
+      setReplayNonce((n) => n + 1);
+      return;
+    }
     const popped = popHistory(historyRef.current);
     if (!popped) {
       setReplayNonce((n) => n + 1);
@@ -257,9 +261,9 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
       ? (activePlaylist?.trackIds.length ?? 0) > 1
       : manifest.tracks.length > 1 &&
         nextTrack(activeSignal ?? null, manifest, currentId, undefined, selection) !== null);
-  // Previous restarts the track with no history, so it stays on whenever
-  // a track is cued outside playlist mode.
-  const canPrev = currentId !== null && !playlistOn;
+  // Previous restarts the track with no history (including the current
+  // playlist piece), so it stays on whenever a track is cued.
+  const canPrev = currentId !== null;
 
   return (
     <>
