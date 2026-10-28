@@ -69,10 +69,9 @@
   font-style: italic;
   font-size: 15.5px;
   line-height: 1.35;
-  flex: 0 1 300px;
-  width: 300px;
+  flex: 1 1 300px;
   min-width: 0;
-  max-width: 300px;
+  max-width: 560px;
   overflow: hidden;
 }
 
