@@ -25,30 +25,35 @@ describe("music prefs", () => {
     expect(loadMusicPrefs()).toBeNull();
   });
 
-  it("round-trips a stored choice", () => {
+  it("round-trips a stored style", () => {
     const store = stubStorage();
-    saveMusicPrefs({ mode: "random", soundtrackId: "orch-b", style: "orchestral" });
-    expect(loadMusicPrefs()).toEqual({
+    saveMusicPrefs({ style: "orchestral" });
+    expect(loadMusicPrefs()).toEqual({ style: "orchestral" });
+    expect(store["lectoria.music.v1"]).toContain("orchestral");
+  });
+
+  it("loads old values by style alone and ignores unknown fields", () => {
+    const store = stubStorage();
+    store["lectoria.music.v1"] = JSON.stringify({
       mode: "random",
       soundtrackId: "orch-b",
       style: "orchestral",
+      extra: true,
     });
-    expect(store["lectoria.music.v1"]).toContain("orch-b");
+    expect(loadMusicPrefs()).toEqual({ style: "orchestral" });
   });
 
   it("falls back on bad json or bad values", () => {
     const store = stubStorage();
     store["lectoria.music.v1"] = "not json";
     expect(loadMusicPrefs()).toBeNull();
-    store["lectoria.music.v1"] = JSON.stringify({ mode: "party", soundtrackId: 7 });
-    expect(loadMusicPrefs()).toEqual({ mode: "soundtrack", soundtrackId: null, style: null });
+    store["lectoria.music.v1"] = JSON.stringify({ style: 7 });
+    expect(loadMusicPrefs()).toEqual({ style: null });
   });
 
   it("survives storage exceptions on load and save", () => {
     stubStorage({}, true);
     expect(loadMusicPrefs()).toBeNull();
-    expect(() =>
-      saveMusicPrefs({ mode: "soundtrack", soundtrackId: null, style: null }),
-    ).not.toThrow();
+    expect(() => saveMusicPrefs({ style: null })).not.toThrow();
   });
 });

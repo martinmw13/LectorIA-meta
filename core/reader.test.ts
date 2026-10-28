@@ -227,7 +227,7 @@ describe("scene entry", () => {
 
   it("moves the track after entry plus dwell, then holds across ticks", () => {
     const schedEnv: SelectEnv = {
-      selection: { mode: "soundtrack", soundtrackId: "snd", style: "orchestral" },
+      selection: { style: "orchestral" },
       rng: () => 0,
     };
     const vec = (top: string): Vector8 => {

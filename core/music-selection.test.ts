@@ -2,14 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   candidatesFor,
   dominantEmotion,
-  homeTracks,
   nextTrack,
   parseManifest,
-  pickInitialSoundtrack,
   pickRandomTrack,
   requestStyleChange,
   resolveInitialSelection,
-  soundtrackCoverage,
 } from "./music";
 import type { MusicManifest, MusicSelection, SceneSignal, Track } from "./music";
 import type { Vector8 } from "./types";
@@ -80,133 +77,73 @@ const manifest: MusicManifest = {
   ],
 };
 
-const orchA: MusicSelection = { mode: "soundtrack", soundtrackId: "orch-a", style: "orchestral" };
-const orchB: MusicSelection = { mode: "soundtrack", soundtrackId: "orch-b", style: "orchestral" };
-const orchRandom: MusicSelection = { mode: "random", soundtrackId: "orch-a", style: "orchestral" };
+const orch: MusicSelection = { style: "orchestral" };
 
 function rngOf(values: number[]): () => number {
   let i = 0;
   return () => values[i++ % values.length] as number;
 }
 
-describe("candidatesFor and homeTracks", () => {
+describe("candidatesFor", () => {
   it("scopes every pick to the selection style", () => {
-    const ids = candidatesFor(orchA, manifest).map((t) => t.id);
+    const ids = candidatesFor(orch, manifest).map((t) => t.id);
     expect(ids).not.toContain("e-calma");
     expect(ids).not.toContain("p-calma");
     expect(ids).toContain("a-calma");
   });
 
   it("a null style means the whole manifest", () => {
-    expect(candidatesFor({ mode: "soundtrack", soundtrackId: null, style: null }, manifest)).toHaveLength(
-      manifest.tracks.length,
-    );
-  });
-
-  it("home is the session soundtrack, or the style set when none is set", () => {
-    const styleTracks = candidatesFor(orchA, manifest);
-    expect(homeTracks(orchA, styleTracks).map((t) => t.id).sort()).toEqual(
-      ["a-calma", "a-calm2", "a-far", "a-triste"].sort(),
-    );
-    expect(
-      homeTracks({ mode: "soundtrack", soundtrackId: "gone", style: "orchestral" }, styleTracks),
-    ).toHaveLength(styleTracks.length);
-  });
-});
-
-describe("pickInitialSoundtrack and coverage", () => {
-  it("counts distinct hand-labeled emotions per soundtrack", () => {
-    expect(soundtrackCoverage(manifest, "orch-a")).toBe(2);
-    expect(soundtrackCoverage(manifest, "orch-b")).toBe(2);
-    expect(soundtrackCoverage(manifest, "piano-a")).toBe(2);
-  });
-
-  it("breaks coverage ties by lower soundtrack id", () => {
-    expect(pickInitialSoundtrack(manifest, null)).toBe("orch-a");
-  });
-
-  it("prefers wider coverage over a lower id", () => {
-    const wide: MusicManifest = {
-      ...manifest,
-      soundtracks: [
-        { id: "z-wide", name: "Z", style: "orchestral" },
-        { id: "a-thin", name: "A", style: "orchestral" },
-      ],
-      tracks: [
-        track("w1", "calma", "z-wide", "orchestral"),
-        track("w2", "tristeza", "z-wide", "orchestral"),
-        track("w3", "alegria", "z-wide", "orchestral"),
-        track("t1", "calma", "a-thin", "orchestral"),
-      ],
-    };
-    expect(pickInitialSoundtrack(wide, null)).toBe("z-wide");
-  });
-
-  it("a valid persisted id wins, an unknown one falls back", () => {
-    expect(pickInitialSoundtrack(manifest, "piano-a")).toBe("piano-a");
-    expect(pickInitialSoundtrack(manifest, "gone")).toBe("orch-a");
-  });
-
-  it("returns null when no soundtrack has tracks", () => {
-    expect(pickInitialSoundtrack({ ...manifest, tracks: [] }, null)).toBeNull();
+    expect(candidatesFor({ style: null }, manifest)).toHaveLength(manifest.tracks.length);
   });
 });
 
 describe("resolveInitialSelection", () => {
-  it("defaults to the best-coverage soundtrack and its style", () => {
-    expect(resolveInitialSelection(manifest, null)).toEqual({
-      mode: "soundtrack",
-      soundtrackId: "orch-a",
-      style: "orchestral",
-    });
+  it("defaults to the first style with tracks", () => {
+    expect(resolveInitialSelection(manifest, null)).toEqual({ style: "orchestral" });
   });
 
-  it("a valid persisted choice wins", () => {
-    expect(
-      resolveInitialSelection(manifest, { mode: "random", soundtrackId: "piano-a", style: "piano" }),
-    ).toEqual({ mode: "random", soundtrackId: "piano-a", style: "piano" });
+  it("a valid persisted style wins", () => {
+    expect(resolveInitialSelection(manifest, { style: "piano" })).toEqual({ style: "piano" });
   });
 
-  it("ignores a stored style with no tracks but keeps a soundtrack in the resolved style", () => {
-    expect(
-      resolveInitialSelection(manifest, { mode: "soundtrack", soundtrackId: "orch-b", style: "koto" }),
-    ).toEqual({ mode: "soundtrack", soundtrackId: "orch-b", style: "orchestral" });
+  it("ignores a stored style with no tracks", () => {
+    expect(resolveInitialSelection(manifest, { style: "koto" })).toEqual({ style: "orchestral" });
   });
 
-  it("ignores a stored soundtrack outside the stored style", () => {
-    expect(
-      resolveInitialSelection(manifest, { mode: "soundtrack", soundtrackId: "orch-b", style: "piano" }),
-    ).toEqual({ mode: "soundtrack", soundtrackId: "piano-a", style: "piano" });
-  });
-
-  it("treats an unknown mode as soundtrack mode", () => {
-    const prefs = { mode: "party", soundtrackId: "orch-a", style: "orchestral" } as unknown as {
-      mode: "soundtrack";
-      soundtrackId: string;
+  it("ignores unknown persisted fields and keeps a valid style", () => {
+    const prefs = { mode: "party", soundtrackId: "orch-a", style: "piano" } as unknown as {
       style: string;
     };
-    expect(resolveInitialSelection(manifest, prefs).mode).toBe("soundtrack");
+    expect(resolveInitialSelection(manifest, prefs)).toEqual({ style: "piano" });
   });
 });
 
-describe("nextTrack across soundtracks", () => {
-  it("cycles inside the current soundtrack first, then wraps there", () => {
+describe("nextTrack across the style", () => {
+  it("walks every same-emotion track, never repeats, then wraps", () => {
     const s = signal("calma");
-    expect(nextTrack(s, manifest, "a-calma", undefined, orchA)?.id).toBe("a-calm2");
-    expect(nextTrack(s, manifest, "a-calm2", undefined, orchA)?.id).toBe("a-far");
-    expect(nextTrack(s, manifest, "a-far", undefined, orchA)?.id).toBe("a-calma");
+    const seen = new Set<string>();
+    let id: string | null = "a-calma";
+    for (let i = 0; i < 4; i++) {
+      const next = nextTrack(s, manifest, id, undefined, orch);
+      expect(next?.emotion).toBe("calma");
+      expect(next?.id).not.toBe(id);
+      expect(seen.has(next?.id ?? "")).toBe(false);
+      seen.add(next?.id ?? "");
+      id = next?.id ?? null;
+    }
+    expect(seen).toEqual(new Set(["a-calm2", "a-far", "b-calma", "a-calma"]));
   });
 
-  it("leaves the soundtrack when it holds no other same-emotion track", () => {
+  it("starts on a same-emotion track when the current has another emotion", () => {
     const s = signal("calma");
-    const next = nextTrack(s, manifest, "b-calma", undefined, orchB);
-    expect(next?.soundtrack).toBe("orch-a");
-    expect(next?.id).toBe("a-calm2");
+    const next = nextTrack(s, manifest, "a-triste", undefined, orch);
+    expect(next?.emotion).toBe("calma");
+    expect(next?.id).not.toBe("a-triste");
   });
 
   it("falls back to the best same-style track when the emotion is missing", () => {
     const s = signal("misterio");
-    const next = nextTrack(s, manifest, "a-calma", undefined, orchA);
+    const next = nextTrack(s, manifest, "a-calma", undefined, orch);
     expect(next?.style).toBe("orchestral");
     expect(next?.id).not.toBe("a-calma");
   });
@@ -214,25 +151,18 @@ describe("nextTrack across soundtracks", () => {
   it("never leaves the style, even for the fallback", () => {
     const s = signal("calma");
     for (const id of ["a-calma", "b-calma", "a-triste", "b-alegre"]) {
-      expect(nextTrack(s, manifest, id, undefined, orchA)?.style).toBe("orchestral");
+      expect(nextTrack(s, manifest, id, undefined, orch)?.style).toBe("orchestral");
     }
   });
 
-  it("in random mode ranges over all same-style soundtracks at once", () => {
-    const s = signal("calma");
-    const next = nextTrack(s, manifest, "a-calma", undefined, orchRandom);
-    expect(next?.id).toBe("b-calma");
-    expect(next?.style).toBe("orchestral");
-  });
-
   it("a null scene cycles the style set in id order", () => {
-    expect(nextTrack(null, manifest, "a-triste", undefined, orchA)?.id).toBe("b-alegre");
-    expect(nextTrack(null, manifest, null, undefined, orchA)?.id).toBe("a-calm2");
+    expect(nextTrack(null, manifest, "a-triste", undefined, orch)?.id).toBe("b-alegre");
+    expect(nextTrack(null, manifest, null, undefined, orch)?.id).toBe("a-calm2");
   });
 });
 
 describe("pickRandomTrack", () => {
-  const cands = candidatesFor(orchA, manifest);
+  const cands = candidatesFor(orch, manifest);
 
   it("draws only matching emotion and style within tolerance", () => {
     for (const seed of [0, 0.3, 0.6, 0.99]) {
@@ -272,17 +202,15 @@ describe("pickRandomTrack", () => {
 });
 
 describe("requestStyleChange", () => {
-  it("lands in the new style with the coverage soundtrack", () => {
+  it("picks the best match for the scene in the new style", () => {
     const picked = requestStyleChange(manifest, "piano", signal("calma"));
     expect(picked?.track.style).toBe("piano");
     expect(picked?.track.id).toBe("p-calma");
-    expect(picked?.soundtrackId).toBe("piano-a");
   });
 
   it("falls back to the best same-style track when the style lacks the emotion", () => {
     const picked = requestStyleChange(manifest, "piano", signal("tristeza"));
     expect(picked?.track.style).toBe("piano");
-    expect(picked?.soundtrackId).toBe("piano-a");
   });
 
   it("returns null when the style has no tracks", () => {
@@ -293,7 +221,7 @@ describe("requestStyleChange", () => {
     expect(requestStyleChange(manifest, "electronic", null)?.track.id).toBe("e-calma");
   });
 
-  it("ranks inside the picked soundtrack first, not the style-wide best", () => {
+  it("ranks style-wide by score, not inside one soundtrack", () => {
     const two: MusicManifest = {
       ...manifest,
       soundtracks: [
@@ -308,8 +236,7 @@ describe("requestStyleChange", () => {
       ],
     };
     const picked = requestStyleChange(two, "orchestral", signal("calma"));
-    expect(picked?.soundtrackId).toBe("a-wide");
-    expect(picked?.track.soundtrack).toBe("a-wide");
+    expect(picked?.track.id).toBe("b-c1");
   });
 });
 

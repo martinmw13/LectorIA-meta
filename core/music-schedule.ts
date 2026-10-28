@@ -3,8 +3,6 @@
 import {
   MUSIC_CONFIG,
   candidatesFor,
-  dominantEmotion,
-  homeTracks,
   nextTrack,
   pickRandomTrack,
   requestStyleChange,
@@ -30,11 +28,6 @@ export interface ScheduleDecision {
   switchToId: string | null;
   crossfadeSec: number;
   hardCut: boolean;
-  fallback: boolean;
-}
-
-export interface StyleSwitchDecision extends ScheduleDecision {
-  soundtrackId: string | null;
 }
 
 export function initScheduler(): SchedulerState {
@@ -51,7 +44,7 @@ export function initScheduler(): SchedulerState {
 }
 
 function noChange(state: SchedulerState): ScheduleDecision {
-  return { state, switchToId: null, crossfadeSec: 0, hardCut: false, fallback: false };
+  return { state, switchToId: null, crossfadeSec: 0, hardCut: false };
 }
 
 function topRanked(
@@ -72,54 +65,7 @@ function topRanked(
   return best ? { id: best.id, score: scoreTrack(signal, best, config) } : null;
 }
 
-// Pick the switch for a newly active scene: best score wins, but the
-// current track holds unless the best beats it by switchMargin after
-// minTrackSec, or by hardCutMargin at once (hard cut, short fade).
-function gatedEvaluate(
-  state: SchedulerState,
-  signal: SceneSignal,
-  scoped: MusicManifest,
-  nowSec: number,
-  config: MusicConfig,
-): ScheduleDecision {
-  const best = topRanked(signal, scoped, config);
-  if (!best) return noChange(state);
-  const current = scoped.tracks.find((t) => t.id === state.currentId) ?? null;
-  if (!current || best.id === current.id) {
-    if (!current) {
-      return {
-        state: { ...state, currentId: best.id, currentStartedSec: nowSec },
-        switchToId: best.id,
-        crossfadeSec: 0,
-        hardCut: false,
-        fallback: false,
-      };
-    }
-    return noChange(state);
-  }
-  const gap = best.score - scoreTrack(signal, current, config);
-  if (gap >= config.hardCutMargin) {
-    return {
-      state: { ...state, currentId: best.id, currentStartedSec: nowSec },
-      switchToId: best.id,
-      crossfadeSec: config.hardCutCrossfadeSec,
-      hardCut: true,
-      fallback: false,
-    };
-  }
-  if (gap >= config.switchMargin && nowSec - state.currentStartedSec >= config.minTrackSec) {
-    return {
-      state: { ...state, currentId: best.id, currentStartedSec: nowSec },
-      switchToId: best.id,
-      crossfadeSec: config.crossfadeSec,
-      hardCut: false,
-      fallback: false,
-    };
-  }
-  return noChange(state);
-}
-
-// Random mode pick on a scheduled select: the draw keeps the current
+// Scheduled select: the draw keeps the current
 // track when it is eligible, so rescans do not churn. Dwell is handled
 // by promotion; min-track holds the current pick.
 function evaluateRandom(
@@ -141,7 +87,6 @@ function evaluateRandom(
     switchToId: pick.id,
     crossfadeSec: state.currentId === null ? 0 : config.crossfadeSec,
     hardCut: false,
-    fallback: false,
   };
 }
 
@@ -158,24 +103,7 @@ function evaluateSwitch(
   const styleTracks = candidatesFor(env.selection, manifest);
   if (styleTracks.length === 0) return noChange(state);
   const scoped = { ...manifest, tracks: styleTracks };
-  if (env.selection.mode === "random") {
-    return evaluateRandom(state, signal, styleTracks, scoped, nowSec, config, env);
-  }
-  const home = homeTracks(env.selection, styleTracks);
-  const dom = dominantEmotion(signal);
-  // Per-scene fallback: when the home soundtrack has no track with the
-  // scene emotion, borrow the best same-style track for this scene only.
-  const emo = styleTracks.filter((t) => t.emotion === dom);
-  const scope = home.some((t) => t.emotion === dom) ? home : emo.length > 0 ? emo : styleTracks;
-  const decision = gatedEvaluate(state, signal, { ...manifest, tracks: scope }, nowSec, config);
-  if (decision.switchToId === null) return decision;
-  const inside = home.some((t) => t.id === decision.switchToId);
-  // A fallback pick misses the current track in its scope, which reads
-  // as a first play with no fade. Restore the normal crossfade then.
-  if (decision.crossfadeSec === 0 && state.currentId !== null) {
-    return { ...decision, crossfadeSec: config.crossfadeSec, fallback: !inside };
-  }
-  return { ...decision, fallback: !inside };
+  return evaluateRandom(state, signal, styleTracks, scoped, nowSec, config, env);
 }
 
 function promote(
@@ -263,7 +191,6 @@ export function requestNext(
   if (state.playlist !== null) return advancePlaylist(state, manifest, nowSec, config);
   const next = nextTrack(signal, manifest, state.currentId, config, env.selection);
   if (!next) return noChange(state);
-  const home = homeTracks(env.selection, candidatesFor(env.selection, manifest));
   return {
     state: {
       ...state,
@@ -275,7 +202,33 @@ export function requestNext(
     switchToId: next.id,
     crossfadeSec: config.crossfadeSec,
     hardCut: false,
-    fallback: env.selection.mode === "soundtrack" && !home.some((t) => t.id === next.id),
+  };
+}
+
+// Manual pick from Previous: the track holds like a Next until the next
+// scene change. Unknown ids change nothing.
+export function requestManualTrack(
+  state: SchedulerState,
+  manifest: MusicManifest,
+  trackId: string,
+  nowSec: number,
+  override?: Partial<MusicConfig>,
+): ScheduleDecision {
+  const config = resolveConfig(override ?? MUSIC_CONFIG);
+  if (state.playlist !== null) return noChange(state);
+  const picked = manifest.tracks.find((t) => t.id === trackId) ?? null;
+  if (!picked) return noChange(state);
+  return {
+    state: {
+      ...state,
+      currentId: picked.id,
+      currentStartedSec: nowSec,
+      overrideId: picked.id,
+      overrideSceneId: state.activeSceneId,
+    },
+    switchToId: picked.id,
+    crossfadeSec: config.crossfadeSec,
+    hardCut: false,
   };
 }
 
@@ -296,7 +249,6 @@ export function noteTrackEnded(
   if (styleTracks.length === 0) return noChange(state);
   const best = topRanked(signal, { ...manifest, tracks: styleTracks }, config);
   if (!best) return noChange(state);
-  const home = homeTracks(env.selection, candidatesFor(env.selection, manifest));
   return {
     state: {
       ...state,
@@ -308,7 +260,6 @@ export function noteTrackEnded(
     switchToId: best.id,
     crossfadeSec: config.crossfadeSec,
     hardCut: false,
-    fallback: env.selection.mode === "soundtrack" && !home.some((t) => t.id === best.id),
   };
 }
 
@@ -344,7 +295,6 @@ export function enterPlaylist(
     switchToId: first.id,
     crossfadeSec: state.currentId === null ? 0 : config.crossfadeSec,
     hardCut: false,
-    fallback: false,
   };
 }
 
@@ -378,7 +328,6 @@ function advancePlaylist(
     switchToId: next.id,
     crossfadeSec: state.currentId === null ? 0 : config.crossfadeSec,
     hardCut: false,
-    fallback: false,
   };
 }
 
@@ -403,19 +352,17 @@ export function exitPlaylist(
   };
   const best = topRanked(signal, { ...manifest, tracks: styleTracks }, config);
   if (!best) return { ...noChange(cleared), state: cleared };
-  const home = homeTracks(env.selection, styleTracks);
   return {
     state: { ...cleared, currentId: best.id, currentStartedSec: nowSec },
     switchToId: best.id,
     crossfadeSec: state.currentId === null ? 0 : config.crossfadeSec,
     hardCut: false,
-    fallback: env.selection.mode === "soundtrack" && !home.some((t) => t.id === best.id),
   };
 }
 
 // Style change from user action: switches at once with the normal
 // crossfade, no dwell and no min-track rule, and sets the override like
-// Next. Returns the new session soundtrack so the reader can store it.
+// Next.
 export function switchStyle(
   state: SchedulerState,
   signal: SceneSignal | null,
@@ -423,16 +370,13 @@ export function switchStyle(
   nowSec: number,
   style: string,
   override?: Partial<MusicConfig>,
-): StyleSwitchDecision {
+): ScheduleDecision {
   // The reader blocks style changes while a playlist plays. The guard
   // keeps the saved index pointing at the current track if one slips by.
-  if (state.playlist !== null) return { ...noChange(state), soundtrackId: null };
+  if (state.playlist !== null) return noChange(state);
   const config = resolveConfig(override ?? MUSIC_CONFIG);
   const picked = requestStyleChange(manifest, style, signal, config);
-  if (!picked) return { ...noChange(state), soundtrackId: null };
-  const home = manifest.tracks.filter(
-    (t) => t.style === style && t.soundtrack === picked.soundtrackId,
-  );
+  if (!picked) return noChange(state);
   return {
     state: {
       ...state,
@@ -444,8 +388,6 @@ export function switchStyle(
     switchToId: picked.track.id,
     crossfadeSec: config.crossfadeSec,
     hardCut: false,
-    fallback: !home.some((t) => t.id === picked.track.id),
-    soundtrackId: picked.soundtrackId,
   };
 }
 

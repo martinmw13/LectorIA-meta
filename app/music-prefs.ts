@@ -1,5 +1,6 @@
-// Persisted music prefs: mode, soundtrack, and style. Storage can
-// throw (private mode), so every access is guarded and falls back.
+// Persisted music prefs: style only. Storage can throw (private
+// mode), so every access is guarded and falls back. Old values with
+// mode or soundtrackId load safely: unknown fields are ignored.
 import type { PersistedMusicPrefs } from "@/core/music";
 
 export const MUSIC_PREFS_KEY = "lectoria.music.v1";
@@ -11,10 +12,8 @@ export function loadMusicPrefs(): PersistedMusicPrefs | null {
     if (!raw) return null;
     const json: unknown = JSON.parse(raw);
     if (typeof json !== "object" || json === null) return null;
-    const { mode, soundtrackId, style } = json as Record<string, unknown>;
+    const { style } = json as Record<string, unknown>;
     return {
-      mode: mode === "random" ? "random" : "soundtrack",
-      soundtrackId: typeof soundtrackId === "string" ? soundtrackId : null,
       style: typeof style === "string" ? style : null,
     };
   } catch {

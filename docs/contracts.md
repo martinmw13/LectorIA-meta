@@ -88,47 +88,34 @@ migration gives an empty list. Parse rejects duplicate playlist ids,
 empty labels, non-array `trackIds`, and any `trackIds` entry that names
 no track, with the playlist and the id in the message.
 
-## Soundtracks and selection
+## Selection
 
-One soundtrack plays at a time. `MusicSelection = { mode, soundtrackId,
-style }` is the session: `style` scopes every pick, `soundtrackId` is
-the home in `soundtrack` mode, `mode` picks the ranking rule. The style
-is the user's choice, changed with the style selector. The initial
-soundtrack is the one covering the most hand-labeled emotions, ties by
-lower id; a valid persisted id wins. The session persists `{ mode,
-soundtrackId, style }` in localStorage under `lectoria.music.v1`. On
-load a stored style with no tracks and a stored soundtrack outside the
-stored style fall back to the defaults. Storage exceptions never break
-playback.
-
-In `soundtrack` mode each scene scores only the session soundtrack. When
-the soundtrack has no track with the scene emotion, the scheduler borrows
-the best same-style track for that scene only and reports `fallback`, so
-the bar can say `de otra banda sonora`. In `random` mode each scheduled
-select draws among same-style tracks with the scene emotion (or the best
-same-style tracks when the emotion is missing) within `randomTolerance`
-(0.05) of the best score, keeps the current track when it is eligible,
-and avoids an immediate repeat otherwise. Dwell and min-track rules hold
-in both modes. The core never calls `Math.random`; the reader injects it
+`MusicSelection = { style }` is the session: `style` scopes every pick.
+There is one mode only. Every scheduled select ranges over all tracks in
+the current style and draws among the tracks with the scene emotion (or
+the best same-style tracks when the emotion is missing) within
+`randomTolerance` (0.05) of the best score, keeps the current track when
+it is eligible, and avoids an immediate repeat otherwise. The style is
+the user's choice, changed with the style selector. The default style is
+the first listed style with tracks; a stored style with tracks wins. The
+session persists `{ style }` in localStorage under `lectoria.music.v1`.
+Old values with `mode` or `soundtrackId` load by `style` alone and
+ignore unknown fields. A stored style with no tracks falls back to the
+default. Storage exceptions never break playback. Dwell and min-track
+rules hold. The core never calls `Math.random`; the reader injects it
 and tests pass a seeded stub.
 
-## Change track, mix toggle, style change
+## Next track and style change
 
-`nextTrack` cycles same-emotion tracks in score order, wrapping and
-skipping the current. In `soundtrack` mode it stays inside the current
-soundtrack first, then tries the same emotion in other same-style
-soundtracks, then the best same-style track overall. In `random` mode it
-ranges over all same-style soundtracks at once. A null scene cycles the
-style set in id order.
+`nextTrack` cycles same-emotion tracks in score order across the whole
+style, wrapping and skipping the current, then the best same-style track
+overall when the emotion is missing. A null scene cycles the style set
+in id order. One track or none gives null.
 
-The `Mezclar bandas` toggle flips `mode`. Turning it off keeps the
-soundtrack of the playing track. `requestStyleChange` moves the session
-to the best-coverage soundtrack of the new style and picks the best
-match for the scene inside that soundtrack, or the best same-style track
-by score when the picked soundtrack lacks the scene emotion. It never
-crosses styles. The scheduler applies it at once with the normal
-crossfade and holds the choice like a Next. There is no
-soundtrack-change button.
+`requestStyleChange` picks the best match for the scene in the new style
+by score. It never crosses styles. The scheduler applies it at once
+with the normal crossfade and holds the choice like a Next. There is no
+mix toggle and no soundtrack-change button.
 
 ## Playlist mode
 
@@ -140,9 +127,9 @@ and `noteTrackEnded` advance to the next entry in order and wrap from
 the last to the first, and playlist tracks run to their end because the
 player forces looping off. `exitPlaylist` clears the playlist state and
 switches at once to the best match for the current scene under the
-restored selection. The mode is never persisted, so a reload returns to
-emotion mode. The mix toggle and the style selector stay disabled while
-it is on, and the style list hides styles with only playlist tracks.
+restored selection. The playlist is never persisted, so a reload returns
+to emotion mode. The style selector stays disabled while it is on, and
+the style list hides styles with only playlist tracks.
 
 ## Similarity and config
 
@@ -212,23 +199,27 @@ frozen point. Audio starts once, on the first press, with fade 0.
 Audio starts only after the user presses play. Reduced motion is read in
 state with a change listener and affects visuals only, never the fade.
 
-The bar shows Play/Pause, Volume, a Cambiar track button (disabled when
-Next has nothing to offer), a Mezclar bandas toggle with `aria-pressed`,
-and a style selector listing only styles that have tracks (hidden while
-fewer than two qualify). A `Just play Chopin` toggle appears only when
+The bar is one row: Play/Pause, the now-playing line (flexible,
+truncated with an ellipsis), Volume, a skip-forward icon button
+(disabled when Next has nothing to offer), a style selector labelled
+`Orchestra / Piano` listing only styles that have tracks (hidden while
+fewer than two qualify), then `Just play Chopin`. The skip icon is an
+inline SVG (`currentColor`, 32 px hit area), quiet and neutral, Meta blue
+on hover and focus-visible. A `Just play Chopin` toggle appears only when
 the manifest defines that playlist with tracks; its text comes from the
 playlist label, it carries `aria-pressed`, and it shows the Meta blue
-accent while pressed. It shows the track title with its emotion
-label, the soundtrack name, and attribution when present: composer or
-artist, license, and a source link. While the playlist plays, the bar
-hides the emotion label and the fallback note. A fallback pick adds the
-quiet note
-`de otra banda sonora`. On manifest failure the reader still renders and
+accent while pressed. The now-playing line shows `title · performer ·
+source`: the track title, the composer or artist, and the track
+attribution or its soundtrack credit, whichever the manifest provides,
+with missing parts skipped. The full credit plus the license sits in the
+`title` tooltip. A source link stays compact when the manifest provides
+one. On manifest failure the reader still renders and
 the bar shows a short neutral note. UI motion stays under 200 ms.
 Controls are real buttons and inputs with labels, visible focus, and
 keyboard use. `app/player.tsx` keeps the audio engine and bar layout;
-`app/player-controls.tsx` holds the buttons and the style selector;
-`app/music-prefs.ts` owns the storage helper.
+`app/player-controls.tsx` holds the skip button and the style selector;
+`app/music-prefs.ts` owns the storage helper. `core/music-credit.ts`
+builds the line as a pure function with tests.
 
 ## Image api
 
@@ -237,16 +228,16 @@ discriminated union: `{ kind: "passage", bookId, textVersion, n }` names
 the paragraph where the selection starts, `{ kind: "scene", bookId,
 textVersion, sceneId }` names the scene. Validation is strict: known
 book, matching `textVersion`, integer `n` inside the book, known
-`sceneId`. Any other body is a 400 with a generic Spanish message.
-The client sends ordinals and ids only, never text. "Ilustrar
-escena" uses the scene id from the route.
+`sceneId`. Any other body is a 400 with a generic English message.
+The client sends ordinals and ids only, never text. "Illustrate
+scene" uses the scene id from the route.
 
 Responses (typed in `core/types.ts`): `{ status: "ready", url, cached,
 caption }` with a Vercel Blob URL, never bytes; `{ status: "pending" }`
 when another request holds the lock, in which case the client reposts
 every 3 s up to about 2 minutes; `{ status: "error", code, message }`
 where code is `quota`, `budget`, `unavailable`, or `bad_request` with a
-friendly Spanish message. Caption is the scene title for scenes and the
+friendly English message. Caption is the scene title for scenes and the
 first words of the paragraph for passages, built server-side.
 
 The passage cache key is book plus start paragraph plus `textVersion`

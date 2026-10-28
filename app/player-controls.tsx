@@ -1,12 +1,10 @@
-// Player controls: next track, mix toggle, style select, playlist toggle.
-// No audio here, so the bar layout can change without touching the engine.
+// Player extras: style select and playlist toggle. Transport lives in
+// the player so the bar reads prev, play, next, then the now-playing
+// line. No audio here, so the bar layout can change without touching
+// the engine.
 import type { StyleInfo } from "@/core/music";
 
 export function PlayerControls({
-  canNext,
-  onNext,
-  mixOn,
-  onToggleMix,
   styles,
   styleId,
   onStyleChange,
@@ -15,10 +13,6 @@ export function PlayerControls({
   onTogglePlaylist,
   controlsDisabled,
 }: {
-  canNext: boolean;
-  onNext: () => void;
-  mixOn: boolean;
-  onToggleMix: () => void;
   styles: StyleInfo[];
   styleId: string | null;
   onStyleChange: (style: string) => void;
@@ -29,35 +23,13 @@ export function PlayerControls({
 }) {
   return (
     <>
-      <button type="button" onClick={onNext} disabled={!canNext} aria-label="Cambiar track">
-        Cambiar track
-      </button>
-      <button
-        type="button"
-        onClick={onToggleMix}
-        disabled={controlsDisabled}
-        aria-pressed={mixOn}
-        aria-label="Mezclar bandas"
-      >
-        Mezclar bandas
-      </button>
-      {playlistLabel !== null ? (
-        <button
-          type="button"
-          className="chopin"
-          onClick={onTogglePlaylist}
-          aria-pressed={playlistOn}
-        >
-          {playlistLabel}
-        </button>
-      ) : null}
       {styles.length >= 2 ? (
         <label className="player-note">
-          Estilo
+          Orchestra / Piano
           <select
             value={styleId ?? ""}
             onChange={(e) => onStyleChange(e.target.value)}
-            aria-label="Estilo"
+            aria-label="Orchestra / Piano"
             disabled={controlsDisabled}
           >
             {styles.map((s) => (
@@ -67,6 +39,16 @@ export function PlayerControls({
             ))}
           </select>
         </label>
+      ) : null}
+      {playlistLabel !== null ? (
+        <button
+          type="button"
+          className="chopin"
+          onClick={onTogglePlaylist}
+          aria-pressed={playlistOn}
+        >
+          {playlistLabel}
+        </button>
       ) : null}
     </>
   );

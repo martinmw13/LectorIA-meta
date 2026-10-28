@@ -59,9 +59,8 @@ function track(
   };
 }
 
-// orch-b has no tristeza, so a tristeza scene falls back. The Chopin
-// tracks are perfect emotion matches, so any leak into emotion selection
-// would surface as a Chopin pick instead of the fallback.
+// The Chopin tracks are perfect emotion matches, so any leak into emotion
+// selection would surface as a Chopin pick instead of an audible one.
 const manifest: MusicManifest = {
   version: 3,
   styles: [{ id: "orchestral", name: "Orquesta" }],
@@ -85,10 +84,9 @@ const manifest: MusicManifest = {
   ],
 };
 
-const orchA: MusicSelection = { mode: "soundtrack", soundtrackId: "orch-a", style: "orchestral" };
-const orchB: MusicSelection = { mode: "soundtrack", soundtrackId: "orch-b", style: "orchestral" };
-const envA: SelectEnv = { selection: orchA, rng: () => 0 };
-const envB: SelectEnv = { selection: orchB, rng: () => 0 };
+const orch: MusicSelection = { style: "orchestral" };
+const envA: SelectEnv = { selection: orch, rng: () => 0 };
+const envB: SelectEnv = { selection: orch, rng: () => 0 };
 
 function entered() {
   const d = enterPlaylist(initScheduler(), manifest, CHOPIN_PLAYLIST_ID, 0);
@@ -184,24 +182,20 @@ describe("playlist parse", () => {
 
 describe("playlistOnly exclusion", () => {
   it("keeps playlist tracks out of the candidate set", () => {
-    const ids = candidatesFor(orchA, manifest).map((t) => t.id);
+    const ids = candidatesFor(orch, manifest).map((t) => t.id);
     expect(ids).toEqual(["a-calma", "a-triste-far", "b-calma", "b-alegre"]);
   });
 
-  it("per-scene fallback skips a perfect-match playlist track", () => {
+  it("scheduled select skips a perfect-match playlist track", () => {
     let d = observeScene(initScheduler(), "s1", signal("calma"), manifest, 0, envB);
-    expect(d.switchToId).toBe("b-calma");
+    expect(d.switchToId).toBe("a-calma");
     d = observeScene(d.state, "s2", signal("tristeza"), manifest, 50, envB);
     const settled = tickScheduler(d.state, signal("tristeza"), manifest, 71, envB);
     expect(settled.switchToId).toBe("a-triste-far");
-    expect(settled.fallback).toBe(true);
   });
 
-  it("random mode never draws a playlist track under a seeded rng", () => {
-    const cands = candidatesFor(
-      { mode: "random", soundtrackId: "orch-a", style: "orchestral" },
-      manifest,
-    );
+  it("the scheduled draw never picks a playlist track under a seeded rng", () => {
+    const cands = candidatesFor({ style: "orchestral" }, manifest);
     for (const seed of [0, 0.25, 0.5, 0.75, 0.99]) {
       const pick = pickRandomTrack(cands, signal("tristeza"), null, () => seed);
       expect(pick?.id).toBe("a-triste-far");
@@ -209,7 +203,7 @@ describe("playlistOnly exclusion", () => {
   });
 
   it("Next skips a perfect-match playlist track", () => {
-    expect(nextTrack(signal("tristeza"), manifest, "b-calma", undefined, orchB)?.id).toBe(
+    expect(nextTrack(signal("tristeza"), manifest, "b-calma", undefined, orch)?.id).toBe(
       "a-triste-far",
     );
   });
@@ -245,7 +239,6 @@ describe("playlist mode", () => {
     expect(d.crossfadeSec).toBe(3);
     expect(d.state.currentStartedSec).toBe(10);
     expect(d.state.playlist).toEqual({ id: CHOPIN_PLAYLIST_ID, index: 0 });
-    expect(d.fallback).toBe(false);
   });
 
   it("plays straight through and wraps from last to first", () => {
@@ -293,7 +286,6 @@ describe("playlist mode", () => {
     const state = entered();
     const d = switchStyle(state, signal("calma"), manifest, 10, "orchestral");
     expect(d.switchToId).toBeNull();
-    expect(d.soundtrackId).toBeNull();
     expect(d.state.playlist).toEqual({ id: CHOPIN_PLAYLIST_ID, index: 0 });
     expect(d.state.currentId).toBe("chop-1");
   });
@@ -304,7 +296,6 @@ describe("playlist mode", () => {
     expect(d.switchToId).toBe("a-calma");
     expect(d.crossfadeSec).toBe(3);
     expect(d.state.playlist).toBeNull();
-    expect(d.fallback).toBe(false);
     const pending = observeScene(d.state, "s2", signal("tristeza"), manifest, 150, envA);
     const resumed = tickScheduler(pending.state, signal("tristeza"), manifest, 171, envA);
     expect(resumed.switchToId).toBe("a-triste-far");

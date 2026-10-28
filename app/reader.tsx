@@ -17,14 +17,15 @@ import {
   initScheduler,
   noteTrackEnded,
   observeScene,
+  requestManualTrack,
   requestNext,
   switchStyle,
   tickScheduler,
 } from "@/core/music-schedule";
 import type { SchedulerState } from "@/core/music-schedule";
+import { popHistory, pushHistory } from "@/core/music-history";
 import { nextSceneEntry } from "@/core/reader";
 import { loadMusicPrefs, saveMusicPrefs } from "./music-prefs";
-import { mixOffSelection, styleSelection } from "./music-transitions";
 import { Player } from "./player";
 
 export interface SlimScene {
@@ -39,7 +40,7 @@ function entryDwell(): { dwellSec: number } {
 }
 
 // The Chopin playlist, when the manifest defines it with tracks. The
-// button stays hidden otherwise, and the player never persists the mode.
+// button stays hidden otherwise, and the player never persists the playlist.
 function findChopinPlaylist(manifest: MusicManifest) {
   const found = manifest.playlists.find((p) => p.id === CHOPIN_PLAYLIST_ID) ?? null;
   return found && found.trackIds.length > 0 ? found : null;
@@ -58,44 +59,49 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
   const [currentId, setCurrentId] = useState<string | null>(null);
   const [replayNonce, setReplayNonce] = useState(0);
   const [fadeSec, setFadeSec] = useState(0);
-  const [isFallback, setIsFallback] = useState(false);
   const [playlistOn, setPlaylistOn] = useState(false);
   const byId = useMemo(() => new Map(scenes.map((s) => [s.id, s.emotion])), [scenes]);
   const schedRef = useRef<SchedulerState>(initScheduler());
+  const historyRef = useRef<string[]>([]);
   const observedRef = useRef<string | null>(null);
   const liveRef = useRef({ routeSceneId, manifest, selection, currentId, byId, playlistOn });
   liveRef.current = { routeSceneId, manifest, selection, currentId, byId, playlistOn };
 
   const nowSec = () => Date.now() / 1000;
 
-  const applyDecision = useCallback((decision: {
-    state: SchedulerState;
-    switchToId: string | null;
-    crossfadeSec: number;
-    fallback: boolean;
-  }) => {
-    // A same-id switch (one-track playlist wrap) bails out of setCurrentId,
-    // so bump a replay nonce the player effect listens to instead.
-    const prevId = schedRef.current.currentId;
-    schedRef.current = decision.state;
-    setIsFallback(decision.fallback);
-    if (decision.switchToId !== null) {
-      setFadeSec(decision.crossfadeSec);
-      if (decision.switchToId === prevId) {
-        setReplayNonce((n) => n + 1);
-      } else {
-        setCurrentId(decision.switchToId);
+  const applyDecision = useCallback(
+    (
+      decision: {
+        state: SchedulerState;
+        switchToId: string | null;
+        crossfadeSec: number;
+      },
+      opts?: { push?: boolean },
+    ) => {
+      // A same-id switch (one-track playlist wrap) bails out of setCurrentId,
+      // so bump a replay nonce the player effect listens to instead.
+      const prevId = schedRef.current.currentId;
+      schedRef.current = decision.state;
+      if (decision.switchToId !== null) {
+        setFadeSec(decision.crossfadeSec);
+        if (decision.switchToId === prevId) {
+          setReplayNonce((n) => n + 1);
+        } else {
+          // Every automatic switch banks the outgoing id for Previous.
+          // The Previous handler passes push false so it never re-banks.
+          if (opts?.push !== false && prevId !== null) {
+            historyRef.current = pushHistory(historyRef.current, prevId);
+          }
+          setCurrentId(decision.switchToId);
+        }
       }
-    }
-  }, []);
+    },
+    [],
+  );
 
   const persist = useCallback((next: MusicSelection) => {
     setSelection(next);
-    saveMusicPrefs({
-      mode: next.mode,
-      soundtrackId: next.soundtrackId,
-      style: next.style,
-    });
+    saveMusicPrefs({ style: next.style });
   }, []);
 
   const observe = useCallback(
@@ -175,6 +181,24 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
     );
   }
 
+  // Previous: back to the last played track, held like a Next. With no
+  // history the current track restarts from zero through the replay path.
+  function goPrev() {
+    const st = liveRef.current;
+    if (!st.manifest || !st.selection) return;
+    if (st.playlistOn) return;
+    const popped = popHistory(historyRef.current);
+    if (!popped) {
+      setReplayNonce((n) => n + 1);
+      return;
+    }
+    historyRef.current = popped.hist;
+    applyDecision(
+      requestManualTrack(schedRef.current, st.manifest, popped.id, nowSec()),
+      { push: false },
+    );
+  }
+
   function togglePlaylist() {
     const st = liveRef.current;
     if (!st.manifest || !st.selection) return;
@@ -195,27 +219,15 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
     setPlaylistOn(true);
   }
 
-  function toggleMix() {
-    const st = liveRef.current;
-    if (!st.manifest || !st.selection || st.playlistOn) return;
-    if (st.selection.mode === "random") {
-      // Mixing off keeps the soundtrack of the playing track.
-      const playing = st.manifest.tracks.find((t) => t.id === st.currentId) ?? null;
-      persist(mixOffSelection(st.selection, playing));
-      return;
-    }
-    persist({ ...st.selection, mode: "random" });
-  }
-
   function changeStyle(style: string) {
     const st = liveRef.current;
     if (!st.manifest || !st.selection || !st.routeSceneId || st.playlistOn) return;
     if (style === st.selection.style) return;
     const signal = st.byId.get(st.routeSceneId) ?? null;
     const decision = switchStyle(schedRef.current, signal, st.manifest, nowSec(), style);
-    if (decision.soundtrackId === null) return;
+    if (decision.switchToId === null) return;
     applyDecision(decision);
-    persist(styleSelection(st.selection, style, decision.soundtrackId));
+    persist({ style });
   }
 
   function ended(trackId: string) {
@@ -233,8 +245,6 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
   const track: Track | null = manifest?.tracks.find((t) => t.id === currentId) ?? null;
   const empty = manifest !== null && manifest.tracks.length === 0;
   const activeSignal = (routeSceneId && byId.get(routeSceneId)) || null;
-  const soundtrackName =
-    manifest?.soundtracks.find((s) => s.id === track?.soundtrack)?.name ?? null;
   // Styles with at least one emotion-selectable track; hidden while fewer
   // than two qualify.
   const stylesWithTracks =
@@ -247,6 +257,9 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
       ? (activePlaylist?.trackIds.length ?? 0) > 1
       : manifest.tracks.length > 1 &&
         nextTrack(activeSignal ?? null, manifest, currentId, undefined, selection) !== null);
+  // Previous restarts the track with no history, so it stays on whenever
+  // a track is cued outside playlist mode.
+  const canPrev = currentId !== null && !playlistOn;
 
   return (
     <>
@@ -258,12 +271,10 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
             track={track}
             replayNonce={replayNonce}
             fadeSec={fadeSec}
-            soundtrackName={soundtrackName}
-            isFallback={isFallback}
+            canPrev={canPrev}
+            onPrev={goPrev}
             canSkip={canSkip}
             onSkip={skip}
-            mixOn={selection?.mode === "random"}
-            onToggleMix={toggleMix}
             styles={stylesWithTracks}
             styleId={selection?.style ?? null}
             onStyleChange={changeStyle}

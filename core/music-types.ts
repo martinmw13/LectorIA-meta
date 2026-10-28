@@ -58,11 +58,9 @@ export interface MusicManifest {
   playlists: Playlist[];
 }
 
-// Session selection: style scopes every pick, soundtrackId is the home
-// in soundtrack mode, mode picks the ranking rule.
+// Session selection: style scopes every pick. Every scheduled select
+// and skip ranges over all same-style tracks by emotion score.
 export interface MusicSelection {
-  mode: "soundtrack" | "random";
-  soundtrackId: string | null;
   style: string | null;
 }
 
@@ -74,8 +72,6 @@ export interface SelectEnv {
 }
 
 export interface PersistedMusicPrefs {
-  mode: "soundtrack" | "random";
-  soundtrackId: string | null;
   style: string | null;
 }
 

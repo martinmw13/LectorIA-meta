@@ -13,3 +13,4 @@ Building period: 2026-10-27 to 2026-11-04 23:00, America/Buenos_Aires. Each task
 | 2026-10-27 | 7: picture this and picture scene | Denslow style cached images for passages and scenes, quota and budget guards | Muse Code (Contributor) |
 | 2026-10-27 | 8: scene reader | One route per scene, sub-page pager, music cues on scene entry | Muse Code (Contributor) |
 | 2026-10-27 | 9: real music library on Blob | Blob CSP host, gainDb and segment end, labels to manifest converter | Muse Code (Contributor) |
+| 2026-10-28 | 10: english player | English UI, one music mode, media icons, now-playing line, Picture scene/this, favicon | Muse Code (Contributor) |

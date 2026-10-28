@@ -180,11 +180,34 @@ body {
 }
 
 .player-track {
+  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--color-text-muted);
+}
+
+.player .skip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+.player .skip:hover:not(:disabled),
+.player .skip:focus-visible {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.player .skip:disabled {
+  opacity: 0.4;
 }
 
 .player-volume {

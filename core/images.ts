@@ -12,12 +12,12 @@ export const LOCK_TTL_SEC = 150;
 export const MAX_PASSAGE_CHARS = 600;
 export const MAX_SCENE_CLIP_CHARS = 1200;
 
-export const MSG_BAD_REQUEST = "La solicitud no es válida. Vuelve a intentarlo.";
-export const MSG_QUOTA = "Alcanzaste tu límite de 5 imágenes por día. Vuelve mañana.";
-export const MSG_BUDGET = "Se alcanzó el límite de generación. Vuelve a intentarlo más tarde.";
-export const MSG_UNAVAILABLE = "Las imágenes no están disponibles por ahora.";
-export const MSG_FAILED = "No se pudo generar la imagen. Vuelve a intentarlo.";
-export const MSG_RETRY = "La imagen tarda más de lo esperado. Vuelve a intentarlo.";
+export const MSG_BAD_REQUEST = "That request was not valid. Try again.";
+export const MSG_QUOTA = "You reached your limit of 5 images per day. Come back tomorrow.";
+export const MSG_BUDGET = "The generation limit was reached. Try again later.";
+export const MSG_UNAVAILABLE = "Images are unavailable right now.";
+export const MSG_FAILED = "Could not generate the image. Try again.";
+export const MSG_RETRY = "The image is taking longer than expected. Try again.";
 
 export class ImageValidationError extends Error {
   constructor() {

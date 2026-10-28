@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { MSG_FAILED, MSG_RETRY } from "@/core/images";
 import type { ImageResponse } from "@/core/images";
 import { pickStartN } from "./picture-selection";
 import type { ParaEntry } from "./picture-selection";
@@ -55,7 +56,7 @@ export function PicturePanel({
         try {
           res = await postImage(body);
         } catch {
-          setCard({ phase: "error", message: "No se pudo generar la imagen. Vuelve a intentarlo." });
+          setCard({ phase: "error", message: MSG_FAILED });
           return;
         }
         if (res.status === "ready") {
@@ -68,10 +69,7 @@ export function PicturePanel({
         }
         pollLeft.current -= 1;
         if (pollLeft.current <= 0) {
-          setCard({
-            phase: "error",
-            message: "La imagen tarda más de lo esperado. Vuelve a intentarlo.",
-          });
+          setCard({ phase: "error", message: MSG_RETRY });
           return;
         }
         await new Promise((done) => setTimeout(done, POLL_MS));
@@ -121,35 +119,35 @@ export function PicturePanel({
 
   return (
     <div className="picture">
-      <button type="button" className="picture-scene" onClick={illustrateScene} aria-label="Ilustrar escena">
-        Ilustrar escena
+      <button type="button" className="picture-scene" onClick={illustrateScene} aria-label="Illustrate scene">
+        Illustrate scene
       </button>
       {card.phase === "ready" ? (
         <figure className="picture-card">
           <img src={card.url} alt={card.caption} className="picture-img" />
           <figcaption>
-            {card.caption} <span className="picture-flag">{card.cached ? "Guardada" : "Nueva"}</span>
+            {card.caption} <span className="picture-flag">{card.cached ? "Saved" : "New"}</span>
           </figcaption>
         </figure>
       ) : card.phase === "loading" ? (
-        <div className="picture-loading" role="status" aria-label="Ilustrando">
-          Ilustrando…
+        <div className="picture-loading" role="status" aria-label="Illustrating">
+          Illustrating…
         </div>
       ) : card.phase === "error" ? (
         <p className="picture-error" role="alert">
           {card.message}
         </p>
       ) : null}
-      <p className="picture-note">El chat llega más adelante.</p>
+      <p className="picture-note">Chat is coming later.</p>
       {selTop !== null && selLeft !== null ? (
         <button
           type="button"
           className="picture-float"
           style={{ top: selTop, left: selLeft }}
           onClick={illustratePassage}
-          aria-label="Ilustrar este pasaje"
+          aria-label="Illustrate passage"
         >
-          Ilustrar este pasaje
+          Illustrate passage
         </button>
       ) : null}
     </div>
