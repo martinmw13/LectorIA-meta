@@ -10,10 +10,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { parseChapterNarration, sceneSpan, type ChapterNarration } from "@/core/narration";
 import { getCurrentSceneId } from "../leer/current-scene";
 import {
+  AMBIENCE_DUCK_DB,
+  MUSIC_DUCK_DB,
   NARRATION_DUCK_DOWN_MS,
   NARRATION_DUCK_UP_MS,
-  ambienceDuckTarget,
-  duckMultiplier,
+  duckTarget,
   rampDuck,
 } from "./duck";
 import { DEFAULT_NARRATION_PREFS, loadNarrationPrefs, saveNarrationPrefs } from "./prefs";
@@ -67,8 +68,6 @@ export function useNarrationController(opts: {
   entriesRef.current = opts.entries;
   const scenesRef = useRef(opts.scenes);
   scenesRef.current = opts.scenes;
-  const musicRef = useRef(opts.musicLevel);
-  musicRef.current = opts.musicLevel;
   const sceneRef = useRef(scene);
   sceneRef.current = scene;
   const prefsRef = useRef(prefs);
@@ -314,16 +313,12 @@ export function useNarrationController(opts: {
     };
   }, []);
 
-  // Duck ramps: the music sits about 20 dB below the live voice level;
-  // rain and ambience drop a flat 20 dB on their own, so a muted track
-  // still ducks the rain. Down fast when the voice starts, back up slow
-  // on pause. Pause, the end of the book, errors, and switching off all
-  // restore the level.
+  // Duck ramps: music about 11 dB and rain about 6 dB under the user's
+  // own sliders while the voice plays, ~300 ms each way. Pause, the end
+  // of the book, errors, and switching off all restore the level.
   const narrating = prefs.on && playing;
-  const duck = useDuckRamp(
-    narrating ? duckMultiplier(musicRef.current, prefsRef.current.volume) : 1,
-  );
-  const ambienceDuck = useDuckRamp(ambienceDuckTarget(narrating));
+  const duck = useDuckRamp(duckTarget(narrating, MUSIC_DUCK_DB));
+  const ambienceDuck = useDuckRamp(duckTarget(narrating, AMBIENCE_DUCK_DB));
 
   // The narration volume rides its own slider, never the music mute.
   useEffect(() => {

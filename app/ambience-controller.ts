@@ -46,9 +46,9 @@ export class AmbienceController {
     return ambienceGain(this.volume, this.muted, levelById(this.ambience, levelId)?.gainDb ?? 0) * this.duck;
   }
 
-  // Read-aloud duck: the same ~20 dB-below-the-voice rule as the music.
-  // The narration controller already ramps the value over ~400 ms down
-  // and ~800 ms up, so each step only needs a short smoothing ramp.
+  // Read-aloud duck, a multiplier on the slider gain (~6 dB). The narration
+  // controller already ramps it over ~300 ms, so each step only needs a
+  // short smoothing ramp. It never starts or stops a voice.
   setDuck(duck: number): void {
     const next = Number.isFinite(duck) ? Math.min(1, Math.max(0, duck)) : 1;
     if (next === this.duck) return;

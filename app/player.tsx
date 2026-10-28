@@ -71,10 +71,9 @@ export function Player({
   onAdvance: (to?: MusicModeId) => void;
   onEnded: (trackId: string) => void;
   playlistOn: boolean;
-  // Read-aloud duck multiplier: 1 normally, the music level relative
-  // to the voice while narration plays.
+  // Read-aloud duck: a multiplier on the slider volume, 1 normally.
   duck?: number;
-  // Rain and ambience duck, independent of the music level and mute.
+  // Rain and ambience duck, a multiplier on the rain slider.
   ambienceDuck?: number;
 }) {
   const firstRef = useRef<HTMLAudioElement | null>(null);
