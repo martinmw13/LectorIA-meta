@@ -1,0 +1,318 @@
+{
+  "bookId": "oz",
+  "note": "Three spoiler-safe starter questions per chapter. sources[i] is the paragraph n that answers questions[i]; it must come before the chapter starts (chapter 1: within its first scene).",
+  "chapters": [
+    {
+      "ch": 1,
+      "questions": [
+        "Where does Dorothy live?",
+        "Who does Dorothy live with?",
+        "What is the cyclone cellar for?"
+      ],
+      "sources": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "ch": 2,
+      "questions": [
+        "Why is everything so gray around Dorothy's home?",
+        "How did Toto nearly get lost in the cyclone?",
+        "What did Dorothy do while the house flew?"
+      ],
+      "sources": [
+        3,
+        18,
+        20
+      ]
+    },
+    {
+      "ch": 3,
+      "questions": [
+        "Who are the Munchkins?",
+        "What happened to the Wicked Witch of the East?",
+        "Why is Dorothy going to the City of Emeralds?"
+      ],
+      "sources": [
+        37,
+        31,
+        67
+      ]
+    },
+    {
+      "ch": 4,
+      "questions": [
+        "Where did Dorothy find the Scarecrow?",
+        "Why does the Scarecrow want brains?",
+        "Where did Dorothy spend her first night on the road?"
+      ],
+      "sources": [
+        113,
+        127,
+        93
+      ]
+    },
+    {
+      "ch": 5,
+      "questions": [
+        "How was the Scarecrow made?",
+        "Why does Dorothy want to go back to Kansas?",
+        "Why doesn't the Scarecrow need to eat?"
+      ],
+      "sources": [
+        151,
+        143,
+        139
+      ]
+    },
+    {
+      "ch": 6,
+      "questions": [
+        "How did Dorothy help the Tin Woodman move again?",
+        "Why does the Tin Woodman want a heart?",
+        "How did the Woodman come to be made of tin?"
+      ],
+      "sources": [
+        189,
+        219,
+        218
+      ]
+    },
+    {
+      "ch": 7,
+      "questions": [
+        "Why does the Lion think he is a coward?",
+        "What does the Lion hope Oz will give him?",
+        "Why did the Tin Woodman cry over a beetle?"
+      ],
+      "sources": [
+        250,
+        260,
+        268
+      ]
+    },
+    {
+      "ch": 8,
+      "questions": [
+        "What are the Kalidahs?",
+        "How did the friends get across the ditch?",
+        "How did they plan to cross the river?"
+      ],
+      "sources": [
+        290,
+        296,
+        310
+      ]
+    },
+    {
+      "ch": 9,
+      "questions": [
+        "Why did Dorothy fall asleep in the poppies?",
+        "How did the Scarecrow and the Woodman carry Dorothy?",
+        "What happened to the Lion in the poppy field?"
+      ],
+      "sources": [
+        356,
+        364,
+        365
+      ]
+    },
+    {
+      "ch": 10,
+      "questions": [
+        "How did the Tin Woodman save the Queen of the Mice?",
+        "How did the mice help rescue the Lion?",
+        "What did the Woodman build to carry the Lion?"
+      ],
+      "sources": [
+        371,
+        404,
+        398
+      ]
+    },
+    {
+      "ch": 11,
+      "questions": [
+        "Why must everyone wear green spectacles?",
+        "Where did the friends stay the night before the city?",
+        "What is the country near the Emerald City like?"
+      ],
+      "sources": [
+        461,
+        426,
+        416
+      ]
+    },
+    {
+      "ch": 12,
+      "questions": [
+        "How did Oz appear to each of the friends?",
+        "What did Oz ask Dorothy to do?",
+        "Why did Oz agree to see Dorothy?"
+      ],
+      "sources": [
+        535,
+        510,
+        488
+      ]
+    },
+    {
+      "ch": 13,
+      "questions": [
+        "What happened when Dorothy threw the water?",
+        "What did the Winged Monkeys do to the Scarecrow?",
+        "Why did the Witch want the Silver Shoes?"
+      ],
+      "sources": [
+        650,
+        618,
+        636
+      ]
+    },
+    {
+      "ch": 14,
+      "questions": [
+        "How did Dorothy free the Winkies?",
+        "How was the Tin Woodman mended?",
+        "What did Dorothy find in the Witch's cupboard?"
+      ],
+      "sources": [
+        651,
+        661,
+        678
+      ]
+    },
+    {
+      "ch": 15,
+      "questions": [
+        "Why do the Winged Monkeys obey the Golden Cap?",
+        "Who told Dorothy to use the Golden Cap?",
+        "How did the friends get back to the Emerald City?"
+      ],
+      "sources": [
+        712,
+        693,
+        720
+      ]
+    },
+    {
+      "ch": 16,
+      "questions": [
+        "Why did the Scarecrow call Oz a humbug?",
+        "What was Oz's work before he came here?",
+        "Why does everything in the Emerald City look green?"
+      ],
+      "sources": [
+        767,
+        786,
+        792
+      ]
+    },
+    {
+      "ch": 17,
+      "questions": [
+        "What did Oz give the Scarecrow for brains?",
+        "What kind of heart did the Tin Woodman get?",
+        "How did Oz give the Lion courage?"
+      ],
+      "sources": [
+        824,
+        836,
+        851
+      ]
+    },
+    {
+      "ch": 18,
+      "questions": [
+        "Why did Dorothy miss the balloon?",
+        "Who did Oz leave to rule the Emerald City?",
+        "Why were the friends so sad?"
+      ],
+      "sources": [
+        881,
+        878,
+        888
+      ]
+    },
+    {
+      "ch": 19,
+      "questions": [
+        "Who is Glinda?",
+        "Why are the friends heading south?",
+        "Who are the Quadlings?"
+      ],
+      "sources": [
+        920,
+        918,
+        922
+      ]
+    },
+    {
+      "ch": 20,
+      "questions": [
+        "How did the trees attack the travelers?",
+        "What did the friends find past the forest?",
+        "How did the Tin Woodman plan to get over the wall?"
+      ],
+      "sources": [
+        954,
+        960,
+        962
+      ]
+    },
+    {
+      "ch": 21,
+      "questions": [
+        "What is the Dainty China Country like?",
+        "What happened to the china cow?",
+        "Why can't the china people be taken away?"
+      ],
+      "sources": [
+        972,
+        979,
+        1001
+      ]
+    },
+    {
+      "ch": 22,
+      "questions": [
+        "Why did the beasts want the Lion's help?",
+        "What did the Lion promise the beasts?",
+        "Why does the Lion love this forest?"
+      ],
+      "sources": [
+        1019,
+        1032,
+        1009
+      ]
+    },
+    {
+      "ch": 23,
+      "questions": [
+        "Who are the Hammer-Heads?",
+        "How did the friends get past the Hammer-Heads?",
+        "How did Dorothy find Glinda's castle?"
+      ],
+      "sources": [
+        1042,
+        1051,
+        1056
+      ]
+    },
+    {
+      "ch": 24,
+      "questions": [
+        "What did Glinda tell Dorothy about the Silver Shoes?",
+        "What will happen to the Golden Cap?",
+        "Where will Dorothy's friends go next?"
+      ],
+      "sources": [
+        1085,
+        1082,
+        1078
+      ]
+    }
+  ]
+}
