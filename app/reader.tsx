@@ -2,10 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { parseManifest, styleHasTracks } from "@/core/music";
-import type { MusicManifest, PersistedMusicPrefs, SceneSignal } from "@/core/music";
+import { currentMode, musicModes, parseManifest } from "@/core/music";
+import type {
+  MusicManifest,
+  MusicModeId,
+  PersistedMusicPrefs,
+  SceneSignal,
+} from "@/core/music";
 import { EMOTIONS } from "@/core/types";
-import { dispatch, findChopinPlaylist, startSession } from "@/core/music-session";
+import { dispatch, startSession } from "@/core/music-session";
 import type { MusicIntent, MusicSession, SessionView } from "@/core/music-session";
 import { nextSceneEntry } from "@/core/reader";
 import { DEFAULT_VOLUME, loadMusicPrefs, saveMusicPrefs } from "./music-prefs";
@@ -61,8 +66,8 @@ export function Reader({
   const [manifest, setManifest] = useState<MusicManifest | null>(null);
   const [view, setView] = useState<SessionView | null>(null);
   const [musicFailed, setMusicFailed] = useState(false);
-  // Volume and mute persist next to the style in one prefs object; the
-  // player stays a controlled view over them. State starts at the server
+  // Volume, mute, style, and Chopin mode persist in one prefs object;
+  // the player stays a controlled view over them. State starts at the server
   // defaults so hydration matches, then a mount effect applies stored
   // prefs (parsed once) to volume, muted, and style via prefsRef.
   const [volume, setVolume] = useState(DEFAULT_VOLUME);
@@ -100,11 +105,12 @@ export function Reader({
     });
     sessionRef.current = next;
     if (next.view !== session.view) setView(next.view);
-    if (next.selection !== session.selection) {
+    if (next.selection !== session.selection || next.view.playlistOn !== session.view.playlistOn) {
       saveMusicPrefs({
         style: next.selection.style,
         volume: volumeRef.current,
         muted: mutedRef.current,
+        playlist: next.view.playlistOn,
       });
     }
   }, []);
@@ -206,8 +212,8 @@ export function Reader({
     send({ type: "previous" });
   }
 
-  function togglePlaylist() {
-    send({ type: "playlistToggled" });
+  function advanceMode(to?: MusicModeId) {
+    send({ type: "modeAdvanced", to });
   }
 
   function changeVolume(next: number) {
@@ -217,6 +223,7 @@ export function Reader({
       style: sessionRef.current?.view.style ?? null,
       volume: next,
       muted: mutedRef.current,
+      playlist: sessionRef.current?.view.playlistOn ?? false,
     });
   }
 
@@ -227,11 +234,8 @@ export function Reader({
       style: sessionRef.current?.view.style ?? null,
       volume: volumeRef.current,
       muted: next,
+      playlist: sessionRef.current?.view.playlistOn ?? false,
     });
-  }
-
-  function changeStyle(style: string) {
-    send({ type: "styleChanged", style });
   }
 
   function ended(trackId: string) {
@@ -259,11 +263,9 @@ export function Reader({
   const currentId = view?.currentId ?? null;
   const track = manifest?.tracks.find((t) => t.id === currentId) ?? null;
   const empty = manifest !== null && manifest.tracks.length === 0;
-  // Styles with at least one emotion-selectable track; hidden while fewer
-  // than two qualify.
-  const stylesWithTracks =
-    manifest?.styles.filter((s) => styleHasTracks(manifest, s.id)) ?? [];
-  const activePlaylist = manifest ? findChopinPlaylist(manifest) : null;
+  // Ordered music modes for the control: styles with tracks, then Chopin.
+  const modes = manifest ? musicModes(manifest) : [];
+  const modeCurrent = view ? currentMode(view) : null;
   const playlistOn = view?.playlistOn ?? false;
   // Previous restarts the track with no history (including the current
   // playlist piece), so it stays on whenever a track is cued.
@@ -305,14 +307,11 @@ export function Reader({
             muted={muted}
             onVolumeChange={changeVolume}
             onMutedChange={changeMuted}
-            styles={stylesWithTracks}
-            styleId={view?.style ?? null}
-            onStyleChange={changeStyle}
+            modes={modes}
+            current={modeCurrent}
+            onAdvance={advanceMode}
             onEnded={ended}
             playlistOn={playlistOn}
-            playlistLabel={activePlaylist?.label ?? null}
-            onTogglePlaylist={togglePlaylist}
-            controlsDisabled={playlistOn}
           />
         )}
       </div>

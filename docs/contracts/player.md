@@ -2,10 +2,9 @@
 
 `app/player.tsx` takes the track, `replayNonce`, the fade length for
 the latest switch, `canPrev`/`canSkip` with their handlers, volume and
-mute with their handlers, the style list with the current style and its
-handler, the end-of-track handler, and the playlist props
-(`playlistOn`, `playlistLabel`, `onTogglePlaylist`,
-`controlsDisabled`). It owns two `audio`
+mute with their handlers, the ordered mode list with the current mode
+and its advance handler, the end-of-track handler, and `playlistOn`,
+which only drives the audio loop-off rule. It owns two `audio`
 elements, play state, volume, and the equal-power crossfade
 (cos/sin gains over the fade time, driven by `requestAnimationFrame`).
 It never uses the `loop` attribute. Volume lives in a ref, so the slider
@@ -39,12 +38,16 @@ below it. Previous walks the session history and restarts the track
 with no history; Next cycles same-emotion tracks in the style.
 A `Just play Chopin` round image button (`/art/chopin-just-play-me.png`,
 40 px) appears only when the manifest defines that playlist; while
-pressed it shows a 2 px Meta-blue ring plus scale 1.05. On manifest
+pressed it shows a 2 px Meta-blue ring plus scale 1.05. The style
+stickers stay enabled while it plays: pressing one leaves the playlist
+straight for that style with one crossfade, and pressing Chopin while
+on Chopin exits the playlist keeping the session style. On manifest
 failure the band shows `The music is resting. The book is all yours.`
 Motion stays under 200 ms, except the image hover expand at 260 ms.
 `app/player.tsx` keeps the audio engine, transport, and band layout;
-`app/player-controls.tsx` holds the stickers and playlist toggle;
-`app/music-prefs.ts` owns storage. The heading keeps
+`app/folio/music-style-control.tsx` holds the stickers and Chopin
+button behind `{ modes, current, onAdvance }`;
+`app/music-prefs.ts` owns storage, including the Chopin mode. The heading keeps
 `:focus:not(:focus-visible){outline:none}`. No user-visible emotion
 labels exist; ids stay as they are. `core/music-credit.ts` builds the
 line as a pure function with tests. `core/music-history.ts` is the

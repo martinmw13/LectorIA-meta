@@ -96,7 +96,33 @@ describe("startSession", () => {
   });
 
   it("a stored style with tracks wins", () => {
-    const session = startSession(manifest, { style: "piano", volume: null, muted: false });
+    const session = startSession(manifest, { style: "piano", volume: null, muted: false, playlist: false });
+    expect(session.view.style).toBe("piano");
+  });
+
+  it("a stored Chopin mode starts in the playlist with the stored style", () => {
+    const session = startSession(manifest, {
+      style: "piano",
+      volume: null,
+      muted: false,
+      playlist: true,
+    });
+    expect(session.view.playlistOn).toBe(true);
+    expect(session.view.currentId).toBe("chop-1");
+    expect(session.view.fadeSec).toBe(0);
+    expect(session.view.style).toBe("piano");
+  });
+
+  it("a stored Chopin mode without the playlist falls back to the style", () => {
+    const bare: MusicManifest = { ...manifest, playlists: [] };
+    const session = startSession(bare, {
+      style: "piano",
+      volume: null,
+      muted: false,
+      playlist: true,
+    });
+    expect(session.view.playlistOn).toBe(false);
+    expect(session.view.currentId).toBeNull();
     expect(session.view.style).toBe("piano");
   });
 });
@@ -242,6 +268,93 @@ describe("playlist mode", () => {
     session = dispatch(session, { type: "trackEnded", trackId: "chop-1" }, at("s1", 7));
     expect(session.view.currentId).toBe("chop-1");
     expect(session.view.replayNonce).toBe(2);
+  });
+});
+
+describe("modeAdvanced", () => {
+  it("cycles orchestral, piano, and Chopin, then wraps", () => {
+    let session = entered("s1", 0);
+    session = dispatch(session, { type: "modeAdvanced" }, ctx("s1", 5));
+    expect(session.view.currentId).toBe("p-calm");
+    expect(session.view.style).toBe("piano");
+    session = dispatch(session, { type: "modeAdvanced" }, ctx("s1", 6));
+    expect(session.view.currentId).toBe("chop-1");
+    expect(session.view.playlistOn).toBe(true);
+    session = dispatch(session, { type: "modeAdvanced" }, ctx("s1", 7));
+    expect(session.view.currentId).toBe("o-calm-a");
+    expect(session.view.playlistOn).toBe(false);
+    expect(session.view.style).toBe("orchestral");
+  });
+
+  it("leaves the playlist for a style in one switch with one fade", () => {
+    let session = entered("s1", 0);
+    session = dispatch(session, { type: "modeAdvanced", to: CHOPIN_PLAYLIST_ID }, ctx("s1", 5));
+    expect(session.view.currentId).toBe("chop-1");
+    session = dispatch(session, { type: "modeAdvanced", to: "orchestral" }, ctx("s1", 6));
+    expect(session.view.currentId).toBe("o-calm-a");
+    expect(session.view.playlistOn).toBe(false);
+    expect(session.view.style).toBe("orchestral");
+    expect(session.view.fadeSec).toBe(3);
+  });
+
+  it("runs a two-state cycle without a Chopin playlist", () => {
+    const bare: MusicManifest = { ...manifest, playlists: [] };
+    const at = (route: string | null, nowSec: number): SessionContext => ({
+      manifest: bare,
+      signalOf: (id) => signals[id] ?? null,
+      routeSceneId: route,
+      nowSec,
+      rng: () => 0,
+    });
+    let session = dispatch(startSession(bare, null), { type: "sceneEntered", sceneId: "s1" }, at("s1", 0));
+    session = dispatch(session, { type: "modeAdvanced" }, at("s1", 5));
+    expect(session.view.currentId).toBe("p-calm");
+    session = dispatch(session, { type: "modeAdvanced" }, at("s1", 6));
+    expect(session.view.currentId).toBe("o-calm-a");
+  });
+
+  it("jumps straight to a given mode", () => {
+    let session = entered("s1", 0);
+    session = dispatch(session, { type: "modeAdvanced", to: CHOPIN_PLAYLIST_ID }, ctx("s1", 5));
+    expect(session.view.playlistOn).toBe(true);
+    session = dispatch(session, { type: "modeAdvanced", to: "piano" }, ctx("s1", 6));
+    expect(session.view.currentId).toBe("p-calm");
+    expect(session.view.playlistOn).toBe(false);
+  });
+
+  it("pressing Chopin while on Chopin exits to the stored style", () => {
+    let session = startSession(manifest, {
+      style: "piano",
+      volume: null,
+      muted: false,
+      playlist: true,
+    });
+    expect(session.view.playlistOn).toBe(true);
+    session = dispatch(session, { type: "modeAdvanced", to: CHOPIN_PLAYLIST_ID }, ctx("s1", 5));
+    expect(session.view.playlistOn).toBe(false);
+    expect(session.selection.style).toBe("piano");
+    expect(session.view.style).toBe("piano");
+    expect(session.view.currentId).toBe("p-calm");
+    expect(session.view.fadeSec).toBe(3);
+  });
+
+  it("leaves the playlist for a style even with a null route", () => {
+    let session = entered("s1", 0);
+    session = dispatch(session, { type: "modeAdvanced", to: CHOPIN_PLAYLIST_ID }, ctx("s1", 5));
+    expect(session.view.playlistOn).toBe(true);
+    session = dispatch(session, { type: "modeAdvanced", to: "piano" }, ctx(null, 6));
+    expect(session.view.playlistOn).toBe(false);
+    expect(session.view.style).toBe("piano");
+    expect(session.view.currentId).toBe("p-calm");
+  });
+
+  it("ignores unknown targets, the current mode, and a missing route", () => {
+    const session = entered("s1", 0);
+    expect(dispatch(session, { type: "modeAdvanced", to: "koto" }, ctx("s1", 5))).toBe(session);
+    expect(dispatch(session, { type: "modeAdvanced", to: "orchestral" }, ctx("s1", 5))).toBe(
+      session,
+    );
+    expect(dispatch(session, { type: "modeAdvanced" }, ctx(null, 5))).toBe(session);
   });
 });
 

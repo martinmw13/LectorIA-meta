@@ -8,7 +8,9 @@ and `noteTrackEnded` advance to the next entry in order and wrap from
 the last to the first, and playlist tracks run to their end because the
 player forces looping off. `exitPlaylist` clears the playlist state and
 switches at once to the best match for the current scene under the
-restored selection. The playlist is never persisted, so a reload returns
-to emotion mode. The style selector stays disabled while it is on, and
-the style list hides styles with only playlist tracks.
+restored selection. The Chopin mode persists in the prefs, so a reload
+restores it when the playlist exists and falls back to the stored style
+otherwise. The style stickers stay enabled while it is on: pressing one
+leaves the playlist straight for that style in one switch, and the
+style list hides styles with only playlist tracks.
 
