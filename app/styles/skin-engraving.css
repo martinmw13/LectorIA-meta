@@ -120,8 +120,10 @@ html[data-skin="engraving"] .vault {
   border-left-color: var(--color-border);
 }
 
-/* ---------- Drop cap: the letter set in an engraved, hatched box ---------- */
-html[data-skin="engraving"] .body-text.dropcap > p:first-of-type:not([data-cont])::first-letter {
+/* ---------- Drop cap: the letter set in an engraved, hatched box ----------
+   Every scene opens with one, as each prototype page does. */
+html[data-skin="engraving"] .book-section .body-text > p:first-of-type:not([data-cont])::first-letter {
+  float: left;
   font-family: var(--font-eng-display);
   font-weight: 400;
   font-size: 2.9em;
@@ -133,7 +135,7 @@ html[data-skin="engraving"] .body-text.dropcap > p:first-of-type:not([data-cont]
     center / 100% 100% no-repeat;
 }
 
-html[data-skin="engraving"][data-theme="dark"] .body-text.dropcap > p:first-of-type:not([data-cont])::first-letter {
+html[data-skin="engraving"][data-theme="dark"] .book-section .body-text > p:first-of-type:not([data-cont])::first-letter {
   color: #2a241c;
 }
 
@@ -152,9 +154,24 @@ html[data-skin="engraving"] .cover-rule {
   margin: 14px 0 18px;
 }
 
+/* Scene break: "Scene 2 of 4" in small caps between two half ornaments.
+   The number and count come from scene-marks.css. */
 html[data-skin="engraving"] .book-section + .book-section::before {
-  width: 200px;
+  content: "Scene " var(--scene-n, "") var(--scene-of, "");
+  width: max-content;
+  height: auto;
   margin: 34px auto;
+  padding: 0 112px;
+  font-family: var(--font-eng-label);
+  font-size: 15px;
+  line-height: 1.2;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 12'%3E%3Cdefs%3E%3Cpattern id='h' width='2.2' height='2.2' patternUnits='userSpaceOnUse' patternTransform='rotate(-30)'%3E%3Crect width='2.2' height='2.2' fill='%232A241C'/%3E%3Cpath d='M0 0V2.2' stroke='%23F7F1DE' stroke-width='.45'/%3E%3C/pattern%3E%3C/defs%3E%3Cpath d='M0 6H80' stroke='%232A241C' stroke-width='.8'/%3E%3Ccircle cx='84' cy='6' r='1.4' fill='%232A241C'/%3E%3Cpath d='M93 1l5 5-5 5-5-5z' fill='url(%23h)' stroke='%232A241C' stroke-width='.8'/%3E%3C/svg%3E")
+      left center / 100px 12px no-repeat,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 12'%3E%3Cdefs%3E%3Cpattern id='h' width='2.2' height='2.2' patternUnits='userSpaceOnUse' patternTransform='rotate(-30)'%3E%3Crect width='2.2' height='2.2' fill='%232A241C'/%3E%3Cpath d='M0 0V2.2' stroke='%23F7F1DE' stroke-width='.45'/%3E%3C/pattern%3E%3C/defs%3E%3Cpath d='M7 1l5 5-5 5-5-5z' fill='url(%23h)' stroke='%232A241C' stroke-width='.8'/%3E%3Ccircle cx='16' cy='6' r='1.4' fill='%232A241C'/%3E%3Cpath d='M20 6H100' stroke='%232A241C' stroke-width='.8'/%3E%3C/svg%3E")
+      right center / 100px 12px no-repeat;
 }
 
 /* ---------- Picture pane: a plate with an inset double frame ---------- */
@@ -341,6 +358,43 @@ html[data-skin="engraving"] .sticker-dot {
   transform: rotate(45deg);
   width: 4px;
   height: 4px;
+}
+
+/* Captions: each art button names itself in small caps beneath, in the
+   folio's bottom margin, so a boxless icon still reads as a control. */
+html[data-skin="engraving"] :is(.sticker, .chopin, .player .skip.rain) {
+  position: relative;
+}
+
+html[data-skin="engraving"] :is(.sticker, .chopin, .player .skip.rain)::after {
+  content: attr(title);
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 9px);
+  transform: translateX(-50%);
+  font-family: var(--font-eng-label);
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+html[data-skin="engraving"] .player .skip.rain::after {
+  top: calc(100% + 2px);
+}
+
+html[data-skin="engraving"] .player .sticker-wrap .chopin::after {
+  content: "Just Chopin";
+}
+
+html[data-skin="engraving"] .stickers[data-art="hero"] {
+  gap: 24px;
+}
+
+html[data-skin="engraving"] .stickers[data-art="hero"] + .sticker-wrap {
+  margin-left: 14px;
 }
 
 html[data-skin="engraving"] .read-aloud-art {
