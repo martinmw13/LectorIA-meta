@@ -22,9 +22,16 @@ export function UploadSection() {
   const [freeUsed, setFreeUsed] = useState(false);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
   const freePages = approxPages(FREE_BOOK_MAX_WORDS);
 
   useEffect(() => setFreeUsed(getFreeBookUsed()), []);
+
+  // The parsed and processing views replace the drop zone, so move focus
+  // into the result; otherwise keyboard focus is lost when it unmounts.
+  useEffect(() => {
+    if (status.step === "parsed" || status.step === "processing") resultRef.current?.focus();
+  }, [status]);
 
   const book = status.step === "parsed" || status.step === "processing" ? status.book : null;
   useEffect(() => {
@@ -59,7 +66,7 @@ export function UploadSection() {
     <section className="home-section" aria-label="Bring your own book">
       <h2 className="home-section-title">Bring your own book</h2>
       {status.step === "processing" ? (
-        <div>
+        <div ref={resultRef} tabIndex={-1}>
           <p className="home-muted">
             Soundtracks for your own books are coming soon. For now, Oz shows how it works.
           </p>
@@ -73,7 +80,7 @@ export function UploadSection() {
           </div>
         </div>
       ) : status.step === "parsed" && route ? (
-        <div>
+        <div ref={resultRef} tabIndex={-1}>
           <BookCard book={status.book} coverUrl={coverUrl} />
           {route.kind === "free" ? (
             <div className="home-actions">
@@ -93,7 +100,7 @@ export function UploadSection() {
               </button>
             </div>
           ) : (
-            <div>
+            <div className="home-byok">
               <ByokStep
                 reason={route.reason}
                 onSubmit={() => setStatus({ step: "processing", book: status.book })}
@@ -160,24 +167,26 @@ export function UploadSection() {
               </div>
             )}
           </div>
-          <p className="home-muted">
-            Your first book is on us, up to about {freePages} pages. Longer books or more of them?
-            Bring your own key.
-          </p>
-          <p className="home-muted">
-            EPUB only, up to 20 MB. Nothing leaves your computer until you choose to read it.
-          </p>
-          <p className="home-muted">
-            Want more? Find free classics at{" "}
-            <a href="https://www.gutenberg.org/" target="_blank" rel="noopener noreferrer">
-              Project Gutenberg ↗
-            </a>{" "}
-            and{" "}
-            <a href="https://standardebooks.org/" target="_blank" rel="noopener noreferrer">
-              Standard Ebooks ↗
-            </a>
-            , then bring them here.
-          </p>
+          <div className="home-fineprint">
+            <p className="home-muted">
+              Your first book is on us, up to about {freePages} pages. Longer books or more of them?
+              Bring your own key.
+            </p>
+            <p className="home-muted">
+              EPUB only, up to 20 MB. Nothing leaves your computer until you choose to read it.
+            </p>
+            <p className="home-muted">
+              Want more? Find free classics at{" "}
+              <a href="https://www.gutenberg.org/" target="_blank" rel="noopener noreferrer">
+                Project Gutenberg ↗
+              </a>{" "}
+              and{" "}
+              <a href="https://standardebooks.org/" target="_blank" rel="noopener noreferrer">
+                Standard Ebooks ↗
+              </a>
+              , then bring them here.
+            </p>
+          </div>
         </div>
       )}
     </section>

@@ -6,6 +6,20 @@
   font-family: var(--font-ui);
 }
 
+.home-root a,
+.home-root a:visited {
+  color: var(--color-accent);
+}
+
+.home-root a:hover {
+  color: var(--color-accent-hover);
+}
+
+.home-root button,
+.home-root input {
+  font: inherit;
+}
+
 .home-wrap {
   max-width: 60rem;
   margin: 0 auto;
@@ -150,6 +164,20 @@
   text-underline-offset: 2px;
 }
 
+.home-byok {
+  margin-top: var(--space-lg);
+}
+
+.home-fineprint {
+  display: grid;
+  gap: var(--space-xs);
+  margin-top: var(--space-md);
+}
+
+.home-fineprint .home-muted {
+  margin: 0;
+}
+
 .home-card {
   border: 1px solid var(--color-border);
   border-radius: 12px;
@@ -204,7 +232,6 @@
 }
 
 .home-input {
-  font: inherit;
   color: var(--color-text);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
