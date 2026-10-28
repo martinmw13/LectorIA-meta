@@ -3,17 +3,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { currentMode, musicModes, parseManifest } from "@/core/music";
-import type {
-  MusicManifest,
-  MusicModeId,
-  PersistedMusicPrefs,
-  SceneSignal,
-} from "@/core/music";
+import type { MusicManifest, MusicModeId, SceneSignal } from "@/core/music";
 import { EMOTIONS } from "@/core/types";
 import { dispatch, startSession } from "@/core/music-session";
 import type { MusicIntent, MusicSession, SessionView } from "@/core/music-session";
 import { nextSceneEntry } from "@/core/reader";
-import { DEFAULT_VOLUME, loadMusicPrefs, saveMusicPrefs } from "./music-prefs";
+import { DEFAULT_VOLUME, createMusicPrefsStore } from "./music-prefs";
 import { Player } from "./player";
 import { THEME_KEY, TopLine } from "./folio/chrome";
 import { initialTheme } from "./theme";
@@ -69,12 +64,12 @@ export function Reader({
   // Volume, mute, style, and Chopin mode persist in one prefs object;
   // the player stays a controlled view over them. State starts at the server
   // defaults so hydration matches, then a mount effect applies stored
-  // prefs (parsed once) to volume, muted, and style via prefsRef.
+  // prefs (parsed once) to volume, muted, and style via the prefs store.
   const [volume, setVolume] = useState(DEFAULT_VOLUME);
   const [muted, setMuted] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [devOpen, setDevOpen] = useState(false);
-  const prefsRef = useRef<PersistedMusicPrefs | null>(null);
+  const prefsStoreRef = useRef(createMusicPrefsStore());
   // Ref mirrors so send and persist handlers always read fresh values.
   const volumeRef = useRef(volume);
   volumeRef.current = volume;
@@ -106,10 +101,8 @@ export function Reader({
     sessionRef.current = next;
     if (next.view !== session.view) setView(next.view);
     if (next.selection !== session.selection || next.view.playlistOn !== session.view.playlistOn) {
-      saveMusicPrefs({
+      prefsStoreRef.current.update({
         style: next.selection.style,
-        volume: volumeRef.current,
-        muted: mutedRef.current,
         playlist: next.view.playlistOn,
       });
     }
@@ -118,10 +111,9 @@ export function Reader({
   // Stored prefs load once here, after the server-matching first render.
   // Saves happen only on user actions below, so the defaults above never
   // overwrite storage before this runs. The fetch below resolves later and
-  // reads the style through the ref.
+  // reads the style through the store.
   useEffect(() => {
-    const prefs = loadMusicPrefs();
-    prefsRef.current = prefs;
+    const prefs = prefsStoreRef.current.load();
     if (prefs !== null) {
       if (prefs.volume !== null) setVolume(prefs.volume);
       setMuted(prefs.muted);
@@ -145,7 +137,7 @@ export function Reader({
         if (cancelled) return;
         const parsed = parseManifest(json);
         setManifest(parsed);
-        const session = startSession(parsed, prefsRef.current);
+        const session = startSession(parsed, prefsStoreRef.current.load());
         sessionRef.current = session;
         setView(session.view);
       })
@@ -219,23 +211,13 @@ export function Reader({
   function changeVolume(next: number) {
     setVolume(next);
     volumeRef.current = next;
-    saveMusicPrefs({
-      style: sessionRef.current?.view.style ?? null,
-      volume: next,
-      muted: mutedRef.current,
-      playlist: sessionRef.current?.view.playlistOn ?? false,
-    });
+    prefsStoreRef.current.update({ volume: next });
   }
 
   function changeMuted(next: boolean) {
     setMuted(next);
     mutedRef.current = next;
-    saveMusicPrefs({
-      style: sessionRef.current?.view.style ?? null,
-      volume: volumeRef.current,
-      muted: next,
-      playlist: sessionRef.current?.view.playlistOn ?? false,
-    });
+    prefsStoreRef.current.update({ muted: next });
   }
 
   function ended(trackId: string) {
