@@ -41,27 +41,8 @@ body {
   line-height: 1.25;
 }
 
-.companion {
-  flex: 0 0 18rem;
-  align-self: flex-start;
-  padding: var(--space-md);
-  border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
-  background: var(--color-surface-soft);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-}
-
-@media (min-width: 60rem) {
-  .companion {
-    position: sticky;
-    top: var(--space-md);
-    max-height: calc(100vh - var(--space-md) * 2);
-    overflow: auto;
-  }
-}
-
 .scene-view {
+  position: relative;
   animation: scene-in var(--motion-duration) ease-out;
 }
 
@@ -76,10 +57,18 @@ body {
 }
 
 .scene-progress {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
   font-family: var(--font-ui);
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   margin: 0 0 var(--space-sm);
+}
+
+.scene-progress .picture-scene {
+  margin-left: auto;
+  flex: none;
 }
 
 .scene-view h2:focus:not(:focus-visible) {
@@ -226,10 +215,8 @@ body {
   padding: var(--space-xs) 0;
 }
 
-.picture {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
+.picture-slot {
+  margin: 0 0 var(--space-md);
 }
 
 .picture-scene {
@@ -255,12 +242,25 @@ body {
 .picture-float {
   position: absolute;
   z-index: 2;
+  transform: translate(-50%, -100%);
   border: 1px solid var(--color-accent);
   border-radius: 0.375rem;
   background: var(--color-accent);
   color: #ffffff;
   padding: 0.375rem 0.75rem;
   cursor: pointer;
+  white-space: nowrap;
+}
+
+.picture-float::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  width: 8px;
+  height: 8px;
+  transform: translateX(-50%) rotate(45deg);
+  background: var(--color-accent);
 }
 
 .picture-float:hover {
@@ -273,8 +273,11 @@ body {
 
 .picture-img {
   display: block;
-  width: 100%;
+  max-width: 100%;
+  max-height: 20rem;
+  width: auto;
   height: auto;
+  object-fit: contain;
   border: 1px solid var(--color-border);
   border-radius: 0.375rem;
 }
@@ -282,6 +285,21 @@ body {
 .picture-card figcaption {
   margin-top: var(--space-xs);
   color: var(--color-text-muted);
+}
+
+.picture-dismiss {
+  margin-left: var(--space-sm);
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: var(--font-size-lg);
+  line-height: 1;
+  padding: 0 0.25rem;
+}
+
+.picture-dismiss:hover {
+  color: var(--color-text);
 }
 
 .picture-flag {
@@ -296,8 +314,7 @@ body {
   color: var(--color-text-muted);
 }
 
-.picture-error,
-.picture-note {
+.picture-error {
   margin: 0;
   color: var(--color-text-muted);
 }
