@@ -1,8 +1,11 @@
 // Pure folio helpers: caption truncation, pane split clamp, style pref.
 import { describe, expect, it, vi } from "vitest";
+import { SKIN_DEFAULT_IMAGE_STYLE } from "@/core/image-style";
 import {
   DEFAULT_IMAGE_STYLE,
   STYLE_OTHER_VALUE,
+  STYLE_PRESETS,
+  effectiveImageStylePref,
   loadImageStylePref,
   parseImageStylePref,
   requestStyleFields,
@@ -64,10 +67,8 @@ describe("parseImageStylePref", () => {
   it("falls back to Denslow on bad or old values", () => {
     expect(parseImageStylePref(null)).toEqual(DEFAULT_IMAGE_STYLE);
     expect(parseImageStylePref({ kind: "preset", id: "nope" })).toEqual(DEFAULT_IMAGE_STYLE);
-    expect(parseImageStylePref({ kind: "preset", id: "watercolour" })).toEqual({
-      kind: "preset",
-      id: "watercolour",
-    });
+    expect(parseImageStylePref({ kind: "preset", id: "watercolour" })).toEqual(DEFAULT_IMAGE_STYLE);
+    expect(parseImageStylePref({ kind: "preset", id: "gouache" })).toEqual(DEFAULT_IMAGE_STYLE);
     expect(parseImageStylePref({ kind: "custom", text: "  Japanese woodblock " })).toEqual({
       kind: "custom",
       text: "Japanese woodblock",
@@ -101,10 +102,107 @@ describe("parseImageStylePref", () => {
     );
   });
 
-  it("sends no style yet and credits Denslow", () => {
-    expect(requestStyleFields({ kind: "preset", id: "watercolour" })).toEqual({});
-    expect(styleCredit(requestStyleFields({ kind: "preset", id: "watercolour" }))).toBe(
+  it("caps custom text at 60 chars", () => {
+    expect(parseImageStylePref({ kind: "custom", text: ` ${"x".repeat(70)} ` })).toEqual({
+      kind: "custom",
+      text: "x".repeat(60),
+    });
+  });
+});
+
+describe("loadImageStylePref null and effectiveImageStylePref", () => {
+  function stubStorage(store: Record<string, string>) {
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: (key: string) => store[key] ?? null,
+        setItem: (key: string, value: string) => {
+          store[key] = value;
+        },
+      },
+    });
+  }
+
+  it("keeps load and parse in agreement", () => {
+    const store: Record<string, string> = {};
+    stubStorage(store);
+    try {
+      store["lectoria.imageStyle"] = JSON.stringify({ kind: "preset", id: "pencil" });
+      expect(loadImageStylePref()).toEqual(parseImageStylePref({ kind: "preset", id: "pencil" }));
+      store["lectoria.imageStyle"] = JSON.stringify({ kind: "custom", text: "crayon drawing" });
+      expect(loadImageStylePref()).toEqual(parseImageStylePref({ kind: "custom", text: "crayon drawing" }));
+      store["lectoria.imageStyle"] = JSON.stringify({ kind: "preset", id: "nope" });
+      expect(loadImageStylePref()).toBeNull();
+      expect(parseImageStylePref({ kind: "preset", id: "nope" })).toEqual(DEFAULT_IMAGE_STYLE);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("returns null when nothing valid is stored", () => {
+    const store: Record<string, string> = {};
+    stubStorage(store);
+    try {
+      expect(loadImageStylePref()).toBeNull();
+      store["lectoria.imageStyle"] = "{bad json";
+      expect(loadImageStylePref()).toBeNull();
+      store["lectoria.imageStyle"] = JSON.stringify({ kind: "preset", id: "nope" });
+      expect(loadImageStylePref()).toBeNull();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("resolves null to denslow with no skin", () => {
+    expect(effectiveImageStylePref(null, undefined)).toEqual({ kind: "preset", id: "denslow" });
+    expect(effectiveImageStylePref(null, "nope")).toEqual({ kind: "preset", id: "denslow" });
+  });
+
+  it("resolves null to the skin default", () => {
+    expect(effectiveImageStylePref(null, "watercolor")).toEqual({
+      kind: "preset",
+      id: "watercolor",
+    });
+    expect(effectiveImageStylePref(null, "ink")).toEqual({ kind: "preset", id: "pen-pencil" });
+  });
+
+  it("lets an explicit pick win and round-trips the request fields", () => {
+    const eff = effectiveImageStylePref({ kind: "preset", id: "pencil" }, "watercolor");
+    expect(eff).toEqual({ kind: "preset", id: "pencil" });
+    expect(requestStyleFields(eff)).toEqual({ style: { preset: "pencil" } });
+    const custom = effectiveImageStylePref({ kind: "custom", text: "crayon drawing" }, "ink");
+    expect(requestStyleFields(custom)).toEqual({ style: { custom: "crayon drawing" } });
+  });
+
+  it("lists every skin default in the picker presets", () => {
+    const ids = new Set(STYLE_PRESETS.map((p) => p.id));
+    for (const id of Object.values(SKIN_DEFAULT_IMAGE_STYLE)) {
+      expect(id).toBeDefined();
+      if (id !== undefined) expect(ids.has(id)).toBe(true);
+    }
+  });
+});
+
+describe("requestStyleFields and styleCredit", () => {
+  it("sends nothing for Denslow and credits Denslow", () => {
+    expect(requestStyleFields({ kind: "preset", id: "denslow" })).toEqual({});
+    expect(styleCredit(requestStyleFields({ kind: "preset", id: "denslow" }))).toBe(
       "In the style of W. W. Denslow",
+    );
+  });
+
+  it("sends the preset id and credits its label", () => {
+    expect(requestStyleFields({ kind: "preset", id: "pencil" })).toEqual({
+      style: { preset: "pencil" },
+    });
+    expect(styleCredit(requestStyleFields({ kind: "preset", id: "pencil" }))).toBe("Pencil sketch");
+  });
+
+  it("sends custom text and credits it back", () => {
+    expect(requestStyleFields({ kind: "custom", text: "crayon drawing" })).toEqual({
+      style: { custom: "crayon drawing" },
+    });
+    expect(styleCredit(requestStyleFields({ kind: "custom", text: "crayon drawing" }))).toBe(
+      "crayon drawing",
     );
   });
 });

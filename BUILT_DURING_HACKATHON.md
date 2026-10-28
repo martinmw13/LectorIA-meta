@@ -18,6 +18,7 @@ Building period: 2026-10-27 to 2026-11-04 23:00, America/Buenos_Aires. Each task
 | 2026-10-28 | 12: music session | Pure music session module behind the reader plus one scope-rank-draw path, no behavior change | Muse Code (Standard) |
 | 2026-10-28 | 19: step freshness | One freshness rule per pipeline step with dry run, Oz stamp reused | Muse Code (Contributor) |
 | 2026-10-28 | 16: folio reader | Folio redesign from the margin prototype: top line, resizable image pane, reading column, Picture Vault, bottom band, sticker styles, hidden dev view, warm copy pass | Muse Code (Standard; Contributor for one small fix) |
+| 2026-10-28 | 17: image style | User-selectable image style for the images API: presets, custom text rules, styled keys | Muse Code (Contributor) |
 | 2026-10-28 | 27: light default | Light-first theme with stored choice kept, plus the music-style control isolated in one component and CSS file | Muse Code (Contributor) |
 | 2026-10-28 | 25: rain ambience | Rain button cycling drizzle, moderate and storm CC0 loops with Web Audio crossfades, separate saved volume, master mute | Muse Code (Contributor) |
 | 2026-10-28 | 25b: rain still | Rain button frameless and still: animates only on hover and click, glow on the icon, focus ring on keyboard focus only | Muse Code (Contributor) |

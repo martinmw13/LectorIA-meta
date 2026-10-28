@@ -7,7 +7,9 @@ textVersion, sceneId }` names the scene. Validation is strict: known
 book, matching `textVersion`, integer `n` inside the book, known
 `sceneId`. Any other body is a 400 with a generic English message.
 The client sends ordinals and ids only, never text. "Illustrate
-scene" uses the scene id from the route.
+scene" uses the scene id from the route. Requests may carry an
+optional `style` field, see [Image style](image-style.md); styled keys
+add a style segment while default keys stay unchanged.
 
 Responses (typed in `core/types.ts`): `{ status: "ready", url, cached,
 caption }` with a Vercel Blob URL, never bytes; `{ status: "pending" }`

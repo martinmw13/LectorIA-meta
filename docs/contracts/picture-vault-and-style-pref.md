@@ -10,11 +10,10 @@ selected text. Figures persist per scene in client memory, one request
 at a time. The vault lists the scene picture first, then figures in
 text order, each with jump-to-figure pulse and expand; the style picker
 below stores `{ kind: "preset", id } | { kind: "custom", text }` in
-`lectoria.imageStyle`. The style is UI only: `requestStyleFields` in
-`app/image-style.ts` returns `{}` until the `/api/images` style
-contract lands, and request bodies spread its result. The credit stays
-`In the style of W. W. Denslow` until the adapter sends a style. The
-developer view (Shift+D or `?dev`, hidden otherwise) shows emotion
+`lectoria.imageStyle` (`loadImageStylePref` returns null when no explicit pick is stored). `requestStyleFields` returns `{}` for Denslow
+and `{ style: { preset } }` or `{ style: { custom } }` otherwise;
+request bodies spread it; the credit is the preset label or the custom
+text. The developer view (Shift+D or `?dev`, hidden otherwise) shows emotion
 bars, intensity, tempo, and track from data the reader holds. Theme
 persists in `lectoria.theme`; fonts are Newsreader and Instrument Sans
 via `next/font/google`.

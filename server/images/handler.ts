@@ -1,6 +1,13 @@
 import "server-only";
 import { loadOzBook } from "@/server/books";
-import { MSG_BAD_REQUEST, MSG_UNAVAILABLE, parseImageRequest, validateAgainstBook } from "@/core/images";
+import {
+  ImageStyleError,
+  MSG_BAD_REQUEST,
+  MSG_STYLE,
+  MSG_UNAVAILABLE,
+  parseImageRequest,
+  validateAgainstBook,
+} from "@/core/images";
 import type { ImageRequest, ImageResponse } from "@/core/images";
 import { MAX_IMAGE_BODY_BYTES, readBodyCapped } from "./body";
 import { readImageEnv } from "./env";
@@ -30,7 +37,13 @@ export async function handleImagesPost(req: Request): Promise<Response> {
   let parsed: ImageRequest;
   try {
     parsed = parseImageRequest(JSON.parse(capped.text));
-  } catch {
+  } catch (e) {
+    if (e instanceof ImageStyleError) {
+      return Response.json(
+        { status: "error", code: "bad_request", message: MSG_STYLE } satisfies ImageResponse,
+        { status: 400 },
+      );
+    }
     return Response.json(
       { status: "error", code: "bad_request", message: MSG_BAD_REQUEST } satisfies ImageResponse,
       { status: 400 },

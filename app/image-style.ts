@@ -1,5 +1,9 @@
-// Drawing style preference: UI only until the /api/images style
-// contract lands. Persisted in localStorage, parsed defensively.
+// Drawing style preference for POST /api/images. Persisted in
+// localStorage, parsed defensively. Preset ids come from the server's
+// table so they always match; the server re-checks custom text.
+import { IMAGE_STYLE_PRESETS, resolveEffectiveStyle } from "@/core/image-style";
+import type { ImageStylePresetId, StyleChoice } from "@/core/image-style";
+
 export const IMAGE_STYLE_KEY = "lectoria.imageStyle";
 
 export type ImageStylePref = { kind: "preset"; id: string } | { kind: "custom"; text: string };
@@ -9,13 +13,7 @@ export interface StylePreset {
   label: string;
 }
 
-export const STYLE_PRESETS: StylePreset[] = [
-  { id: "denslow", label: "Denslow ink (1900)" },
-  { id: "watercolour", label: "Watercolour" },
-  { id: "pencil", label: "Pencil sketch" },
-  { id: "woodcut", label: "Woodcut" },
-  { id: "gouache", label: "Storybook gouache" },
-];
+export const STYLE_PRESETS: StylePreset[] = IMAGE_STYLE_PRESETS.map(({ id, label }) => ({ id, label }));
 
 export const DEFAULT_IMAGE_STYLE: ImageStylePref = { kind: "preset", id: "denslow" };
 
@@ -29,7 +27,7 @@ export function resolveStyleSelect(pref: ImageStylePref, otherOpen: boolean): st
 
 export const DENSLOW_CREDIT = "In the style of W. W. Denslow";
 
-export function parseImageStylePref(json: unknown): ImageStylePref {
+function toImageStylePref(json: unknown): ImageStylePref | null {
   if (typeof json === "object" && json !== null && !Array.isArray(json)) {
     const pref = json as Record<string, unknown>;
     if (pref.kind === "preset" && typeof pref.id === "string" && STYLE_PRESETS.some((p) => p.id === pref.id)) {
@@ -39,18 +37,37 @@ export function parseImageStylePref(json: unknown): ImageStylePref {
       return { kind: "custom", text: pref.text.trim().slice(0, 60) };
     }
   }
-  return DEFAULT_IMAGE_STYLE;
+  return null;
 }
 
-export function loadImageStylePref(): ImageStylePref {
+export function parseImageStylePref(json: unknown): ImageStylePref {
+  return toImageStylePref(json) ?? DEFAULT_IMAGE_STYLE;
+}
+
+// Null means no explicit pick stored. Invalid stored values also read
+// as null so the skin default (Denslow today) applies.
+export function loadImageStylePref(): ImageStylePref | null {
   try {
-    if (typeof window === "undefined") return DEFAULT_IMAGE_STYLE;
+    if (typeof window === "undefined") return null;
     const raw = window.localStorage.getItem(IMAGE_STYLE_KEY);
-    if (!raw) return DEFAULT_IMAGE_STYLE;
-    return parseImageStylePref(JSON.parse(raw));
+    if (!raw) return null;
+    return toImageStylePref(JSON.parse(raw) as unknown);
   } catch {
-    return DEFAULT_IMAGE_STYLE;
+    return null;
   }
+}
+
+// The picker shows this; the request sends requestStyleFields of it.
+// No explicit pick falls back to the skin default (Denslow today).
+export function effectiveImageStylePref(pref: ImageStylePref | null, skin?: string): ImageStylePref {
+  const explicit: StyleChoice | undefined =
+    pref === null
+      ? undefined
+      : pref.kind === "custom"
+        ? { custom: pref.text }
+        : { preset: pref.id as ImageStylePresetId };
+  const eff = resolveEffectiveStyle(explicit, skin);
+  return "custom" in eff ? { kind: "custom", text: eff.custom } : { kind: "preset", id: eff.preset };
 }
 
 export function saveImageStylePref(pref: ImageStylePref): void {
@@ -62,14 +79,19 @@ export function saveImageStylePref(pref: ImageStylePref): void {
   }
 }
 
-// shortcut: style not sent until the /api/images style contract lands; wire it here
-export function requestStyleFields(_pref: ImageStylePref): Record<string, never> {
-  return {};
+// Denslow sends nothing, so its key and prompt stay byte-identical.
+export function requestStyleFields(pref: ImageStylePref): { style?: StyleChoice } {
+  if (pref.kind === "custom") return { style: { custom: pref.text } };
+  if (pref.id === "denslow") return {};
+  return { style: { preset: pref.id as ImageStylePresetId } };
 }
 
 // The credit never claims a style the request did not send.
-export function styleCredit(fields: Record<string, never>): string {
-  const sent = (fields as Record<string, unknown>).style;
-  if (typeof sent === "string" && sent.length > 0) return sent;
-  return DENSLOW_CREDIT;
+export function styleCredit(fields: { style?: StyleChoice }): string {
+  const style = fields.style;
+  if (style === undefined) return DENSLOW_CREDIT;
+  if ("preset" in style) {
+    return STYLE_PRESETS.find((p) => p.id === style.preset)?.label ?? DENSLOW_CREDIT;
+  }
+  return style.custom;
 }

@@ -19,6 +19,7 @@ Details live in these files:
 - [Selection scheduler](contracts/selection-scheduler.md)
 - [Player](contracts/player.md)
 - [Image api](contracts/image-api.md)
+- [Image style](contracts/image-style.md)
 - [Picture vault and style pref](contracts/picture-vault-and-style-pref.md)
 - [Chat api](contracts/chat-api.md)
 - [Quotas and budget](contracts/quotas-and-budget.md)
