@@ -222,7 +222,12 @@ h1.chapter-title:focus-visible {
   text-indent: 1.5em;
 }
 
-.body-text.dropcap > p:first-of-type::first-letter {
+/* Split-paragraph continuations read as one paragraph: no indent. */
+.body-text > p[data-cont] {
+  text-indent: 0;
+}
+
+.body-text.dropcap > p:first-of-type:not([data-cont])::first-letter {
   color: var(--color-accent);
   font-size: 3.3em;
   float: left;

@@ -3,8 +3,12 @@ import {
   buildNavIndex,
   buildReaderModel,
   buildSceneView,
+  chapterTitleLines,
   countWords,
+  estimateLines,
+  FIRST_PAGE_LINES,
   isSceneEntry,
+  LINES_PER_PAGE,
   navReducer,
   nextSceneEntry,
   paginateScene,
@@ -106,10 +110,11 @@ describe("buildReaderModel", () => {
     expect(pages[0]).toMatchObject({ startN: 1, endN: 1, words: 1 });
   });
 
-  it("gives an oversize paragraph its own page and an empty scene one page", () => {
+  it("splits an oversize paragraph across pages and keeps one page for an empty scene", () => {
     const big = paginateScene([{ id: "x", n: 9, text: "one two three four" }], 3);
-    expect(big.length).toBe(1);
-    expect(big[0]?.paragraphs.map((p) => p.id)).toEqual(["x"]);
+    expect(big.length).toBe(2);
+    expect(big.flatMap((p) => p.paragraphs.map((q) => q.n))).toEqual([9, 9]);
+    expect(big.flatMap((p) => p.paragraphs.map((q) => q.text)).join("")).toBe("one two three four");
     expect(paginateScene([], 3)).toEqual([{ paragraphs: [], startN: 0, endN: 0, words: 0 }]);
   });
 
@@ -120,14 +125,75 @@ describe("buildReaderModel", () => {
     expect(pages.flatMap((p) => p.paragraphs.map((q) => q.n))).toEqual(paras.map((p) => p.n));
   });
 
-  it("gives a single over-long paragraph its own page", () => {
+  it("moves a paragraph whole to a fresh page when it fits there", () => {
+    const paras = [
+      ...Array.from({ length: FIRST_PAGE_LINES }, (_, i) => ({ id: `f${i}`, n: i + 1, text: '"Yes."' })),
+      { id: "g", n: FIRST_PAGE_LINES + 1, text: "short one. short two. short three." },
+    ];
+    const pages = paginateScene(paras);
+    expect(pages.length).toBe(2);
+    expect(pages[1]?.paragraphs.map((q) => q.id)).toEqual(["g"]);
+    expect(pages[1]?.paragraphs[0]?.cont).toBeUndefined();
+  });
+
+  it("splits a paragraph longer than a full page, filling the current page", () => {
     const paras = [
       { id: "a", n: 1, text: "short one" },
       { id: "b", n: 2, text: "x".repeat(58 * 14) },
       { id: "c", n: 3, text: "short two" },
     ];
     const pages = paginateScene(paras);
-    expect(pages.map((p) => p.paragraphs.map((q) => q.id))).toEqual([["a"], ["b"], ["c"]]);
+    expect(pages.length).toBe(2);
+    expect(pages[0]?.paragraphs.map((q) => q.id)).toEqual(["a", "b"]);
+    for (const page of pages) {
+      const lines = page.paragraphs.reduce((sum, q) => sum + estimateLines(q.text), 0);
+      expect(lines).toBeLessThanOrEqual(page === pages[0] ? FIRST_PAGE_LINES : LINES_PER_PAGE);
+    }
+    expect(pages.flatMap((p) => p.paragraphs.map((q) => q.text)).join("")).toBe(
+      paras.map((p) => p.text).join(""),
+    );
+  });
+
+  it("splits a c1s1-like 845-char paragraph into 2 pages with no page over budget", () => {
+    const unit = "The cyclone came swiftly across the prairie, howling loud. ";
+    const text = unit.repeat(14);
+    expect(text.length).toBeGreaterThan(FIRST_PAGE_LINES * 58);
+    const pages = paginateScene([{ id: "c1p1", n: 1, text }]);
+    expect(pages.length).toBe(2);
+    pages.forEach((page, i) => {
+      const lines = page.paragraphs.reduce((sum, q) => sum + estimateLines(q.text), 0);
+      expect(lines).toBeLessThanOrEqual(i === 0 ? FIRST_PAGE_LINES : LINES_PER_PAGE);
+    });
+    expect(pages.flatMap((p) => p.paragraphs.map((q) => q.text)).join("")).toBe(text);
+    const frags = pages.flatMap((p) => p.paragraphs);
+    expect(frags.map((f) => f.n)).toEqual(frags.map(() => 1));
+    expect(frags[0]?.cont).toBeUndefined();
+    expect(frags.slice(1).every((f) => f.cont === true)).toBe(true);
+    expect(new Set(frags.map((f) => f.id)).size).toBe(frags.length);
+  });
+
+  it("prefers a sentence boundary, else a word boundary", () => {
+    const unit = "The cyclone came swiftly across the prairie, howling loud. ";
+    const pages = paginateScene([{ id: "s", n: 1, text: unit.repeat(14) }]);
+    const first = pages[0]?.paragraphs[0]?.text ?? "";
+    expect(/[.?!;]["'”’)\]]* $/.test(first)).toBe(true);
+    const words = paginateScene([{ id: "w", n: 2, text: "word ".repeat(200) }]);
+    const wfirst = words[0]?.paragraphs[0]?.text ?? "";
+    expect(wfirst.endsWith(" ")).toBe(true);
+    expect(words.flatMap((p) => p.paragraphs.map((q) => q.text)).join("")).toBe("word ".repeat(200));
+  });
+
+  it("counts a two-line chapter title against every page budget", () => {
+    expect(chapterTitleLines("The Cyclone")).toBe(1);
+    expect(chapterTitleLines("The Discovery of Oz, the Terrible")).toBe(2);
+    const paras = Array.from({ length: FIRST_PAGE_LINES }, (_, i) => ({ id: `t${i}`, n: i + 1, text: '"Yes."' }));
+    expect(paginateScene(paras).length).toBe(1);
+    const wrapped = paginateScene(paras, 250, "The Discovery of Oz, the Terrible");
+    expect(wrapped.length).toBe(2);
+    for (const page of wrapped) {
+      const lines = page.paragraphs.reduce((sum, q) => sum + estimateLines(q.text), 0);
+      expect(lines).toBeLessThanOrEqual(FIRST_PAGE_LINES - 2);
+    }
   });
 
   it("paginates deterministically", () => {

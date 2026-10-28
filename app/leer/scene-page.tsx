@@ -194,12 +194,13 @@ export function ScenePage({
           className={`body-text${page === 0 ? " dropcap" : ""}`}
           ref={pic.viewRef}
         >
-          {sub?.paragraphs.map((p) => (
+          {sub?.paragraphs.map((p, i, arr) => (
             <Fragment key={p.id}>
-              <p id={p.id} data-n={p.n}>
+              <p id={p.id} data-n={p.n} data-cont={p.cont ? true : undefined}>
                 {p.text}
               </p>
-              {(figsByN.get(p.n) ?? []).map((fig) => (
+              {/* A figure for n lands after its last visible fragment. */}
+              {(arr[i + 1]?.n !== p.n ? (figsByN.get(p.n) ?? []) : []).map((fig) => (
                 <InlineFigureView
                   key={fig.id}
                   figure={fig}

@@ -42,7 +42,10 @@ and neighbor ids. Sub-pages come from `paginateScene`, which closes a
 page when the next paragraph would pass 250 words or the line budget
 (`FIRST_PAGE_LINES` 12 on page one, `LINES_PER_PAGE` 13 after, each
 paragraph costing `ceil(chars / CHARS_PER_LINE)` lines with
-`CHARS_PER_LINE` 58), split at paragraph boundaries. The pager moves sub-pages in client state and
+`CHARS_PER_LINE` 58). Paragraphs that outlast a page split at a
+sentence boundary (word fallback); fragments share `n`, later ones
+carry `cont`, and rejoin exactly. A two-line chapter title
+(`TITLE_CHARS_PER_LINE` 26) costs every page 2 lines. The pager moves sub-pages in client state and
 pushes routes with `router.push`, never `<Link>`; going back lands on
 the previous scene's last sub-page through a one-shot client flag, never
 a URL param, so prerendered pages stay static. The client never
