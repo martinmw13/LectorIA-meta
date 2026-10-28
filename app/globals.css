@@ -10,6 +10,7 @@
 @import "./styles/skin-engraving.css";
 @import "./styles/skin-watercolor.css";
 @import "./styles/skin-ink.css";
+@import "./styles/skin-pencil.css";
 
 * {
   box-sizing: border-box;
