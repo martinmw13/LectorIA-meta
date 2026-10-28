@@ -32,7 +32,7 @@ export function ByokStep({
 
   return (
     <div>
-      <h3 className="home-section-title">Bring your own key to read this book with its soundtrack</h3>
+      <h3 className="home-section-title">Bring your own key!</h3>
       <p className="home-muted">{REASONS[reason](freePages)}</p>
       <div className="home-radio-row" role="radiogroup" aria-label="Key provider">
         <label className="home-radio">
