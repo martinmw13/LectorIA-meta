@@ -11,6 +11,8 @@ export interface LibraryBook {
   gutenbergId: number;
   status: "ready";
   favorite?: boolean;
+  cover: string;
+  coverAlt: string;
 }
 
 function isBook(value: unknown): value is LibraryBook {
@@ -24,7 +26,11 @@ function isBook(value: unknown): value is LibraryBook {
     typeof b.words === "number" &&
     typeof b.gutenbergId === "number" &&
     b.status === "ready" &&
-    (b.favorite === undefined || typeof b.favorite === "boolean")
+    (b.favorite === undefined || typeof b.favorite === "boolean") &&
+    typeof b.cover === "string" &&
+    b.cover.startsWith("/art/") &&
+    typeof b.coverAlt === "string" &&
+    b.coverAlt.length > 0
   );
 }
 

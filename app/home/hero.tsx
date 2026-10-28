@@ -11,8 +11,8 @@ export function Hero() {
       <section className="home-hero" aria-label="Featured book">
         <img
           className="home-hero-img"
-          src="/art/panels/cyclone-house.jpg"
-          alt="Dorothy carried aloft in the farmhouse inside the cyclone"
+          src={favorite.cover}
+          alt={favorite.coverAlt}
           width={700}
           height={700}
         />
