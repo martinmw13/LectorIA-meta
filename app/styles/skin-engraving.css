@@ -471,7 +471,8 @@ html[data-skin="engraving"] :is(.sticker, .chopin):active img {
     transform: none;
   }
 
-  html[data-skin="engraving"] :is(.stickers[data-art="hero"] .sticker, .player .sticker-wrap .chopin)::before {
+  html[data-skin="engraving"] :is(.stickers[data-art="hero"] .sticker, .player .sticker-wrap .chopin)::before,
+  html[data-skin="engraving"] :is(.stickers[data-art="hero"] .sticker, .player .sticker-wrap .chopin):hover::before {
     animation: none;
     transition: none;
   }

@@ -410,10 +410,6 @@ html[data-skin="watercolor"] .read-aloud-label {
   html[data-skin="watercolor"] :is(.sticker, .chopin):hover img {
     animation: wc-bleed 600ms cubic-bezier(0.25, 0.8, 0.25, 1) both;
   }
-
-  html[data-skin="watercolor"] :is(.sticker, .chopin)[data-anim="1"] img {
-    animation: wc-wet-in 560ms cubic-bezier(0.25, 0.8, 0.25, 1);
-  }
 }
 
 @keyframes wc-bleed {
@@ -454,7 +450,9 @@ html[data-skin="watercolor"] :is(.sticker, .chopin)[data-anim="1"] img {
   animation: wc-wet-in 560ms cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
+/* A press dabs the wash down; it also stops the hover bleed so it shows. */
 html[data-skin="watercolor"] :is(.sticker, .chopin):active img {
+  animation: none;
   transform: scale(0.97);
 }
 
