@@ -3,7 +3,7 @@
 // image is ready, so the drawing always stops wherever it is.
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { PictureSkin } from "./picture-skin";
 import { DRAW_NOTE, DRAW_STATUS, stillStrokes, strokesForSkin } from "./picture-draw-paths";
 
@@ -91,24 +91,49 @@ interface FlatStroke {
   blurred?: boolean;
 }
 
-export function PictureDraw({ skin }: { skin: PictureSkin }) {
-  const reduced = useReducedMotion();
+export function usePictureLoaded(url: string) {
+  // True once the ready image has actually loaded. Resets per url; a
+  // cached image reports complete on mount, otherwise onLoad fires.
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    setLoaded(false);
+  }, [url]);
+  const imgRef = useCallback((el: HTMLImageElement | null) => {
+    if (el && el.complete && el.naturalWidth > 0) setLoaded(true);
+  }, []);
+  const markLoaded = useCallback(() => setLoaded(true), []);
+  return { loaded, imgRef, markLoaded };
+}
+
+export function PictureDraw({ skin, frozen }: { skin: PictureSkin; frozen?: boolean }) {
+  const reducedMotion = useReducedMotion();
+  // Frozen (or reduced motion) renders the static still: no timers, no
+  // rAF, so the drawing stops the instant the card turns ready.
+  const stillMode = frozen || reducedMotion;
   const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
   const grainId = `pdg${uid}`;
   const softId = `pds${uid}`;
   const toolRef = useRef<SVGGElement | null>(null);
   const pathRefs = useRef<(SVGPathElement | null)[]>([]);
-  // Four passes: outline then shading depth. Loops until unmounted.
-  const layers = useMemo<FlatStroke[][]>(
-    () => [0, 1, 2, 3].map((l) => strokesForSkin(skin, l)),
-    [skin],
+  // Passes accumulate: outline first, then shading depth on top. When
+  // the base passes run out, further light layers keep appending, so
+  // the tool keeps working but nothing already drawn is ever wiped.
+  const [strokes, setStrokes] = useState<FlatStroke[]>(() =>
+    [0, 1, 2, 3].flatMap((l) => strokesForSkin(skin, l)),
   );
+  const nextLayer = useRef(4);
+  useEffect(() => {
+    nextLayer.current = 4;
+    setStrokes([0, 1, 2, 3].flatMap((l) => strokesForSkin(skin, l)));
+  }, [skin]);
+  const strokesRef = useRef(strokes);
+  strokesRef.current = strokes;
   const stillAll = useMemo(() => stillStrokes(skin), [skin]);
-  const still = reduced ? stillAll : null;
-  const flat = useMemo(() => layers.flat(), [layers]);
+  const still = stillMode ? stillAll : null;
+  const flat = still ?? strokes;
 
   useEffect(() => {
-    if (reduced) return;
+    if (stillMode) return;
     const paths = pathRefs.current;
     const tool = toolRef.current;
     let dead = false;
@@ -131,69 +156,77 @@ export function PictureDraw({ skin }: { skin: PictureSkin }) {
       }
     };
 
-    const runPass = () => {
+    // Draw every stroke once, in order, and keep it: outline first,
+    // then shading layers on top. Past the base passes, further light
+    // layers append so the tool keeps working without ever wiping.
+    let i = 0;
+    const stepStroke = () => {
       if (dead) return;
-      // Restart the loop from the first pass shape.
-      for (const p of paths) {
-        if (!p) continue;
-        p.style.strokeDashoffset = "1";
-        p.setAttribute("opacity", "0");
-      }
-      let i = 0;
-      const stepStroke = () => {
-        if (dead) return;
-        if (i >= paths.length) {
-          frame = requestAnimationFrame(() => runPass());
-          return;
-        }
-        const el = paths[i];
-        const spec = flat[i];
-        i += 1;
-        if (!el || !spec) {
-          stepStroke();
-          return;
-        }
-        const dur = Math.min(1400, Math.max(150, spec.d.length * 3));
-        const start = pointAt(el, 0);
-        const t0 = performance.now();
-        const TRAVEL = 100;
-        const tick = (now: number) => {
+      if (i >= strokesRef.current.length) {
+        const layer = strokesForSkin(skin, nextLayer.current);
+        nextLayer.current += 1;
+        setStrokes((prev) => [...prev, ...layer]);
+        let waits = 0;
+        const poll = () => {
           if (dead) return;
-          if (now - t0 < TRAVEL) {
-            if (start) {
-              const k = (now - t0) / TRAVEL;
-              place(pos.x + (start.x - pos.x) * k, pos.y + (start.y - pos.y) * k);
-            }
-            frame = requestAnimationFrame(tick);
-            return;
-          }
-          const k = Math.min(1, (now - t0 - TRAVEL) / dur);
-          if (spec.fill) {
-            el.setAttribute("opacity", String(spec.opacity * k));
-            if (k < 1) place(pos.x + Math.sin(k * 9) * 3, pos.y + Math.cos(k * 7) * 2);
-          } else {
-            el.setAttribute("opacity", String(spec.opacity));
-            el.style.strokeDashoffset = String(1 - k);
-            const pt = pointAt(el, k);
-            if (pt) place(pt.x, pt.y);
-          }
-          if (k < 1) frame = requestAnimationFrame(tick);
-          else stepStroke();
+          if ((pathRefs.current.length > i && pathRefs.current[i]) || waits++ > 120) stepStroke();
+          else frame = requestAnimationFrame(poll);
         };
-        frame = requestAnimationFrame(tick);
-      };
+        frame = requestAnimationFrame(poll);
+        return;
+      }
+      const el = paths[i];
+      const spec = strokesRef.current[i];
+      i += 1;
+    if (!el || !spec) {
       stepStroke();
+      return;
+    }
+    const dur = Math.min(1400, Math.max(150, spec.d.length * 3));
+    const start = pointAt(el, 0);
+    const t0 = performance.now();
+    const TRAVEL = 100;
+    const tick = (now: number) => {
+      if (dead) return;
+      if (now - t0 < TRAVEL) {
+        if (start) {
+          const k = (now - t0) / TRAVEL;
+          place(pos.x + (start.x - pos.x) * k, pos.y + (start.y - pos.y) * k);
+        }
+        frame = requestAnimationFrame(tick);
+        return;
+      }
+      const k = Math.min(1, (now - t0 - TRAVEL) / dur);
+      if (spec.fill) {
+        el.setAttribute("opacity", String(spec.opacity * k));
+        if (k < 1) place(pos.x + Math.sin(k * 9) * 3, pos.y + Math.cos(k * 7) * 2);
+      } else {
+        el.setAttribute("opacity", String(spec.opacity));
+        el.style.strokeDashoffset = String(1 - k);
+        const pt = pointAt(el, k);
+        if (pt) place(pt.x, pt.y);
+      }
+      if (k < 1) frame = requestAnimationFrame(tick);
+      else stepStroke();
     };
-    frame = requestAnimationFrame(() => runPass());
-    return () => {
-      dead = true;
-      cancelAnimationFrame(frame);
-    };
-  }, [flat, reduced]);
+    frame = requestAnimationFrame(tick);
+  };
+  stepStroke();
+  return () => {
+    dead = true;
+    cancelAnimationFrame(frame);
+  };
+}, [stillMode, skin]);
 
   return (
     <>
-      <svg className="picdraw-art" viewBox="0 0 300 380" role="img" aria-label="Illustration being drawn">
+      <svg
+        className="picdraw-art"
+        viewBox="0 0 300 380"
+        preserveAspectRatio="xMidYMid slice"
+        role="img"
+        aria-label="Illustration being drawn"
+      >
         <defs>
           <filter id={grainId} x="0" y="0" width="1" height="1">
             <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="3" />
@@ -205,7 +238,7 @@ export function PictureDraw({ skin }: { skin: PictureSkin }) {
         </defs>
         <Paper skin={skin} grainId={grainId} />
         <g>
-          {(still ?? flat).map((s, i) => (
+          {flat.map((s, i) => (
             <path
               key={i}
               ref={still ? undefined : (el) => {

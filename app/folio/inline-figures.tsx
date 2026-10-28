@@ -4,7 +4,7 @@
 
 import { truncateCaption } from "./helpers";
 import { PICTURE_COPY, PictureIcon } from "./picture-copy";
-import { PictureDraw } from "./picture-draw";
+import { PictureDraw, usePictureLoaded } from "./picture-draw";
 import { usePictureSkin } from "./picture-skin";
 import type { InlineFigure } from "./use-pictures";
 
@@ -46,6 +46,9 @@ export function InlineFigureView({
   refCb: (el: HTMLElement | null) => void;
 }) {
   const skin = usePictureSkin();
+  const { loaded, imgRef, markLoaded } = usePictureLoaded(
+    figure.phase === "ready" && figure.url ? figure.url : "",
+  );
   if (figure.phase === "loading") {
     return (
       <figure className="genfig" data-fig={figure.id} ref={refCb as React.Ref<HTMLElement>}>
@@ -72,16 +75,26 @@ export function InlineFigureView({
   const captioned = `\u201C${truncateCaption(figure.quote)}\u201D`;
   return (
     <figure className="genfig" data-fig={figure.id} ref={refCb as React.Ref<HTMLElement>}>
-      <img
-        className={`rv-${skin}`}
-        src={url}
-        alt={captioned}
-        tabIndex={0}
+      <div className="genload">
+        {loaded ? null : (
+          <div className="pic-under">
+            <PictureDraw skin={skin} frozen />
+          </div>
+        )}
+        <img
+          ref={imgRef}
+          onLoad={markLoaded}
+          onError={markLoaded}
+          className={loaded ? `rv-${skin} gen-ready` : "gen-ready pic-waiting"}
+          src={url}
+          alt={captioned}
+          tabIndex={0}
         onClick={(e) => onOpen(url, captioned, e.currentTarget)}
         onKeyDown={(e) => {
           if (e.key === "Enter") onOpen(url, captioned, e.currentTarget);
         }}
-      />
+        />
+      </div>
       <figcaption>
         <span className="grow">{captioned}</span>
         <span className="gcredit">{figure.credit}</span>

@@ -258,23 +258,19 @@
   margin: 18px 0 24px;
 }
 
-/* Paired picture buttons: two frameless choices, no pill frame. */
+/* Paired picture buttons: two frameless choices stacked so the pair
+   fits the pane at every width. No divider line when stacked. */
 .pic-pair {
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   white-space: nowrap;
   max-width: calc(100% - 24px);
-}
-
-.pic-pair .pic-btn + .pic-btn {
-  border-left: 1px solid var(--color-border);
-  padding-left: 12px;
-  margin-left: 6px;
 }
 
 .pane-chapter {
