@@ -185,6 +185,7 @@ export function usePictures({
       const endN = pickEndN(entries, paraOf(sel.anchorNode)?.id ?? null, paraOf(sel.focusNode)?.id ?? null);
       if (startN === null || endN === null) return;
       setPopover(null);
+      sel.removeAllRanges();
       const id = `f${figureSeq++}`;
       const credit = styleCredit(requestStyleFields(pref));
       storeFigures((prev) => [
