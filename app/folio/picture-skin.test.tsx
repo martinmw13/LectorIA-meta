@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 // The skin owner (app/skin.ts) holds the live skin; picture-skin only
-// maps it to a drawing variant. Unknown ids fall back to engraving.
+// maps it to a drawing variant: every skin draws its own, unknown ids
+// fall back to engraving.
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, expect, test } from "vitest";
-import { DEFAULT_SKIN, setSkin } from "../skin";
+import { DEFAULT_SKIN, SKINS, setSkin } from "../skin";
 import { pictureSkin, pictureVariant, usePictureSkin } from "./picture-skin";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -25,13 +26,8 @@ afterEach(() => {
   document.body.innerHTML = "";
 });
 
-test("every known skin id maps to its drawing variant", () => {
-  expect(pictureVariant("engraving")).toBe("engraving");
-  expect(pictureVariant("watercolor")).toBe("watercolor");
-  expect(pictureVariant("ink")).toBe("ink");
-  expect(pictureVariant("comic")).toBe("ink");
-  expect(pictureVariant("chihiro")).toBe("watercolor");
-  expect(pictureVariant("pencil")).toBe("engraving");
+test("every known skin id draws its own variant", () => {
+  for (const skin of SKINS) expect(pictureVariant(skin)).toBe(skin);
 });
 
 test("unknown, empty and missing ids fall back to engraving", () => {
@@ -40,12 +36,12 @@ test("unknown, empty and missing ids fall back to engraving", () => {
   }
 });
 
-test("pictureSkin reads the owner, not data-skin or ?skin= itself", () => {
+test("pictureSkin reads the owner, not ?skin= itself", () => {
   expect(pictureSkin()).toBe("engraving");
   document.documentElement.dataset.skin = "comic";
-  expect(pictureSkin()).toBe("ink");
+  expect(pictureSkin()).toBe("comic");
   window.history.replaceState({}, "", "/?skin=watercolor");
-  expect(pictureSkin()).toBe("ink");
+  expect(pictureSkin()).toBe("comic");
 });
 
 test("usePictureSkin follows the owner without a remount", () => {
