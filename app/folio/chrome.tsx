@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Icon } from "../icons";
 import { StyleStamp } from "../style-stamp";
 import { clampSplitWidth, SPLIT_MIN_PX } from "./helpers";
+import { WarmthControl } from "./warmth-control";
 
 export { THEME_KEY } from "../theme";
 export const SPLIT_KEY = "lectoria.split";
@@ -48,6 +49,7 @@ export function TopLine({
           </select>
         </span>
       </div>
+      <WarmthControl />
       <button
         type="button"
         className="theme-btn"

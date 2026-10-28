@@ -11,6 +11,7 @@
 @import "./styles/skin-watercolor.css";
 @import "./styles/skin-ink.css";
 @import "./styles/skin-pencil.css";
+@import "./styles/warmth.css";
 
 * {
   box-sizing: border-box;

@@ -1,0 +1,58 @@
+/* Page warmth (--warmth, 0..1, set on <html>). A fixed amber layer sits
+   at z-index -1: above the page canvas, below every element, so text,
+   illustrations and music art are never tinted. Loaded after the skins.
+   No transition: the paper changes only when the reader moves the slider. */
+
+html {
+  --warmth: 0;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: #ffb347;
+  mix-blend-mode: multiply;
+  opacity: calc(var(--warmth) * 0.16);
+}
+
+/* On dark paper multiply would vanish, so a faint amber lift instead. */
+html[data-theme="dark"] body::before {
+  mix-blend-mode: normal;
+  opacity: calc(var(--warmth) * 0.07);
+}
+
+/* Pencil lays an opaque sheet over the paper; warm the sheet too. */
+html[data-skin="pencil"][data-theme="light"] .read-col {
+  background: color-mix(in srgb, #fdfdfb, #ffb347 calc(var(--warmth) * 12%));
+}
+
+.warmth {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  flex: none;
+}
+
+.warmth svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+}
+
+.warmth input {
+  width: 64px;
+  margin: 0;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
+.warmth input:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
