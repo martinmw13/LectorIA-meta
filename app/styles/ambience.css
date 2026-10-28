@@ -1,0 +1,118 @@
+/* Rain ambience button next to the music volume. Level colors live here. */
+
+:root {
+  --rain-drizzle: #5ab8f0;
+  --rain-moderate: #f2c230;
+  --rain-storm: #e5484d;
+}
+
+.player .skip.rain {
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+
+.player .skip.rain svg {
+  transition: opacity 200ms ease;
+}
+
+.player .skip.rain .rain-cloud {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.25;
+  transition: fill 200ms ease, opacity 200ms ease;
+}
+
+.player .skip.rain[data-level="off"] svg {
+  opacity: 0.4;
+}
+
+.player .skip.rain[data-level="drizzle"] .rain-cloud {
+  fill: #d9dee3;
+}
+
+.player .skip.rain[data-level="moderate"] .rain-cloud,
+.player .skip.rain[data-level="storm"] .rain-cloud {
+  fill: #9aa4ae;
+}
+
+.player .skip.rain[data-level="drizzle"] {
+  border-color: color-mix(in srgb, var(--rain-drizzle) 60%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rain-drizzle) 35%, transparent);
+}
+
+.player .skip.rain[data-level="moderate"] {
+  border-color: color-mix(in srgb, var(--rain-moderate) 60%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rain-moderate) 40%, transparent);
+}
+
+.player .skip.rain[data-level="storm"] {
+  border-color: color-mix(in srgb, var(--rain-storm) 60%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rain-storm) 38%, transparent);
+}
+
+.player .skip.rain .rain-drop {
+  stroke: currentColor;
+  stroke-width: 1.25;
+  stroke-linecap: round;
+  opacity: 0.9;
+  animation: rain-drop-fall 1.4s linear infinite;
+}
+
+.player .skip.rain .rain-drop:nth-of-type(3n + 2) {
+  animation-delay: 0.45s;
+}
+
+.player .skip.rain .rain-drop:nth-of-type(3n) {
+  animation-delay: 0.9s;
+}
+
+@keyframes rain-drop-fall {
+  from {
+    transform: translateY(0);
+    opacity: 0.9;
+  }
+  70% {
+    opacity: 0.9;
+  }
+  to {
+    transform: translateY(3px);
+    opacity: 0;
+  }
+}
+
+.player .skip.rain .rain-bolt {
+  opacity: 0.85;
+  animation: rain-bolt-flash 5s linear infinite;
+}
+
+@keyframes rain-bolt-flash {
+  0%,
+  92%,
+  95%,
+  100% {
+    opacity: 0.85;
+    filter: none;
+  }
+  93.5% {
+    opacity: 1;
+    filter: brightness(1.5);
+  }
+}
+
+.player .rain-volume {
+  width: 48px;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+  flex: none;
+}
+
+.player .rain-volume:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .player .skip.rain .rain-drop,
+  .player .skip.rain .rain-bolt {
+    animation: none;
+  }
+}
