@@ -35,5 +35,4 @@ Building period: 2026-10-27 to 2026-11-04 23:00, America/Buenos_Aires. Each task
 | 2026-10-28 | 38: heading focus | Scene heading never shows a focus ring, opt-in wheel/keyboard scroll e2e | Muse Code (Contributor) |
 | 2026-10-28 | 31: skin seam | data-skin attribute with a default token layer and a named icon registry, zero visual change | Muse Code (Contributor) |
 | 2026-10-28 | 40: chapter narration | Kokoro af_heart chapter mp3s with sentence timings on Modal, content-keyed cache, pipeline step, server adapters, contract | Muse Code (Contributor) |
-| 2026-10-28 | 46: rain skins | rain button in engraving, watercolor and ink looks keyed by data-skin through the icon registry, temporary ?skin= param | Muse Code (Contributor) |
 | 2026-10-28 | 46: rain skins | rain button in engraving, watercolor and ink looks keyed by data-skin through the icon registry, temporary ?skin= param; skin owner module with persisted skin, five skins, rain art fallback | Muse Code (Contributor) |
