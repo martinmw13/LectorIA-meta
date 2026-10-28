@@ -38,3 +38,4 @@ Building period: 2026-10-27 to 2026-11-04 23:00, America/Buenos_Aires. Each task
 | 2026-10-28 | 40: chapter narration | Kokoro af_heart chapter mp3s with sentence timings on Modal, content-keyed cache, pipeline step, server adapters, contract | Muse Code (Contributor) |
 | 2026-10-28 | 46: rain skins | rain button in engraving, watercolor and ink looks keyed by data-skin through the icon registry, temporary ?skin= param; skin owner module with persisted skin, five skins, rain art fallback | Muse Code (Contributor) |
 | 2026-10-28 | 49: image style skin | Scene page derives the image style pref from the live skin via useSkin instead of DEFAULT_SKIN, with a source-pinning plus skin-owner test | Muse Code (Contributor) |
+| 2026-10-28 | Muse attribution | README "Built with Meta Muse" section and badge, docs/MUSE.md generated from git history, Muse Code label on PRs with Muse commits | Grok Bot (docs and CI) |
