@@ -17,20 +17,24 @@
 - `app/folio/picture-draw.tsx`: `PictureDraw` client component.
   Paper SVG per skin, strokes revealed one by one with `pathLength=1`
   dash animation and a small tool glyph riding each stroke tip,
-  looping layers until unmounted. The parent unmounts it the moment
-  the image is ready, which is the `Run.cut` behaviour: the drawing
-  stops wherever it is. Reduced motion (or SSR) renders the static
-  still with the tool resting, no timers.
+  passes accumulate and never wipe: outline first, then shading on
+  top, appending further light layers past the base four. `frozen`
+  renders the static still with no timers, so the drawing stops the
+  instant the card turns ready. `usePictureLoaded(url)` resolves on
+  `complete`/`onLoad` (`onError` too, as today). Reduced motion (or
+  SSR) renders the static still with the tool resting, no timers.
 - `app/folio/picture-button.tsx`: frameless `PictureButton`: mini
   skin art (from the prototype's `BTN_ART`) plus accent label.
   Motion only on `:hover` (glint/blob/wiggle) and `:active` press.
 - `app/folio/image-pane.tsx`, `app/folio/inline-figures.tsx`: the
   `loading` phase renders `<PictureDraw>` inside the existing slot
-  with `role="status"`; the `ready` phase puts a short skin reveal
-  class (<= 900 ms, one-shot) on the image. Buttons use
-  `PictureButton`; the pair loses its pill frame. `bare` covers
-  still show no button. `PICTURE_COPY.loading` removed (no other
-  users); retry/remove copy unchanged.
+  with `role="status"`; the `ready` phase keeps a frozen
+  `<PictureDraw>` under the image until it loads, then plays the
+  short skin reveal (<= 900 ms, one-shot) and removes the drawing.
+  Buttons use `PictureButton`; the pair stacks vertically with no
+  divider so it fits the narrow pane. `bare` covers still show no
+  button. `PICTURE_COPY.loading` removed (no other users);
+  retry/remove copy unchanged.
 - `app/styles/pictures.css`, `app/styles/chapters.css`: drawing
   slot, reveal keyframes, frameless button styles; the infinite
   `pane-pulse` loading animation is gone. All new motion is off
