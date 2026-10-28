@@ -42,15 +42,19 @@ export interface JudgeVerdict {
   reason: string;
 }
 
+export type CleanProvider = "modal" | "meta";
+
 export interface JudgeResult {
   sections: JudgeVerdict[];
   headCut: number;
   tailCut: number;
+  provider: CleanProvider;
   model: string;
   promptTokens: number;
   completionTokens: number;
   cachedTokens: number;
   costUsd: number;
+  fallbackUsed: boolean;
 }
 
 export type Judge = (input: JudgeInput) => Promise<JudgeResult | null>;
@@ -74,11 +78,13 @@ export interface RemovedItem {
 export interface CleanReport {
   source: "epub" | "gutenberg-txt";
   llm: {
+    provider?: CleanProvider;
     model: string;
     promptTokens: number;
     completionTokens: number;
     cachedTokens: number;
     costUsd: number;
+    fallbackUsed?: boolean;
     error?: string;
   } | null;
   kept: { title: string; paragraphs: number; sectionIds: string[] }[];

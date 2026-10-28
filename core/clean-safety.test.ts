@@ -26,11 +26,13 @@ function fakeJudge(verdictFor: (id: string) => JudgeResult["sections"][number]):
     sections: input.sections.map((s) => verdictFor(s.id)),
     headCut: 0,
     tailCut: 0,
+    provider: "meta" as const,
     model: "fake",
     promptTokens: 1,
     completionTokens: 1,
     cachedTokens: 0,
     costUsd: 0,
+    fallbackUsed: false,
   });
 }
 
@@ -49,11 +51,13 @@ describe("judge safety", () => {
       sections: [{ id: "ghost", verdict: "non_content", kind: "other", reason: "no such section" }],
       headCut: 0,
       tailCut: 0,
+      provider: "meta",
       model: "fake",
       promptTokens: 1,
       completionTokens: 1,
       cachedTokens: 0,
       costUsd: 0,
+      fallbackUsed: false,
     });
     const { chapters, report } = await cleanSections("B", [tale("a", 10)], judge);
     expect(chapters.map((c) => c.title)).toEqual(["A Tale"]);
@@ -101,11 +105,13 @@ describe("judge safety", () => {
       sections: input.sections.map((s) => content(s.id)),
       headCut: 99,
       tailCut: 99,
+      provider: "meta",
       model: "fake",
       promptTokens: 1,
       completionTokens: 1,
       cachedTokens: 0,
       costUsd: 0,
+      fallbackUsed: false,
     });
     const first = section("first", ["First Tale"], [3, 3, 3, 3, 3, 3, 3, 3], "T");
     const last = section("last", ["Last Tale"], [4, 4, 4, 4, 4, 4, 4, 4, 4, 4], "T");

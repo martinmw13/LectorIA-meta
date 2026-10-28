@@ -29,17 +29,18 @@ interface JudgeVerdict { id: string;
   verdict: "content" | "non_content" | "uncertain";
   kind: string; reason: string; } // reason at most 120 chars, truncated in the report
 interface JudgeResult { sections: JudgeVerdict[];
-  headCut: number; tailCut: number;
+  headCut: number; tailCut: number; provider: "modal" | "meta";
   model: string; promptTokens: number; completionTokens: number;
-  cachedTokens: number; costUsd: number; }
+  cachedTokens: number; costUsd: number; fallbackUsed: boolean; }
 type Judge = (input: JudgeInput) => Promise<JudgeResult | null>;
 interface CleanChapter { title: string; paragraphs: string[];
   sectionIds: string[]; }
 interface RemovedItem { sectionId: string; blockRange: [number, number] | null;
   kind: string; reason: string; rule: string; words: number; preview: string; }
 interface CleanReport { source: "epub" | "gutenberg-txt"; llm: {
+  provider?: "modal" | "meta";
   model: string; promptTokens: number; completionTokens: number;
-  costUsd: number; } | null;
+  costUsd: number; fallbackUsed?: boolean; } | null;
   kept: { title: string; paragraphs: number; sectionIds: string[]; }[];
   removed: RemovedItem[]; flagged: { sectionId: string; reason: string; }[];
   merged: { from: string; into: string; reason: string; }[]; }
@@ -62,7 +63,7 @@ Each removal records rule id and reason. Later rules see only kept sections.
 7. `ad-body`: drop bodies where at least 30 percent of blocks match an ad token: `6s.`, `Crown 8vo`, `In One Volume`, `price`, a press quote name followed by an em dash and an open quote, or a publisher address line (city list with `·`, `LONDON`, `MACMILLAN`). The `net` token counts only as `\bnet\b` right after a price (`6s. net`, `3s. 6d. net`) or as a whole block, never as a bare word in prose. Count matches over all blocks.
 8. `continuation`: merge a section with no heading block, at most 30 words, and `docTitle` equal to the previous kept section's `docTitle` into that section; merged blocks append to that section. Record in `merged`. Runs before `empty` and the keyword rules, so a 1-block "Holmesly." file merges instead of going ambiguous. Pan's Garden "Sussex." plus the printer line lands in the last story, and the printer line is then cut by rule 10.
 9. `chapter-heading`: mark sections with a chapter heading as confident content. Regex: `^(chapter|stave|book|part)\s+[ivxlc0-9]+[.:]?\s*` or `^stave\s+[ivxlc]+` (case insensitive), or a bare Roman numeral heading (`I`, `II`) plus a nav label containing `:`. Confident content skips the LLM.
-10. `tail-cut`: cut after the last block matching `^(THE END|FINIS)\.?$` in any kept section, and drop every later section, unless a later section carries a confident chapter heading (then later sections stay). Drop trailing printer lines only, in every kept section: `^Printed (by|in)\b`, `& Sons, Limited`, `R\. & R\. Clark`, `Limited, (London|Edinburgh)`. Short place sign-offs (`Sussex.`, `Holmesly.`) belong to the story and stay.
+10. `tail-cut`: cut from the last block matching `^(THE END|FINIS)\.?$` in any kept section, the mark included, and drop every later section, unless a later section carries a confident chapter heading (then later sections stay). Drop trailing printer lines only, in every kept section: `^Printed (by|in)\b`, `& Sons, Limited`, `R\. & R\. Clark`, `Limited, (London|Edinburgh)`. Short place sign-offs (`Sussex.`, `Holmesly.`) belong to the story and stay.
 11. `block-drop`: inside content, drop heading blocks, `[Illustration…]` and image placeholder blocks (`^(image|img|illus|illustration|fig)[ _-]?\d+[a-z]?$`, case insensitive), blocks matching `^\[Pg \d+\]$`, and a repeated chapter title in the first two body blocks after the heading. Oz chapters start with prose, so the duplicate-title drop never fires there.
 
 Keyword rules 5 to 7 never fire on confident content sections. Anything neither dropped nor confident is ambiguous.
@@ -73,7 +74,7 @@ One call per book, only over ambiguous sections. Skip the call when none exist. 
 
 Safety, applied after the call returns: `uncertain` and unknown ids stay kept and flagged. A `non_content` verdict on a section of 2000+ words that sits between two kept content sections stays kept and flagged; at the front or back edge the verdict applies. Clamp `headCut`/`tailCut` to the window length (6/8); a cut range that only repeats deterministic removals is skipped and never reported twice. On null or schema failure, keep the deterministic result and record `llm.error: "failed"` in the report with no raw error text.
 
-Model: `CLEAN_MODEL ?? "muse-spark-1.3-contributor"` through `createMetaClient` with `META_API_KEY`. `JudgeResult` carries `cachedTokens`; the report's `llm` block includes it and `costUsd = metaCostUsd`.
+Providers: Modal first, Meta fallback. A shared `createCleanJudgeFromEnv` factory (used by both `build.ts` ingest and `clean-epub`) reads env only: Modal is used when `MODAL_CLEAN_URL` (full chat-completions URL, not secret) and `MODAL_CLEAN_TOKEN` are both set, model `MODAL_CLEAN_MODEL ?? "meta-models/Muse-Spark-Open-816B-A42B"`; Meta is used when `META_API_KEY` is set, model `CLEAN_MODEL ?? "muse-spark-1.3-contributor"`. Both set means Modal primary with Meta fallback; none set throws `no cleaning LLM configured`. `--no-llm` never reads any of these. Shared Endpoints bill per token with no idle cost, accept the same OpenAI-compatible body (`json_schema` strict, `reasoning_effort` "low"), and won the provider eval on this task (103/103 sections, about 2x faster, cents per book). Create one with `modal endpoint create --shared --name lectoria-clean --model meta-models/Muse-Spark-Open-816B-A42B` (shared = per-token, scales to zero). `JudgeResult` carries `provider` ("modal" | "meta"), `model`, tokens, `costUsd = costUsdFor(model, usage)` (Muse Spark Open prices: 1.25/0.15/4.25 USD per 1M prompt/cached/completion; Meta prices unchanged), and `fallbackUsed`. The report's `llm` block records the same fields; on total failure it holds `model: "unknown"` plus `error: "failed"` with no provider and no raw error text. A third provider (Baseten, OpenAI-compatible `https://inference.baseten.co/v1`) would be one more `url` plus model entry, not built.
 
 ## Title derivation
 
@@ -87,7 +88,7 @@ First heading block that is not the book title (case insensitive compare). Strip
 
 `cleanSections` in `core/clean.ts` is the single core entry. The EPUB reader returns `RawSection[]` with the same block shape as fixtures: leaf blocks only, whitespace collapsed, `<br>` as one space, `pg-*` and license elements removed first. Nav labels keep the first entry per file in document order, since several entries can point at one file. It reuses the task 20 guards: MAX_EPUB_BYTES 20 MB, 8 MB per entry, 60 MB inflated, DRM and zip bomb `EpubError` codes, fflate 0.8.3, injected DOM parser.
 
-Txt fallback (`cleanGutenbergText`) wraps `stripGutenberg` plus `splitChapters` and returns the same `{ chapters, report }` shape with zero LLM calls and byte identical paragraphs to today (`llm: null`; the stripped header/footer and the front matter before the first chapter heading are recorded as removed under `pg-markers` and `before-first-chapter`). `runIngest` picks EPUB when the book config sets `format: "epub"`, else txt. Oz has no such flag, so Oz never changes. Paragraph text in chapters is the block text as given (no rewrapping).
+Txt fallback (`cleanGutenbergText`) wraps `stripGutenberg` plus `splitChapters` and returns the same `{ chapters, report }` shape with zero LLM calls and byte identical paragraphs to today (`llm: null`; the stripped header/footer and the front matter before the first chapter heading are recorded as removed under `pg-markers` and `before-first-chapter`). `runIngest` picks EPUB when the book config sets `format: "epub"`, else txt. The EPUB path throws `no chapters found after cleaning` on zero chapters, creates the book dir first, and writes `clean-report.json` only after the textVersion drift check passes (a drift error never overwrites the old report). Oz has no such flag, so Oz never changes. Paragraph text in chapters is the block text as given (no rewrapping).
 
 CLI: `npm run clean:epub -- <file.epub> [--no-llm]` prints kept titles, removed counts per rule, and LLM cost, and writes the full report JSON to `pipeline/out/clean/<name>.json`. That dir is gitignored. Uploads: the browser runs the deterministic pass only. The LLM pass needs a server route with spend guards, out of scope.
 
@@ -97,4 +98,4 @@ CLI: `npm run clean:epub -- <file.epub> [--no-llm]` prints kept titles, removed 
 
 ## Out of scope
 
-No Baseten judge (a Llama 4 Scout judge is a base URL plus model swap later). No upload server route or spend UI. No segmentation or scene changes. No Standard Ebooks text as a Library source. No Modal or music work.
+No Baseten judge (it would be one more `url` plus model entry, not built). No upload server route or spend UI. No segmentation or scene changes. No Standard Ebooks text as a Library source. No music work.

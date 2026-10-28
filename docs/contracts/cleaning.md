@@ -10,6 +10,23 @@ judge call over ambiguous sections only, then edge trims.
 `pipeline/clean-judge.ts` builds the judge from `createMetaClient`;
 tests pass fakes, so `core` never touches the network.
 
+Providers: Modal first, Meta fallback. The shared
+`pipeline/clean-providers.ts` factory (used by both `build.ts` ingest
+and `clean-epub`) reads env only. Modal runs when `MODAL_CLEAN_URL`
+(full chat-completions URL, not secret) and `MODAL_CLEAN_TOKEN` are
+both set, model `MODAL_CLEAN_MODEL ?? "meta-models/Muse-Spark-Open-816B-A42B"`.
+Meta runs when `META_API_KEY` is set, model
+`CLEAN_MODEL ?? "muse-spark-1.3-contributor"`. Both set means Modal
+primary with Meta fallback; none set throws `no cleaning LLM
+configured`. `--no-llm` never reads any of these. Shared Endpoints bill
+per token with no idle cost; create one with `modal endpoint create
+--shared --name lectoria-clean --model
+meta-models/Muse-Spark-Open-816B-A42B`. The judge records `provider`
+("modal" | "meta"), model, tokens, per-provider cost, and
+`fallbackUsed`. A third provider (Baseten, OpenAI-compatible
+`https://inference.baseten.co/v1`) would be one more `url` plus model
+entry, not built.
+
 Safety: confident chapter headings skip keyword rules and the judge; a
 `non_content` verdict on a long interior section stays kept and flagged;
 head/tail cuts clamp to the edge window; judge cuts that only repeat

@@ -8,8 +8,7 @@ import { JSDOM } from "jsdom";
 import { cleanSections } from "../core/clean";
 import type { Judge } from "../core/clean";
 import { readEpubSections } from "../core/epub-sections";
-import { createCleanJudge } from "./clean-judge";
-import { createMetaClient } from "./meta";
+import { createCleanJudgeFromEnv } from "./clean-providers";
 
 function loadEnv(): void {
   try {
@@ -32,11 +31,7 @@ async function main(): Promise<void> {
   });
   let judge: Judge | undefined;
   if (!noLlm) {
-    const apiKey = process.env.META_API_KEY ?? "";
-    if (apiKey === "") throw new Error("META_API_KEY is not set");
-    judge = createCleanJudge(
-      createMetaClient({ apiKey, model: process.env.CLEAN_MODEL ?? "muse-spark-1.3-contributor" }),
-    );
+    judge = createCleanJudgeFromEnv(process.env);
   }
   const { chapters, report } = await cleanSections(title, sections, judge);
   if (chapters.length === 0) throw new Error("no chapters kept after cleaning");

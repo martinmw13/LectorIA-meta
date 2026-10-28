@@ -1,9 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import { createCleanJudge } from "./clean-judge";
-import { metaCostUsd } from "./prices";
+import { costUsdFor, metaCostUsd } from "./prices";
 import type { MetaClient } from "./meta";
 
-function clientWith(data: unknown, usage = { promptTokens: 10, cachedTokens: 2, completionTokens: 5 }): {
+function clientWith(
+  data: unknown,
+  usage = { promptTokens: 10, cachedTokens: 2, completionTokens: 5 },
+  extra?: Partial<MetaClient>,
+): {
   meta: MetaClient;
   calls: { system: string; schema: Record<string, unknown> }[];
 } {
@@ -14,6 +18,7 @@ function clientWith(data: unknown, usage = { promptTokens: 10, cachedTokens: 2, 
       calls.push({ system, schema });
       return { data, ...usage };
     }),
+    ...extra,
   };
   return { meta, calls };
 }
@@ -24,13 +29,17 @@ const input = {
   tailWindow: [],
 };
 
+function validData() {
+  return {
+    sections: [{ id: "a", verdict: "content", kind: "content", reason: "story" }],
+    headCut: 1,
+    tailCut: 2,
+  };
+}
+
 describe("createCleanJudge", () => {
   it("builds an untrusted-data prompt with a strict schema and maps usage", async () => {
-    const { meta, calls } = clientWith({
-      sections: [{ id: "a", verdict: "content", kind: "content", reason: "story" }],
-      headCut: 1,
-      tailCut: 2,
-    });
+    const { meta, calls } = clientWith(validData());
     const result = await createCleanJudge(meta)(input);
     expect(calls).toHaveLength(1);
     expect(calls[0]?.system).toContain("untrusted");
@@ -46,12 +55,24 @@ describe("createCleanJudge", () => {
       sections: [{ id: "a", verdict: "content", kind: "content", reason: "story" }],
       headCut: 1,
       tailCut: 2,
+      provider: "meta",
       model: "m",
       promptTokens: 10,
       completionTokens: 5,
       cachedTokens: 2,
       costUsd: metaCostUsd({ prompt: 10, cached: 2, completion: 5 }),
+      fallbackUsed: false,
     });
+  });
+
+  it("reports modal provider and per-token shared-endpoint cost", async () => {
+    const { meta } = clientWith(validData(), undefined, { provider: "modal", model: "meta-models/Muse-Spark-Open-816B-A42B" });
+    const result = await createCleanJudge(meta)(input);
+    expect(result?.provider).toBe("modal");
+    expect(result?.fallbackUsed).toBe(false);
+    expect(result?.costUsd).toBe(
+      costUsdFor("meta-models/Muse-Spark-Open-816B-A42B", { prompt: 10, cached: 2, completion: 5 }),
+    );
   });
 
   it("returns null on thrown errors and invalid shapes", async () => {
@@ -74,5 +95,44 @@ describe("createCleanJudge", () => {
     });
     const result = await createCleanJudge(meta)(input);
     expect(result?.sections[0]?.kind).toBe("other");
+  });
+
+  it("calls the fallback once when the primary throws", async () => {
+    const failing: MetaClient = {
+      model: "primary",
+      provider: "modal",
+      completeJson: async () => {
+        throw new Error("down");
+      },
+    };
+    const { meta, calls } = clientWith(validData());
+    const result = await createCleanJudge(failing, meta)(input);
+    expect(calls).toHaveLength(1);
+    expect(result?.provider).toBe("meta");
+    expect(result?.fallbackUsed).toBe(true);
+    expect(result?.model).toBe("m");
+  });
+
+  it("calls the fallback once when the primary returns invalid data", async () => {
+    const { meta: bad } = clientWith({ sections: "nope", headCut: 0, tailCut: 0 }, undefined, {
+      provider: "modal",
+      model: "meta-models/Muse-Spark-Open-816B-A42B",
+    });
+    const { meta, calls } = clientWith(validData());
+    const result = await createCleanJudge(bad, meta)(input);
+    expect(calls).toHaveLength(1);
+    expect(result?.provider).toBe("meta");
+    expect(result?.fallbackUsed).toBe(true);
+  });
+
+  it("returns null without raw errors when both providers fail", async () => {
+    const failing: MetaClient = {
+      model: "primary",
+      completeJson: async () => {
+        throw new Error("primary blew up: secret detail");
+      },
+    };
+    const { meta } = clientWith({ sections: "nope", headCut: 0, tailCut: 0 });
+    await expect(createCleanJudge(failing, meta)(input)).resolves.toBeNull();
   });
 });

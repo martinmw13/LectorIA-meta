@@ -1,6 +1,7 @@
 // Meta chat client (OpenAI compatible body, json_schema output).
 // Never logs headers or keys; errors carry status plus a short excerpt.
 import { fetchWithRetry, retryableError } from "./http";
+import type { CleanProvider } from "../core/clean-types";
 
 export interface MetaUsage {
   data: unknown;
@@ -11,6 +12,7 @@ export interface MetaUsage {
 
 export interface MetaClient {
   model: string;
+  provider?: CleanProvider;
   completeJson(input: {
     system: string;
     user: string;
@@ -21,10 +23,19 @@ export interface MetaClient {
 
 const META_URL = "https://api.meta.ai/v1/chat/completions";
 
-export function createMetaClient(input: { fetchFn?: typeof fetch; apiKey: string; model: string }): MetaClient {
+export function createMetaClient(input: {
+  fetchFn?: typeof fetch;
+  apiKey: string;
+  model: string;
+  url?: string;
+  provider?: CleanProvider;
+}): MetaClient {
   const fetchFn = input.fetchFn ?? fetch;
+  const provider = input.provider ?? "meta";
+  const label = provider === "modal" ? "Modal" : "Meta";
   return {
     model: input.model,
+    provider,
     completeJson: async ({ system, user, schemaName, schema }) => {
       const body = JSON.stringify({
         model: input.model,
@@ -42,7 +53,7 @@ export function createMetaClient(input: { fetchFn?: typeof fetch; apiKey: string
       for (let attempt = 1; attempt <= 2; attempt++) {
         const response = await fetchWithRetry(
           fetchFn,
-          META_URL,
+          input.url ?? META_URL,
           {
             method: "POST",
             headers: { Authorization: `Bearer ${input.apiKey}`, "Content-Type": "application/json" },
@@ -64,10 +75,10 @@ export function createMetaClient(input: { fetchFn?: typeof fetch; apiKey: string
               completionTokens: parsed.usage?.completion_tokens ?? 0,
             };
           } catch {
-            lastError = retryableError("Meta returned unparseable JSON content");
+            lastError = retryableError(`${label} returned unparseable JSON content`);
           }
         } else {
-          lastError = retryableError("Meta returned empty content");
+          lastError = retryableError(`${label} returned empty content`);
         }
       }
       throw lastError instanceof Error ? lastError : new Error(String(lastError));

@@ -17,11 +17,13 @@ function contentJudge(extra?: Partial<JudgeResult>): Judge {
     sections: input.sections.map((s) => ({ id: s.id, verdict: "content" as const, kind: "content", reason: "test" })),
     headCut: 0,
     tailCut: 0,
+    provider: "meta" as const,
     model: "fake",
     promptTokens: 1,
     completionTokens: 1,
     cachedTokens: 0,
     costUsd: 0,
+    fallbackUsed: false,
     ...extra,
   });
 }

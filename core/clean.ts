@@ -136,11 +136,13 @@ export async function cleanSections(
       llm = { model: "unknown", promptTokens: 0, completionTokens: 0, cachedTokens: 0, costUsd: 0, error: "failed" };
     } else {
       llm = {
+        provider: result.provider,
         model: result.model,
         promptTokens: result.promptTokens,
         completionTokens: result.completionTokens,
         cachedTokens: result.cachedTokens,
         costUsd: result.costUsd,
+        fallbackUsed: result.fallbackUsed,
       };
       const byId = new Map(result.sections.map((v) => [v.id, v]));
       const contentIds = new Set(
