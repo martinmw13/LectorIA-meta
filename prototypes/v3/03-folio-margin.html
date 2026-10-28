@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1280">
+<title>The Cyclone · Lectoria Folio margin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,300;1,6..72,400&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#fff; --ink:#111; --blue:#0866FF; --blue-dark:#0064E0;
+  --sel:#CFE1FF; --hair:#D8D5CE; --mut:#6B675F; --soft:#F4F2EC;
+  --cream:#F7F1DE; --imgw:320px; --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+html[data-theme="dark"]{
+  --paper:#11181C; --ink:#E4E6EB; --blue:#2D88FF; --blue-dark:#4A9BFF;
+  --sel:#1E3A5F; --hair:#232D34; --mut:#9AA5B1; --soft:#151C21; --cream:#1B2229;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font-family:"Newsreader",Georgia,serif;-webkit-font-smoothing:antialiased;transition:background .15s ease,color .15s ease;overflow:hidden}
+.sans{font-family:"Instrument Sans",Helvetica,Arial,sans-serif}
+.shell{max-width:1200px;margin:20px auto 24px;padding:0 40px;height:calc(100vh - 44px);display:flex;flex-direction:column;overflow:hidden}
+.mast{display:flex;align-items:center;gap:16px;padding:10px 0;border-bottom:1px solid var(--ink);flex:none}
+.mast .brand{font-family:"Instrument Sans",sans-serif;font-size:14px;font-weight:600;letter-spacing:.28em;white-space:nowrap}
+.mast .book{flex:1;text-align:center;font-family:"Instrument Sans",sans-serif;font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mast .book .loc{color:var(--mut);letter-spacing:.08em}
+.tbtn{width:34px;height:34px;border:1px solid var(--hair);background:var(--paper);color:var(--ink);border-radius:6px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
+.tbtn:hover{border-color:var(--blue);color:var(--blue)}
+.tbtn svg{stroke:currentColor;fill:none;stroke-width:1.5}
+.mid{display:grid;grid-template-columns:var(--imgw) 12px minmax(0,1fr) 200px;gap:0;margin-top:16px;align-items:stretch;flex:1;min-height:0;overflow:hidden}
+.imgcol{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden}
+.frame{position:relative;flex:1;min-height:0;height:100%;border:1px solid var(--hair);border-radius:8px;overflow:hidden;background:#E7E0CF}
+html[data-theme="dark"] .frame{background:#1A2128}
+.ph{position:absolute;inset:0;background:#E7E0CF;overflow:hidden}
+html[data-theme="dark"] .ph{background:#1A2128}
+.ph .blob{position:absolute;border-radius:50%;filter:blur(46px);pointer-events:none}
+.ph .b1{width:75%;height:46%;left:-12%;top:-8%;background:#D9CFB6;opacity:.85}
+.ph .b2{width:70%;height:52%;right:-16%;top:26%;background:#CFC9BC;opacity:.8}
+.ph .b3{width:80%;height:44%;left:6%;bottom:-16%;background:#EFE8D6;opacity:.9}
+html[data-theme="dark"] .ph .b1{background:#2A333C;opacity:.9}
+html[data-theme="dark"] .ph .b2{background:#232B33;opacity:.9}
+html[data-theme="dark"] .ph .b3{background:#161D23;opacity:.9}
+.ph .grain{position:absolute;inset:0;opacity:.22;pointer-events:none}
+.ph .wash{position:absolute;inset:0;background:#DCD3BC;opacity:.14;pointer-events:none}
+html[data-theme="dark"] .ph .wash{background:#0E1419;opacity:.2}
+.picbtn{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-family:"Instrument Sans",sans-serif;font-size:13px;color:var(--blue);border:1px solid var(--blue);background:var(--paper);border-radius:999px;padding:8px 18px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.picbtn:hover{color:var(--blue-dark);border-color:var(--blue-dark)}
+.picbtn svg{stroke:currentColor;fill:none;stroke-width:1.5}
+.figimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center top;display:block;cursor:zoom-in;opacity:0}
+.figimg.show{opacity:1;transition:opacity .4s ease}
+.figimg.clean{transition:none;opacity:1}
+html[data-theme="dark"] .figimg.show,html[data-theme="dark"] .figimg.clean{filter:brightness(.92)}
+.mockbox{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;border:1px dashed var(--mut);margin:0;font-family:"Instrument Sans",sans-serif;font-size:13px;color:var(--mut);padding:24px;opacity:0}
+.mockbox.show{opacity:1;transition:opacity .4s ease}
+.mockbox.clean{transition:none;opacity:1}
+.imgcap{font-family:"Instrument Sans",sans-serif;font-size:11.5px;color:var(--mut);margin-top:7px;letter-spacing:.03em}
+.imgcap a{color:var(--blue);text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
+.imgcap a svg{stroke:currentColor;fill:none;stroke-width:1.5;vertical-align:-1px}
+.recap{border:1px solid var(--hair);border-radius:8px;background:var(--soft);padding:26px 22px;flex:1;min-height:0}
+.recap .rk{font-family:"Instrument Sans",sans-serif;font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--mut)}
+.recap p{font-size:19px;line-height:1.6;margin-top:10px}
+.div{position:relative;cursor:col-resize;display:flex;justify-content:center}
+.div::before{content:"";width:1px;background:var(--hair);height:100%}
+.div:hover::before,.div.drag::before{background:var(--blue)}
+.grip{position:absolute;top:50%;transform:translateY(-50%);width:14px;height:44px;border:1px solid var(--hair);border-radius:7px;background:var(--paper);opacity:0;transition:opacity .15s ease;display:flex;align-items:center;justify-content:center;color:var(--mut);font-size:10px;font-family:"Instrument Sans",sans-serif}
+.div:hover .grip{opacity:1}
+.read{min-width:0;padding-left:34px;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:var(--hair) transparent;padding-bottom:16px;padding-right:12px}
+.read::-webkit-scrollbar{width:6px}
+.read::-webkit-scrollbar-thumb{background:var(--hair);border-radius:3px}
+.read::-webkit-scrollbar-track{background:transparent}
+.read:focus{outline:none}
+.kick{font-family:"Instrument Sans",sans-serif;font-size:12.5px;font-weight:600;letter-spacing:.18em;text-transform:uppercase}
+h1.chap{font-weight:300;font-size:44px;line-height:1.05;letter-spacing:-.01em;margin:8px 0 4px}
+.sceneline{display:flex;align-items:center;gap:10px;font-family:"Instrument Sans",sans-serif;font-size:12.5px;color:var(--mut);letter-spacing:.06em;margin-bottom:12px}
+.body{max-width:60ch;font-size:20.5px;line-height:1.7}
+.body p{margin:0}
+.body p + p{text-indent:1.5em}
+.body p:first-of-type::first-letter{color:var(--blue);font-size:3.3em;float:left;line-height:.86;padding:4px 10px 0 0;font-weight:300}
+::selection{background:var(--sel)}
+.pop{position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);background:var(--paper);color:var(--ink);font-family:"Instrument Sans",sans-serif;font-size:12.5px;border:1px solid var(--ink);border-radius:6px;white-space:nowrap;z-index:5}
+.pop::after{content:"";position:absolute;top:calc(100% - 4px);left:50%;width:7px;height:7px;background:var(--paper);border-right:1px solid var(--ink);border-bottom:1px solid var(--ink);transform:translateX(-50%) rotate(45deg)}
+.pop button{background:none;border:0;color:var(--blue);font:inherit;display:inline-flex;align-items:center;gap:7px;padding:7px 12px;cursor:pointer}
+.pop svg{stroke:currentColor;fill:none;stroke-width:1.5}
+#selpop{position:fixed;display:none;z-index:60}
+.genfig{margin:16px 0;width:min(440px,100%);margin-right:auto;border-radius:8px}
+.genfig.ring{animation:ring 1.2s ease}
+@keyframes ring{0%,100%{box-shadow:none}30%{box-shadow:0 0 0 3px var(--blue)}}
+.genload{aspect-ratio:4/3;border:1px solid var(--hair);border-radius:8px;background:var(--soft);display:flex;align-items:center;justify-content:center;animation:pulse 1.2s ease-in-out infinite;font-family:"Instrument Sans",sans-serif;font-size:12.5px;color:var(--mut);letter-spacing:.06em}
+@keyframes pulse{50%{opacity:.55}}
+.genfig img{width:100%;aspect-ratio:4/3;max-height:300px;object-fit:cover;display:block;border:1px solid var(--hair);border-radius:8px;cursor:zoom-in;opacity:0}
+.genfig img.show{opacity:1;transition:opacity .4s ease}
+.genfig figcaption{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:15.5px;font-style:italic;line-height:1.45;white-space:nowrap;overflow:hidden;flex-wrap:nowrap}
+.genfig .grow{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.genfig .gcredit{font-family:"Instrument Sans",sans-serif;font-style:normal;font-size:11.5px;color:var(--mut);white-space:nowrap}
+.genfig .gcredit a{color:var(--blue);text-decoration:underline;text-underline-offset:3px}
+.genfig .gcredit a svg{stroke:currentColor;fill:none;stroke-width:1.5;vertical-align:-1px}
+.genfig .grm{flex:none;width:24px;height:24px;border:1px solid var(--hair);border-radius:6px;background:var(--paper);color:var(--mut);font-size:14px;line-height:1;cursor:pointer;font-family:"Instrument Sans",sans-serif}
+.genfig .grm:hover{color:var(--blue);border-color:var(--blue)}
+.margin{border-left:1px solid var(--hair);margin-left:18px;padding-left:16px;overflow:hidden;display:flex;flex-direction:column;min-height:0;min-width:0;padding-bottom:12px;scrollbar-width:thin;scrollbar-color:var(--hair) transparent}
+.margin::-webkit-scrollbar{width:6px}
+.margin::-webkit-scrollbar-thumb{background:var(--hair);border-radius:3px}
+.mlabel{font-family:"Instrument Sans",sans-serif;font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
+.tile{margin-top:8px;border:1px solid var(--hair);border-radius:8px;padding:10px;background:var(--paper);cursor:pointer;text-align:left;width:100%;color:var(--ink);font:inherit;display:block}
+.tile:hover{border-color:var(--blue)}
+.tile .tname{font-family:"Instrument Sans",sans-serif;font-size:13px;font-weight:600}
+.minigrid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin:8px 0}
+.minigrid i{display:block;aspect-ratio:4/3;background:var(--cream);border:1px solid var(--hair);border-radius:4px;position:relative;overflow:hidden}
+.minigrid i img{width:100%;height:100%;object-fit:cover;display:block;filter:blur(1.4px);transform:scale(1.2)}
+.minigrid i::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent 0 5px,rgba(17,17,17,.12) 5px 6px);filter:blur(.8px)}
+html[data-theme="dark"] .minigrid i::after{background:repeating-linear-gradient(45deg,transparent 0 5px,rgba(228,230,235,.14) 5px 6px)}
+.tile .trow{display:flex;align-items:center;gap:6px;font-family:"Instrument Sans",sans-serif;font-size:12px;color:var(--mut)}
+.tile .trow svg{stroke:currentColor;fill:none;stroke-width:1.5;flex:none}
+.glist{margin-top:16px;display:flex;flex-direction:column;min-height:0;flex:1}
+#gitems{overflow-y:auto;min-height:0;scrollbar-width:thin;scrollbar-color:var(--hair) transparent;padding-bottom:2px}
+#gitems::-webkit-scrollbar{width:6px}
+#gitems::-webkit-scrollbar-thumb{background:var(--hair);border-radius:3px}
+.gfade{position:sticky;bottom:0;height:26px;margin-top:-26px;background:linear-gradient(to bottom,rgba(255,255,255,0),var(--paper));pointer-events:none}
+.gitem{border:1px solid var(--hair);border-radius:8px;overflow:hidden;margin-top:10px;cursor:pointer;background:var(--paper);text-align:left;padding:0;font:inherit;color:var(--ink);width:100%;display:block;flex:none}
+.gitem:hover{border-color:var(--blue)}
+.gitem .gthumb{position:relative;height:100px;background:var(--soft);overflow:hidden}
+.gitem .gthumb img{width:100%;height:100px;object-fit:cover;display:block;border-radius:6px 6px 0 0}
+.gx{width:22px;height:22px;border-radius:6px;background:var(--paper);border:1px solid var(--hair);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--mut);flex:none;margin-left:auto}
+.gx:hover{border-color:var(--blue);color:var(--blue)}
+.gx svg{stroke:currentColor;fill:none;stroke-width:1.5}
+.gcap{padding:7px 9px 2px;font-size:14.5px;font-style:italic;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.gitem.scene .gcap{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gmeta{display:flex;align-items:center;gap:6px;padding:2px 9px 8px}
+.gref{font-family:"Instrument Sans",sans-serif;font-style:normal;font-size:11.5px;color:var(--mut);white-space:nowrap}
+.ghint{font-family:"Instrument Sans",sans-serif;font-size:12.5px;color:var(--mut);margin-top:8px;line-height:1.55}
+.folio{margin-top:12px;border-top:1px solid var(--ink);min-height:64px;padding:10px 0 4px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:18px;flex:none}
+.fleft{display:flex;flex-direction:column;gap:5px;min-width:220px;width:220px;flex:none}
+.navrow{display:flex;align-items:center;gap:6px}
+.navbtn{background:none;border:0;font-family:"Instrument Sans",sans-serif;font-size:13px;cursor:pointer;color:var(--ink);padding:6px}
+.navbtn:hover{color:var(--blue-dark)}
+.navbtn:disabled{opacity:.3;cursor:default}
+.navlbl{font-family:"Instrument Sans",sans-serif;font-size:13px;letter-spacing:.04em;white-space:nowrap}
+.fprog{display:block}
+.ticks{display:flex;gap:1px;align-items:flex-end;height:12px;width:100%}
+.ticks i{flex:1;min-width:1px;height:4px;background:var(--hair)}
+.ticks i.on{background:var(--blue);height:7px}
+.ticklbl{display:block;font-family:"Instrument Sans",sans-serif;font-size:11px;color:var(--mut);letter-spacing:.06em;margin-top:3px;white-space:nowrap}
+.fmid{display:flex;align-items:center;gap:10px;justify-content:center}
+.icbtn{width:34px;height:34px;border:1px solid var(--ink);background:var(--paper);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;border-radius:6px;flex:none}
+.icbtn:hover{border-color:var(--blue-dark)}
+.icbtn:hover svg{stroke:var(--blue-dark)}
+.icbtn svg{stroke:var(--ink);fill:none;stroke-width:1.5;stroke-linecap:square}
+.icbtn.play{background:var(--blue);border-color:var(--blue)}
+.icbtn.play svg{stroke:#fff;fill:#fff}
+.vol{display:inline-flex;align-items:center;gap:6px}
+.vol input{width:64px;accent-color:var(--blue);cursor:pointer}
+.nowp{font-style:italic;font-size:15.5px;line-height:1.35;max-width:300px}
+.nowp a{color:var(--blue);text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
+.nowp a svg{stroke:currentColor;fill:none;stroke-width:1.5;vertical-align:-1px}
+.fright{display:flex;align-items:center;gap:12px;justify-content:flex-end}
+.seg2{display:inline-flex;border:1px solid var(--ink);border-radius:6px;overflow:hidden;font-family:"Instrument Sans",sans-serif;font-size:12px}
+.seg2 button{border:0;background:var(--paper);color:var(--ink);padding:8px 13px;font:inherit;cursor:pointer}
+.seg2 button.on{background:var(--ink);color:var(--paper)}
+html[data-theme="dark"] .seg2 button.on{color:#11181C;background:#E4E6EB}
+.chopinbtn{background:none;border:0;padding:0;cursor:pointer;width:52px;flex:none;transform:rotate(-6deg)}
+.chopinbtn img{width:52px;height:auto;display:block;border-radius:50%}
+.chopinbtn:active{outline:2px solid var(--blue);outline-offset:2px}
+.panelshead .kick2{font-family:"Instrument Sans",sans-serif;font-size:12.5px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--mut)}
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.panel{border:1px solid var(--ink);border-radius:6px;background:var(--cream);overflow:hidden}
+.panel .art{height:148px;position:relative;overflow:hidden;background:var(--cream)}
+.panel .art img{width:100%;height:100%;object-fit:cover;display:block}
+html[data-theme="dark"] .panel .art img{filter:brightness(.92)}
+html[data-theme="dark"] .panel{border-color:#3A4650}
+.panel .pnum{position:absolute;top:6px;left:6px;width:22px;height:22px;border:1px solid var(--ink);border-radius:50%;background:var(--paper);color:var(--ink);font-family:"Instrument Sans",sans-serif;font-size:12px;display:flex;align-items:center;justify-content:center}
+.panel .capbox{border-top:1px solid var(--ink);padding:7px 9px;font-size:15.5px;line-height:1.4}
+html[data-theme="dark"] .panel .capbox{border-top-color:#3A4650}
+.mocktag{font-family:"Instrument Sans",sans-serif;font-size:11.5px;color:var(--mut);letter-spacing:.08em;text-transform:uppercase;margin-top:10px}
+.ch2btn{margin-top:12px;font-family:"Instrument Sans",sans-serif;font-size:13px;background:var(--blue);border:1px solid var(--blue);color:#fff;border-radius:6px;padding:9px 18px;cursor:pointer}
+.ch2btn:hover{background:var(--blue-dark)}
+#xveil{position:fixed;inset:0;background:rgba(20,18,12,.28);opacity:0;pointer-events:none;transition:opacity .26s ease;z-index:70}
+html[data-theme="dark"] #xveil{background:rgba(0,0,0,.5)}
+#xveil.on{opacity:1}
+#ximg{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.96);max-width:72vw;max-height:78vh;width:auto;height:auto;border-radius:8px;box-shadow:0 18px 60px rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:opacity .26s ease,transform .26s ease;z-index:71;cursor:zoom-in;background:transparent;border:0;padding:0;display:block}
+html[data-theme="dark"] #ximg{filter:brightness(.94)}
+#ximg.on{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}
+#lb{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;z-index:100;padding:40px}
+#lb.open{display:flex}
+#lb img{max-width:min(880px,86vw);max-height:82vh;border:0;background:transparent;border-radius:8px;box-shadow:0 18px 60px rgba(0,0,0,.5);padding:0}
+#lbx{position:absolute;top:18px;right:22px;width:36px;height:36px;border-radius:50%;border:1px solid #fff;background:none;color:#fff;font-size:18px;cursor:pointer}
+#dev{position:fixed;right:24px;bottom:96px;width:320px;background:var(--paper);border:1px solid var(--ink);border-radius:8px;z-index:80;font-family:"Instrument Sans",sans-serif;font-size:12.5px;padding:12px 14px;display:none;box-shadow:0 12px 36px rgba(0,0,0,.22)}
+#dev.open{display:block}
+#dev .dhead{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+#dev .dtag{font-size:10.5px;font-weight:600;letter-spacing:.14em;border:1px solid var(--ink);border-radius:4px;padding:2px 6px}
+#dev .dx{margin-left:auto;background:none;border:0;color:var(--ink);font-size:16px;cursor:pointer;line-height:1;padding:2px 4px}
+#dev .drow{margin:5px 0;line-height:1.45}
+#dev .mono{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:12px}
+#dev .dbar{display:grid;grid-template-columns:74px 1fr 36px;align-items:center;gap:8px;margin:3px 0;color:var(--mut)}
+#dev .dtr{height:5px;background:var(--soft);border-radius:3px;overflow:hidden}
+#dev .dfl{height:100%;background:var(--mut);border-radius:3px;display:block}
+#dev .dfl.top{background:var(--blue)}
+#dev .dnum{font-family:var(--mono);font-size:11.5px;text-align:right}
+#dev .dfoot{margin-top:9px;padding-top:8px;border-top:1px solid var(--hair);color:var(--mut);font-size:11.5px}
+#pmodal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:90;padding:40px}
+#pmodal.open{display:flex}
+#pdlg{background:var(--paper);color:var(--ink);border:1px solid var(--ink);border-radius:8px;max-width:660px;width:100%;max-height:84vh;overflow-y:auto;padding:22px 22px 18px;position:relative}
+#px{position:absolute;top:10px;right:12px;width:32px;height:32px;border-radius:6px;border:1px solid var(--hair);background:var(--paper);color:var(--ink);font-size:16px;cursor:pointer}
+#px:hover{border-color:var(--blue);color:var(--blue)}
+.gate p{font-size:19px;line-height:1.6;margin:10px 0 16px}
+.gbtnrow{display:flex;gap:10px}
+.gbtn{font-family:"Instrument Sans",sans-serif;font-size:13px;border-radius:6px;padding:9px 18px;cursor:pointer;border:1px solid var(--blue)}
+.gbtn.pri{background:var(--blue);color:#fff}
+.gbtn.pri:hover{background:var(--blue-dark)}
+.gbtn.sec{background:var(--paper);color:var(--blue)}
+.gbtn.sec:hover{border-color:var(--blue-dark);color:var(--blue-dark)}
+#toast{position:fixed;left:50%;bottom:88px;transform:translateX(-50%);background:var(--ink);color:var(--paper);font-family:"Instrument Sans",sans-serif;font-size:12.5px;border-radius:999px;padding:8px 16px;display:none;z-index:200}
+#toast.show{display:block}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<!-- Question: does a quiet right margin collect generated images while the text stays the hero | Direction: Folio margin -->
+<div class="shell">
+  <header class="mast">
+    <div class="brand sans">LECTORIA</div>
+    <div class="book sans">The Wonderful Wizard of Oz &middot; L. Frank Baum <span class="loc" id="mastLoc">&middot; Chapter 1 of 24</span></div>
+    <button class="tbtn" id="themeBtn" aria-label="Toggle dark mode"></button>
+  </header>
+  <main class="mid" id="mid">
+    <section class="imgcol" id="imgcol" aria-label="Illustration"></section>
+    <div class="div" id="divider" role="separator" aria-orientation="vertical" aria-label="Resize image column" title="Drag to resize, double-click to reset"><span class="grip">&#10073;</span></div>
+    <article class="read" id="readcol" aria-label="Reading column" tabindex="-1"></article>
+    <aside class="margin" id="margin" aria-label="Margin"></aside>
+  </main>
+  <footer class="folio" aria-label="Folio">
+    <div class="fleft">
+      <div class="navrow">
+        <button class="navbtn" id="prevBtn" aria-label="Previous scene">&#8249;</button>
+        <span class="navlbl sans" id="navLbl">Scene 2 of 4</span>
+        <button class="navbtn" id="nextBtn" aria-label="Next scene">&#8250;</button>
+      </div>
+      <div class="fprog">
+        <div class="ticks" id="ticks" aria-hidden="true"></div>
+        <span class="ticklbl sans" id="tickLbl"></span>
+      </div>
+    </div>
+    <div class="fmid">
+      <button class="icbtn" id="tPrev" aria-label="Previous track"><svg width="15" height="15" viewBox="0 0 16 16"><path d="M3 2v12M13 2 5.5 8 13 14V2Z"/></svg></button>
+      <button class="icbtn play" id="tPlay" aria-label="Pause music"><svg id="playIco" width="15" height="15" viewBox="0 0 16 16"><path d="M5.5 2.5v11M10.5 2.5v11"/></svg></button>
+      <button class="icbtn" id="tNext" aria-label="Next track"><svg width="15" height="15" viewBox="0 0 16 16"><path d="M13 2v12M3 2l7.5 6L3 14V2Z"/></svg></button>
+      <span class="vol"><button class="icbtn" id="muteBtn" aria-label="Mute"><svg width="15" height="15" viewBox="0 0 16 16"><path d="M2.5 6v4h2.5L9 13V3L5 6H2.5Z"/><path d="M11 5.5c1.2 1.2 1.2 3.8 0 5M12.8 3.8c2 2 2 6.4 0 8.4"/></svg></button><input type="range" id="vol" min="0" max="100" value="70" aria-label="Volume"></span>
+      <div class="nowp"><span id="trackLine">Symphony No. 6 &ndash; IV &middot; Tchaikovsky &middot; </span><a class="ext" href="https://musopen.org">Musopen / CNSO <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 9 9 3M4.5 3H9v4.5"/></svg></a></div>
+    </div>
+    <div class="fright">
+      <span class="seg2" role="group" aria-label="Style selector"><button class="on" id="segO">Orchestra</button><button id="segP">Piano</button></span>
+      <button class="chopinbtn" id="chopin" title="Just Play Me — plays Chopin's four Ballades"><img src="../assets/chopin-just-play-me.png" width="104" height="106" alt="Just Play Me — plays Chopin's four Ballades"></button>
+    </div>
+  </footer>
+</div>
+<div class="pop" id="selpop"><button id="selpopBtn"><svg width="12" height="12" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="11"/><circle cx="6" cy="7" r="1.4"/><path d="M3.5 13 7 9.5l2.5 2.5 2-2 1 1"/></svg>Picture this</button></div>
+<div id="xveil" aria-hidden="true"></div>
+<img id="ximg" alt="Expanded scene illustration" tabindex="-1">
+<div id="lb" role="dialog" aria-label="Illustration viewer"><button id="lbx" aria-label="Close">&times;</button><img id="lbimg" src="" alt="Enlarged illustration" tabindex="-1"></div>
+<div id="dev" role="complementary" aria-label="Developer panel"></div>
+<div id="pmodal" role="dialog" aria-label="Chapter in panels"><div id="pdlg"></div></div>
+<div id="toast" class="sans" role="status"></div>
+<nav id="protoSwitcher" aria-label="Prototype switcher" style="position:fixed;left:16px;bottom:16px;z-index:9999;background:#111;color:#fff;font:12px system-ui,-apple-system,sans-serif;border-radius:999px;padding:6px 10px;display:flex;align-items:center;gap:8px;">
+  <button id="psPrev" aria-label="Previous prototype" style="background:none;border:0;color:#fff;font:inherit;cursor:pointer;padding:0 2px;">&#8249;</button>
+  <span id="psLabel">3 / 3 &middot; Folio margin</span>
+  <button id="psNext" aria-label="Next prototype" style="background:none;border:0;color:#fff;font:inherit;cursor:pointer;padding:0 2px;">&#8250;</button>
+  <a href="index.html" style="color:#fff;opacity:.75;text-decoration:underline;text-underline-offset:2px;">All</a>
+</nav>
+<script>
+var CHAPTER={"book":"The Wonderful Wizard of Oz","author":"L. Frank Baum","chapter":1,"chapterTitle":"The Cyclone","chaptersTotal":24,"scenesInBook":133,"nextChapterTitle":"The Council with the Munchkins","scenes":[
+{"n":1,"mood":"sorrow","emotions":[["sorrow",0.9],["calm",0.07],["suspense",0.02],["joy",0],["mystery",0],["adventure",0],["battle",0],["wonder",0]],"intensity":0.24,"paragraphs":["Dorothy lived in the midst of the great Kansas prairies, with Uncle Henry, who was a farmer, and Aunt Em, who was the farmer\u2019s wife. Their house was small, for the lumber to build it had to be carried by wagon many miles. There were four walls, a floor and a roof, which made one room; and this room contained a rusty looking cookstove, a cupboard for the dishes, a table, three or four chairs, and the beds. Uncle Henry and Aunt Em had a big bed in one corner, and Dorothy a little bed in another corner. There was no garret at all, and no cellar\u2014except a small hole dug in the ground, called a cyclone cellar, where the family could go in case one of those great whirlwinds arose, mighty enough to crush any building in its path. It was reached by a trap door in the middle of the floor, from which a ladder led down into the small, dark hole.","When Dorothy stood in the doorway and looked around, she could see nothing but the great gray prairie on every side. Not a tree nor a house broke the broad sweep of flat country that reached to the edge of the sky in all directions. The sun had baked the plowed land into a gray mass, with little cracks running through it. Even the grass was not green, for the sun had burned the tops of the long blades until they were the same gray color to be seen everywhere. Once the house had been painted, but the sun blistered the paint and the rains washed it away, and now the house was as dull and gray as everything else.","When Aunt Em came there to live she was a young, pretty wife. The sun and wind had changed her, too. They had taken the sparkle from her eyes and left them a sober gray; they had taken the red from her cheeks and lips, and they were gray also. She was thin and gaunt, and never smiled now. When Dorothy, who was an orphan, first came to her, Aunt Em had been so startled by the child\u2019s laughter that she would scream and press her hand upon her heart whenever Dorothy\u2019s merry voice reached her ears; and she still looked at the little girl with wonder that she could find anything to laugh at.","Uncle Henry never laughed. He worked hard from morning till night and did not know what joy was. He was gray also, from his long beard to his rough boots, and he looked stern and solemn, and rarely spoke.","It was Toto that made Dorothy laugh, and saved her from growing as gray as her other surroundings. Toto was not gray; he was a little black dog, with long silky hair and small black eyes that twinkled merrily on either side of his funny, wee nose. Toto played all day long, and Dorothy played with him, and loved him dearly."]},
+{"n":2,"mood":"suspense","emotions":[["suspense",1],["calm",0],["joy",0],["sorrow",0],["mystery",0],["adventure",0],["battle",0],["wonder",0]],"intensity":0.67,"paragraphs":["Today, however, they were not playing. Uncle Henry sat upon the doorstep and looked anxiously at the sky, which was even grayer than usual. Dorothy stood in the door with Toto in her arms, and looked at the sky too. Aunt Em was washing the dishes.","From the far north they heard a low wail of the wind, and Uncle Henry and Dorothy could see where the long grass bowed in waves before the coming storm. There now came a sharp whistling in the air from the south, and as they turned their eyes that way they saw ripples in the grass coming from that direction also.","Suddenly Uncle Henry stood up.","\u201cThere\u2019s a cyclone coming, Em,\u201d he called to his wife. \u201cI\u2019ll go look after the stock.\u201d Then he ran toward the sheds where the cows and horses were kept.","Aunt Em dropped her work and came to the door. One glance told her of the danger close at hand.","\u201cQuick, Dorothy!\u201d she screamed. \u201cRun for the cellar!\u201d","Toto jumped out of Dorothy\u2019s arms and hid under the bed, and the girl started to get him. Aunt Em, badly frightened, threw open the trap door in the floor and climbed down the ladder into the small, dark hole. Dorothy caught Toto at last and started to follow her aunt. When she was halfway across the room there came a great shriek from the wind, and the house shook so hard that she lost her footing and sat down suddenly upon the floor."]},
+{"n":3,"mood":"wonder","emotions":[["wonder",0.89],["suspense",0.04],["mystery",0.04],["adventure",0.03],["calm",0],["joy",0],["sorrow",0],["battle",0]],"intensity":0.52,"paragraphs":["Then a strange thing happened.","The house whirled around two or three times and rose slowly through the air. Dorothy felt as if she were going up in a balloon.","The north and south winds met where the house stood, and made it the exact center of the cyclone. In the middle of a cyclone the air is generally still, but the great pressure of the wind on every side of the house raised it up higher and higher, until it was at the very top of the cyclone; and there it remained and was carried miles and miles away as easily as you could carry a feather."]},
+{"n":4,"mood":"calm","emotions":[["calm",0.55],["suspense",0.38],["mystery",0.05],["adventure",0.01],["joy",0],["sorrow",0],["battle",0],["wonder",0]],"intensity":0.4,"paragraphs":["It was very dark, and the wind howled horribly around her, but Dorothy found she was riding quite easily. After the first few whirls around, and one other time when the house tipped badly, she felt as if she were being rocked gently, like a baby in a cradle.","Toto did not like it. He ran about the room, now here, now there, barking loudly; but Dorothy sat quite still on the floor and waited to see what would happen.","Once Toto got too near the open trap door, and fell in; and at first the little girl thought she had lost him. But soon she saw one of his ears sticking up through the hole, for the strong pressure of the air was keeping him up so that he could not fall. She crept to the hole, caught Toto by the ear, and dragged him into the room again, afterward closing the trap door so that no more accidents could happen.","Hour after hour passed away, and slowly Dorothy got over her fright; but she felt quite lonely, and the wind shrieked so loudly all about her that she nearly became deaf. At first she had wondered if she would be dashed to pieces when the house fell again; but as the hours passed and nothing terrible happened, she stopped worrying and resolved to wait calmly and see what the future would bring. At last she crawled over the swaying floor to her bed, and lay down upon it; and Toto followed and lay down beside her.","In spite of the swaying of the house and the wailing of the wind, Dorothy soon closed her eyes and fell fast asleep."]}]};
+var IMG={2:"../assets/cyclone-doorway.jpg",3:"../assets/cyclone-house.jpg"};
+var MOCK=["../assets/cyclone-house.jpg","../assets/cyclone-doorway.jpg"];
+var PANELS=[
+ {cap:"A gray farm on the Kansas prairie.",img:null,pos:"center"},
+ {cap:"Wind from the north, wind from the south.",img:"../assets/cyclone-doorway.jpg",pos:"50% 20%"},
+ {cap:"Aunt Em runs for the cellar.",img:null,pos:"center"},
+ {cap:"The house rises into the air.",img:"../assets/cyclone-house.jpg",pos:"50% 60%"},
+ {cap:"Carried miles and miles, like a feather.",img:null,pos:"center"},
+ {cap:"Dorothy and Toto fall asleep.",img:null,pos:"center"}];
+var q=new URLSearchParams(location.search);
+function qi(n){return q.has(n);}
+var scene=qi("scene")?Math.min(4,Math.max(1,parseInt(q.get("scene"),10)||2)):2;
+var panelsMode=qi("recap");
+var revealed=new Set(),genStore={1:[],2:[],3:[],4:[]},picCount=0,gidSeq=1;
+function mkGen(quote,paraIdx){var g={id:"g"+(gidSeq++),quote:quote,para:paraIdx,src:MOCK[picCount%2]};picCount++;return g;}
+if(qi("reveal"))revealed.add(scene);
+if(qi("hover")){scene=2;revealed.add(2);}
+if(qi("pt")){scene=2;genStore[2].push(mkGen("a low wail of the wind",1));}
+if(qi("gallery")){scene=2;revealed.add(2);genStore[2].push(mkGen("a low wail of the wind",1));genStore[2].push(mkGen("the house shook so hard that she lost her footing",6));}
+var imgcol=document.getElementById("imgcol"),readcol=document.getElementById("readcol"),margin=document.getElementById("margin"),
+    mid=document.getElementById("mid"),navLbl=document.getElementById("navLbl"),
+    tickLbl=document.getElementById("tickLbl"),ticks=document.getElementById("ticks");
+for(var t=0;t<133;t++){var s=document.createElement("i");ticks.appendChild(s);}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function trunc(s){s=String(s).trim().replace(/\s+/g," ");return s.length>80?s.slice(0,77).trim()+"\u2026":s;}
+function paintTicks(n){var k=ticks.children;for(var i=0;i<k.length;i++)k[i].className=i<n?"on":"";}
+function toast(m){var el=document.getElementById("toast");el.textContent=m;el.classList.add("show");clearTimeout(el._t);el._t=setTimeout(function(){el.classList.remove("show");},1200);}
+var EXT='<svg width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 9 9 3M4.5 3H9v4.5"/></svg>';
+var GRAIN="%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.41 0 0 0 0 0.34 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23g)'/%3E%3C/svg%3E";
+var grainURL="url(\"data:image/svg+xml,"+GRAIN+"\")";
+var lastFocus=null;
+function fitInto(nw,nh,mw,mh){nw=+nw;nh=+nh;if(!(nw>0&&nh>0&&mw>0&&mh>0))return null;var s=Math.min(mw/nw,mh/nh);if(!(s>0))return null;return [Math.max(1,Math.round(nw*s)),Math.max(1,Math.round(nh*s))];}
+function openLB(src,ret){lastFocus=ret||document.activeElement;var lb=document.getElementById("lb");var li=document.getElementById("lbimg");li.style.width="auto";li.style.height="auto";li.src=src;lb.classList.add("open");document.getElementById("lbx").focus();var im=new Image();im.onload=function(){try{var d=fitInto(im.naturalWidth||im.width,im.naturalHeight||im.height,Math.min(880,Math.round(innerWidth*0.86)),Math.round(innerHeight*0.82));if(d){li.style.width=d[0]+"px";li.style.height=d[1]+"px";}}catch(e){}};im.src=src;}
+function lbIsOpen(){return document.getElementById("lb").classList.contains("open");}
+function closeLB(){var lb=document.getElementById("lb");if(!lb.classList.contains("open"))return;lb.classList.remove("open");if(lastFocus&&lastFocus.focus)try{lastFocus.focus({preventScroll:true});}catch(e){lastFocus.focus();}}
+document.getElementById("lbx").addEventListener("click",closeLB);
+document.getElementById("lb").addEventListener("click",function(e){if(e.target===this)closeLB();});
+var xveil=document.getElementById("xveil"),ximg=document.getElementById("ximg"),hoverT=null,xOpen=false;
+function collapseX(){if(!xOpen)return;xOpen=false;ximg.classList.remove("on");xveil.classList.remove("on");clearTimeout(hoverT);try{readcol.focus({preventScroll:true});}catch(e){readcol.focus();}}
+function expandX(src){xOpen=true;ximg.style.width="auto";ximg.style.height="auto";ximg.src=src;ximg.classList.add("on");xveil.classList.add("on");var im=new Image();im.onload=function(){try{var d=fitInto(im.naturalWidth||im.width,im.naturalHeight||im.height,Math.round(innerWidth*0.72),Math.round(innerHeight*0.78));if(d){ximg.style.width=d[0]+"px";ximg.style.height=d[1]+"px";}}catch(e){}};im.src=src;}
+ximg.addEventListener("mouseleave",collapseX);
+ximg.addEventListener("click",function(){if(xOpen){var s=ximg.src;collapseX();openLB(s,ximg);}});
+function wireHover(fi,src){
+  fi.addEventListener("mouseenter",function(){clearTimeout(hoverT);hoverT=setTimeout(function(){expandX(src);},250);});
+  fi.addEventListener("mouseleave",function(){clearTimeout(hoverT);});
+  fi.addEventListener("focus",function(){clearTimeout(hoverT);});
+}
+function renderImg(){
+  collapseX();
+  if(panelsMode){imgcol.innerHTML='<div class="recap"><div class="rk">Recap of chapter 1</div><p>Six panels retell the chapter in ink, in the reading area.</p></div>';return;}
+  var n=scene,rev=revealed.has(n),src=IMG[n],h='<div class="frame" id="frame">';
+  if(!rev){
+    h+='<div class="ph"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div class="grain" style="background-image:'+grainURL+'"></div><div class="wash"></div></div>';
+    h+='<button class="picbtn" id="picScene"><svg width="13" height="13" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="11"/><circle cx="6" cy="7" r="1.4"/><path d="M3.5 13 7 9.5l2.5 2.5 2-2 1 1"/></svg>Picture scene</button>';
+  }else if(src){h+='<img class="figimg" id="figImg" src="'+src+'" alt="Illustration for this scene" tabindex="0">';}
+  else{h+='<div class="mockbox" id="figImg" tabindex="0">Mock: the illustration would be generated here</div>';}
+  h+='</div>';
+  if(rev)h+='<div class="imgcap">Generated for this scene &middot; <a class="ext" href="'+(src||"#")+'">Denslow style, 1900 '+EXT+'</a></div>';
+  imgcol.innerHTML=h;
+  var pb=document.getElementById("picScene");
+  if(pb)pb.addEventListener("click",function(){revealed.add(scene);renderAll();});
+  var fi=document.getElementById("figImg");
+  if(fi){
+    requestAnimationFrame(function(){requestAnimationFrame(function(){fi.classList.add("show");});});
+    setTimeout(function(){fi.classList.add("clean");},500);
+    if(src){
+      fi.addEventListener("click",function(){clearTimeout(hoverT);collapseX();openLB(src,fi);});
+      fi.addEventListener("keydown",function(e){if(e.key==="Enter"){openLB(src,fi);}});
+      wireHover(fi,src);
+    }
+  }
+}
+function genFigHTML(g){
+  return '<figure class="genfig" data-gid="'+g.id+'"><img src="'+g.src+'" alt="Generated illustration: '+esc(g.quote)+'" tabindex="0">'
+    +'<figcaption><span class="grow">\u201C'+esc(trunc(g.quote))+'\u201D</span>'
+    +'<span class="gcredit">Picture this \u00B7 <a href="#" data-credit>Denslow style '+EXT+'</a></span>'
+    +'<button class="grm" data-rm="'+g.id+'" aria-label="Remove image">&times;</button></figcaption></figure>';
+}
+function renderRead(){
+  hideSelPop();
+  if(panelsMode){
+    var h='<div class="panelshead"><div class="kick2">End of chapter 1 \u00B7 Chapter in panels</div>'
+      +'<h1 class="chap">The Cyclone in Panels</h1>'
+      +'<div class="sceneline sans">Whole chapter retold in six frames</div></div><div class="pgrid">';
+    for(var i=0;i<6;i++){var p=PANELS[i];
+      h+='<div class="panel"><div class="art">';
+      if(p.img)h+='<img src="'+p.img+'" alt="" style="object-position:'+p.pos+'" data-full="'+p.img+'" tabindex="0">';
+      else h+='<div class="hatch" style="position:absolute;inset:0"></div>';
+      h+='<span class="pnum">'+(i+1)+'</span></div><div class="capbox">'+esc(p.cap)+'</div></div>';
+    }
+    h+='</div><div class="mocktag sans">Mock panels</div><button class="ch2btn" id="ch2">Chapter 2 \u2192</button>';
+    readcol.innerHTML=h;readcol.scrollTop=0;
+    readcol.querySelectorAll("[data-full]").forEach(function(im){im.style.cursor="zoom-in";
+      im.addEventListener("click",function(){openLB(im.getAttribute("data-full"),im);});
+      im.addEventListener("keydown",function(e){if(e.key==="Enter")openLB(im.getAttribute("data-full"),im);});});
+    document.getElementById("ch2").addEventListener("click",function(){toast("Mock");});
+    navLbl.textContent="End of chapter 1";tickLbl.textContent="Scene 4 of 133";paintTicks(4);
+    document.getElementById("prevBtn").disabled=false;
+    return;
+  }
+  var sc=CHAPTER.scenes[scene-1],gens=genStore[scene]||[],byPara={};
+  gens.forEach(function(g){(byPara[g.para]=byPara[g.para]||[]).push(g);});
+  var h='<div class="kick">Chapter 1 \u00B7 The Cyclone</div><h1 class="chap">The Cyclone</h1>'
+    +'<div class="sceneline sans"><span>Scene '+scene+' of 4</span></div><div class="body" id="tbody">';
+  sc.paragraphs.forEach(function(p,i){
+    h+='<p data-pi="'+i+'">'+esc(p)+'</p>';
+    (byPara[i]||[]).forEach(function(g){h+=genFigHTML(g);});
+  });
+  h+='</div>';
+  readcol.innerHTML=h;
+  readcol.querySelectorAll(".genfig").forEach(function(f){
+    var im=f.querySelector("img"),gid=f.getAttribute("data-gid");
+    function src(){var g=findGen(gid);return g?g.src:"";}
+    im.addEventListener("click",function(){openLB(src(),im);});
+    im.addEventListener("keydown",function(e){if(e.key==="Enter")openLB(src(),im);});
+  });
+  readcol.querySelectorAll("[data-rm]").forEach(function(b){b.addEventListener("click",function(e){
+    e.stopPropagation();removeGen(b.getAttribute("data-rm"));});});
+  readcol.querySelectorAll("[data-credit]").forEach(function(a){a.addEventListener("click",function(e){e.preventDefault();toast("Mock");});});
+  readcol.querySelectorAll(".genfig img").forEach(function(im){requestAnimationFrame(function(){requestAnimationFrame(function(){im.classList.add("show");});});});
+  navLbl.textContent="Scene "+scene+" of 4";tickLbl.textContent="Scene "+scene+" of 133";paintTicks(scene);
+  document.getElementById("prevBtn").disabled=(scene===1);
+}
+function findGen(gid){for(var k in genStore){var a=genStore[k];for(var i=0;i<a.length;i++)if(a[i].id===gid)return a[i];}return null;}
+function removeGen(gid){for(var k in genStore){genStore[k]=genStore[k].filter(function(g){return g.id!==gid;});}renderRead();renderMargin();}
+function renderMargin(){
+  var h='<div class="mlabel">Chapter in panels</div>'
+    +'<button class="tile" id="panelsTile"><span class="tname">Chapter in panels</span><span class="minigrid"><i><img src="../assets/cyclone-doorway.jpg" alt="" style="object-position:50% 20%"></i><i><img src="../assets/cyclone-house.jpg" alt="" style="object-position:50% 60%"></i><i></i><i></i><i></i><i></i></span>'
+    +'<span class="trow"><svg width="13" height="13" viewBox="0 0 16 16"><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8Z"/><circle cx="8" cy="8" r="2"/></svg>Spoiler gate</span></button>'
+    +'<div class="glist"><div class="mlabel">Generated images</div><div id="gitems"></div></div>';
+  margin.innerHTML=h;
+  document.getElementById("panelsTile").addEventListener("click",function(){openPanels(false,this);});
+  var box=document.getElementById("gitems"),gens=genStore[scene]||[],rev=revealed.has(scene),src=IMG[scene];
+  if(!rev&&!gens.length){box.innerHTML='<div class="ghint">Select a passage, then Picture this. Images collect here.</div>';return;}
+  var h2="";
+  if(rev&&src)h2+='<button class="gitem scene" data-sceneart="1"><span class="gthumb"><img src="'+src+'" alt="Scene illustration" tabindex="0"></span><span class="gcap">Scene illustration</span><span class="gmeta"><span class="gref">Scene '+scene+'</span><span class="gx" data-xart="1" role="button" aria-label="Enlarge scene illustration" tabindex="0"><svg width="11" height="11" viewBox="0 0 16 16"><path d="M9.5 2.5h4v4M13.5 2.5 9 7M6.5 13.5h-4v-4M2.5 13.5 7 9"/></svg></span></span></button>';
+  gens.forEach(function(g){
+    h2+='<button class="gitem gen" data-goto="'+g.id+'"><span class="gthumb"><img src="'+g.src+'" alt="Generated illustration: '+esc(g.quote)+'" tabindex="0"></span><span class="gcap">\u201C'+esc(trunc(g.quote))+'\u201D</span><span class="gmeta"><span class="gref">\u00B6 '+(g.para+1)+'</span><span class="gx" data-x="'+g.id+'" role="button" aria-label="Enlarge generated image" tabindex="0"><svg width="11" height="11" viewBox="0 0 16 16"><path d="M9.5 2.5h4v4M13.5 2.5 9 7M6.5 13.5h-4v-4M2.5 13.5 7 9"/></svg></span></span></button>';
+  });
+  box.innerHTML=h2+'<div class="gfade" aria-hidden="true"></div>';
+  box.querySelectorAll("[data-x]").forEach(function(x){x.addEventListener("click",function(e){e.stopPropagation();var g=findGen(x.getAttribute("data-x"));if(g)openLB(g.src,x);});});
+  box.querySelectorAll("[data-xart]").forEach(function(x){x.addEventListener("click",function(e){e.stopPropagation();openLB(IMG[scene],x);});});
+  var art=box.querySelector("[data-sceneart]");
+  if(art)art.addEventListener("click",function(){var fi=document.getElementById("figImg");if(fi){fi.scrollIntoView({block:"nearest"});fi.classList.remove("show");void fi.offsetWidth;fi.classList.add("show");}readcol.focus({preventScroll:true});});
+  box.querySelectorAll("[data-goto]").forEach(function(b){b.addEventListener("click",function(){
+    var f=readcol.querySelector('[data-gid="'+b.getAttribute("data-goto")+'"]');
+    if(f){scrollFigIntoView(f);f.classList.remove("ring");void f.offsetWidth;f.classList.add("ring");setTimeout(function(){f.classList.remove("ring");},1300);}
+  });});
+}
+function renderAll(){renderImg();renderRead();renderMargin();renderDev();}
+/* selection popover + picture this */
+var selpop=document.getElementById("selpop"),pendingSel=null;
+function hideSelPop(){selpop.style.display="none";pendingSel=null;}
+document.getElementById("selpopBtn").addEventListener("click",function(){
+  if(!pendingSel)return;
+  var quote=pendingSel.text,para=pendingSel.para;hideSelPop();insertGen(quote,para,false);
+});
+document.addEventListener("mouseup",function(){
+  setTimeout(function(){
+    var s=getSelection();
+    if(!s||s.isCollapsed||String(s).trim().length<3){hideSelPop();return;}
+    if(!readcol.contains(s.anchorNode)||!readcol.contains(s.focusNode)){hideSelPop();return;}
+    var r=s.getRangeAt(0).getBoundingClientRect(),txt=String(s).trim();
+    var node=s.focusNode,pe=null;
+    if(node.nodeType===1&&node.closest)pe=node.closest("p[data-pi]");
+    else if(node.parentElement)pe=node.parentElement.closest?node.parentElement.closest("p[data-pi]"):null;
+    var para=pe?parseInt(pe.getAttribute("data-pi"),10):0;
+    pendingSel={text:txt,para:para};
+    selpop.style.display="block";
+    var pw=selpop.offsetWidth;
+    selpop.style.left=Math.max(8,Math.min(innerWidth-pw-8,r.left+r.width/2-pw/2))+"px";
+    selpop.style.top=Math.max(8,r.top-8-selpop.offsetHeight)+"px";
+  },10);
+});
+document.addEventListener("mousedown",function(e){if(!selpop.contains(e.target))hideSelPop();});
+function insertGen(quote,para,instant){
+  var g=mkGen(quote,para);genStore[scene].push(g);
+  renderRead();renderMargin();
+  var f=readcol.querySelector('[data-gid="'+g.id+'"]');
+  if(!f)return;
+  if(instant){finishGen(g.id);return;}
+  f.innerHTML='<div class="genload">Illustrating\u2026</div>';
+  setTimeout(function(){finishGen(g.id);},1400);
+}
+function scrollFigIntoView(fig){
+  if(!fig)return;
+  var p=fig.previousElementSibling,para=null;
+  while(p){if(p.tagName==="P"&&p.hasAttribute("data-pi")){para=p;break;}p=p.previousElementSibling;}
+  var rc=readcol,pad=14;
+  var rcR=rc.getBoundingClientRect(),f=fig.getBoundingClientRect();
+  if(f.height>rcR.height-2*pad){rc.scrollTop+=(f.top-rcR.top)-pad;return;}
+  if(f.bottom>rcR.bottom-pad)rc.scrollTop+=(f.bottom-(rcR.bottom-pad));
+  if(para){var pb=para.getBoundingClientRect().bottom,top=rc.getBoundingClientRect().top;if(pb<top+pad)rc.scrollTop-=(top+pad-pb);}
+}
+function finishGen(gid){
+  var g=findGen(gid);if(!g)return;
+  renderRead();renderMargin();
+  var f=readcol.querySelector('[data-gid="'+gid+'"]');
+  if(f){var im=f.querySelector("img");requestAnimationFrame(function(){im.classList.add("show");});scrollFigIntoView(f);}
+}
+/* panels modal */
+var pmodal=document.getElementById("pmodal"),pdlg=document.getElementById("pdlg"),pReturn=null;
+function panelsGridHTML(){
+  var h='<div class="pgrid" style="margin-top:0">';
+  for(var i=0;i<6;i++){var p=PANELS[i];
+    h+='<div class="panel"><div class="art">';
+    if(p.img)h+='<img src="'+p.img+'" alt="" style="object-position:'+p.pos+'" data-full="'+p.img+'" tabindex="0">';
+    else h+='<div class="hatch" style="position:absolute;inset:0"></div>';
+    h+='<span class="pnum">'+(i+1)+'</span></div><div class="capbox">'+esc(p.cap)+'</div></div>';
+  }
+  return h+'</div><div class="mocktag sans">Mock panels</div>';
+}
+function openPanels(direct,ret){
+  pReturn=ret||document.activeElement;
+  if(direct||panelsMode){showPanelsGrid();}
+  else{
+    pdlg.innerHTML='<button id="px" aria-label="Close">&times;</button><div class="gate"><div class="kick2 sans" style="font-size:12.5px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--mut)">Chapter in panels</div><h1 class="chap" style="font-size:32px">The Cyclone in Panels</h1><p>Shows the whole chapter, including what happens next.</p><div class="gbtnrow"><button class="gbtn pri" id="pgShow">Show panels</button><button class="gbtn sec" id="pgNo">Not now</button></div></div>';
+    pmodal.classList.add("open");
+    document.getElementById("pgShow").addEventListener("click",showPanelsGrid);
+    document.getElementById("pgNo").addEventListener("click",closePanels);
+    document.getElementById("px").addEventListener("click",closePanels);
+    document.getElementById("pgShow").focus();
+  }
+}
+function showPanelsGrid(){
+  pdlg.innerHTML='<button id="px" aria-label="Close">&times;</button><div class="kick2 sans" style="font-size:12.5px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--mut)">Chapter in panels</div><h1 class="chap" style="font-size:32px;margin-bottom:4px">The Cyclone in Panels</h1>'+panelsGridHTML();
+  if(!pmodal.classList.contains("open"))pmodal.classList.add("open");
+  document.getElementById("px").addEventListener("click",closePanels);
+  pdlg.querySelectorAll("[data-full]").forEach(function(im){im.style.cursor="zoom-in";
+    im.addEventListener("click",function(){openLB(im.getAttribute("data-full"),im);});
+    im.addEventListener("keydown",function(e){if(e.key==="Enter")openLB(im.getAttribute("data-full"),im);});});
+  document.getElementById("px").focus();
+}
+function panelsIsOpen(){return pmodal.classList.contains("open");}
+function closePanels(){pmodal.classList.remove("open");if(pReturn&&pReturn.focus)try{pReturn.focus({preventScroll:true});}catch(e){pReturn.focus();}}
+pmodal.addEventListener("click",function(e){if(e.target===pmodal)closePanels();});
+/* dev panel */
+var dev=document.getElementById("dev");
+function renderDev(){
+  var sc=CHAPTER.scenes[scene-1],em=sc.emotions.slice().sort(function(a,b){return b[1]-a[1];});
+  var h='<div class="dhead"><span class="dtag">DEV</span><span style="color:var(--mut)">scene '+scene+' of 4</span><button class="dx" id="devx" aria-label="Close dev panel">&times;</button></div>';
+  h+='<div class="drow">Jev mood: '+esc(sc.mood)+'</div>';
+  em.forEach(function(e,i){h+='<div class="dbar"><span>'+esc(e[0])+'</span><span class="dtr"><span class="dfl'+(i===0?" top":"")+'" style="width:'+Math.round(e[1]*100)+'%"></span></span><span class="dnum">'+e[1].toFixed(2)+'</span></div>';});
+  h+='<div class="drow">intensity <span class="mono">'+sc.intensity.toFixed(2)+'</span></div>';
+  h+='<div class="drow">Track: Symphony No. 6 \u2013 IV <span class="mono">(score .82)</span></div>';
+  h+='<div class="drow">Scheduler: holding current track \u00B7 <span class="mono">32 s</span> left in dwell</div>';
+  h+='<div class="dfoot">133 scenes \u00B7 Muse Spark 1.3 \u00B7 Jev 1.14 \u00B7 <span class="mono">$0.0252</span></div>';
+  dev.innerHTML=h;
+  document.getElementById("devx").addEventListener("click",closeDev);
+}
+function devIsOpen(){return dev.classList.contains("open");}
+function openDev(){renderDev();dev.classList.add("open");}
+function closeDev(){dev.classList.remove("open");}
+if(qi("dev"))openDev();
+document.addEventListener("keydown",function(e){
+  if(xOpen&&e.key==="Escape"){collapseX();return;}
+  if(lbIsOpen()){if(e.key==="Escape")closeLB();return;}
+  if(panelsIsOpen()){if(e.key==="Escape")closePanels();return;}
+  if(devIsOpen()&&e.key==="Escape"){closeDev();return;}
+  if((e.shiftKey&&(e.key==="D"||e.key==="d"))){e.preventDefault();devIsOpen()?closeDev():openDev();return;}
+  if(e.key==="ArrowLeft")go(-1);
+  else if(e.key==="ArrowRight")go(1);
+  else if(e.key==="[")psGo(-1);
+  else if(e.key==="]")psGo(1);
+});
+/* nav */
+function go(d){
+  if(panelsMode&&d<0){panelsMode=false;scene=4;renderAll();return;}
+  var n=scene+d;
+  if(n>4){panelsMode=true;renderAll();return;}
+  if(n<1||n>4)return;
+  panelsMode=false;scene=n;renderAll();
+}
+document.getElementById("prevBtn").addEventListener("click",function(){go(-1);});
+document.getElementById("nextBtn").addEventListener("click",function(){go(1);});
+/* divider */
+var divider=document.getElementById("divider"),dragging=false;
+function defaultW(){return Math.round(mid.getBoundingClientRect().width*0.30);}
+function applyW(px){px=Math.max(220,Math.min(Math.round(innerWidth*0.46),px));mid.style.setProperty("--imgw",px+"px");return px;}
+try{var saved=parseInt(localStorage.getItem("lectoria.proto.v3.split"),10);if(saved)applyW(saved);else applyW(defaultW());}catch(e){applyW(defaultW());}
+divider.addEventListener("pointerdown",function(e){dragging=true;divider.classList.add("drag");try{divider.setPointerCapture(e.pointerId);}catch(x){}});
+divider.addEventListener("pointermove",function(e){if(!dragging)return;var r=mid.getBoundingClientRect();applyW(e.clientX-r.left);});
+divider.addEventListener("pointerup",function(e){if(!dragging)return;dragging=false;divider.classList.remove("drag");var r=mid.getBoundingClientRect();try{localStorage.setItem("lectoria.proto.v3.split",Math.round(e.clientX-r.left));}catch(x){}});
+divider.addEventListener("dblclick",function(){var w=applyW(defaultW());try{localStorage.setItem("lectoria.proto.v3.split",w);}catch(x){}});
+/* theme: URL wins over storage */
+var SUN='<svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="3.2"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M12.6 3.4l-1.4 1.4M4.8 11.2 3.4 12.6"/></svg>';
+var MOON='<svg width="16" height="16" viewBox="0 0 16 16"><path d="M13.5 9.5A5.8 5.8 0 0 1 6.5 2.5a5.8 5.8 0 1 0 7 7Z"/></svg>';
+var themeBtn=document.getElementById("themeBtn");
+function setTheme(t){document.documentElement.setAttribute("data-theme",t);themeBtn.innerHTML=(t==="dark"?SUN:MOON);try{localStorage.setItem("lectoria.proto.v3.theme",t);}catch(e){}}
+if(qi("dark"))setTheme("dark");
+else{var st=null;try{st=localStorage.getItem("lectoria.proto.v3.theme");}catch(e){}setTheme(st==="dark"?"dark":"light");}
+themeBtn.addEventListener("click",function(){setTheme(document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark");});
+/* player mocks */
+var playing=true,tPlay=document.getElementById("tPlay"),playIco=document.getElementById("playIco");
+var P_PAUSE='<path d="M5.5 2.5v11M10.5 2.5v11"/>',P_PLAY='<path d="M5 2.5 12 8l-7 5.5v-11Z"/>';
+tPlay.addEventListener("click",function(){playing=!playing;playIco.innerHTML=playing?P_PAUSE:P_PLAY;tPlay.setAttribute("aria-label",playing?"Pause music":"Play music");});
+document.getElementById("tPrev").addEventListener("click",function(){toast("Mock");});
+document.getElementById("tNext").addEventListener("click",function(){toast("Mock");});
+document.getElementById("muteBtn").addEventListener("click",function(){var v=document.getElementById("vol");v.value=(v.value==="0"?"70":"0");});
+var segO=document.getElementById("segO"),segP=document.getElementById("segP");
+segO.addEventListener("click",function(){segO.classList.add("on");segP.classList.remove("on");});
+segP.addEventListener("click",function(){segP.classList.add("on");segO.classList.remove("on");});
+document.getElementById("chopin").addEventListener("click",function(){toast("Mock");});
+/* switcher */
+var FILES=["01-folio-carousel.html","02-folio-pages.html","03-folio-margin.html"];
+function psGo(d){window.location.href=FILES[(2+d+FILES.length)%FILES.length];}
+(function(){
+  if(location.search.indexOf("shot")!==-1){document.getElementById("protoSwitcher").style.display="none";return;}
+  document.getElementById("psPrev").addEventListener("click",function(){psGo(-1);});
+  document.getElementById("psNext").addEventListener("click",function(){psGo(1);});
+})();
+renderAll();
+if(qi("panels")){openPanels(false,document.getElementById("panelsTile"));}
+if(qi("hover")){var _fi=document.getElementById("figImg");if(_fi&&IMG[scene])expandX(IMG[scene]);}
+if(qi("pt")||qi("gallery")){
+  var _f=readcol.querySelector(".genfig");
+  if(_f){var _im=_f.querySelector("img");_im.classList.add("show");scrollFigIntoView(_f);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){var f2=readcol.querySelector(".genfig");if(f2)scrollFigIntoView(f2);});}
+}
+</script>
+</body>
+</html>

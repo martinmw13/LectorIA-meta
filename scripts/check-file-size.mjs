@@ -40,6 +40,8 @@ export const IGNORE_PATTERNS = [
   'data/music/',
   // Agent and session logs (the project log dir is agent-logs/).
   'agent-logs/',
+  // Throwaway prototypes on the prototype/* branch, never merged.
+  'prototypes/',
   // Vendored third-party skills.
   '.agents/skills/',
 ];

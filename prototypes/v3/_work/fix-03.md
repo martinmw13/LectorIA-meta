@@ -1,0 +1,3 @@
+File: /workspace/prototypes/v3/03-folio-margin.html (direction: 03-folio-margin.md)
+D. Right-margin gallery entries are too large (thumbnails tall and the list overflows the band). Make each entry a compact row: 4:3 thumbnail 176px wide x 100px high, object-fit cover, radius 6px, then the italic quote caption (2 lines max, ellipsis) and the muted "¶ 2" reference on the same line as a tiny expand icon button that opens the lightbox. The gallery list scrolls inside the margin if needed, with a soft fade at the bottom. Caption text must not wrap awkwardly ("Scene illustration" on one line).
+E. Panels tile: make the mini grid thumbnails a bit richer (two of them blurred crops of the two images, four hatch) so it reads as a comic preview, keep it small.
