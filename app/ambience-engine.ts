@@ -12,17 +12,21 @@ function context(): AudioContext {
   return shared;
 }
 
+export function canPlayAudio(type: string): boolean {
+  if (type === "") return false;
+  try {
+    const verdict = new Audio().canPlayType(type);
+    return verdict === "probably" || verdict === "maybe";
+  } catch {
+    return false;
+  }
+}
+
 // First source canPlayType rates "probably" or "maybe", else the first.
 function pickSource(sources: AmbienceSource[]): AmbienceSource | null {
   if (sources.length === 0) return null;
   try {
-    const probe = new Audio();
-    return (
-      sources.find((source) => {
-        const verdict = probe.canPlayType(source.type);
-        return verdict === "probably" || verdict === "maybe";
-      }) ?? sources[0]!
-    );
+    return sources.find((source) => canPlayAudio(source.type)) ?? sources[0]!;
   } catch {
     return sources[0]!;
   }

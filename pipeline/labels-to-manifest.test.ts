@@ -179,4 +179,14 @@ describe("labelsToManifest", () => {
       "schemaVersion",
     );
   });
+
+  it("carries fallbackSrc from library entries", () => {
+    const lib = library();
+    (lib.entries["lab-todo"] as { fallbackSrc?: string }).fallbackSrc = "/music/v1/st-orch/a.m4a";
+    const { manifest } = labelsToManifest(labels(), lib);
+    const a1 = manifest.tracks.find((t) => t.id === "seg-a1")!;
+    expect(a1.fallbackSrc).toBe("/music/v1/st-orch/a.m4a");
+    const good = manifest.tracks.find((t) => t.id === "lab-good")!;
+    expect("fallbackSrc" in good).toBe(false);
+  });
 });

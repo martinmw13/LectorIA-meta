@@ -17,6 +17,8 @@ export const CHOPIN_PLAYLIST_ID = "just-play-chopin";
 export interface Track {
   id: string;
   src: string;
+  // Same audio in a second container for browsers that cannot play src.
+  fallbackSrc?: string;
   title: string;
   playlistOnly?: boolean;
   emotion: EmotionId;

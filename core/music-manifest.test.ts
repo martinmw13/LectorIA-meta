@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { parseManifest } from "./music";
+import { audioType, choosePlayableSources, parseManifest } from "./music";
 
 function track(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
@@ -52,13 +52,14 @@ describe("committed music manifest", () => {
       if (track.src.startsWith("/")) {
         expect(existsSync(join(__dirname, "..", "public", track.src))).toBe(true);
       }
-    }
-    // Real recordings: every track credits its source, remote audio
-    // comes only from the Blob store host allowed in media-src.
-    for (const track of manifest.tracks) {
-      if (track.src.startsWith("https://")) {
-        expect(new URL(track.src).host).toBe("3vuhzq2wmortnuxj.public.blob.vercel-storage.com");
+      if (track.fallbackSrc !== undefined && track.fallbackSrc.startsWith("/")) {
+        expect(existsSync(join(__dirname, "..", "public", track.fallbackSrc))).toBe(true);
       }
+    }
+    // Real recordings: every track credits its source. Audio ships from
+    // public/ (Fast Data Transfer), never from metered Blob transfer.
+    for (const track of manifest.tracks) {
+      expect(track.src).toMatch(/^\/music\/v1\/.+\.webm$/);
       expect(track.attribution).toBeTruthy();
       expect(track.sourceUrl).toMatch(/^https:\/\//);
     }
@@ -102,5 +103,68 @@ describe("gainDb and endSec", () => {
       ]),
     );
     expect(parsed.tracks).toHaveLength(2);
+  });
+});
+
+describe("fallbackSrc", () => {
+  it("accepts and keeps a valid fallbackSrc", () => {
+    const parsed = parseManifest(
+      manifestWith([track({ fallbackSrc: "/music/v1/cnso/x.m4a" })]),
+    );
+    expect(parsed.tracks[0]?.fallbackSrc).toBe("/music/v1/cnso/x.m4a");
+  });
+
+  it("rejects a bad fallbackSrc", () => {
+    expect(() => parseManifest(manifestWith([track({ fallbackSrc: "ftp://x" })]))).toThrow(
+      "fallbackSrc",
+    );
+    expect(() => parseManifest(manifestWith([track({ fallbackSrc: 42 })]))).toThrow(
+      "fallbackSrc",
+    );
+  });
+});
+
+describe("audioType", () => {
+  it("maps extensions to mime types", () => {
+    expect(audioType("/music/a.webm")).toBe("audio/webm; codecs=opus");
+    expect(audioType("/music/a.m4a")).toBe("audio/mp4");
+    expect(audioType("/music/a.mp4")).toBe("audio/mp4");
+    expect(audioType("/music/a.mp3")).toBe("audio/mpeg");
+    expect(audioType("/music/a.ogg")).toBe("audio/ogg; codecs=opus");
+    expect(audioType("/music/a.opus")).toBe("audio/ogg; codecs=opus");
+    expect(audioType("/music/a.wav")).toBe("audio/wav");
+    expect(audioType("/music/a.webm?x=1")).toBe("audio/webm; codecs=opus");
+    expect(audioType("/music/a.xyz")).toBe("");
+  });
+});
+
+describe("choosePlayableSources", () => {
+  function twoTracks() {
+    return parseManifest(
+      manifestWith([
+        track({ id: "a", src: "/music/a.webm", fallbackSrc: "/music/a.m4a" }),
+        track({ id: "b", src: "/music/b.mp3" }),
+      ]),
+    );
+  }
+
+  it("keeps src when everything plays", () => {
+    const out = choosePlayableSources(twoTracks(), () => true);
+    expect(out.tracks[0]?.src).toBe("/music/a.webm");
+  });
+
+  it("swaps to fallbackSrc when only mp4 plays", () => {
+    const out = choosePlayableSources(twoTracks(), (type) => type === "audio/mp4");
+    expect(out.tracks[0]?.src).toBe("/music/a.m4a");
+    expect(out.tracks[1]?.src).toBe("/music/b.mp3");
+  });
+
+  it("keeps src when nothing plays and does not mutate input", () => {
+    const input = twoTracks();
+    const before = JSON.stringify(input);
+    const out = choosePlayableSources(input, () => false);
+    expect(out.tracks[0]?.src).toBe("/music/a.webm");
+    expect(JSON.stringify(input)).toBe(before);
+    expect(out).not.toBe(input);
   });
 });

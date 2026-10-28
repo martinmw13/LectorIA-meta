@@ -43,6 +43,7 @@ interface ExportSegment {
 
 interface LibraryEntry {
   src: string;
+  fallbackSrc?: string;
   soundtrack: string;
   durationSec: number;
   noDerivatives?: boolean;
@@ -206,7 +207,7 @@ function parseLibrary(json: unknown): Library {
       ...(gainDb === undefined ? {} : { gainDb }),
       ...(source === undefined ? {} : { source }),
     };
-    for (const key of ["composer", "artist", "license", "attribution", "sourceUrl"] as const) {
+    for (const key of ["composer", "artist", "license", "attribution", "sourceUrl", "fallbackSrc"] as const) {
       const value = optString(raw, key, what);
       if (value !== undefined) entries[trackId]![key] = value;
     }
@@ -340,6 +341,7 @@ function convertSegment(
     labelId,
     ...(provisional ? { provisional: true as const } : {}),
     src: entry.src,
+    ...(entry.fallbackSrc === undefined ? {} : { fallbackSrc: entry.fallbackSrc }),
     title: entry.title,
     emotion: seg.primary,
     vector,
