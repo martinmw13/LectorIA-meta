@@ -19,7 +19,8 @@
     "check:size": "node scripts/check-file-size.mjs",
     "prepare": "git rev-parse --git-dir >/dev/null 2>&1 && git config core.hooksPath .githooks || true",
     "test:hooks": "node --test scripts/*.test.mjs",
-    "muse:stats": "node scripts/muse-stats.mjs"
+    "muse:stats": "node scripts/muse-stats.mjs",
+    "deploy:prod": "npx vercel@latest deploy --prod --yes"
   },
   "dependencies": {
     "@vercel/blob": "2.8.2",

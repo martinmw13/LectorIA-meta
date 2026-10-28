@@ -24,6 +24,14 @@ npm run build
 
 Opt-in scroll e2e (Python Playwright, not in CI): `python3 scripts/e2e-scroll.py [base_url]`.
 
+## Deploys
+
+Automatic Vercel git deploys are off (`vercel.json`: `git.deploymentEnabled: false`), for both PR Previews and `main`. This keeps us under the Hobby limit of about 100 deploys a day. Production goes out manually, in batches, a few times a day, from an up-to-date `main`:
+
+```bash
+npm run deploy:prod   # = vercel deploy --prod --yes (needs `vercel login` or VERCEL_TOKEN, and `vercel link` to team lectoria1)
+```
+
 ## Built with Meta Muse
 
 Meta's Muse built this repo and runs inside it.
