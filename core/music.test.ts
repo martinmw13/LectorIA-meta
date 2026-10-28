@@ -6,7 +6,7 @@ import {
   nextTrack,
   normalize8,
   parseManifest,
-  rankTracks,
+  rankScored,
   scoreTrack,
 } from "./music";
 import type { MusicManifest, SceneSignal, Track } from "./music";
@@ -94,7 +94,7 @@ describe("bhattacharyyaSimilarity", () => {
   });
 });
 
-describe("scoreTrack and rankTracks", () => {
+describe("scoreTrack and rankScored", () => {
   it("uses bhattacharyya by default", () => {
     const s = signal("tristeza");
     const t = manifest.tracks[0] as Track;
@@ -103,7 +103,9 @@ describe("scoreTrack and rankTracks", () => {
 
   it("accepts the cosine alternative through config", () => {
     const s = signal("tristeza");
-    const ranked = rankTracks(s, manifest, { similarity: cosineSimilarity });
+    const ranked = rankScored(s, manifest.tracks, { similarity: cosineSimilarity }).map(
+      (e) => e.track,
+    );
     const manual = [...manifest.tracks].sort(
       (a, b) => cosineSimilarity(s, b) - cosineSimilarity(s, a),
     );
@@ -122,9 +124,9 @@ describe("scoreTrack and rankTracks", () => {
         track("calm-near", "calma", 0.5, 0.5),
       ],
     };
-    expect(rankTracks(s, two)[0]?.id).toBe("sad-far");
+    expect(rankScored(s, two.tracks).map((e) => e.track)[0]?.id).toBe("sad-far");
     const custom = { emotion: 0, intensity: 0.5, tempo: 0.5 };
-    const ranked = rankTracks(s, two, { weights: custom });
+    const ranked = rankScored(s, two.tracks, { weights: custom }).map((e) => e.track);
     expect(ranked[0]?.id).toBe("calm-near");
     expect(scoreTrack(s, two.tracks[0] as Track, { weights: custom })).toBe(
       bhattacharyyaSimilarity(s, two.tracks[0] as Track, custom),
@@ -139,7 +141,7 @@ describe("scoreTrack and rankTracks", () => {
       playlists: [],
       tracks: [track("b", "calma"), track("a", "calma")],
     };
-    expect(rankTracks(signal("calma"), tied)[0]?.id).toBe("a");
+    expect(rankScored(signal("calma"), tied.tracks).map((e) => e.track)[0]?.id).toBe("a");
   });
 
   it("dominantEmotion follows the renormalized argmax with EMOTIONS order ties", () => {
@@ -165,7 +167,9 @@ describe("nextTrack", () => {
   it("falls back to best overall when no other same-emotion track exists", () => {
     const s = signal("calma");
     const next = nextTrack(s, manifest, "calm");
-    const expected = rankTracks(s, manifest).find((t) => t.id !== "calm");
+    const expected = rankScored(s, manifest.tracks)
+      .map((e) => e.track)
+      .find((t) => t.id !== "calm");
     expect(next?.id).toBe(expected?.id);
     expect(next?.id).not.toBe("calm");
   });
@@ -173,7 +177,11 @@ describe("nextTrack", () => {
   it("falls back when the dominant emotion has no tracks", () => {
     const s = signal("aventura");
     const next = nextTrack(s, manifest, "sad-a");
-    expect(next?.id).toBe(rankTracks(s, manifest).find((t) => t.id !== "sad-a")?.id);
+    expect(next?.id).toBe(
+      rankScored(s, manifest.tracks)
+        .map((e) => e.track)
+        .find((t) => t.id !== "sad-a")?.id,
+    );
   });
 
   it("cycles all tracks in id order for a null scene", () => {

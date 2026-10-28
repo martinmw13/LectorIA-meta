@@ -4,7 +4,6 @@ import type { EmotionId, Vector8 } from "./types";
 import { buildFeatures } from "./cluster";
 import type {
   MusicConfig,
-  MusicManifest,
   MusicWeights,
   SceneSignal,
   Similarity,
@@ -112,15 +111,6 @@ export function rankScored(
   return tracks
     .map((track) => ({ track, score: config.similarity(scene, track, config.weights) }))
     .sort((a, b) => b.score - a.score || compareTrackId(a.track, b.track));
-}
-
-// Best score first. Ties go to the lower track id, so ranking is stable.
-export function rankTracks(
-  scene: SceneSignal,
-  manifest: MusicManifest,
-  override?: Partial<MusicConfig>,
-): Track[] {
-  return rankScored(scene, manifest.tracks, override).map((entry) => entry.track);
 }
 
 // Dominant emotion of a scene: argmax of the renormalized vector, with
