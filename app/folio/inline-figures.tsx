@@ -14,7 +14,7 @@ export function SelectionPopover({
   popRef,
   onPick,
 }: {
-  pos: { top: number; left: number };
+  pos: { top: number; left: number; hint?: string };
   popRef: React.Ref<HTMLButtonElement>;
   onPick: () => void;
 }) {
@@ -28,10 +28,11 @@ export function SelectionPopover({
       className="picture-float"
       style={{ top: pos.top, left: pos.left }}
       onClick={onPick}
-      aria-label="Picture this"
+      aria-label={pos.hint ?? "Picture this"}
+      aria-live="polite"
     >
       <PictureIcon size={12} />
-      <span className="picture-float-lbl">Picture this</span>
+      <span className="picture-float-lbl">{pos.hint ?? "Picture this"}</span>
     </button>,
     document.body,
   );

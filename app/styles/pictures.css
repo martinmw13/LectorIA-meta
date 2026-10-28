@@ -111,6 +111,20 @@ html[data-theme="dark"] .paper-grain .b3 {
   transform: none;
 }
 
+/* "One picture at a time": quiet note under the idle pill while another
+   picture is on its way. Static, no motion. */
+.pic-hint {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + 34px);
+  transform: translateX(-50%);
+  margin: 0;
+  white-space: nowrap;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
 .pic-btn-art {
   width: 42px;
   height: 42px;

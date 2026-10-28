@@ -173,3 +173,119 @@ test("rescan after a scene switch shows the popover at document coordinates", ()
     root.unmount();
   });
 });
+
+// Continuous scroll keeps one hook call while the scene in view changes,
+// and a picture takes ~20 s. These pin what a scene switch mid-request does.
+type Pic = ReturnType<typeof usePictures>;
+let live: Pic | null = null;
+
+function LiveHarness({ sceneId }: { sceneId: string }) {
+  const pic = usePictures({ bookId: "oz", textVersion: "v", sceneId, pref: { kind: "preset", id: "denslow" } });
+  live = pic;
+  return (
+    <div ref={pic.viewRef}>
+      <p id="c3p1" data-n="1">
+        The Scarecrow bowed politely.
+      </p>
+    </div>
+  );
+}
+
+// fetch that answers only when the test says so.
+function pendingFetch() {
+  const waiting: ((body: unknown) => void)[] = [];
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(() => new Promise((done) => waiting.push((body) => done({ json: async () => body })))),
+  );
+  return async (body: unknown) => {
+    await act(async () => {
+      waiting.shift()?.(body);
+      await new Promise((r) => setTimeout(r, 0));
+    });
+  };
+}
+
+function mountLive(sceneId: string) {
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  const root = createRoot(host);
+  const show = (id: string) =>
+    act(() => {
+      root.render(<LiveHarness sceneId={id} />);
+    });
+  show(sceneId);
+  const pictureSelection = () => {
+    const range = document.createRange();
+    range.selectNodeContents(host.querySelector("p")!.firstChild!);
+    const sel = window.getSelection()!;
+    sel.removeAllRanges();
+    sel.addRange(range);
+    act(() => live!.illustratePassage());
+  };
+  return { root, show, pictureSelection };
+}
+
+const ready = (url: string) => ({ status: "ready", url, caption: "c" });
+
+test("a figure finishing after a scene switch stays with its own scene", async () => {
+  const answer = pendingFetch();
+  const { root, show, pictureSelection } = mountLive("c3sB");
+  pictureSelection();
+  await answer(ready("/b.png"));
+  const figB = live!.figures.map((f) => ({ id: f.id, url: f.url }));
+  expect(figB).toHaveLength(1);
+
+  show("c3sA");
+  pictureSelection();
+  expect(live!.figures.map((f) => f.phase)).toEqual(["loading"]);
+  show("c3sB");
+  await answer(ready("/a.png"));
+  // B is untouched by A's late result.
+  expect(live!.figures.map((f) => ({ id: f.id, url: f.url }))).toEqual(figB);
+  show("c3sA");
+  expect(live!.figures.map((f) => ({ phase: f.phase, url: f.url }))).toEqual([{ phase: "ready", url: "/a.png" }]);
+  act(() => root.unmount());
+});
+
+test("a figure still generating shows loading when its scene comes back", async () => {
+  const answer = pendingFetch();
+  const { root, show, pictureSelection } = mountLive("c4sA");
+  pictureSelection();
+  show("c4sB");
+  expect(live!.figures).toEqual([]);
+  show("c4sA");
+  expect(live!.figures.map((f) => f.phase)).toEqual(["loading"]);
+  await answer(ready("/a4.png"));
+  expect(live!.figures.map((f) => f.phase)).toEqual(["ready"]);
+  act(() => root.unmount());
+});
+
+test("returning to a scene whose picture is generating shows the drawing", async () => {
+  const answer = pendingFetch();
+  const { root, show } = mountLive("c5sA");
+  act(() => live!.illustrateScene());
+  expect(live!.card.phase).toBe("loading");
+  show("c5sB");
+  expect(live!.card.phase).toBe("idle");
+  show("c5sA");
+  expect(live!.card.phase).toBe("loading");
+  await answer(ready("/s5.png"));
+  expect(live!.card).toEqual({ phase: "ready", url: "/s5.png", caption: "c" });
+  act(() => root.unmount());
+});
+
+test("asking for a second picture while one is on its way says so", async () => {
+  const answer = pendingFetch();
+  const { root, show } = mountLive("c6sA");
+  act(() => live!.illustrateScene());
+  show("c6sB");
+  act(() => live!.illustrateScene());
+  expect(live!.card).toEqual({ phase: "idle", hint: "One picture at a time" });
+  expect(fetch).toHaveBeenCalledTimes(1);
+  await answer(ready("/s6.png"));
+  act(() => live!.illustrateScene());
+  expect(live!.card.phase).toBe("loading");
+  await answer(ready("/s6b.png"));
+  act(() => root.unmount());
+});

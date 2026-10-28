@@ -25,22 +25,8 @@ export function figuresAfter<P extends { n: number }, F>(
   return paragraphs[i + 1]?.n !== cur.n ? (grouped.get(cur.n) ?? []) : [];
 }
 
-// One request at a time across scene and figure. The flag lives in the
-// caller's ref; these are the only transitions.
-export function tryStart(gate: { current: boolean }): boolean {
-  if (gate.current) return false;
-  gate.current = true;
-  return true;
-}
-
-export function finish(gate: { current: boolean }): void {
-  gate.current = false;
-}
-
-export function canStart(busy: boolean): boolean {
-  return !busy;
-}
-
+// One request at a time across scene and figure: `busy` is whether
+// use-pictures.ts has a request in flight.
 // A figure retries only from the error phase, never while busy.
 export function canRetryFigure<F extends { phase: string }>(figure: F | undefined, busy: boolean): figure is F {
   return !busy && figure?.phase === "error";
