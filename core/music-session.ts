@@ -3,12 +3,7 @@
 // reader builds the context (clock, rng, scene signals) and bridges the
 // view to React state. The player stays the mechanism that performs
 // crossfades; this module decides them.
-import {
-  CHOPIN_PLAYLIST_ID,
-  MUSIC_CONFIG,
-  nextTrack,
-  resolveInitialSelection,
-} from "./music";
+import { MUSIC_CONFIG, nextTrack, resolveInitialSelection } from "./music";
 import type {
   MusicManifest,
   MusicSelection,
@@ -28,6 +23,9 @@ import {
   tickScheduler,
 } from "./music-schedule";
 import type { ScheduleDecision, SchedulerState } from "./music-schedule";
+import { currentMode, findChopinPlaylist, musicModes, nextMode } from "./music-modes";
+import type { MusicModeId } from "./music-modes";
+export { findChopinPlaylist } from "./music-modes";
 import { popHistory, pushHistory } from "./music-history";
 
 export interface MusicSession {
@@ -64,17 +62,11 @@ export type MusicIntent =
   | { type: "previous" }
   | { type: "styleChanged"; style: string }
   | { type: "trackEnded"; trackId: string }
-  | { type: "playlistToggled" };
+  | { type: "playlistToggled" }
+  | { type: "modeAdvanced"; to?: MusicModeId };
 
 // Route entries use the short dwell; the draw and the holds are unchanged.
 const ENTRY_DWELL = { dwellSec: MUSIC_CONFIG.sceneEntryDwellSec };
-
-// The Chopin playlist, when the manifest defines it with tracks. The
-// button stays hidden otherwise, and the player never persists the playlist.
-export function findChopinPlaylist(manifest: MusicManifest) {
-  const found = manifest.playlists.find((p) => p.id === CHOPIN_PLAYLIST_ID) ?? null;
-  return found && found.trackIds.length > 0 ? found : null;
-}
 
 export function startSession(
   manifest: MusicManifest,
@@ -87,6 +79,16 @@ export function startSession(
     fadeSec: 0,
     replayNonce: 0,
   };
+  // A stored Chopin mode starts in the playlist at once (fade 0, like the
+  // first scene entry); without the playlist the stored style stands.
+  if (prefs?.playlist === true) {
+    const playlist = findChopinPlaylist(manifest);
+    if (playlist) {
+      const decision = enterPlaylist(fields.scheduler, manifest, playlist.id, 0);
+      const entered = foldSwitch(fields, decision, false);
+      return { ...entered, view: buildView(entered, manifest, null, entered.selection) };
+    }
+  }
   return {
     ...fields,
     view: buildView(fields, manifest, null, fields.selection),
@@ -302,6 +304,35 @@ export function dispatch(session: MusicSession, intent: MusicIntent, ctx: Sessio
       }
       const decision = enterPlaylist(session.scheduler, ctx.manifest, playlist.id, ctx.nowSec);
       return settle(session, foldSwitch(baseOf(session), decision, true), ctx);
+    }
+    case "modeAdvanced": {
+      const modes = musicModes(ctx.manifest);
+      const target = intent.to ?? nextMode(modes, currentMode(session.view));
+      if (target === null || !modes.some((m) => m.id === target)) return session;
+      if (target === currentMode(session.view)) return session;
+      const playlist = findChopinPlaylist(ctx.manifest);
+      if (playlist !== null && target === playlist.id) {
+        if (session.scheduler.playlist !== null) return session;
+        const decision = enterPlaylist(session.scheduler, ctx.manifest, playlist.id, ctx.nowSec);
+        return settle(session, foldSwitch(baseOf(session), decision, true), ctx);
+      }
+      const signal = ctx.routeSceneId !== null ? ctx.signalOf(ctx.routeSceneId) : null;
+      // Leaving the playlist switches straight to the target style: one
+      // exit under the target selection, one switch, one crossfade.
+      if (session.scheduler.playlist !== null) {
+        const decision = exitPlaylist(session.scheduler, signal, ctx.manifest, ctx.nowSec, {
+          selection: { style: target },
+          rng: ctx.rng,
+        });
+        const fields = foldSwitch(baseOf(session), decision, true);
+        return settle(session, { ...fields, selection: { style: target } }, ctx);
+      }
+      if (ctx.routeSceneId === null) return session;
+      if (target === session.selection.style) return session;
+      const decision = switchStyle(session.scheduler, signal, ctx.manifest, ctx.nowSec, target);
+      if (decision.switchToId === null) return session;
+      const fields = foldSwitch(baseOf(session), decision, true);
+      return settle(session, { ...fields, selection: { style: target } }, ctx);
     }
     default: {
       const _exhaustive: never = intent;
