@@ -56,6 +56,7 @@ const lastUserScroll = new WeakMap<object, number>();
 export function noteUserScroll(scroller: object, now: number = Date.now()): void {
   lastUserScroll.set(scroller, now);
   pendingTarget.delete(scroller);
+  stopGlide(scroller);
 }
 
 export function attachFollowPause(scroller: HTMLElement): () => void {
@@ -70,14 +71,51 @@ export function attachFollowPause(scroller: HTMLElement): () => void {
   };
 }
 
-// Keep the spoken word in a comfortable band (20% to 80% of the scroller
-// viewport). Inside it nothing moves. Once the word leaves it, one scroll
-// sets its line at 35% (smooth unless reduced motion). The band is judged
-// against that scroll's target while it is in flight, so frames re-issue
-// the same target instead of stacking scrolls. A box taller than the band
-// follows its top only. Never within pauseMs of a user scroll. Returns
-// true when it scrolled or a scroll is on its way.
+// Keep the spoken word in a comfortable band (20% to 60% of the scroller
+// viewport). Inside it nothing moves. Once the word's line passes 60%,
+// one slow eased glide brings it back to 38%, a few lines at a time, so
+// the page drifts steadily instead of leaping (instant with reduced
+// motion). The band is judged against the glide's target while it is in
+// flight, so frames never stack scrolls. A box taller than the band
+// follows its top only. Never within pauseMs of a user scroll, and a
+// user scroll stops a glide mid-way. Returns true when it scrolled or a
+// scroll is on its way.
 const pendingTarget = new WeakMap<object, number>();
+const glides = new WeakMap<object, () => void>();
+
+const BAND_TOP = 0.2;
+const BAND_BOTTOM = 0.6;
+const ANCHOR = 0.38;
+
+function stopGlide(scroller: object): void {
+  glides.get(scroller)?.();
+  glides.delete(scroller);
+}
+
+// Ease-in-out over 500 to 900 ms depending on distance. Without a real
+// window (tests, SSR) the scroll lands at once.
+function glideTo(scroller: HTMLElement, target: number): void {
+  stopGlide(scroller);
+  const win = scroller.ownerDocument?.defaultView;
+  if (prefersReducedMotion() || !win || typeof win.requestAnimationFrame !== "function") {
+    scroller.scrollTop = target;
+    return;
+  }
+  const from = scroller.scrollTop;
+  const distance = target - from;
+  const duration = Math.min(900, Math.max(500, Math.abs(distance) * 3));
+  const t0 = win.performance.now();
+  let raf = 0;
+  const step = (now: number) => {
+    const p = Math.min(1, (now - t0) / duration);
+    const eased = 0.5 - Math.cos(Math.PI * p) / 2;
+    scroller.scrollTop = from + distance * eased;
+    if (p < 1) raf = win.requestAnimationFrame(step);
+    else glides.delete(scroller);
+  };
+  raf = win.requestAnimationFrame(step);
+  glides.set(scroller, () => win.cancelAnimationFrame(raf));
+}
 
 export function followIntoView(
   el: { getBoundingClientRect(): DOMRect },
@@ -96,16 +134,15 @@ export function followIntoView(
   }
   const contentTop = box.top - frame.top + scroller.scrollTop;
   const rel = contentTop - (pending ?? scroller.scrollTop);
-  const tall = box.height >= frame.height * 0.6;
-  if (rel >= frame.height * 0.2 && (tall || rel + box.height <= frame.height * 0.8)) return pending !== undefined;
-  let target = Math.max(0, contentTop - frame.height * 0.35);
+  const tall = box.height >= frame.height * (BAND_BOTTOM - BAND_TOP);
+  if (rel >= frame.height * BAND_TOP && (tall || rel + box.height <= frame.height * BAND_BOTTOM)) {
+    return pending !== undefined;
+  }
+  let target = Math.max(0, contentTop - frame.height * ANCHOR);
   const max = scroller.scrollHeight - scroller.clientHeight;
   if (Number.isFinite(max)) target = Math.min(target, max);
-  if (typeof scroller.scrollTo === "function") {
-    scroller.scrollTo({ top: target, behavior: prefersReducedMotion() ? "auto" : "smooth" });
-  } else {
-    scroller.scrollTop = target;
-  }
+  if (Math.abs(target - scroller.scrollTop) < 2) return false;
   pendingTarget.set(scroller, target);
+  glideTo(scroller, target);
   return true;
 }
