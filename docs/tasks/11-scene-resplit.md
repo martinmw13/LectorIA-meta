@@ -32,3 +32,5 @@ re-classified with the standard classify path. Coverage validation
 runs before writing. Provenance lands under `provenance.resplit`,
 and the step skips when that entry exists unless forced. A first part
 keeps its "Picture scene" image key; no such image is live yet.
+Oz kept the defaults: 18 splits, all above the 0.30 auto margin
+(lowest 0.315), every part over 120 words, so neither number moved.
