@@ -3,6 +3,7 @@ import {
   NARRATION_DUCK_DB,
   NARRATION_DUCK_DOWN_MS,
   NARRATION_DUCK_UP_MS,
+  ambienceDuckTarget,
   duckMultiplier,
   rampDuck,
 } from "./duck";
@@ -55,5 +56,20 @@ describe("duck ramp", () => {
     let v = level;
     for (let t = 0; t < NARRATION_DUCK_UP_MS; t += 16) v = rampDuck(v, 1, 16, NARRATION_DUCK_UP_MS);
     expect(v).toBe(1);
+  });
+});
+
+describe("ambienceDuckTarget", () => {
+  it("cuts rain 20 dB while narrating, whatever the music level or mute", () => {
+    expect(20 * Math.log10(ambienceDuckTarget(true))).toBeCloseTo(-20, 5);
+    expect(duckMultiplier(0, 1)).toBe(1); // muted music: no music duck...
+    expect(ambienceDuckTarget(true)).toBeCloseTo(0.1, 5); // ...rain still ducks
+  });
+
+  it("restores to full with the same linear 0.8 s ramp", () => {
+    expect(ambienceDuckTarget(false)).toBe(1);
+    const low = ambienceDuckTarget(true);
+    expect(rampDuck(low, 1, NARRATION_DUCK_UP_MS / 2, NARRATION_DUCK_UP_MS)).toBeCloseTo(low + 0.5, 5);
+    expect(rampDuck(low, 1, NARRATION_DUCK_UP_MS, NARRATION_DUCK_UP_MS)).toBe(1);
   });
 });

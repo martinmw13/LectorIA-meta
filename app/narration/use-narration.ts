@@ -12,6 +12,7 @@ import { getCurrentSceneId } from "../leer/current-scene";
 import {
   NARRATION_DUCK_DOWN_MS,
   NARRATION_DUCK_UP_MS,
+  ambienceDuckTarget,
   duckMultiplier,
   rampDuck,
 } from "./duck";
@@ -29,6 +30,30 @@ function sameScene(a: NarrationSceneRef | null, b: NarrationSceneRef): boolean {
   return a !== null && a.id === b.id && a.ch === b.ch && a.startN === b.startN && a.endN === b.endN;
 }
 
+function useDuckRamp(target: number): number {
+  const [duck, setDuck] = useState(1);
+  const duckRef = useRef(1);
+  useEffect(() => {
+    if (duckRef.current === target) {
+      setDuck(target);
+      return;
+    }
+    const duration = target < duckRef.current ? NARRATION_DUCK_DOWN_MS : NARRATION_DUCK_UP_MS;
+    let raf = 0;
+    let prev = performance.now();
+    const tick = (now: number) => {
+      const next = rampDuck(duckRef.current, target, now - prev, duration);
+      prev = now;
+      duckRef.current = next;
+      setDuck(next);
+      if (next !== target) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target]);
+  return duck;
+}
+
 export function useNarrationController(opts: {
   entries: NarrationChapterEntry[];
   scenes: NarrationSceneRef[];
@@ -37,7 +62,6 @@ export function useNarrationController(opts: {
   const [prefs, setPrefs] = useState<NarrationPrefs>(DEFAULT_NARRATION_PREFS);
   const [status, setStatus] = useState<NarrationStatus>("idle");
   const [playing, setPlaying] = useState(false);
-  const [duck, setDuck] = useState(1);
   const [scene, setScene] = useState<NarrationSceneRef | null>(null);
   const [manifest, setManifest] = useState<ChapterNarration | null>(null);
 
@@ -55,7 +79,6 @@ export function useNarrationController(opts: {
   prefsRef.current = prefs;
   const loadToken = useRef(0);
   const wantPlay = useRef(false);
-  const duckRef = useRef(1);
   const pendingSeek = useRef<number | null>(null);
   const advancingRef = useRef(false);
 
@@ -248,29 +271,16 @@ export function useNarrationController(opts: {
     };
   }, []);
 
-  // Duck ramp: the music sits about 20 dB below the live voice level,
-  // down fast when the voice starts, back up slow on pause. Pause, the
-  // end of the book, errors, and switching off all restore the level.
-  useEffect(() => {
-    const target =
-      prefs.on && playing ? duckMultiplier(musicRef.current, prefsRef.current.volume) : 1;
-    if (duckRef.current === target) {
-      setDuck(target);
-      return;
-    }
-    const duration = target < duckRef.current ? NARRATION_DUCK_DOWN_MS : NARRATION_DUCK_UP_MS;
-    let raf = 0;
-    let prev = performance.now();
-    const tick = (now: number) => {
-      const next = rampDuck(duckRef.current, target, now - prev, duration);
-      prev = now;
-      duckRef.current = next;
-      setDuck(next);
-      if (next !== target) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [playing, prefs.on, prefs.volume, opts.musicLevel]);
+  // Duck ramps: the music sits about 20 dB below the live voice level;
+  // rain and ambience drop a flat 20 dB on their own, so a muted track
+  // still ducks the rain. Down fast when the voice starts, back up slow
+  // on pause. Pause, the end of the book, errors, and switching off all
+  // restore the level.
+  const narrating = prefs.on && playing;
+  const duck = useDuckRamp(
+    narrating ? duckMultiplier(musicRef.current, prefsRef.current.volume) : 1,
+  );
+  const ambienceDuck = useDuckRamp(ambienceDuckTarget(narrating));
 
   // The narration volume rides its own slider, never the music mute.
   useEffect(() => {
@@ -355,6 +365,7 @@ export function useNarrationController(opts: {
     status,
     playing,
     duck,
+    ambienceDuck,
     scene,
     manifest,
     span,
