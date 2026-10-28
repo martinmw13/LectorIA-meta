@@ -55,6 +55,7 @@ const lastUserScroll = new WeakMap<object, number>();
 
 export function noteUserScroll(scroller: object, now: number = Date.now()): void {
   lastUserScroll.set(scroller, now);
+  pendingTarget.delete(scroller);
 }
 
 export function attachFollowPause(scroller: HTMLElement): () => void {
@@ -69,11 +70,17 @@ export function attachFollowPause(scroller: HTMLElement): () => void {
   };
 }
 
-// Keep the spoken word in a comfortable band (middle 60% of the scroller
-// viewport). Scrolls only when the element leaves the band, and never
-// within pauseMs of a user scroll. Returns true when it scrolled.
+// Keep the spoken word in a comfortable band (20% to 80% of the scroller
+// viewport). Inside it nothing moves. Once the word leaves it, one scroll
+// sets its line at 35% (smooth unless reduced motion). The band is judged
+// against that scroll's target while it is in flight, so frames re-issue
+// the same target instead of stacking scrolls. A box taller than the band
+// follows its top only. Never within pauseMs of a user scroll. Returns
+// true when it scrolled or a scroll is on its way.
+const pendingTarget = new WeakMap<object, number>();
+
 export function followIntoView(
-  el: HTMLElement,
+  el: { getBoundingClientRect(): DOMRect },
   scroller: HTMLElement,
   now: number = Date.now(),
   pauseMs = 4000,
@@ -82,12 +89,23 @@ export function followIntoView(
   if (now - last < pauseMs) return false;
   const frame = scroller.getBoundingClientRect();
   const box = el.getBoundingClientRect();
-  const top = frame.top + frame.height * 0.2;
-  const bottom = frame.top + frame.height * 0.8;
-  let delta = 0;
-  if (box.top < top) delta = box.top - top;
-  else if (box.bottom > bottom) delta = box.bottom - bottom;
-  if (delta === 0) return false;
-  scroller.scrollTop += delta;
+  let pending = pendingTarget.get(scroller);
+  if (pending !== undefined && Math.abs(scroller.scrollTop - pending) < 2) {
+    pendingTarget.delete(scroller);
+    pending = undefined;
+  }
+  const contentTop = box.top - frame.top + scroller.scrollTop;
+  const rel = contentTop - (pending ?? scroller.scrollTop);
+  const tall = box.height >= frame.height * 0.6;
+  if (rel >= frame.height * 0.2 && (tall || rel + box.height <= frame.height * 0.8)) return pending !== undefined;
+  let target = Math.max(0, contentTop - frame.height * 0.35);
+  const max = scroller.scrollHeight - scroller.clientHeight;
+  if (Number.isFinite(max)) target = Math.min(target, max);
+  if (typeof scroller.scrollTo === "function") {
+    scroller.scrollTo({ top: target, behavior: prefersReducedMotion() ? "auto" : "smooth" });
+  } else {
+    scroller.scrollTop = target;
+  }
+  pendingTarget.set(scroller, target);
   return true;
 }

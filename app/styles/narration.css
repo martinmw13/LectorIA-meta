@@ -83,38 +83,6 @@
     height 120ms ease-out;
 }
 
-.narr-mark[data-treatment="engraving"] .narr-word {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  white-space: nowrap;
-  font-variant: small-caps;
-  font-weight: 600;
-  background: var(--narration-mark);
-  color: var(--color-text);
-}
-
-.narr-mark[data-treatment="engraving"]::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -2px;
-  height: 1px;
-  background: var(--narration-rule);
-}
-
-.narr-mark[data-treatment="watercolor"] {
-  background: var(--narration-mark);
-  border-radius: 40% 60% 52% 48% / 50% 46% 54% 50%;
-  box-shadow:
-    inset 0 0 0 1.5px var(--narration-mark-edge),
-    0 0 6px var(--narration-glow);
-  filter: blur(0.4px);
-}
-
 .narr-mark[data-treatment="ink-doodle"] svg {
   display: block;
   width: 100%;
@@ -128,6 +96,138 @@
 
 ::highlight(narration-sentence) {
   background: var(--narration-sentence);
+}
+
+/* Engraving, watercolor, pencil, lantern: the sentence line boxes and
+   the word, drawn behind the text (no z-index, painted before the scene
+   sections). Background and shadow only, so glyphs and layout never move. */
+.narr-sen,
+.narr-on {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 2px;
+}
+
+.narr-on {
+  transition:
+    left 120ms ease-out,
+    top 120ms ease-out,
+    width 120ms ease-out,
+    background-color 0.25s,
+    box-shadow 0.25s;
+}
+
+.narr-sen[data-treatment="engraving"],
+.narr-on[data-treatment="engraving"] {
+  --rule: var(--narration-rule);
+  background-image:
+    linear-gradient(var(--rule), var(--rule)),
+    repeating-linear-gradient(90deg, var(--rule) 0 1px, transparent 1px 3px);
+  background-repeat: no-repeat;
+  background-position:
+    0 calc(100% - 4px),
+    0 100%;
+  background-size:
+    100% 1px,
+    100% 3px;
+}
+
+.narr-sen[data-treatment="engraving"] {
+  animation: narr-etch-under 360ms ease-out both;
+}
+
+.narr-on[data-treatment="engraving"] {
+  --rule: var(--color-text);
+  background-size:
+    100% 1.5px,
+    100% 3.5px;
+}
+
+@keyframes narr-etch-under {
+  from {
+    background-size:
+      0 1px,
+      0 3px;
+  }
+}
+
+.narr-sen[data-treatment="watercolor"],
+.narr-on[data-treatment="watercolor"] {
+  background: radial-gradient(
+    120% 90% at 50% 55%,
+    rgba(141, 184, 255, 0.55),
+    rgba(159, 196, 255, 0.32) 60%,
+    rgba(220, 233, 255, 0) 100%
+  );
+  border-radius: 12px 6px 14px 5px / 8px 12px 6px 12px;
+}
+
+.narr-sen[data-treatment="watercolor"] {
+  animation: narr-wash-in 400ms ease-out both;
+}
+
+.narr-on[data-treatment="watercolor"] {
+  background: radial-gradient(120% 90% at 50% 55%, rgba(141, 184, 255, 0.6), rgba(159, 196, 255, 0.4) 70%, rgba(220, 233, 255, 0) 100%);
+}
+
+@keyframes narr-wash-in {
+  from {
+    opacity: 0;
+    transform: scaleX(0.92);
+  }
+}
+
+.narr-sen[data-treatment="pencil"] {
+  background: linear-gradient(180deg, transparent 14%, rgba(70, 73, 79, 0.12) 14% 90%, transparent 90%);
+}
+
+.narr-on[data-treatment="pencil"] {
+  background: linear-gradient(180deg, transparent 10%, rgba(70, 73, 79, 0.26) 10% 92%, transparent 92%);
+  box-shadow: inset 0 -2px 0 #0866ff;
+}
+
+.narr-sen[data-treatment="lantern"] {
+  background: rgba(240, 180, 90, 0.16);
+}
+
+.narr-on[data-treatment="lantern"] {
+  background: rgba(255, 210, 120, 0.95);
+  box-shadow:
+    0 0 10px 2px rgba(255, 190, 90, 0.5),
+    inset 0 -2px 0 #0866ff;
+}
+
+/* Dark pages carry light text: keep the marks low so it stays readable. */
+html[data-theme="dark"] .narr-sen[data-treatment="pencil"] {
+  background: linear-gradient(180deg, transparent 14%, rgba(228, 230, 235, 0.1) 14% 90%, transparent 90%);
+}
+
+html[data-theme="dark"] .narr-on[data-treatment="pencil"] {
+  background: linear-gradient(180deg, transparent 10%, rgba(228, 230, 235, 0.2) 10% 92%, transparent 92%);
+}
+
+html[data-theme="dark"] .narr-on[data-treatment="lantern"] {
+  background: rgba(255, 190, 90, 0.3);
+}
+
+html[data-theme="dark"] :is(.narr-sen, .narr-on)[data-treatment="watercolor"] {
+  opacity: 0.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .narr-on {
+    transition: none;
+  }
+
+  .narr-sen[data-treatment] {
+    animation: narr-fade 200ms ease-out both;
+  }
+}
+
+@keyframes narr-fade {
+  from {
+    opacity: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

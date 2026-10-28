@@ -1,7 +1,7 @@
 // Read-sync: a requestAnimationFrame loop follows audio.currentTime
 // through the manifest (surviving seek, pause, and rate changes because
 // it never keeps its own clock) and maps words onto the whole
-// paragraphs in the reading column. The spoken paragraph is brought in
+// paragraphs in the reading column. The spoken word's line is brought in
 // with followIntoView; within 4 s of a hand move the voice keeps
 // reading but the mark hides instead of yanking the reader back.
 "use client";
@@ -10,15 +10,43 @@ import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "re
 import { activeChunkAt, activeWordAt, wordAt, type ChapterNarration } from "@/core/narration";
 import { followIntoView } from "../leer/scroll-helpers";
 import { Icon } from "../icons";
-import { engravingScale, highlightStyleFor, type HighlightTreatment } from "./highlight-style";
+import { highlightStyleFor, type HighlightTreatment } from "./highlight-style";
 import { rangesForChunk } from "./ranges";
 
-export interface MarkRect {
+interface Box {
   left: number;
   top: number;
   width: number;
   height: number;
+}
+
+export interface MarkRect extends Box {
   word: string;
+  // Sentence line boxes, for treatments drawn behind the text.
+  lines: Box[];
+}
+
+// One box per visual line: a range yields a rect per line fragment, so
+// rects sharing a top merge left to right.
+function lineBoxes(ranges: Range[], origin: { left: number; top: number }): Box[] {
+  const lines: Box[] = [];
+  for (const range of ranges) {
+    if (typeof range.getClientRects !== "function") continue;
+    for (const r of range.getClientRects()) {
+      if (r.width === 0) continue;
+      const top = r.top - origin.top;
+      const left = r.left - origin.left;
+      const line = lines.find((l) => Math.abs(l.top - top) < 2);
+      if (!line) {
+        lines.push({ left, top, width: r.width, height: r.height });
+        continue;
+      }
+      const right = Math.max(line.left + line.width, left + r.width);
+      line.left = Math.min(line.left, left);
+      line.width = right - line.left;
+    }
+  }
+  return lines;
 }
 
 interface ActiveSpot {
@@ -128,12 +156,15 @@ export function useReadSync(opts: {
       return;
     }
     const { para, word: wordRange, wordText, sentence } = rangesForChunk(column, chunk, active.word);
-    paintSentence(sentence);
-    // The spoken paragraph rides into the middle band on its own; after
-    // a hand move the mark hides until the reader is back on screen.
-    if (para && !followIntoView(para, column)) {
+    if (treatment === "ink-doodle") paintSentence(sentence);
+    // Follow the word only, never the paragraph: a paragraph taller than
+    // the band gets pulled toward its top or bottom, so the text jumps.
+    // Between words nothing scrolls. After a hand move the mark hides
+    // until the reader is back on screen.
+    const word = wordRange && typeof wordRange.getBoundingClientRect === "function" ? wordRange : null;
+    if (para && !(word && followIntoView(word, column))) {
       const view = column.getBoundingClientRect();
-      const box = para.getBoundingClientRect();
+      const box = (word ?? para).getBoundingClientRect();
       if (box.bottom <= view.top || box.top >= view.bottom) {
         setMark(null);
         return;
@@ -164,11 +195,11 @@ export function useReadSync(opts: {
     if (treatment === "ink-doodle") {
       padX = 6;
       padY = 3;
-    } else if (treatment === "watercolor") {
-      padX = 3;
     }
+    // The mark lives inside the scrolling column, so add its scroll.
+    const origin = { left: box.left - column.scrollLeft, top: box.top - column.scrollTop };
     setMark({
-      // The mark lives inside the scrolling column, so add its scroll.
+      lines: treatment === "ink-doodle" ? [] : lineBoxes(sentence, origin),
       left: left - box.left + column.scrollLeft - padX,
       top: top - box.top + column.scrollTop - padY,
       width: right - left + padX * 2,
@@ -245,32 +276,21 @@ export function ReadMark({ mark, treatment }: { mark: MarkRect | null; treatment
       </span>
     );
   }
-  if (treatment === "watercolor") {
-    return <span className="narr-mark" data-treatment="watercolor" style={style} aria-hidden="true" />;
-  }
-  return <EngravingMark mark={mark} />;
-}
-
-// The small-caps face runs wider than the in-flow word, so the overlay
-// shrinks to the measured word rect (origin left) and never covers
-// neighbouring characters. Transforms skip layout, so scrollWidth stays
-// the natural width and the scale is stable.
-function EngravingMark({ mark }: { mark: MarkRect }) {
-  const ref = useRef<HTMLSpanElement | null>(null);
-  const [scale, setScale] = useState(1);
-  useLayoutEffect(() => {
-    setScale(engravingScale(mark.width, ref.current?.scrollWidth ?? 0));
-  }, [mark.width, mark.word]);
+  // Rendered before the .body-text blocks; .body-text is positioned,
+  // so as the later sibling it paints above the marks and glyphs sit on top.
+  // Background and shadow only, so font and layout never change.
   return (
-    <span
-      className="narr-mark"
-      data-treatment="engraving"
-      style={{ left: mark.left, top: mark.top, width: mark.width, height: mark.height }}
-      aria-hidden="true"
-    >
-      <span ref={ref} className="narr-word" style={{ transform: `scaleX(${scale})`, transformOrigin: "left center" }}>
-        {mark.word}
-      </span>
-    </span>
+    <>
+      {mark.lines.map((l) => (
+        <span
+          key={`${l.top}:${l.left}`}
+          className="narr-sen"
+          data-treatment={treatment}
+          style={{ left: l.left, top: l.top, width: l.width, height: l.height }}
+          aria-hidden="true"
+        />
+      ))}
+      <span className="narr-on" data-treatment={treatment} style={style} aria-hidden="true" />
+    </>
   );
 }

@@ -1,39 +1,29 @@
 import { describe, expect, it } from "vitest";
 import {
-  NARRATION_DUCK_DB,
+  AMBIENCE_DUCK_DB,
+  MUSIC_DUCK_DB,
   NARRATION_DUCK_DOWN_MS,
   NARRATION_DUCK_UP_MS,
-  ambienceDuckTarget,
-  duckMultiplier,
+  duckTarget,
   rampDuck,
 } from "./duck";
 
-describe("duckMultiplier", () => {
-  it("holds the music about 20 dB below a full voice", () => {
-    expect(NARRATION_DUCK_DB).toBe(20);
-    const duck = duckMultiplier(0.8, 1);
-    expect(duck).toBeCloseTo(0.1 / 0.8, 5);
-    expect(20 * Math.log10(0.8 * duck)).toBeCloseTo(20 * Math.log10(1) - 20, 5);
+describe("duckTarget", () => {
+  it("cuts music about 11 dB and rain about 6 dB only while narrating", () => {
+    expect(20 * Math.log10(duckTarget(true, MUSIC_DUCK_DB))).toBeCloseTo(-11, 5);
+    expect(20 * Math.log10(duckTarget(true, AMBIENCE_DUCK_DB))).toBeCloseTo(-6, 5);
+    expect(duckTarget(false, MUSIC_DUCK_DB)).toBe(1);
+    expect(duckTarget(false, AMBIENCE_DUCK_DB)).toBe(1);
   });
 
-  it("tracks a quieter voice down", () => {
-    expect(duckMultiplier(0.8, 0.5)).toBeCloseTo(0.05 / 0.8, 5);
-  });
-
-  it("leaves music already quieter than the cap alone", () => {
-    expect(duckMultiplier(0.05, 1)).toBe(1);
-  });
-
-  it("is a no-op on muted music and a bad voice, silence on a zero voice", () => {
-    expect(duckMultiplier(0, 1)).toBe(1);
-    expect(duckMultiplier(NaN, 1)).toBe(1);
-    expect(duckMultiplier(0.8, NaN)).toBe(1);
-    expect(duckMultiplier(0.8, 0)).toBe(0);
+  it("ramps about 300 ms each way", () => {
+    expect(NARRATION_DUCK_DOWN_MS).toBe(300);
+    expect(NARRATION_DUCK_UP_MS).toBe(300);
   });
 });
 
 describe("duck ramp", () => {
-  const level = duckMultiplier(0.8, 1);
+  const level = duckTarget(true, MUSIC_DUCK_DB);
 
   it("lands on target within one full ramp each way", () => {
     expect(rampDuck(1, level, NARRATION_DUCK_DOWN_MS, NARRATION_DUCK_DOWN_MS)).toBe(level);
@@ -56,20 +46,5 @@ describe("duck ramp", () => {
     let v = level;
     for (let t = 0; t < NARRATION_DUCK_UP_MS; t += 16) v = rampDuck(v, 1, 16, NARRATION_DUCK_UP_MS);
     expect(v).toBe(1);
-  });
-});
-
-describe("ambienceDuckTarget", () => {
-  it("cuts rain 20 dB while narrating, whatever the music level or mute", () => {
-    expect(20 * Math.log10(ambienceDuckTarget(true))).toBeCloseTo(-20, 5);
-    expect(duckMultiplier(0, 1)).toBe(1); // muted music: no music duck...
-    expect(ambienceDuckTarget(true)).toBeCloseTo(0.1, 5); // ...rain still ducks
-  });
-
-  it("restores to full with the same linear 0.8 s ramp", () => {
-    expect(ambienceDuckTarget(false)).toBe(1);
-    const low = ambienceDuckTarget(true);
-    expect(rampDuck(low, 1, NARRATION_DUCK_UP_MS / 2, NARRATION_DUCK_UP_MS)).toBeCloseTo(low + 0.5, 5);
-    expect(rampDuck(low, 1, NARRATION_DUCK_UP_MS, NARRATION_DUCK_UP_MS)).toBe(1);
   });
 });

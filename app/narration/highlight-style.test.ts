@@ -1,12 +1,13 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { engravingScale, highlightStyleFor } from "./highlight-style";
+import { highlightStyleFor } from "./highlight-style";
 
 describe("highlightStyleFor", () => {
   it("maps all six skins to their treatment", () => {
     expect(highlightStyleFor("engraving")).toBe("engraving");
-    expect(highlightStyleFor("pencil")).toBe("engraving");
+    expect(highlightStyleFor("pencil")).toBe("pencil");
     expect(highlightStyleFor("watercolor")).toBe("watercolor");
-    expect(highlightStyleFor("chihiro")).toBe("watercolor");
+    expect(highlightStyleFor("chihiro")).toBe("lantern");
     expect(highlightStyleFor("ink")).toBe("ink-doodle");
     expect(highlightStyleFor("comic")).toBe("ink-doodle");
   });
@@ -17,20 +18,9 @@ describe("highlightStyleFor", () => {
     expect(highlightStyleFor("")).toBe("engraving");
     expect(highlightStyleFor("noir")).toBe("engraving");
   });
-});
 
-describe("engravingScale", () => {
-  it("shrinks the overlay to the measured word width", () => {
-    expect(engravingScale(40, 50)).toBeCloseTo(0.8, 5);
-  });
-
-  it("never stretches a narrower overlay", () => {
-    expect(engravingScale(50, 40)).toBe(1);
-    expect(engravingScale(40, 40)).toBe(1);
-  });
-
-  it("stays at 1 when either width is missing", () => {
-    expect(engravingScale(40, 0)).toBe(1);
-    expect(engravingScale(0, 50)).toBe(1);
+  it("keeps body text positioned so read-aloud marks paint behind it", () => {
+    const css = readFileSync("app/styles/folio.css", "utf8");
+    expect(css).toMatch(/\.body-text\s*\{[^}]*position:\s*relative/);
   });
 });
