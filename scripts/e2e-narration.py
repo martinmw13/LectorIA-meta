@@ -16,6 +16,9 @@ import math
 import os
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from e2e_blob import fake_music
+
 try:
     from playwright.sync_api import sync_playwright
 except ImportError:
@@ -75,6 +78,9 @@ def main():
             kw["executable_path"] = os.environ["CHROME_PATH"]
         browser = p.chromium.launch(**kw)
         page = browser.new_page(viewport={"width": 1440, "height": 900})
+        fake_music(page)
+        # Music autostarts since #83; start paused so the Play click below starts it.
+        page.add_init_script("localStorage.setItem('lectoria.music.paused','1')")
         page.on("pageerror", lambda e: errors.append(str(e)))
         page.goto(f"{BASE}/leer/c3s1?skin=engraving")
         btn = page.locator(".read-aloud-btn")
@@ -157,6 +163,7 @@ def main():
         shot(page, "05-paused")
 
         rm = browser.new_page(viewport={"width": 1280, "height": 800}, reduced_motion="reduce")
+        fake_music(rm)
         rm.on("pageerror", lambda e: errors.append(str(e)))
         rm.goto(f"{BASE}/leer/c3s1?skin=watercolor")
         rm.locator(".read-aloud-btn").click()

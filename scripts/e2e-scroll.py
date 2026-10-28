@@ -24,6 +24,9 @@ At 1440x900 and 1280x800 it asserts:
 import os
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from e2e_blob import block_music
+
 try:
     from playwright.sync_api import sync_playwright
 except ImportError:
@@ -100,6 +103,7 @@ def summarize(deltas):
 def check_viewport(browser, base, w, h):
     tag = f"{w}x{h}"
     page = browser.new_page(viewport={"width": w, "height": h})
+    block_music(page)
     errors = []
     page.on("pageerror", lambda e: errors.append(str(e)))
     try:

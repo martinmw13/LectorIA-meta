@@ -81,6 +81,7 @@ export function Player({
   const audibleRef = useRef(0);
   const levelRef = useRef<[number, number]>([1, 0]);
   const gainRef = useRef<[number, number]>([0, 0]);
+  const cueRef = useRef<[string | null, string | null]>([null, null]);
   const segmentEndRef = useRef<string | null>(null);
   // Slider value and mute live in the reader (persisted prefs); refs
   // mirror the props so the engine never re-runs on volume moves.
@@ -149,6 +150,12 @@ export function Player({
   // A refused start (autoplay policy, bad src) on the audible element stops
   // everything and shows Play; aborts and superseded elements are ignored.
   function startEl(el: HTMLAudioElement, idx: number) {
+    // src is assigned only here so a paused reader downloads no music.
+    const cue = cueRef.current[idx];
+    if (cue) {
+      cueRef.current[idx] = null;
+      el.src = cue;
+    }
     void el.play().catch((err: unknown) => {
       if ((err as { name?: string })?.name === "AbortError" || audibleRef.current !== idx) return;
       playingRef.current = false;
@@ -194,7 +201,7 @@ export function Player({
     trackRef.current = next;
     segmentEndRef.current = null;
     gainRef.current[dstIdx] = next.gainDb ?? 0;
-    dst.src = next.src;
+    cueRef.current[dstIdx] = next.src;
     dst.onloadedmetadata = () => {
       if (next.startSec > 0 && Number.isFinite(dst.duration) && next.startSec < dst.duration) {
         try {
@@ -261,10 +268,8 @@ export function Player({
   useEffect(() => {
     const next = trackRef.current;
     if (!started || !next) {
-      // Before the first press, swaps only change src.
+      // Before the first press, swaps only set gain; src waits for playback.
       if (!started && next) {
-        const el = [firstRef.current, secondRef.current][audibleRef.current];
-        if (el && !el.src.endsWith(next.src)) el.src = next.src;
         gainRef.current[audibleRef.current] = next.gainDb ?? 0;
         applyLevels();
       }
@@ -416,8 +421,8 @@ export function Player({
 
   return (
     <div ref={rootRef} className="player" role="region" aria-label="Music player" data-reduced-motion={reducedMotion}>
-      <audio ref={firstRef} preload="auto" onTimeUpdate={(e) => handleTimeUpdate(0, e.currentTarget)} onEnded={() => handleEnded(0)} />
-      <audio ref={secondRef} preload="auto" onTimeUpdate={(e) => handleTimeUpdate(1, e.currentTarget)} onEnded={() => handleEnded(1)} />
+      <audio ref={firstRef} preload="none" onTimeUpdate={(e) => handleTimeUpdate(0, e.currentTarget)} onEnded={() => handleEnded(0)} />
+      <audio ref={secondRef} preload="none" onTimeUpdate={(e) => handleTimeUpdate(1, e.currentTarget)} onEnded={() => handleEnded(1)} />
       <button type="button" className="skip" onClick={onPrev} disabled={!canPrev} aria-label="Previous track" title="Previous track">
         <svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
           <rect x="2.5" y="3" width="2" height="10" rx="0.5" />
