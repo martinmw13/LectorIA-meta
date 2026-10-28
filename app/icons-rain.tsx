@@ -288,9 +288,3 @@ export const RAIN_ICONS = {
     "rain-storm": rainDef(ink(3)),
   },
 } satisfies Partial<Record<SkinId, Record<RainIconName, IconDef>>>;
-
-// Rain art exists only for these three skins; anything else renders the
-// default (see artSkin in app/rain-button.tsx).
-export function hasRainArt(skin: SkinId): boolean {
-  return skin in RAIN_ICONS;
-}

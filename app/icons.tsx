@@ -69,9 +69,15 @@ export const ICON_SETS: Record<SkinId, Partial<Record<IconName, IconDef>>> = {
   engraving: RAIN_ICONS.engraving ?? {},
   watercolor: RAIN_ICONS.watercolor ?? {},
   ink: RAIN_ICONS.ink ?? {},
-  comic: {},
-  "anime-ghibli": {},
+  pencil: {},
+  chihiro: {},
 };
+
+// The one fallback rule: a skin draws its own icon when it has one,
+// otherwise the default skin's (and BASE_ICONS below that).
+export function iconSkin(name: IconName, skin: SkinId): SkinId {
+  return ICON_SETS[skin]?.[name] ? skin : DEFAULT_SKIN;
+}
 
 export function Icon({
   name,
@@ -79,7 +85,7 @@ export function Icon({
   skin = DEFAULT_SKIN,
   ...rest
 }: { name: IconName; size?: number; skin?: SkinId } & SVGProps<SVGSVGElement>) {
-  const def = ICON_SETS[skin]?.[name] ?? ICON_SETS[DEFAULT_SKIN]?.[name] ?? BASE_ICONS[name];
+  const def = ICON_SETS[iconSkin(name, skin)]?.[name] ?? BASE_ICONS[name];
   if (!def) throw new Error(`unknown icon: ${name}`);
   return (
     <svg width={size ?? def.width} height={size ?? def.height} viewBox={def.viewBox} aria-hidden="true" {...rest}>

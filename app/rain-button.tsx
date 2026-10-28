@@ -11,9 +11,8 @@ import {
 import { loadAmbiencePrefs, saveAmbiencePrefs } from "./ambience-prefs";
 import { AmbienceController } from "./ambience-controller";
 import { WebAmbienceEngine } from "./ambience-engine";
-import { Icon } from "./icons";
-import { hasRainArt, type RainIconName } from "./icons-rain";
-import { DEFAULT_SKIN } from "./skin";
+import { Icon, iconSkin } from "./icons";
+import type { RainIconName } from "./icons-rain";
 import { useSkin } from "./use-skin";
 
 const RAIN = AMBIENCES[0]!;
@@ -31,8 +30,8 @@ export function RainAmbience({ muted }: { muted: boolean }) {
   // Server render uses the default so hydration matches; the live skin
   // applies on mount via useSyncExternalStore.
   const skin = useSkin();
-  // Rain art exists only for three skins; the rest render the default.
-  const artSkin = hasRainArt(skin) ? skin : DEFAULT_SKIN;
+  // Same fallback rule as <Icon>; also drives the per-skin CSS via data-art.
+  const artSkin = iconSkin(`rain-${level}` as RainIconName, skin);
   const burstTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {

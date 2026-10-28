@@ -54,7 +54,8 @@ describe("rain button still and frameless", () => {
 
   it("reads the skin from the skin owner with the default for hydration", () => {
     expect(button).toMatch(/const skin = useSkin\(\);/);
-    expect(button).toMatch(/hasRainArt\(skin\) \? skin : DEFAULT_SKIN/);
+    expect(button).toMatch(/const artSkin = iconSkin\(`rain-\$\{level\}` as RainIconName, skin\);/);
+    expect(button).not.toContain("hasRainArt");
     expect(button).not.toMatch(/document\.documentElement\.dataset\.skin/);
   });
 

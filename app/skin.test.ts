@@ -14,7 +14,7 @@ import {
 
 describe("skin", () => {
   it("ships five skins with engraving first", () => {
-    expect(SKINS).toEqual(["engraving", "watercolor", "ink", "comic", "anime-ghibli"]);
+    expect(SKINS).toEqual(["engraving", "watercolor", "ink", "pencil", "chihiro"]);
     expect(DEFAULT_SKIN).toBe("engraving");
   });
 
@@ -33,7 +33,7 @@ describe("initialSkin", () => {
 
   it("falls back to a valid stored value without a param", () => {
     expect(initialSkin("ink", "")).toBe("ink");
-    expect(initialSkin("comic")).toBe("comic");
+    expect(initialSkin("pencil")).toBe("pencil");
   });
 
   it("ignores invalid params and stored values", () => {
@@ -183,7 +183,7 @@ describe("skin runtime", () => {
     try {
       expect(cycleSkin()).toBe("watercolor");
       expect(getSkin()).toBe("watercolor");
-      setSkin("anime-ghibli");
+      setSkin("chihiro");
       expect(cycleSkin()).toBe("engraving");
       expect(getSkin()).toBe("engraving");
     } finally {

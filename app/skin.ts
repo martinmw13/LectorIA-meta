@@ -4,7 +4,7 @@
 // app/use-skin.ts), or via CSS keyed on `html[data-skin]`. Nothing else may
 // write data-skin: setSkin/cycleSkin are the only writers, called by the
 // future home cycling button / skin switcher.
-export const SKINS = ["engraving", "watercolor", "ink", "comic", "anime-ghibli"] as const;
+export const SKINS = ["engraving", "watercolor", "ink", "pencil", "chihiro"] as const;
 export type SkinId = (typeof SKINS)[number];
 // Denslow fits Oz; the default until a skin switcher exists.
 export const DEFAULT_SKIN: SkinId = "engraving";
