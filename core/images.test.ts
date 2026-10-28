@@ -1,0 +1,211 @@
+import { describe, expect, it } from "vitest";
+import {
+  budgetExceeded,
+  buildCaption,
+  buildPrompt,
+  canRelease,
+  createMemoryKV,
+  imageCostMicro,
+  imageKey,
+  indexKeyFor,
+  lockKeyFor,
+  overQuota,
+  parseImageRequest,
+  quotaKeys,
+  validateAgainstBook,
+} from "./images";
+import { IMAGE_COST_MICRO } from "./types";
+
+const book = {
+  id: "oz",
+  textVersion: "t123",
+  paragraphNs: new Set([1, 2, 3]),
+  sceneIds: new Set(["c1s1"]),
+};
+
+describe("parseImageRequest", () => {
+  it("accepts a good passage body", () => {
+    expect(
+      parseImageRequest({ kind: "passage", bookId: "oz", textVersion: "t123", n: 2 }),
+    ).toEqual({ kind: "passage", bookId: "oz", textVersion: "t123", n: 2 });
+  });
+
+  it("accepts a good scene body", () => {
+    expect(
+      parseImageRequest({ kind: "scene", bookId: "oz", textVersion: "t123", sceneId: "c1s1" }),
+    ).toEqual({ kind: "scene", bookId: "oz", textVersion: "t123", sceneId: "c1s1" });
+  });
+
+  it("rejects a bad kind", () => {
+    expect(() => parseImageRequest({ kind: "chapter", bookId: "oz" })).toThrow();
+  });
+
+  it("rejects extra fields", () => {
+    expect(() =>
+      parseImageRequest({ kind: "passage", bookId: "oz", textVersion: "t123", n: 1, extra: 1 }),
+    ).toThrow();
+  });
+
+  it("rejects a non-integer n", () => {
+    expect(() =>
+      parseImageRequest({ kind: "passage", bookId: "oz", textVersion: "t123", n: 1.5 }),
+    ).toThrow();
+  });
+
+  it("rejects non-objects", () => {
+    for (const bad of [null, [], "x", 42]) {
+      expect(() => parseImageRequest(bad)).toThrow();
+    }
+  });
+});
+
+describe("validateAgainstBook", () => {
+  it("accepts matching passage and scene", () => {
+    expect(() =>
+      validateAgainstBook({ kind: "passage", bookId: "oz", textVersion: "t123", n: 1 }, book),
+    ).not.toThrow();
+    expect(() =>
+      validateAgainstBook({ kind: "scene", bookId: "oz", textVersion: "t123", sceneId: "c1s1" }, book),
+    ).not.toThrow();
+  });
+
+  it("rejects unknown book, wrong version, out of range n, unknown scene", () => {
+    expect(() =>
+      validateAgainstBook({ kind: "passage", bookId: "dorothy", textVersion: "t123", n: 1 }, book),
+    ).toThrow();
+    expect(() =>
+      validateAgainstBook({ kind: "passage", bookId: "oz", textVersion: "old", n: 1 }, book),
+    ).toThrow();
+    expect(() =>
+      validateAgainstBook({ kind: "passage", bookId: "oz", textVersion: "t123", n: 99 }, book),
+    ).toThrow();
+    expect(() =>
+      validateAgainstBook({ kind: "scene", bookId: "oz", textVersion: "t123", sceneId: "nope" }, book),
+    ).toThrow();
+  });
+});
+
+describe("imageKey", () => {
+  it("uses only the start paragraph for passages", () => {
+    expect(imageKey({ kind: "passage", bookId: "oz", textVersion: "t123", n: 7 })).toBe(
+      "images/oz/t123/v1/p7.webp",
+    );
+  });
+
+  it("uses the scene id for scenes", () => {
+    expect(imageKey({ kind: "scene", bookId: "oz", textVersion: "t123", sceneId: "c1s1" })).toBe(
+      "images/oz/t123/v1/scene-c1s1.webp",
+    );
+  });
+
+  it("differs by book, version, and paragraph", () => {
+    const a = imageKey({ kind: "passage", bookId: "oz", textVersion: "t1", n: 1 });
+    const b = imageKey({ kind: "passage", bookId: "oz", textVersion: "t2", n: 1 });
+    const c = imageKey({ kind: "passage", bookId: "other", textVersion: "t1", n: 1 });
+    const d = imageKey({ kind: "passage", bookId: "oz", textVersion: "t1", n: 2 });
+    expect(new Set([a, b, c, d]).size).toBe(4);
+    expect(indexKeyFor(a)).toContain(a);
+    expect(lockKeyFor(a)).toContain(a);
+    expect(indexKeyFor(a)).not.toBe(lockKeyFor(a));
+  });
+});
+
+describe("buildPrompt", () => {
+  const base = {
+    sceneTitle: "The Cyclone",
+    sceneClip: "Gray prairie and a small house.",
+  };
+
+  it("uses the trusted passage text and names the style guards", () => {
+    const prompt = buildPrompt({ kind: "passage", passageText: "Dorothy ran outside.", ...base });
+    expect(prompt).toContain("Dorothy ran outside.");
+    expect(prompt).toContain("silver shoes");
+    expect(prompt).toContain("No text");
+    expect(prompt).toContain("no ruby slippers");
+    expect(prompt).toContain("1939 MGM");
+  });
+
+  it("clips a long passage near 600 chars", () => {
+    const prompt = buildPrompt({ kind: "passage", passageText: "x".repeat(2000), ...base });
+    const passagePart = prompt.split("Context:")[0] ?? "";
+    expect(passagePart.length).toBeLessThan(900);
+  });
+
+  it("builds a scene prompt from the scene clip", () => {
+    const prompt = buildPrompt({ kind: "scene", passageText: "", ...base });
+    expect(prompt).toContain("The Cyclone");
+    expect(prompt).toContain("silver shoes");
+  });
+});
+
+describe("buildCaption", () => {
+  it("uses the scene title for scenes", () => {
+    expect(buildCaption({ kind: "scene", sceneTitle: "The Cyclone", passageText: "x" })).toBe(
+      "The Cyclone",
+    );
+  });
+
+  it("uses the first words for passages", () => {
+    expect(
+      buildCaption({ kind: "passage", sceneTitle: "T", passageText: "Dorothy lived in Kansas." }),
+    ).toBe("Dorothy lived in Kansas.");
+    expect(
+      buildCaption({
+        kind: "passage",
+        sceneTitle: "T",
+        passageText: "one two three four five six seven eight nine ten eleven",
+      }),
+    ).toBe("one two three four five six seven eight nine ten…");
+  });
+});
+
+describe("quota and budget helpers", () => {
+  it("refuses the 6th image per key", () => {
+    expect(overQuota(5)).toBe(false);
+    expect(overQuota(6)).toBe(true);
+  });
+
+  it("builds day-scoped quota keys", () => {
+    const keys = quotaKeys({ day: "2026-10-27", ipHash: "h", anonId: "a" });
+    expect(keys.ip).toContain("2026-10-27");
+    expect(keys.anon).toContain("2026-10-27");
+    expect(keys.ip).not.toBe(keys.anon);
+  });
+
+  it("flags a spend total over the cap", () => {
+    expect(budgetExceeded(11_000_000, 10_000_000)).toBe(true);
+    expect(budgetExceeded(10_000_000, 10_000_000)).toBe(false);
+    expect(imageCostMicro()).toBe(IMAGE_COST_MICRO);
+  });
+
+  it("compares lock tokens", () => {
+    expect(canRelease("t", "t")).toBe(true);
+    expect(canRelease("t", "other")).toBe(false);
+    expect(canRelease("t", null)).toBe(false);
+  });
+});
+
+describe("memory KV lock", () => {
+  it("gives a second requester pending and releases only with the token", async () => {
+    const kv = createMemoryKV();
+    expect(await kv.setNxEx("k", "t1", 60)).toBe(true);
+    expect(await kv.setNxEx("k", "t2", 60)).toBe(false);
+    expect(await kv.releaseIfToken("k", "t2")).toBe(false);
+    expect(await kv.releaseIfToken("k", "t1")).toBe(true);
+    expect(await kv.setNxEx("k", "t2", 60)).toBe(true);
+  });
+
+  it("supports quota counters with refund", async () => {
+    const kv = createMemoryKV();
+    for (let i = 0; i < 5; i++) await kv.incr("q");
+    expect(overQuota(await kv.incr("q"))).toBe(true);
+    expect(await kv.decr("q")).toBe(5);
+  });
+
+  it("supports the spend reserve and refund", async () => {
+    const kv = createMemoryKV();
+    expect(await kv.incrBy("spend", IMAGE_COST_MICRO)).toBe(IMAGE_COST_MICRO);
+    expect(budgetExceeded(IMAGE_COST_MICRO, 10_000_000)).toBe(false);
+    expect(await kv.decrBy("spend", IMAGE_COST_MICRO)).toBe(0);
+  });
+});
