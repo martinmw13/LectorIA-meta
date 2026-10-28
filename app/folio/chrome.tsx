@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "../icons";
+import { StyleStamp } from "../style-stamp";
 import { clampSplitWidth, SPLIT_MIN_PX } from "./helpers";
 
 export { THEME_KEY } from "../theme";
@@ -57,6 +58,7 @@ export function TopLine({
       >
         {theme === "dark" ? <Icon name="sun" /> : <Icon name="moon" />}
       </button>
+      <StyleStamp size="small" />
     </header>
   );
 }
