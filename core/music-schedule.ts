@@ -9,7 +9,13 @@ import {
   resolveConfig,
   selectScheduled,
 } from "./music";
-import type { MusicConfig, MusicManifest, SceneSignal, SelectEnv } from "./music";
+import type {
+  MusicConfig,
+  MusicManifest,
+  MusicSelection,
+  SceneSignal,
+  SelectEnv,
+} from "./music";
 
 export interface SchedulerState {
   currentId: string | null;
@@ -176,17 +182,20 @@ export function requestNext(
 }
 
 // Manual pick from Previous: the track holds like a Next until the next
-// scene change. Unknown ids change nothing.
+// scene change. Only tracks in the candidatesFor scope play, so a
+// playlist-only id changes nothing. Unknown ids change nothing.
 export function requestManualTrack(
   state: SchedulerState,
   manifest: MusicManifest,
   trackId: string,
   nowSec: number,
+  selection?: MusicSelection | null,
   override?: Partial<MusicConfig>,
 ): ScheduleDecision {
   const config = resolveConfig(override ?? MUSIC_CONFIG);
   if (state.playlist !== null) return noChange(state);
-  const picked = manifest.tracks.find((t) => t.id === trackId) ?? null;
+  const scope = candidatesFor(selection ?? { style: null }, manifest);
+  const picked = scope.find((t) => t.id === trackId) ?? null;
   if (!picked) return noChange(state);
   return {
     state: {
