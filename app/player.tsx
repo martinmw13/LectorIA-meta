@@ -30,6 +30,7 @@ export function Player({
   onAdvance,
   onEnded,
   playlistOn,
+  duck = 1,
 }: {
   track: Track | null;
   replayNonce: number;
@@ -47,6 +48,9 @@ export function Player({
   onAdvance: (to?: MusicModeId) => void;
   onEnded: (trackId: string) => void;
   playlistOn: boolean;
+  // Read-aloud duck multiplier: 1 normally, about -18 dB while the
+  // voice plays. The rain layer is separate and never ducked.
+  duck?: number;
 }) {
   const firstRef = useRef<HTMLAudioElement | null>(null);
   const secondRef = useRef<HTMLAudioElement | null>(null);
@@ -60,6 +64,8 @@ export function Player({
   volumeRef.current = volume;
   const mutedRef = useRef(muted);
   mutedRef.current = muted;
+  const duckRef = useRef(duck);
+  duckRef.current = duck;
   const fadeRef = useRef<number | null>(null);
   const loopArmedRef = useRef<string | null>(null);
   const trackRef = useRef<Track | null>(track);
@@ -100,7 +106,7 @@ export function Player({
     els.forEach((el, i) => {
       if (el)
         el.volume = gainVolume(
-          levelRef.current[i] ?? 0,
+          (levelRef.current[i] ?? 0) * duckRef.current,
           audible,
           gainRef.current[i] ?? 0,
         );
@@ -202,6 +208,11 @@ export function Player({
   }, [started, trackId, replayNonce]);
 
   useEffect(() => cancelFade, []);
+
+  // Duck moves outside the fade engine, so re-apply on every step.
+  useEffect(() => {
+    applyLevels();
+  }, [duck]);
 
   function handleTimeUpdate(index: number, el: HTMLAudioElement) {
     const next = trackRef.current;
