@@ -44,3 +44,47 @@ export function quotaKeysFor(args: { day: string; ip: string; salt: string; anon
 } {
   return quotaKeys({ day: args.day, ipHash: hashIp(args.ip, args.salt), anonId: args.anonId });
 }
+
+// Free uploaded-book processing: one book per person for the whole
+// hackathon. Keys carry no day so the limit never resets; the TTL (~10
+// days) only bounds Redis growth. No route or wiring yet, just the hook.
+export const FREE_BOOKS_PER_PERSON = 1;
+export const BOOK_QUOTA_TTL_SEC = 10 * 24 * 3600;
+
+export function bookQuotaKeys(args: { ipHash: string; anonId: string }): {
+  ip: string;
+  anon: string;
+} {
+  return {
+    ip: `books:quota:ip:${args.ipHash}`,
+    anon: `books:quota:anon:${args.anonId}`,
+  };
+}
+
+export function bookQuotaKeysFor(args: { ip: string; salt: string; anonId: string }): {
+  ip: string;
+  anon: string;
+} {
+  return bookQuotaKeys({ ipHash: hashIp(args.ip, args.salt), anonId: args.anonId });
+}
+
+export async function checkBookQuota(
+  kv: KV,
+  keys: { ip: string; anon: string },
+): Promise<{ ok: true } | { ok: false }> {
+  const ipCount = await kv.incr(keys.ip);
+  await kv.expire(keys.ip, BOOK_QUOTA_TTL_SEC);
+  const anonCount = await kv.incr(keys.anon);
+  await kv.expire(keys.anon, BOOK_QUOTA_TTL_SEC);
+  if (ipCount > FREE_BOOKS_PER_PERSON || anonCount > FREE_BOOKS_PER_PERSON) {
+    await kv.decr(keys.ip);
+    await kv.decr(keys.anon);
+    return { ok: false };
+  }
+  return { ok: true };
+}
+
+export async function refundBookQuota(kv: KV, keys: { ip: string; anon: string }): Promise<void> {
+  await kv.decr(keys.ip);
+  await kv.decr(keys.anon);
+}

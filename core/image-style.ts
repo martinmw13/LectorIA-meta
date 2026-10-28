@@ -8,7 +8,7 @@ export interface ImageStylePreset {
 }
 
 export const IMAGE_STYLE_PRESETS = [
-  { id: "denslow", label: "Classic 1900", descriptor: "faithful 1900 first-edition book illustration" },
+  { id: "denslow", label: "Denslow ink (1900)", descriptor: "faithful 1900 first-edition book illustration" },
   { id: "realistic", label: "Realistic", descriptor: "realistic painterly illustration, natural light, lifelike detail" },
   { id: "anime", label: "Anime", descriptor: "anime-style illustration, clean line art, cel shading, vivid color" },
   { id: "pencil", label: "Pencil sketch", descriptor: "graphite pencil sketch on cream paper, fine hatching, mostly monochrome" },

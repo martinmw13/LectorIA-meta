@@ -111,7 +111,7 @@ export interface SceneRequest {
 
 export type ImageRequest = PassageRequest | SceneRequest;
 
-export type ImageErrorCode = "quota" | "budget" | "unavailable" | "bad_request";
+export type ImageErrorCode = "quota" | "budget" | "daily_budget" | "unavailable" | "bad_request";
 
 export type ImageResponse =
   | { status: "ready"; url: string; cached: boolean; caption: string }

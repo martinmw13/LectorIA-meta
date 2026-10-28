@@ -10,5 +10,14 @@ export default function LeerLayout({ children }: { children: React.ReactNode }) 
   const slim = model.chapters.flatMap((chapter) =>
     chapter.scenes.map((scene) => ({ id: scene.id, ch: chapter.ch, emotion: scene.emotion })),
   );
-  return <Reader scenes={slim}>{children}</Reader>;
+  const chapters = model.chapters.map((chapter) => ({
+    ch: chapter.ch,
+    title: chapter.title,
+    firstSceneId: chapter.scenes[0]?.id ?? "",
+  }));
+  return (
+    <Reader scenes={slim} chapters={chapters} bookTitle={model.title} bookAuthor={model.author}>
+      {children}
+    </Reader>
+  );
 }

@@ -29,7 +29,7 @@ scene id with letter-suffixed later parts; provenance lands under
 `final_left`/`final_right` from the re-classified parts,
 `decided_by`), plus `merged_back` (parts re-classified to the same top
 emotion and folded back), `rejected` (Muse declined), and
-`window_failures` (Jev failed, scene left whole).
+`window_failures` (Jev failed, scene left whole) and `muse_failures` (Muse resplit call or titles failed, scene left whole).
 
 ## Scene reader
 
@@ -40,18 +40,28 @@ and emotion triple only. Each scene page builds its view with
 `buildSceneView` and ships only that scene's text, its chapter title,
 and neighbor ids. Sub-pages come from `paginateScene`, which closes a
 page when the next paragraph would pass 250 words or the line budget
-(`FIRST_PAGE_LINES` 16 on page one, `LINES_PER_PAGE` 17 after, each
+(`FIRST_PAGE_LINES` 12 on page one, `LINES_PER_PAGE` 13 after, each
 paragraph costing `ceil(chars / CHARS_PER_LINE)` lines with
-`CHARS_PER_LINE` 68), split at paragraph boundaries. The pager moves sub-pages in client state and
+`CHARS_PER_LINE` 58). Paragraphs that outlast a page split at a
+sentence boundary (word fallback); fragments share `n`, later ones
+carry `cont`, and rejoin exactly. A two-line chapter title
+(`TITLE_CHARS_PER_LINE` 26) costs every page 2 lines. The pager moves sub-pages in client state and
 pushes routes with `router.push`, never `<Link>`; going back lands on
 the previous scene's last sub-page through a one-shot client flag, never
 a URL param, so prerendered pages stay static. The client never
-receives other scenes' text, titles, or summaries. The progress line
-reads `Chapter 1 · The Cyclone`, a spaced separator, then `Scene 1 of 4
-· Page 1 of 3` as two spans on one line. Book type is 1.1875rem / 1.7
-with no paragraph gaps and a 1.5em first-line indent on following
-paragraphs. The word budget stays the upper bound and the line budget
-keeps every sub-page inside 1280×800 without scroll.
+receives other scenes' text, titles, or summaries. One grid holds the
+top line, image pane, reading column, vault margin, and bottom band;
+route wrappers use `display: contents`, so music state persists across
+routes with no portal. The top line reads `LECTORIA`, book and author,
+then `Chapter N of 24` as a quiet chapter jump (a native select styled
+as text, options `1. The Cyclone`), then the theme toggle. Each page
+opens with a kicker `Chapter N`, the chapter title in Newsreader, then
+muted `Scene k of n` (plus `Page i of m`); no scene name appears
+anywhere. Book type is 20.5px / 1.7, no paragraph gaps, 1.5em indent,
+blue drop cap on page one. The body never scrolls at 1280×800; the
+reading column scrolls inside itself. The word budget stays the upper
+bound and the line budget keeps every sub-page inside 1280×800 without
+scroll.
 
 ## Music library
 
@@ -242,50 +252,32 @@ frozen point. Audio starts once, on the first press, with fade 0.
 Audio starts only after the user presses play. Reduced motion is read in
 state with a change listener and affects visuals only, never the fade.
 
-The bar is one sticky row, 56 px tall: the `Lectoria` wordmark left,
-the player centre, the Chopin button and the source icon link right.
-The inner row is centered with 24 px side padding, one bottom hairline
-in the border token, and nothing touching the viewport edges. The inner
-max-width is 56rem, wider than the 65ch book column on purpose so the
-full now-playing line fits at 1280 px. The player holds Previous,
-Play/Pause, Next, the now-playing line (flexible space, `min-width`
-16rem, truncated with an ellipsis, full line in the `title` tooltip),
-a mute icon button (`aria-pressed`, `aria-label` `Mute` / `Unmute`, the
-icon shows the muted state), a volume slider with `aria-label` `Volume`
-(96 px) next to it, a style selector with `aria-label`
-`Orchestra / Piano` and no visible label text listing only styles that
-have tracks (hidden while fewer than two qualify), then the Chopin
-button and the source icon link. The transport and mute buttons and the
-source icon link are icon-only inline SVGs (`currentColor`, 32 px hit
-area), quiet and neutral, Meta blue on hover and focus-visible, each
-with `aria-label` and `title`; the source link reads `Music source
-(opens in new tab)`. Previous walks the session history and restarts
-the current track with no history, including the current playlist piece
-in playlist mode; Next cycles same-emotion tracks in the style.
+The bottom band is one row: the pager with book ticks left, the player
+centre-right. The pager reads `Scene k of n` between `‹` `›` buttons
+(`Previous page` / `Next page`, arrow keys keep working), above one
+tick per scene (current in accent) and muted `Scene i of N`. The player
+holds Previous, Play/Pause, Next, mute (`Mute` / `Unmute`), a `Volume`
+slider, the now-playing line (ellipsis, full line in `title`), then
+the stickers and Chopin. The line shows `display title · composer`,
+then the source artist as a link with an arrow icon when the manifest
+gives a URL. Orchestra and Piano are sticker buttons
+(`/art/stickers/violin.svg`, `/art/stickers/piano.svg`, Noto Emoji,
+Apache-2.0), shown while two styles have tracks, with `aria-pressed`
+for the selected one, a white die-cut outline, and a Meta-blue dot
+below it. Previous walks the session history and restarts the track
+with no history; Next cycles same-emotion tracks in the style.
 A `Just play Chopin` round image button (`/art/chopin-just-play-me.png`,
-40 px, `alt` and `aria-label` `Just play Chopin`) appears only when
-the manifest defines that playlist with tracks; it carries
-`aria-pressed`, and while pressed it shows a 2 px Meta-blue ring plus
-scale 1.05. The now-playing line shows `display title · composer
-· source`: `displayTitle` drops quoted nicknames, key phrases, and
-opus/catalogue suffixes from the track title, and the source is the
-artist plus ` / <platform>` when the attribution names Musopen or
-Jamendo and the artist does not already say it, dropped when it would
-repeat the performer. The full manifest title plus the license and full
-attribution sits in the `title` tooltip. On manifest failure the reader
-still renders and the bar shows a short neutral note. UI motion stays
-under 200 ms. Controls are real buttons and inputs with labels, visible
-focus, and keyboard use. `app/player.tsx` keeps the audio engine,
-transport, and bar layout; `app/player-controls.tsx` holds the style
-selector and the playlist toggle; `app/music-prefs.ts` owns the storage
-helper. The heading keeps `h2:focus:not(:focus-visible){outline:none}`
-so mouse navigation shows no box while keyboard focus keeps its ring.
-No user-visible emotion labels exist; ids stay as they are.
-`core/music-credit.ts` builds the line as a pure function with tests,
-including the pure `displayTitle`.
-`core/music-history.ts` is the bounded history stack the session banks
-automatic switches on; `requestManualTrack` in `core/music-schedule.ts`
-holds a manual pick.
+40 px) appears only when the manifest defines that playlist; while
+pressed it shows a 2 px Meta-blue ring plus scale 1.05. On manifest
+failure the band shows `The music is resting. The book is all yours.`
+Motion stays under 200 ms, except the image hover expand at 260 ms.
+`app/player.tsx` keeps the audio engine, transport, and band layout;
+`app/player-controls.tsx` holds the stickers and playlist toggle;
+`app/music-prefs.ts` owns storage. The heading keeps
+`:focus:not(:focus-visible){outline:none}`. No user-visible emotion
+labels exist; ids stay as they are. `core/music-credit.ts` builds the
+line as a pure function with tests. `core/music-history.ts` is the
+bounded history stack; `requestManualTrack` holds a manual pick.
 
 ## Image api
 
@@ -295,40 +287,49 @@ the start paragraph, `{ kind: "scene", bookId, textVersion, sceneId }`
 names the scene. Validation is strict: known book, matching
 `textVersion`, integer `n` in the book, known `sceneId`. Anything else
 is a 400 with a generic English message. The client sends ordinals
-and ids, never passage text. "Illustrate scene" uses the scene id from
+and ids, never passage text (except custom style text, validated
+server-side). "Illustrate scene" uses the scene id from
 the route.
 
 Responses (typed in `core/types.ts`): `{ status: "ready", url, cached,
 caption }` with a Vercel Blob URL, never bytes; `{ status: "pending" }`
 when another request holds the lock, so the client reposts
-every 3 s up to 2 minutes; `{ status: "error", code, message }`
-with code `quota`, `budget`, `unavailable`, or `bad_request` and an
-English message. Caption is the scene title (scene) or first
-paragraph words (passage), built server-side.
+every 3 s up to ~2 minutes; `{ status: "error", code, message }`
+where code is `quota`, `budget`, `daily_budget`, `unavailable`, or
+`bad_request` with a friendly English message. Both `budget` and
+`daily_budget` answer `MSG_CREDITS_OUT` (`core/images.ts`), which never
+says "come back tomorrow"; the UI links its Oz sentence via
+`CREDITS_OUT_LIBRARY_HREF` (`"/"`). Caption is the scene title, or the
+paragraph's first words, built server-side. The style contract lives in
+`docs/contracts-image-style.md`.
 
-Cache keys hold book, `textVersion`, `PROMPT_VERSION` (`v1`), start
-paragraph (passage) or scene id (scene), and an optional `style-<id>` /
-`style-c<hex>` segment. Each maps to a deterministic Blob path
-(`addRandomSuffix: false`, `allowOverwrite: false`). An Upstash Redis
-index maps key to Blob URL (hits: one GET); on an index miss the server
-lists by exact path prefix before generating and backfills the index.
+The passage cache key is book plus start paragraph plus `textVersion`
+plus `PROMPT_VERSION` (`v1`); the scene key swaps in the scene id.
+Both map to a deterministic Blob path (`addRandomSuffix: false`,
+`allowOverwrite: false`). An Upstash Redis index maps key to Blob URL
+(hits are one GET); on a miss the server lists by path prefix,
+generates, and backfills the index. Quota is 5 new images per person
+per day by hashed IP and signed cookie, whichever runs out first; spend
+sits under `SPEND_CAP_USD` (default 10) in integer micro-dollars, plus
+a daily counter per UTC day under `DAILY_SPEND_CAP_USD` (default 2,
+48 h key TTL). Failures refund quota and both counters and release the
+lock. Both caps apply only to requests paid with our key (a future
+bring-your-own-key path skips them).
 
-Optional `style`: `{ preset: <id> }` or `{ custom: "<text>" }`
-(`denslow` equals omitted). Preset ids: `denslow`, `realistic`, `anime`,
-`pencil`, `watercolor`, `storybook`, `comic`, `oil`, `woodcut` (labels,
-`MAX_CUSTOM_STYLE_CHARS` in `IMAGE_STYLE_PRESETS`, `@/core/image-style`).
-Stored under `lectoria.imageStyle.v1` (`saveImageStyle`/`loadImageStyle`);
-custom input `maxLength` 60. Custom: 2-60 chars of
-letters/numbers/space plus `, . ' & -`, lowercased; denylisted text is
-rejected. Rejections are 400 `bad_request` with message "That style
-can't be used. Try a different one." (`MSG_STYLE`, shape above).
-Omitted styles keep today's keys, new images only. Panels: style read
-once at open, one scene request per panel, reposted on re-polls.
-A Redis lock per key returns `pending` to concurrent requests. Quota is
-5 new images per person per day by hashed IP and signed cookie (either
-refuses); a shared spend counter in integer micro-dollars under
-`SPEND_CAP_USD` (default 10). Failures refund quota and budget and
-release the lock.
+## Picture vault and style pref
+
+The pane shows the scene picture behind a `Picture this scene` pill on
+a paper-grain placeholder (`Sketching…` while loading, retry on
+error). The image fills the pane, expands on hover (max 72vw by 78vh),
+and opens the shared lightbox on click. `Picture this` pops
+8 px above a 3+ char selection and inserts one figure after the
+selection end paragraph (`pickEndN` over ordinals), captioned with the
+selected text. Figures persist per scene in client memory, one request
+at a time. The vault lists the scene picture first, then figures in
+text order, each with jump-to-figure pulse and expand; the style picker
+below stores the pref in `lectoria.imageStyle`, `requestStyleFields`
+sends it on every request, and the credit names the sent style (else
+`In the style of W. W. Denslow`).
 
 ## Chat api
 

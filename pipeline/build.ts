@@ -1,10 +1,14 @@
-// CLI: npm run build:book -- oz [--step ingest|segment|classify|resplit|cluster] [--force]
+// CLI: npm run build:book -- oz [--step ingest|segment|classify|resplit|cluster] [--force] [--dry-run]
+// --dry-run prints one freshness line per selected step and stops before
+// any client, write, or network call.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { runClassify } from "./classify";
 import { runCluster } from "./cluster-tracks";
 import { bookConfig, runIngest } from "./ingest";
 import type { StepCtx } from "./ingest";
+import { planSteps } from "./freshness";
+import type { FreshStep } from "./freshness";
 import { createJevClient } from "./jev";
 import { createMetaClient } from "./meta";
 import { runResplit } from "./resplit";
@@ -33,13 +37,22 @@ async function main(): Promise<void> {
   const stepFlag = args.indexOf("--step");
   const stepArg = stepFlag === -1 ? undefined : args[stepFlag + 1];
   const force = args.includes("--force");
-  if (!bookKey) throw new Error("usage: build:book <book> [--step ingest|segment|classify|resplit|cluster] [--force]");
+  const dryRun = args.includes("--dry-run");
+  if (!bookKey) throw new Error("usage: build:book <book> [--step ingest|segment|classify|resplit|cluster] [--force] [--dry-run]");
   bookConfig(bookKey); // fails fast on unknown keys with the valid list
   const only = stepArg ?? "";
   if (only !== "" && !(STEPS as readonly string[]).includes(only)) {
     throw new Error(`unknown step "${only}", valid steps: ${STEPS.join(", ")}`);
   }
   const ctx: StepCtx = { bookKey, force, dir: join("data", "books", bookKey) };
+  if (dryRun) {
+    const selected = (only === "" ? [...STEPS] : [only]) as (typeof STEPS)[number][];
+    if (selected.includes("ingest")) console.log("ingest: not checked in dry run (frozen textVersion rule)");
+    for (const plan of planSteps(ctx.dir, selected.filter((s): s is FreshStep => s !== "ingest"), force)) {
+      console.log(`${plan.step}: ${plan.reuse ? "reuse" : "redo"} (${plan.reason})`);
+    }
+    return;
+  }
   const run: Record<(typeof STEPS)[number], boolean> = {
     ingest: only === "" || only === "ingest",
     segment: only === "" || only === "segment",

@@ -21,13 +21,17 @@ export const LOCK_TTL_SEC = 150;
 export const MAX_PASSAGE_CHARS = 600;
 export const MAX_SCENE_CLIP_CHARS = 1200;
 
-export const MSG_BAD_REQUEST = "That request was not valid. Try again.";
-export const MSG_QUOTA = "You reached your limit of 5 images per day. Come back tomorrow.";
-export const MSG_BUDGET = "The generation limit was reached. Try again later.";
-export const MSG_UNAVAILABLE = "Images are unavailable right now.";
-export const MSG_FAILED = "Could not generate the image. Try again.";
-export const MSG_RETRY = "The image is taking longer than expected. Try again.";
-export const MSG_STYLE = "That style can't be used. Try a different one.";
+export const MSG_BAD_REQUEST = "Something went wrong there. Try again?";
+export const MSG_QUOTA = "That's all five pictures for today. More tomorrow.";
+export const MSG_CREDITS_OUT =
+  "So many people loved this that we've run out of credits to share. " +
+  "Feel free to bring your own key! Meanwhile, The Wonderful Wizard of Oz " +
+  "is ready to read, with its soundtrack and illustrations.";
+export const CREDITS_OUT_LIBRARY_HREF = "/";
+export const MSG_UNAVAILABLE = "Pictures aren't available right now.";
+export const MSG_FAILED = "That picture didn't come out. Try again?";
+export const MSG_RETRY = "This one is taking a while. Try again in a moment.";
+export const MSG_STYLE = "That style won't work here. Try another?";
 
 // Minimal store surface the route needs; Upstash REST and Blob clients
 // implement these in server/, tests use the memory fake below.
@@ -149,6 +153,15 @@ export function quotaKeys(args: { day: string; ipHash: string; anonId: string })
 
 export function spendKey(): string {
   return "img:spend:micro";
+}
+
+// Daily spend counter for our key. The day is the UTC day string
+// YYYY-MM-DD the caller already uses for quota keys, so the daily
+// cap resets on UTC rollover together with per-person quota.
+export const DAILY_SPEND_TTL_SEC = 48 * 3600;
+
+export function dailySpendKey(day: string): string {
+  return `img:spend:daily:${day}`;
 }
 
 export function overQuota(count: number): boolean {

@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { createMemoryKV, imageKey, lockKeyFor, spendKey } from "@/core/images";
+import {
+  MSG_CREDITS_OUT,
+  createMemoryKV,
+  dailySpendKey,
+  imageKey,
+  lockKeyFor,
+  spendKey,
+} from "@/core/images";
 import type { ImageGenerator, ImageRequest, ImageStore } from "@/core/images";
 import type { ImageEnv } from "./env";
 import { orchestrate } from "./orchestrate";
@@ -12,6 +19,7 @@ const env: ImageEnv = {
   sessionSecret: "s",
   ipSalt: "salt",
   spendCapMicro: 10_000_000,
+  dailySpendCapMicro: 1_500_000,
 };
 
 const content = {
@@ -181,6 +189,105 @@ describe("orchestrate", () => {
     expect(res).toMatchObject({ status: "ready", cached: false });
     expect(JSON.stringify(res)).not.toContain("index-boom-marker");
     expect(await d.kv.setNxEx(lockKeyFor(imageKey(passage)), "probe", 150)).toBe(true);
+  });
+
+  it("tracks the daily counter under the daily cap", async () => {
+    const d = deps();
+    const res = await orchestrate(passage, d);
+    expect(res.status).toBe("ready");
+    expect(await d.kv.get(spendKey())).toBe("10000");
+    expect(await d.kv.get(dailySpendKey("2026-10-27"))).toBe("10000");
+  });
+
+  it("refuses over the daily cap with a refund and no generate call", async () => {
+    const d = deps({ env: { ...env, dailySpendCapMicro: 1 } });
+    let calls = 0;
+    d.generate = {
+      generate: async () => (calls++, new Uint8Array([9])),
+    };
+    const res = await orchestrate(passage, d);
+    expect(res).toEqual({ status: "error", code: "daily_budget", message: MSG_CREDITS_OUT });
+    expect(calls).toBe(0);
+    expect(await d.kv.get(spendKey())).toBe("0");
+    expect(await d.kv.get(dailySpendKey("2026-10-27"))).toBe("0");
+    // Lock released: a new request generates instead of pending.
+    const retry = await orchestrate(passage, {
+      ...d,
+      env: { ...env, dailySpendCapMicro: 1_500_000 },
+      generate: { generate: async () => new Uint8Array([7]) },
+    });
+    expect(retry.status).toBe("ready");
+  });
+
+  it("resets the daily cap on a new UTC day", async () => {
+    const tiny = { ...env, dailySpendCapMicro: 10_000 };
+    const d = deps({ env: tiny });
+    expect((await orchestrate(passage, d)).status).toBe("ready");
+    const refused = await orchestrate(
+      { ...passage, n: 4 },
+      { ...d, ip: "9.9.9.9", anonId: "fresh-1" },
+    );
+    expect(refused).toMatchObject({ status: "error", code: "daily_budget" });
+    // A fresh key: the day-27 index entry would serve n=3 from cache.
+    const next = await orchestrate({ ...passage, n: 5 }, { ...d, day: "2026-10-28" });
+    expect(next.status).toBe("ready");
+    expect(await d.kv.get(dailySpendKey("2026-10-28"))).toBe("10000");
+  });
+
+  it("still enforces the total cap with the total message", async () => {
+    const d = deps({ env: { ...env, spendCapMicro: 1 } });
+    const res = await orchestrate(passage, d);
+    expect(res).toEqual({ status: "error", code: "budget", message: MSG_CREDITS_OUT });
+    expect(await d.kv.get(spendKey())).toBe("0");
+  });
+
+  it("refunds the daily counter when generation fails", async () => {
+    const d = deps();
+    d.generate = {
+      generate: async () => {
+        throw new Error("meta secret internals 500");
+      },
+    };
+    const res = await orchestrate(passage, d);
+    expect(res).toMatchObject({ status: "error", code: "unavailable" });
+    expect(await d.kv.get(spendKey())).toBe("0");
+    expect(await d.kv.get(dailySpendKey("2026-10-27"))).toBe("0");
+  });
+
+  it("leaves both counters alone on a cached hit", async () => {
+    const d = deps();
+    const first = await orchestrate(passage, d);
+    expect(first.status).toBe("ready");
+    const second = await orchestrate(passage, d);
+    expect(second).toMatchObject({ status: "ready", cached: true });
+    expect(await d.kv.get(spendKey())).toBe("10000");
+    expect(await d.kv.get(dailySpendKey("2026-10-27"))).toBe("10000");
+  });
+
+  it("refunds both spend counters exactly once when store.save fails", async () => {
+    const d = deps();
+    d.store = {
+      findUrl: async () => null,
+      save: async () => {
+        throw new Error("blob down");
+      },
+    };
+    const totalKey = spendKey();
+    const dayKey = dailySpendKey(d.day);
+    let totalRefunds = 0;
+    let dailyRefunds = 0;
+    const inner = d.kv.decrBy.bind(d.kv);
+    d.kv.decrBy = async (key: string, by: number) => {
+      if (key === totalKey) totalRefunds += 1;
+      if (key === dayKey) dailyRefunds += 1;
+      return inner(key, by);
+    };
+    const res = await orchestrate(passage, d);
+    expect(res).toMatchObject({ status: "error", code: "unavailable" });
+    expect(await d.kv.get(totalKey)).toBe("0");
+    expect(await d.kv.get(dayKey)).toBe("0");
+    expect(totalRefunds).toBe(1);
+    expect(dailyRefunds).toBe(1);
   });
 
   it("recovers from a lost save race through the winner file", async () => {

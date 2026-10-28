@@ -91,6 +91,7 @@ const env: ImageEnv = {
   sessionSecret: "s",
   ipSalt: "salt",
   spendCapMicro: 10_000_000,
+  dailySpendCapMicro: 2_000_000,
 };
 
 const content = {

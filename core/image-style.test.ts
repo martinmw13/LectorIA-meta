@@ -13,7 +13,7 @@ import {
 describe("presets", () => {
   it("lists the nine presets with labels", () => {
     expect(IMAGE_STYLE_PRESETS.map((p) => [p.id, p.label])).toEqual([
-      ["denslow", "Classic 1900"],
+      ["denslow", "Denslow ink (1900)"],
       ["realistic", "Realistic"],
       ["anime", "Anime"],
       ["pencil", "Pencil sketch"],
