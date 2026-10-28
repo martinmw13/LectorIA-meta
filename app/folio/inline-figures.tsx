@@ -2,8 +2,11 @@
 // after their end paragraph. Click opens the lightbox.
 "use client";
 
+import { createPortal } from "react-dom";
 import { truncateCaption } from "./helpers";
 import { PICTURE_COPY, PictureIcon } from "./picture-copy";
+import { PictureDraw, usePictureLoaded } from "./picture-draw";
+import { usePictureSkin, usePictureSkinId } from "./picture-skin";
 import type { InlineFigure } from "./use-pictures";
 
 export function SelectionPopover({
@@ -15,7 +18,10 @@ export function SelectionPopover({
   popRef: React.Ref<HTMLButtonElement>;
   onPick: () => void;
 }) {
-  return (
+  // Portalled to the body at document coordinates, so the pill stays on
+  // the selection however the reader lays scenes out.
+  if (typeof document === "undefined") return null;
+  return createPortal(
     <button
       type="button"
       ref={popRef}
@@ -25,8 +31,9 @@ export function SelectionPopover({
       aria-label="Picture this"
     >
       <PictureIcon size={12} />
-      Picture this
-    </button>
+      <span className="picture-float-lbl">Picture this</span>
+    </button>,
+    document.body,
   );
 }
 
@@ -43,11 +50,16 @@ export function InlineFigureView({
   onOpen: (src: string, caption: string, opener: HTMLElement | null) => void;
   refCb: (el: HTMLElement | null) => void;
 }) {
+  const skin = usePictureSkin();
+  const skinId = usePictureSkinId();
+  const { loaded, imgRef, markLoaded } = usePictureLoaded(
+    figure.phase === "ready" && figure.url ? figure.url : "",
+  );
   if (figure.phase === "loading") {
     return (
       <figure className="genfig" data-fig={figure.id} ref={refCb as React.Ref<HTMLElement>}>
-        <div className="genload" role="status">
-          {PICTURE_COPY.loading}
+        <div className="genload" role="status" data-picture-skin={skinId}>
+          <PictureDraw skin={skin} />
         </div>
       </figure>
     );
@@ -69,17 +81,28 @@ export function InlineFigureView({
   const captioned = `\u201C${truncateCaption(figure.quote)}\u201D`;
   return (
     <figure className="genfig" data-fig={figure.id} ref={refCb as React.Ref<HTMLElement>}>
-      <img
-        src={url}
-        alt={captioned}
-        loading="lazy"
-        decoding="async"
-        tabIndex={0}
+      <div className="genload" data-picture-skin={skinId}>
+        {loaded ? null : (
+          <div className="pic-under">
+            <PictureDraw skin={skin} frozen />
+          </div>
+        )}
+        <img
+          ref={imgRef}
+          onLoad={markLoaded}
+          onError={markLoaded}
+          className={loaded ? `rv-${skin} gen-ready` : "gen-ready pic-waiting"}
+          src={url}
+          alt={captioned}
+          loading="lazy"
+          decoding="async"
+          tabIndex={0}
         onClick={(e) => onOpen(url, captioned, e.currentTarget)}
         onKeyDown={(e) => {
           if (e.key === "Enter") onOpen(url, captioned, e.currentTarget);
         }}
-      />
+        />
+      </div>
       <figcaption>
         <span className="grow">{captioned}</span>
         <span className="gcredit">{figure.credit}</span>
