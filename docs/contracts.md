@@ -20,6 +20,19 @@ and tempo. It never sees `jev`, `muse_override`, or provenance.
 scenes by ordinal range and throws on unordered scenes or on paragraphs
 covered zero or two times.
 
+## Scene reader
+
+One static route per scene (`app/leer/[sceneId]`, `dynamicParams`
+false); `/` redirects to the first scene. The layout mounts the music
+container once and passes slim metadata for all scenes: id, chapter,
+and emotion triple only. Each scene page builds its view with
+`buildSceneView` and ships only that scene's text, its chapter title,
+and neighbor ids. Sub-pages come from `paginateScene` (250 words, split
+at paragraph boundaries). The pager moves sub-pages in client state and
+pushes routes with `router.push`, never `<Link>`; going back lands on
+the previous scene's last sub-page via `?at=end`. The client never
+receives other scenes' text, titles, or summaries.
+
 ## Music library
 
 The library is a static `public/music/manifest.json`, version 3, fetched
@@ -130,14 +143,18 @@ a weights override changes the ranking. `cosineSimilarity` over
 `MUSIC_CONFIG`, holds `similarity`, `weights`, `switchMargin` (0.07),
 `dwellSec` (20), `minTrackSec` (45), `hardCutMargin` (0.20),
 `crossfadeSec` (3), and `hardCutCrossfadeSec` (1.5). Everything else
-reads from it. Ranking ties go to the lower track id.
+reads from it. Ranking ties go to the lower track id. Route entries use
+`sceneEntryDwellSec` (5) as the dwell override; scoring, hysteresis,
+and overrides are unchanged.
 
 ## Selection scheduler
 
 `core/music-schedule.ts` is a pure state machine. The reader calls
 `observeScene`, `tickScheduler`, `requestNext`, and `noteTrackEnded`
 with explicit `nowSec` values, so all timing is testable without
-timers. State holds the current track id and when it started, the active
+timers. The reader cues music on scene entry only: one `observeScene`
+call per route id, gated by an id comparison, so sub-page moves never
+reach the scheduler. State holds the current track id and when it started, the active
 scene id, the pending scene id and since when, and the skip override
 with the scene it belongs to.
 
@@ -206,7 +223,8 @@ the paragraph where the selection starts, `{ kind: "scene", bookId,
 textVersion, sceneId }` names the scene. Validation is strict: known
 book, matching `textVersion`, integer `n` inside the book, known
 `sceneId`. Any other body is a 400 with a generic Spanish message.
-The client sends ordinals and ids only, never text.
+The client sends ordinals and ids only, never text. "Ilustrar
+escena" uses the scene id from the route.
 
 Responses (typed in `core/types.ts`): `{ status: "ready", url, cached,
 caption }` with a Vercel Blob URL, never bytes; `{ status: "pending" }`

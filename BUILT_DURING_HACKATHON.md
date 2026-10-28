@@ -11,3 +11,4 @@ Building period: 2026-10-27 to 2026-11-04 23:00, America/Buenos_Aires. Each task
 | 2026-10-27 | 5: contracts and reader | Module contracts, core music selection, reader model, scene reader with placeholder tracks | Muse Code (Contributor) |
 | 2026-10-28 | 6: soundtracks | Manifest v3 with styles and soundtracks, mix toggle, style selector, per-scene fallback, persisted selection | Muse Code (Contributor) |
 | 2026-10-27 | 7: picture this and picture scene | Denslow style cached images for passages and scenes, quota and budget guards | Muse Code (Contributor) |
+| 2026-10-27 | 8: scene reader | One route per scene, sub-page pager, music cues on scene entry | Muse Code (Contributor) |
