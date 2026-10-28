@@ -121,7 +121,6 @@ describe("scheduled select", () => {
     const d = tickScheduler(playing("a-far", 0), signal("calma"), manifest, 100, orchSeeded());
     expect(d.switchToId).toBe("a-calma");
     expect(d.crossfadeSec).toBe(3);
-    expect(d.hardCut).toBe(false);
   });
 
   it("holds the current pick until min-track time passes", () => {
@@ -219,7 +218,6 @@ describe("switchStyle", () => {
     const changed = switchStyle(d.state, signal("calma"), manifest, 1, "piano");
     expect(changed.switchToId).toBe("p-calma");
     expect(changed.crossfadeSec).toBe(3);
-    expect(changed.hardCut).toBe(false);
     expect(changed.state.overrideId).toBe("p-calma");
   });
 

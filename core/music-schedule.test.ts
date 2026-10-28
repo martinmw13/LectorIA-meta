@@ -78,7 +78,6 @@ function midSignal(): SceneSignal {
     const best = rankTracks(s, manifest)[0] as Track;
     const gap = scoreTrack(s, best) - scoreTrack(s, current);
     if (gap >= 0.12) {
-      if (gap >= MUSIC_CONFIG.hardCutMargin) throw new Error("fixture gap too wide");
       return s;
     }
   }
@@ -105,7 +104,6 @@ describe("observeScene and tickScheduler", () => {
     expect(late.state.activeSceneId).toBe("s2");
     expect(late.switchToId).toBe(rankTracks(mid, manifest)[0]?.id);
     expect(late.crossfadeSec).toBe(MUSIC_CONFIG.crossfadeSec);
-    expect(late.hardCut).toBe(false);
   });
 
   it("holds the current track while the score gap is within tolerance", () => {
@@ -167,7 +165,6 @@ describe("observeScene and tickScheduler", () => {
     const late = tickScheduler(early.state, mid, manifest, 56, env);
     expect(late.switchToId).toBe(rankTracks(mid, manifest)[0]?.id);
     expect(late.crossfadeSec).toBe(MUSIC_CONFIG.crossfadeSec);
-    expect(late.hardCut).toBe(false);
   });
 
   it("holds the current track before minTrackSec, then switches with the normal fade", () => {
@@ -179,7 +176,6 @@ describe("observeScene and tickScheduler", () => {
     expect(early.switchToId).toBeNull();
     const settled = tickScheduler(early.state, s, manifest, 60, env);
     expect(settled.switchToId).toBe("calm");
-    expect(settled.hardCut).toBe(false);
     expect(settled.crossfadeSec).toBe(MUSIC_CONFIG.crossfadeSec);
   });
 
@@ -222,7 +218,7 @@ describe("requestNext", () => {
     const best = rankTracks(calm, manifest)[0] as Track;
     const gap =
       scoreTrack(calm, best) - scoreTrack(calm, manifest.tracks[1] as Track);
-    expect(gap).toBeGreaterThanOrEqual(MUSIC_CONFIG.hardCutMargin);
+    expect(gap).toBeGreaterThanOrEqual(MUSIC_CONFIG.randomTolerance);
     const held = tickScheduler(d.state, calm, manifest, 5 + MUSIC_CONFIG.minTrackSec + 10, env);
     expect(held.switchToId).toBeNull();
     expect(held.state.currentId).toBe("sad-b");
@@ -250,7 +246,6 @@ describe("requestNext", () => {
     const settled = tickScheduler(d.state, signal("calma"), manifest, 50 + MUSIC_CONFIG.dwellSec + 1, env);
     expect(settled.state.overrideId).toBeNull();
     expect(settled.switchToId).toBe("calm");
-    expect(settled.hardCut).toBe(false);
   });
 
   it("holds the override until the scene changes, then clears it", () => {

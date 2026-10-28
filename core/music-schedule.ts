@@ -1,5 +1,5 @@
 // Pure music scheduler. The reader calls it with explicit nowSec values,
-// so dwell, hysteresis, and hard cuts are testable without timers.
+// so dwell and the min-track hold are testable without timers.
 import {
   MUSIC_CONFIG,
   candidatesFor,
@@ -27,7 +27,6 @@ export interface ScheduleDecision {
   state: SchedulerState;
   switchToId: string | null;
   crossfadeSec: number;
-  hardCut: boolean;
 }
 
 export function initScheduler(): SchedulerState {
@@ -44,7 +43,7 @@ export function initScheduler(): SchedulerState {
 }
 
 function noChange(state: SchedulerState): ScheduleDecision {
-  return { state, switchToId: null, crossfadeSec: 0, hardCut: false };
+  return { state, switchToId: null, crossfadeSec: 0 };
 }
 
 function topRanked(
@@ -86,7 +85,6 @@ function evaluateRandom(
     state: { ...state, currentId: pick.id, currentStartedSec: nowSec },
     switchToId: pick.id,
     crossfadeSec: state.currentId === null ? 0 : config.crossfadeSec,
-    hardCut: false,
   };
 }
 
@@ -201,7 +199,6 @@ export function requestNext(
     },
     switchToId: next.id,
     crossfadeSec: config.crossfadeSec,
-    hardCut: false,
   };
 }
 
@@ -228,7 +225,6 @@ export function requestManualTrack(
     },
     switchToId: picked.id,
     crossfadeSec: config.crossfadeSec,
-    hardCut: false,
   };
 }
 
@@ -259,7 +255,6 @@ export function noteTrackEnded(
     },
     switchToId: best.id,
     crossfadeSec: config.crossfadeSec,
-    hardCut: false,
   };
 }
 
@@ -294,7 +289,6 @@ export function enterPlaylist(
     },
     switchToId: first.id,
     crossfadeSec: state.currentId === null ? 0 : config.crossfadeSec,
-    hardCut: false,
   };
 }
 
@@ -327,7 +321,6 @@ function advancePlaylist(
     },
     switchToId: next.id,
     crossfadeSec: state.currentId === null ? 0 : config.crossfadeSec,
-    hardCut: false,
   };
 }
 
@@ -356,7 +349,6 @@ export function exitPlaylist(
     state: { ...cleared, currentId: best.id, currentStartedSec: nowSec },
     switchToId: best.id,
     crossfadeSec: state.currentId === null ? 0 : config.crossfadeSec,
-    hardCut: false,
   };
 }
 
@@ -387,7 +379,6 @@ export function switchStyle(
     },
     switchToId: picked.track.id,
     crossfadeSec: config.crossfadeSec,
-    hardCut: false,
   };
 }
 
