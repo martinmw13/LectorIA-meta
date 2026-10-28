@@ -25,6 +25,15 @@ const REQUIRED = [
   "IP_HASH_SALT",
 ] as const;
 
+// One rule for both caps: a finite, non-negative USD value wins,
+// anything else (missing, blank, non-numeric, negative, Infinity) falls back.
+// Zero stays valid so a zero cap can intentionally block spend.
+function parseCapUsd(raw: string | undefined, fallback: number): number {
+  if (raw === undefined || raw.trim() === "") return fallback;
+  const value = Number(raw);
+  return Number.isFinite(value) && value >= 0 ? value : fallback;
+}
+
 export function readImageEnv(from: NodeJS.ProcessEnv = process.env): ImageEnv {
   const upstashUrl = from.UPSTASH_REDIS_REST_URL || from.KV_REST_API_URL;
   const upstashToken = from.UPSTASH_REDIS_REST_TOKEN || from.KV_REST_API_TOKEN;
@@ -34,17 +43,13 @@ export function readImageEnv(from: NodeJS.ProcessEnv = process.env): ImageEnv {
     ...REQUIRED.filter((k) => !from[k]),
   ].filter((m): m is string => m !== null);
   if (missing.length > 0) throw new Error(`missing image env: ${missing.join(",")}`);
-  const capUsd = Number(from.SPEND_CAP_USD ?? "10");
-  const dailyCapUsd = Number(from.DAILY_SPEND_CAP_USD ?? "2");
   return {
     upstashUrl: upstashUrl as string,
     upstashToken: upstashToken as string,
     metaKey: from.META_API_KEY as string,
     sessionSecret: from.SESSION_SECRET as string,
     ipSalt: from.IP_HASH_SALT as string,
-    spendCapMicro: Math.round((Number.isFinite(capUsd) ? capUsd : 10) * 1_000_000),
-    dailySpendCapMicro: Math.round(
-      (Number.isFinite(dailyCapUsd) && dailyCapUsd >= 0 ? dailyCapUsd : 2) * 1_000_000,
-    ),
+    spendCapMicro: Math.round(parseCapUsd(from.SPEND_CAP_USD, 10) * 1_000_000),
+    dailySpendCapMicro: Math.round(parseCapUsd(from.DAILY_SPEND_CAP_USD, 2) * 1_000_000),
   };
 }
