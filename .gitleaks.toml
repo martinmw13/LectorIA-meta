@@ -9,4 +9,6 @@ regexes = [
   '''your-key-here''',
   '''changeme-please''',
   '''paste-your-salt-here''',
+  # localStorage key names such as WARMTH_KEY = "lectoria.warmth.v2"
+  '''^lectoria\.[a-z][a-z0-9.-]*$''',
 ]
