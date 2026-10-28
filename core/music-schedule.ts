@@ -345,8 +345,7 @@ export function switchStyle(
   style: string,
   override?: Partial<MusicConfig>,
 ): ScheduleDecision {
-  // The reader blocks style changes while a playlist plays. The guard
-  // keeps the saved index pointing at the current track if one slips by.
+  // modeAdvanced reaches here only when no playlist plays; the guard keeps a stray call a no-op.
   if (state.playlist !== null) return noChange(state);
   const config = resolveConfig(override ?? MUSIC_CONFIG);
   const picked = requestStyleChange(manifest, style, signal, config);

@@ -322,6 +322,32 @@ describe("modeAdvanced", () => {
     expect(session.view.playlistOn).toBe(false);
   });
 
+  it("pressing Chopin while on Chopin exits to the stored style", () => {
+    let session = startSession(manifest, {
+      style: "piano",
+      volume: null,
+      muted: false,
+      playlist: true,
+    });
+    expect(session.view.playlistOn).toBe(true);
+    session = dispatch(session, { type: "modeAdvanced", to: CHOPIN_PLAYLIST_ID }, ctx("s1", 5));
+    expect(session.view.playlistOn).toBe(false);
+    expect(session.selection.style).toBe("piano");
+    expect(session.view.style).toBe("piano");
+    expect(session.view.currentId).toBe("p-calm");
+    expect(session.view.fadeSec).toBe(3);
+  });
+
+  it("leaves the playlist for a style even with a null route", () => {
+    let session = entered("s1", 0);
+    session = dispatch(session, { type: "modeAdvanced", to: CHOPIN_PLAYLIST_ID }, ctx("s1", 5));
+    expect(session.view.playlistOn).toBe(true);
+    session = dispatch(session, { type: "modeAdvanced", to: "piano" }, ctx(null, 6));
+    expect(session.view.playlistOn).toBe(false);
+    expect(session.view.style).toBe("piano");
+    expect(session.view.currentId).toBe("p-calm");
+  });
+
   it("ignores unknown targets, the current mode, and a missing route", () => {
     const session = entered("s1", 0);
     expect(dispatch(session, { type: "modeAdvanced", to: "koto" }, ctx("s1", 5))).toBe(session);

@@ -33,8 +33,8 @@ without touching the reader, player, or session.
 
 Style stickers stay enabled during Chopin: pressing one leaves the
 playlist straight for that style with one crossfade, instead of doing
-nothing. Pressing Chopin while on Chopin still returns to the last
-picked style.
+nothing. Pressing Chopin while on Chopin still exits the playlist
+keeping the session style.
 
 ## Checks
 

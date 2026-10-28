@@ -2,7 +2,6 @@
 // Chopin button). The player renders <MusicStyleControl /> and must not
 // know its internals: replacing this file and
 // app/styles/music-style-control.css swaps the whole design.
-import { useRef } from "react";
 import type { MusicMode, MusicModeId } from "@/core/music";
 
 export type MusicStyleControlProps = {
@@ -20,10 +19,6 @@ function stickerFor(id: string, label: string): string {
 export function MusicStyleControl({ modes, current, onAdvance }: MusicStyleControlProps) {
   const styles = modes.filter((m) => m.kind === "style");
   const playlist = modes.find((m) => m.kind === "playlist") ?? null;
-  // The last picked style, so the Chopin button pressed while on Chopin
-  // returns to it instead of cycling forward.
-  const lastStyle = useRef<MusicModeId | null>(null);
-  if (current !== null && styles.some((s) => s.id === current)) lastStyle.current = current;
   return (
     <>
       {styles.length >= 2 ? (
@@ -49,11 +44,7 @@ export function MusicStyleControl({ modes, current, onAdvance }: MusicStyleContr
         <button
           type="button"
           className="chopin"
-          onClick={() =>
-            current === playlist.id
-              ? onAdvance(lastStyle.current ?? styles[0]?.id)
-              : onAdvance(playlist.id)
-          }
+          onClick={() => onAdvance(playlist.id)}
           aria-pressed={current === playlist.id}
           aria-label="Just play Chopin"
           title="Just play Chopin"

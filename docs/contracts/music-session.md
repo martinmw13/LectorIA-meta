@@ -14,8 +14,9 @@ and derives the view the player renders: track id, fade, nonce,
 canPrev/canSkip, playlist flag, style. `modeAdvanced` (with an optional
 `to` target) walks the `core/music-modes.ts` order: style to style
 works like `styleChanged`, style to Chopin like entering the playlist,
-and Chopin to a style exits under the target selection in one switch
-with one crossfade. `playlistToggled` and `styleChanged` still work. A
+Chopin to Chopin exits keeping the stored selection like `playlistToggled`
+exiting, and Chopin to a style exits under the target selection in one
+switch with one crossfade. `playlistToggled` and `styleChanged` still work. A
 stored Chopin mode starts the session in the playlist; without the
 playlist the stored style stands.
 

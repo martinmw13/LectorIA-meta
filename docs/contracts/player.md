@@ -41,7 +41,7 @@ A `Just play Chopin` round image button (`/art/chopin-just-play-me.png`,
 pressed it shows a 2 px Meta-blue ring plus scale 1.05. The style
 stickers stay enabled while it plays: pressing one leaves the playlist
 straight for that style with one crossfade, and pressing Chopin while
-on Chopin returns to the last picked style. On manifest
+on Chopin exits the playlist keeping the session style. On manifest
 failure the band shows `The music is resting. The book is all yours.`
 Motion stays under 200 ms, except the image hover expand at 260 ms.
 `app/player.tsx` keeps the audio engine, transport, and band layout;

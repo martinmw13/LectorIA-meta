@@ -309,16 +309,29 @@ export function dispatch(session: MusicSession, intent: MusicIntent, ctx: Sessio
       const modes = musicModes(ctx.manifest);
       const target = intent.to ?? nextMode(modes, currentMode(session.view));
       if (target === null || !modes.some((m) => m.id === target)) return session;
-      if (target === currentMode(session.view)) return session;
       const playlist = findChopinPlaylist(ctx.manifest);
+      // Chopin pressed while on Chopin exits to the stored selection,
+      // exactly like playlistToggled exiting.
+      if (playlist !== null && target === playlist.id && session.scheduler.playlist !== null) {
+        const signal = ctx.routeSceneId !== null ? ctx.signalOf(ctx.routeSceneId) : null;
+        const decision = exitPlaylist(
+          session.scheduler,
+          signal,
+          ctx.manifest,
+          ctx.nowSec,
+          selectEnv(session, ctx),
+        );
+        return settle(session, foldSwitch(baseOf(session), decision, true), ctx);
+      }
+      if (target === currentMode(session.view)) return session;
       if (playlist !== null && target === playlist.id) {
-        if (session.scheduler.playlist !== null) return session;
         const decision = enterPlaylist(session.scheduler, ctx.manifest, playlist.id, ctx.nowSec);
         return settle(session, foldSwitch(baseOf(session), decision, true), ctx);
       }
       const signal = ctx.routeSceneId !== null ? ctx.signalOf(ctx.routeSceneId) : null;
       // Leaving the playlist switches straight to the target style: one
-      // exit under the target selection, one switch, one crossfade.
+      // exit under the target selection, one switch, one crossfade. A
+      // sticker press is an explicit choice, so this acts even with a null route.
       if (session.scheduler.playlist !== null) {
         const decision = exitPlaylist(session.scheduler, signal, ctx.manifest, ctx.nowSec, {
           selection: { style: target },
