@@ -153,12 +153,11 @@ the style list hides styles with only playlist tracks.
 closeness. Scoring and ranking pass the resolved config weights in, so
 a weights override changes the ranking. `cosineSimilarity` over
 `buildFeatures` output stays as an exported alternative. One exported object,
-`MUSIC_CONFIG`, holds `similarity`, `weights`, `switchMargin` (0.07),
-`dwellSec` (20), `minTrackSec` (45), `hardCutMargin` (0.20),
-`crossfadeSec` (3), and `hardCutCrossfadeSec` (1.5). Everything else
-reads from it. Ranking ties go to the lower track id. Route entries use
-`sceneEntryDwellSec` (5) as the dwell override; scoring, hysteresis,
-and overrides are unchanged.
+`MUSIC_CONFIG`, holds `similarity`, `weights`, `dwellSec` (20),
+`sceneEntryDwellSec` (5), `minTrackSec` (45), `crossfadeSec` (3), and
+`randomTolerance` (0.05). Everything else reads from it. Ranking ties go
+to the lower track id. Route entries use `sceneEntryDwellSec` as the
+dwell override; scoring and overrides are unchanged.
 
 ## Selection scheduler
 
@@ -174,16 +173,16 @@ with the scene it belongs to.
 A newly entered scene becomes pending and the dwell clock restarts, so
 fast scrolling keeps only the newest scene. The first track ever plays
 at once with no dwell. After the pending scene holds for `dwellSec` it
-becomes active and the override clears. Then the best track switches in
-only when it beats the current score by `switchMargin` and the current
-track played `minTrackSec`, unless it wins by `hardCutMargin` (hard
-cut, short fade). A second passes the active scene back through the
-switch check, so a hold from `minTrackSec` releases on time, unless a
-skip override stands: ticks return no change while it is set, and only
-a new scene promotion clears it. A switch
-reports its crossfade length: 3 s normally,
-1.5 s for hard cuts. The skip choice holds until the next scene change;
-after that, dwell and hysteresis apply with the override track as the
+becomes active and the override clears. Then a scheduled select draws
+among the in-style tracks within `randomTolerance` of the best score,
+keeping the current track when it is eligible, and switches to the
+drawn track only once the current track played `minTrackSec`. A tick
+passes the active scene back through the same draw, so a hold from
+`minTrackSec` releases on time, unless a skip override stands: ticks
+return no change while it is set, and only a new scene promotion
+clears it. A switch reports the normal crossfade length (3 s, 0 s for
+the first track ever). The skip choice holds until the next scene change;
+after that, dwell and the draw apply with the override track as the
 current track. A null scene means a failed analysis with no vector, so
 it never triggers a switch. A non-looping track that ends fades into
 the best remaining track, excluding the one that ended, and clears the
@@ -191,8 +190,12 @@ skip override.
 
 ## Player
 
-`app/player.tsx` takes the track, the fade length for the latest switch,
-the scene title, a skip flag, and callbacks. It owns two `audio`
+`app/player.tsx` takes the track, `replayNonce`, the fade length for
+the latest switch, `canPrev`/`canSkip` with their handlers, volume and
+mute with their handlers, the style list with the current style and its
+handler, the end-of-track handler, and the playlist props
+(`playlistOn`, `playlistLabel`, `onTogglePlaylist`,
+`controlsDisabled`). It owns two `audio`
 elements, play state, volume, and the equal-power crossfade
 (cos/sin gains over the fade time, driven by `requestAnimationFrame`).
 It never uses the `loop` attribute. Volume lives in a ref, so the slider
