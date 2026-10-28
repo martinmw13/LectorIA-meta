@@ -15,6 +15,13 @@
   color: var(--color-accent-hover);
 }
 
+.home-root a.home-button,
+.home-root a.home-button:visited,
+.home-root a.home-button:hover,
+.home-root a.home-button:focus {
+  color: var(--color-on-accent);
+}
+
 .home-root button,
 .home-root input {
   font: inherit;
