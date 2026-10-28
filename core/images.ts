@@ -1,10 +1,19 @@
 // Pure image logic: validation, cache keys, prompts, quota and budget
 // helpers. No env reads, no network, no secrets. Server modules inject
 // the KV, store, and generator clients defined here.
+import {
+  ImageValidationError,
+  parseStyleChoice,
+  styleDescriptorLine,
+  styleSegment,
+} from "./image-style";
+import type { ImageStyle } from "./image-style";
 import { IMAGE_COST_MICRO, PROMPT_VERSION } from "./types";
 import type { ImageKind, ImageRequest } from "./types";
 
 export type { ImageErrorCode, ImageKind, ImageRequest, ImageResponse } from "./types";
+export { ImageStyleError, ImageValidationError } from "./image-style";
+export type { ImageStyle, ImageStylePresetId, StyleChoice } from "./image-style";
 
 export const DAILY_IMAGE_LIMIT = 5;
 export const QUOTA_TTL_SEC = 48 * 3600;
@@ -18,13 +27,7 @@ export const MSG_BUDGET = "The generation limit was reached. Try again later.";
 export const MSG_UNAVAILABLE = "Images are unavailable right now.";
 export const MSG_FAILED = "Could not generate the image. Try again.";
 export const MSG_RETRY = "The image is taking longer than expected. Try again.";
-
-export class ImageValidationError extends Error {
-  constructor() {
-    super("invalid image request");
-    this.name = "ImageValidationError";
-  }
-}
+export const MSG_STYLE = "That style can't be used. Try a different one.";
 
 // Minimal store surface the route needs; Upstash REST and Blob clients
 // implement these in server/, tests use the memory fake below.
@@ -60,23 +63,41 @@ export function parseImageRequest(json: unknown): ImageRequest {
   const { kind } = json;
   if (kind === "passage") {
     const keys = Object.keys(json).sort().join(",");
-    if (keys !== "bookId,kind,n,textVersion") throw new ImageValidationError();
+    if (keys !== "bookId,kind,n,textVersion" && keys !== "bookId,kind,n,style,textVersion") {
+      throw new ImageValidationError();
+    }
     if (typeof json.bookId !== "string" || json.bookId.length === 0) throw new ImageValidationError();
     if (typeof json.textVersion !== "string" || json.textVersion.length === 0) {
       throw new ImageValidationError();
     }
     if (typeof json.n !== "number" || !Number.isInteger(json.n)) throw new ImageValidationError();
-    return { kind: "passage", bookId: json.bookId, textVersion: json.textVersion, n: json.n };
+    const style = parseStyleChoice(json.style);
+    return {
+      kind: "passage",
+      bookId: json.bookId,
+      textVersion: json.textVersion,
+      n: json.n,
+      ...(style === undefined ? {} : { style }),
+    };
   }
   if (kind === "scene") {
     const keys = Object.keys(json).sort().join(",");
-    if (keys !== "bookId,kind,sceneId,textVersion") throw new ImageValidationError();
+    if (keys !== "bookId,kind,sceneId,textVersion" && keys !== "bookId,kind,sceneId,style,textVersion") {
+      throw new ImageValidationError();
+    }
     if (typeof json.bookId !== "string" || json.bookId.length === 0) throw new ImageValidationError();
     if (typeof json.textVersion !== "string" || json.textVersion.length === 0) {
       throw new ImageValidationError();
     }
     if (typeof json.sceneId !== "string" || json.sceneId.length === 0) throw new ImageValidationError();
-    return { kind: "scene", bookId: json.bookId, textVersion: json.textVersion, sceneId: json.sceneId };
+    const style = parseStyleChoice(json.style);
+    return {
+      kind: "scene",
+      bookId: json.bookId,
+      textVersion: json.textVersion,
+      sceneId: json.sceneId,
+      ...(style === undefined ? {} : { style }),
+    };
   }
   throw new ImageValidationError();
 }
@@ -99,10 +120,13 @@ export function validateAgainstBook(req: ImageRequest, book: BookRef): void {
   if (!book.sceneIds.has(req.sceneId)) throw new ImageValidationError();
 }
 
-// One paragraph maps to one image; one scene maps to one image.
+// One paragraph maps to one image; one scene maps to one image. A styled
+// image keeps the same base with a style segment before the file name, so
+// an omitted style keys byte-identically to today.
 export function imageKey(req: ImageRequest): string {
   const base = `images/${req.bookId}/${req.textVersion}/${PROMPT_VERSION}`;
-  return req.kind === "passage" ? `${base}/p${req.n}.webp` : `${base}/scene-${req.sceneId}.webp`;
+  const file = req.kind === "passage" ? `p${req.n}.webp` : `scene-${req.sceneId}.webp`;
+  return req.style === undefined ? `${base}/${file}` : `${base}/${styleSegment(req.style)}/${file}`;
 }
 
 export function indexKeyFor(key: string): string {
@@ -151,19 +175,22 @@ function clip(text: string, max: number): string {
 }
 
 // Prompt from trusted server-side book text only. The client sends
-// ordinals and ids, never free text, so there is no injection path.
+// ordinals and ids, never free text, so there is no injection path. Only
+// the optional parsed style reaches the prompt, never raw client text.
 export function buildPrompt(args: {
   kind: ImageKind;
   passageText: string;
   sceneTitle: string;
   sceneClip: string;
+  style?: ImageStyle;
 }): string {
-  const style =
+  const denslow =
     "Illustration in the style of W. W. Denslow's 1900 first-edition " +
     "illustrations for The Wonderful Wizard of Oz: flat color, bold black " +
     "ink outlines, limited palette. Dorothy wears silver shoes. Nothing " +
     "from the 1939 MGM film, no ruby slippers, no film look. No text, " +
     "no captions, no lettering in the image.";
+  const style = args.style === undefined ? denslow : styleDescriptorLine(args.style);
   if (args.kind === "scene") {
     return (
       `Scene "${args.sceneTitle}". ${clip(args.sceneClip, MAX_SCENE_CLIP_CHARS)}. ${style}`

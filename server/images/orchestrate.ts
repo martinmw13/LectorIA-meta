@@ -121,6 +121,7 @@ export async function orchestrate(
           passageText: deps.content.passageText,
           sceneTitle: deps.content.sceneTitle,
           sceneClip: deps.content.sceneClip,
+          style: req.style,
         }),
       );
     } catch {

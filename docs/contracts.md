@@ -313,6 +313,26 @@ the same versions. Both map to a deterministic Blob path
 index maps key to Blob URL, so hits are one GET; on an index miss the
 server lists by exact path prefix (head equivalent) before generating
 and backfills the index.
+
+Optional `style`: `{ preset: <id> }` or `{ custom: "<text>" }`
+(`denslow` equals omitted):
+
+| id | label |
+|----|-------|
+| `denslow` | Classic 1900 (default) |
+| `realistic` | Realistic |
+| `anime` | Anime |
+| `pencil` | Pencil sketch |
+| `watercolor` | Watercolor |
+| `storybook` | Storybook |
+| `comic` | Comic book |
+| `oil` | Oil painting |
+| `woodcut` | Woodcut |
+
+Custom: 2-60 chars, letters/numbers/space/`, . ' & -`, lowercased;
+denylisted text gets the style message. Keys insert `style-<id>` or
+`style-c<hex>`; omitted styles key as today. Guards unchanged; stored in
+`lectoria.imageStyle.v1` for new images; panels share one snapshot.
 A Redis lock per key returns `pending` to concurrent requests. Quota is
 5 new images per person per day by hashed IP and signed cookie,
 whichever runs out first; a shared spend counter in integer

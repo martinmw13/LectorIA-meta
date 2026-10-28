@@ -1,5 +1,6 @@
 // Shared shapes for the book pipeline. Every type stored in data files
 // lives here so core never imports from pipeline.
+import type { ImageStyle } from "./image-style";
 export const EMOTIONS = [
   "calma",
   "alegria",
@@ -97,6 +98,7 @@ export interface PassageRequest {
   bookId: string;
   textVersion: string;
   n: number;
+  style?: ImageStyle;
 }
 
 export interface SceneRequest {
@@ -104,6 +106,7 @@ export interface SceneRequest {
   bookId: string;
   textVersion: string;
   sceneId: string;
+  style?: ImageStyle;
 }
 
 export type ImageRequest = PassageRequest | SceneRequest;

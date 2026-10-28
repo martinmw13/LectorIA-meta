@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MSG_FAILED, MSG_RETRY } from "@/core/images";
 import type { ImageResponse } from "@/core/images";
+import { loadImageStyle } from "./image-style-prefs";
 import { pickStartN } from "./picture-selection";
 import type { ParaEntry } from "./picture-selection";
 
@@ -52,13 +53,18 @@ export function usePictureScene({
   const hidePopover = useCallback(() => setPopover(null), []);
 
   const request = useCallback(async (body: unknown) => {
+    // One snapshot per request: every post of this request, including
+    // pending re-polls, carries the same style, so one chapter uses one style.
+    const style = loadImageStyle();
+    const payload =
+      style === null || typeof body !== "object" || body === null ? body : { ...body, style };
     setPopover(null);
     setCard({ phase: "loading" });
     pollLeft.current = POLL_MAX;
     for (;;) {
       let res: ImageResponse;
       try {
-        res = await postImage(body);
+        res = await postImage(payload);
       } catch {
         setCard({ phase: "error", message: MSG_FAILED });
         return;
