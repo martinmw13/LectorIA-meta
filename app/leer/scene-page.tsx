@@ -212,7 +212,8 @@ export function ScenePage({
   const figsByN = useMemo(() => groupFiguresByEndN(pic.figures), [pic.figures]);
 
   function gotoFigure(fig: InlineFigure) {
-    lastManualRef.current = Date.now();
+    // Same clock the auto-turn gate reads; Date.now would pin it shut.
+    lastManualRef.current = performance.now();
     const at = pageOfOrdinal(view.pages, fig.endN);
     if (at < 0) return;
     setPage(at + (cover ? 1 : 0));
@@ -235,7 +236,7 @@ export function ScenePage({
   // route push, a same-scene result means a client sub-page move.
   function move(action: NavAction) {
     pic.hidePopover();
-    lastManualRef.current = Date.now();
+    lastManualRef.current = performance.now();
     const next = navReducer({ sceneId: view.sceneId, page }, action, index);
     if (next.sceneId !== view.sceneId) {
       hasNavigated = true;
@@ -257,9 +258,10 @@ export function ScenePage({
     move({ kind: "prev" });
   }
 
-  // Read-along follow: the voice turns the sub-page on its own. This
-  // path never stamps a manual move, so the gate lets it through.
-  const syncEnabled = narration.on && narration.manifest !== null && kind === "text";
+  // Read-along follow: the voice turns the sub-page on its own, from
+  // the cover too. This path never stamps a manual move, so the gate
+  // lets it through; the mark only paints where its word is rendered.
+  const syncEnabled = narration.on && narration.manifest !== null;
   const { mark, treatment } = useReadSync({
     enabled: syncEnabled,
     audioRef: narration.audioRef,

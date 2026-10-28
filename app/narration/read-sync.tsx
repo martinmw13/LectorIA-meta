@@ -8,9 +8,9 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { activeChunkAt, activeWordAt, wordAt, type ChapterNarration } from "@/core/narration";
 import { Icon } from "../icons";
-import { highlightStyleFor, type HighlightTreatment } from "./highlight-style";
+import { engravingScale, highlightStyleFor, type HighlightTreatment } from "./highlight-style";
 import { rangesForChunk } from "./ranges";
-import { shouldAutoTurn } from "./turn";
+import { autoTurnTarget } from "./turn";
 
 export interface SyncFragment {
   id: string;
@@ -62,16 +62,27 @@ export function useReadSync(opts: {
   onTurnPage: (textIndex: number) => void;
   lastManualRef: RefObject<number | null>;
 }): { mark: MarkRect | null; treatment: HighlightTreatment } {
-  const [treatment] = useState<HighlightTreatment>(skinTreatment);
+  const [treatment, setTreatment] = useState<HighlightTreatment>(skinTreatment);
   const [mark, setMark] = useState<MarkRect | null>(null);
   const [active, setActive] = useState<ActiveSpot | null>(null);
 
   const live = useRef(opts);
   live.current = opts;
 
+  // A skin switch restyles the mark live: data-skin is picked whenever
+  // it is available, with engraving as the default.
+  useEffect(() => {
+    const root = document.documentElement;
+    const sync = () => setTreatment(skinTreatment());
+    sync();
+    const obs = new MutationObserver(sync);
+    obs.observe(root, { attributes: true, attributeFilter: ["data-skin"] });
+    return () => obs.disconnect();
+  }, []);
+
   // The follow loop: audio time in, chunk/word out, one auto-turn gate.
   useEffect(() => {
-    const { enabled, audioRef, manifest, span } = live.current;
+    const { enabled, manifest } = live.current;
     if (!enabled || !manifest) {
       setActive(null);
       return;
@@ -79,23 +90,33 @@ export function useReadSync(opts: {
     let raf = 0;
     const tick = () => {
       raf = requestAnimationFrame(tick);
-      const audio = audioRef.current;
+      // Every input is read live each tick: the scene (and its span)
+      // can change under a kept chapter manifest, so a closed-over
+      // span would gate the voice against the previous scene.
+      const seen = live.current;
+      if (!seen.enabled || !seen.manifest) return;
+      const audio = seen.audioRef.current;
       if (!audio || audio.paused) return;
       const t = audio.currentTime;
+      const span = seen.span;
       if (span !== null && (t < span.startSec - 0.3 || t > span.endSec + 2)) return;
-      const ci = activeChunkAt(manifest.chunks, t);
+      const heard = seen.manifest;
+      const ci = activeChunkAt(heard.chunks, t);
       if (ci < 0) {
         setActive((prev) => (prev === null ? prev : null));
         return;
       }
-      const chunk = manifest.chunks[ci] as ChapterNarration["chunks"][number];
+      const chunk = heard.chunks[ci] as ChapterNarration["chunks"][number];
       const wi = activeWordAt(chunk, t);
       setActive((prev) => (prev !== null && prev.chunk === ci && prev.word === wi ? prev : { chunk: ci, word: wi }));
-      const { pages, textPage, onTurnPage, lastManualRef } = live.current;
-      const at = pages.findIndex((pg) => pg.paragraphs.some((p) => p.n === chunk.n));
-      if (at >= 0 && at !== textPage && shouldAutoTurn(lastManualRef.current, performance.now())) {
-        onTurnPage(at);
-      }
+      const target = autoTurnTarget(
+        seen.pages,
+        chunk.n,
+        seen.textPage,
+        seen.lastManualRef.current,
+        performance.now(),
+      );
+      if (target !== null) seen.onTurnPage(target);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
@@ -169,7 +190,7 @@ export function useReadSync(opts: {
         }
       }
     }
-  }, [active, opts.manifest, treatment]);
+  }, [active, opts.manifest, opts.textPage, treatment]);
 
   // Click a word to seek there, only while narration runs.
   useEffect(() => {
@@ -241,9 +262,29 @@ export function ReadMark({ mark, treatment }: { mark: MarkRect | null; treatment
   if (treatment === "watercolor") {
     return <span className="narr-mark" data-treatment="watercolor" style={style} aria-hidden="true" />;
   }
+  return <EngravingMark mark={mark} />;
+}
+
+// The small-caps face runs wider than the in-flow word, so the overlay
+// shrinks to the measured word rect (origin left) and never covers
+// neighbouring characters. Transforms skip layout, so scrollWidth stays
+// the natural width and the scale is stable.
+function EngravingMark({ mark }: { mark: MarkRect }) {
+  const ref = useRef<HTMLSpanElement | null>(null);
+  const [scale, setScale] = useState(1);
+  useLayoutEffect(() => {
+    setScale(engravingScale(mark.width, ref.current?.scrollWidth ?? 0));
+  }, [mark.width, mark.word]);
   return (
-    <span className="narr-mark" data-treatment="engraving" style={style} aria-hidden="true">
-      <span className="narr-word">{mark.word}</span>
+    <span
+      className="narr-mark"
+      data-treatment="engraving"
+      style={{ left: mark.left, top: mark.top, width: mark.width, height: mark.height }}
+      aria-hidden="true"
+    >
+      <span ref={ref} className="narr-word" style={{ transform: `scaleX(${scale})`, transformOrigin: "left center" }}>
+        {mark.word}
+      </span>
     </span>
   );
 }
