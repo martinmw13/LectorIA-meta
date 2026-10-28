@@ -33,11 +33,11 @@ html[data-skin="pencil"][data-theme="light"] body {
 
 /* ---------- Type ---------- */
 html[data-skin="pencil"]
-  :is(.kicker, .mlabel, .panels-kicker, .top-center, .pager-label, .tick-label, .chapter-jump-text) {
+  :is(.kicker, .mlabel, .top-center, .pager-label, .tick-label, .chapter-jump-text) {
   font-family: var(--font-ui);
 }
 
-html[data-skin="pencil"] :is(.kicker, .mlabel, .panels-kicker) {
+html[data-skin="pencil"] :is(.kicker, .mlabel) {
   font-weight: 500;
   font-size: 11.5px;
   letter-spacing: 0.22em;
@@ -207,42 +207,8 @@ html[data-skin="pencil"] .pic-btn-art svg {
   height: 56px;
 }
 
-/* ---------- Panels card: a second sheet, no outline ---------- */
-html[data-skin="pencil"] .panels-offer {
-  border: 0;
-  border-radius: 0;
-}
-
-html[data-skin="pencil"][data-theme="light"] .panels-offer {
-  background: #fff;
-  box-shadow:
-    0 0 0 1px rgba(50, 52, 56, 0.12),
-    0 8px 22px rgba(40, 42, 46, 0.08);
-}
-
-html[data-skin="pencil"] .panels-name {
-  font-family: var(--font-pencil-title);
-  font-weight: 600;
-  font-style: italic;
-  font-size: 28px;
-  letter-spacing: 0;
-}
-
-html[data-skin="pencil"] .panels-spoiler {
-  font-family: var(--font-book);
-  font-size: 16.5px;
-  color: var(--color-text);
-}
-
-html[data-skin="pencil"] .panels-veil {
-  background: rgba(253, 253, 251, 0.78);
-  border-radius: 0;
-  font-family: var(--font-pencil-title);
-  font-style: italic;
-  font-size: 15px;
-}
-
-html[data-skin="pencil"] :is(.thumb-tile, .vault-thumb, .panel) {
+/* ---------- Picture tiles: square, no outline ---------- */
+html[data-skin="pencil"] :is(.vault-thumb, .panel) {
   border-radius: 0;
 }
 
@@ -288,7 +254,7 @@ html[data-skin="pencil"] .vault-item {
 }
 
 /* ---------- Buttons: words, not boxes ---------- */
-html[data-skin="pencil"] :is(.panels-primary, .panels-quiet, .panels-link, .pane-chapter) {
+html[data-skin="pencil"] :is(.panels-link, .pane-chapter) {
   background: none;
   border: 0;
   border-radius: 0;
@@ -298,17 +264,6 @@ html[data-skin="pencil"] :is(.panels-primary, .panels-quiet, .panels-link, .pane
   font-size: 14px;
   font-weight: 500;
   color: var(--color-text-muted);
-}
-
-/* The primary one is set in spaced caps over a blue pencil underline. */
-html[data-skin="pencil"] .panels-primary {
-  color: var(--color-accent);
-  font-size: 12.5px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  padding-bottom: 8px;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 8' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='f' x='-10%25' y='-40%25' width='120%25' height='180%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.05' numOctaves='2' seed='4' result='n'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='n' scale='2' xChannelSelector='R' yChannelSelector='G' result='d'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='1' seed='3' result='g'/%3E%3CfeColorMatrix in='g' type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -0.9 1.25' result='ga'/%3E%3CfeComposite in='d' in2='ga' operator='in'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23f)' fill='none' stroke='%230866FF' stroke-linecap='round'%3E%3Cpath d='M2 5C30 3.4 70 6 118 4' stroke-width='1.8'/%3E%3Cpath d='M8 6.2C40 5 80 6.6 112 5.4' stroke-width='1' stroke-opacity='.55'/%3E%3C/g%3E%3C/svg%3E")
-    0 100% / 100% 7px no-repeat;
 }
 
 /* ---------- Player: graphite icons, no boxes ---------- */
@@ -493,12 +448,8 @@ html[data-skin="pencil"] :is(.sticker img, .chopin img, .read-aloud-art, .pic-bt
     background: rgba(50, 52, 56, 0.06);
   }
 
-  html[data-skin="pencil"] :is(.panels-quiet, .panels-link, .pane-chapter, .pic-btn):hover {
+  html[data-skin="pencil"] :is(.panels-link, .pane-chapter, .pic-btn):hover {
     color: var(--color-accent);
-  }
-
-  html[data-skin="pencil"] .panels-primary:hover {
-    animation: pencil-stroke 380ms cubic-bezier(0.5, 0.1, 0.3, 1);
   }
 
   html[data-skin="pencil"] :is(.sticker, .chopin, .read-aloud-btn):hover :is(img, .read-aloud-art) {
@@ -521,20 +472,7 @@ html[data-skin="pencil"] :is(.sticker, .chopin, .read-aloud-btn):active :is(img,
   transition-duration: 80ms;
 }
 
-@keyframes pencil-stroke {
-  from {
-    background-size: 0% 7px;
-  }
-  to {
-    background-size: 100% 7px;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  html[data-skin="pencil"] .panels-primary:hover {
-    animation: none;
-  }
-
   html[data-skin="pencil"] :is(.sticker img, .chopin img, .read-aloud-art, .pic-btn-art svg),
   html[data-skin="pencil"] :is(.stickers[data-art="hero"] .sticker, .chopin, .player .skip.rain)::before {
     transition: none;

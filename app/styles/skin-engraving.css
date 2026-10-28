@@ -30,7 +30,7 @@ html[data-skin="engraving"]:not([data-theme="dark"]) body {
 }
 
 /* ---------- Type: small-caps labels, Garamond body ---------- */
-html[data-skin="engraving"] :is(.kicker, .mlabel, .panels-kicker, .top-center, .pager-label, .tick-label, .panels-name) {
+html[data-skin="engraving"] :is(.kicker, .mlabel, .top-center, .pager-label, .tick-label) {
   font-family: var(--font-eng-label);
   font-weight: 400;
   text-transform: none;
@@ -38,8 +38,7 @@ html[data-skin="engraving"] :is(.kicker, .mlabel, .panels-kicker, .top-center, .
 }
 
 html[data-skin="engraving"] .kicker,
-html[data-skin="engraving"] .mlabel,
-html[data-skin="engraving"] .panels-kicker {
+html[data-skin="engraving"] .mlabel {
   font-size: 13px;
   color: var(--color-text-muted);
 }
@@ -201,28 +200,13 @@ html[data-skin="engraving"] .pic-btn:hover {
   color: var(--color-accent);
 }
 
-/* ---------- Cards: chapter panels offer, popovers ---------- */
-html[data-skin="engraving"] .panels-offer {
-  border: 1px solid var(--eng-ink);
-  border-radius: 0;
-  background: var(--color-surface-soft);
-  box-shadow: inset 0 0 0 3px var(--color-surface-soft), inset 0 0 0 4px var(--eng-ink);
-}
-
-html[data-skin="engraving"] .panels-name {
-  font-family: var(--font-eng-display);
-  font-style: italic;
-  font-size: 24px;
-  letter-spacing: 0;
-}
-
-html[data-skin="engraving"] :is(.thumb-tile, .vault-thumb, .panel) {
+/* ---------- Cards: picture tiles ---------- */
+html[data-skin="engraving"] :is(.vault-thumb, .panel) {
   border-radius: 0;
 }
 
-/* Boxless buttons: the word is the button. The primary one is underlined
-   with a double engraved rule; small caps, accent on hover. */
-html[data-skin="engraving"] :is(.panels-primary, .panels-quiet, .panels-link, .pane-chapter) {
+/* Boxless buttons: the word is the button; small caps, accent on hover. */
+html[data-skin="engraving"] :is(.panels-link, .pane-chapter) {
   background: none;
   border: 0;
   border-radius: 0;
@@ -232,13 +216,6 @@ html[data-skin="engraving"] :is(.panels-primary, .panels-quiet, .panels-link, .p
   font-size: 15.5px;
   letter-spacing: 0.04em;
   color: var(--color-text);
-}
-
-html[data-skin="engraving"] .panels-primary {
-  color: var(--color-accent);
-  padding-bottom: 8px;
-  background: linear-gradient(var(--color-accent), var(--color-accent)) 0 100% / 100% 1.4px no-repeat,
-    linear-gradient(var(--color-accent), var(--color-accent)) 0 calc(100% - 3px) / 100% 0.7px no-repeat;
 }
 
 /* ---------- Player: bare engraved line icons, no boxes ---------- */
@@ -416,13 +393,9 @@ html[data-skin="engraving"] .read-aloud-label {
     color: var(--color-accent);
   }
 
-  html[data-skin="engraving"] :is(.panels-quiet, .panels-link, .pane-chapter):hover {
+  html[data-skin="engraving"] :is(.panels-link, .pane-chapter):hover {
     color: var(--color-accent);
     background: none;
-  }
-
-  html[data-skin="engraving"] .panels-primary:hover {
-    animation: eng-mark-draw 420ms cubic-bezier(0.2, 0.7, 0.2, 1);
   }
 
   html[data-skin="engraving"] :is(.sticker, .chopin, .read-aloud-btn):hover img {
@@ -430,20 +403,7 @@ html[data-skin="engraving"] .read-aloud-label {
   }
 }
 
-@keyframes eng-mark-draw {
-  from {
-    background-size: 0 1.4px, 0 0.7px;
-  }
-  to {
-    background-size: 100% 1.4px, 100% 0.7px;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  html[data-skin="engraving"] .panels-primary:hover {
-    animation: none;
-  }
-
   html[data-skin="engraving"] :is(.sticker, .chopin, .read-aloud-btn):hover img {
     transform: none;
   }
