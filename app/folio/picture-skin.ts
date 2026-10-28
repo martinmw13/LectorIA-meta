@@ -2,27 +2,25 @@
 // (app/skin.ts) holds the live skin; this maps it to a drawing variant.
 "use client";
 
-import { getSkin } from "../skin";
+import { getSkin, type SkinId } from "../skin";
 import { useSkin } from "../use-skin";
 
 export type PictureSkin = "engraving" | "watercolor" | "ink";
 
-// One entry per skin id. A skin's own animation later means changing its
-// value here from the shared variant to a new one.
-const VARIANTS: Record<string, PictureSkin> = {
+// One entry per skin id (typed, so a new skin in app/skin.ts must pick one).
+// Skins without their own drawing yet use the nearest style; giving a skin
+// its own animation later means adding a variant and pointing it here.
+const VARIANTS: Record<SkinId, PictureSkin> = {
   engraving: "engraving",
   watercolor: "watercolor",
   ink: "ink",
-  comic: "ink",
-  "anime-ghibli": "watercolor",
-  chihiro: "watercolor",
-  pencil: "engraving",
-  graphite: "engraving",
-  "graphite-pencil": "engraving",
+  pencil: "engraving", // line work, nearest to the etching needle
+  comic: "ink", // inked outlines
+  chihiro: "watercolor", // painted washes
 };
 
 export function pictureVariant(skin: string | null | undefined): PictureSkin {
-  return (skin && VARIANTS[skin]) || "engraving";
+  return (skin && Object.hasOwn(VARIANTS, skin) && VARIANTS[skin as SkinId]) || "engraving";
 }
 
 export function pictureSkin(): PictureSkin {

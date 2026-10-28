@@ -74,8 +74,9 @@ and `picture-draw.test.tsx`), `npm run check:secrets`,
   still stays mounted under the image until load.
 - `picture-skin.ts` no longer reads `data-skin` or `?skin=`
   itself; it maps the skin owner's value to a drawing variant
-  (`pictureVariant`: comic->ink, anime-ghibli/chihiro->watercolor,
-  pencil/graphite/graphite-pencil->engraving, unknown->engraving).
+  (`pictureVariant`, typed `Record<SkinId, …>` over the final six
+  skins after #51: comic->ink, chihiro->watercolor, pencil->engraving,
+  unknown->engraving).
   One entry changes when a skin gets its own animation. The raw
   id rides as `data-picture-skin` on the slot and button for
   future per-skin CSS. `usePictureSkinId` exposes it.

@@ -30,15 +30,12 @@ test("every known skin id maps to its drawing variant", () => {
   expect(pictureVariant("watercolor")).toBe("watercolor");
   expect(pictureVariant("ink")).toBe("ink");
   expect(pictureVariant("comic")).toBe("ink");
-  expect(pictureVariant("anime-ghibli")).toBe("watercolor");
   expect(pictureVariant("chihiro")).toBe("watercolor");
   expect(pictureVariant("pencil")).toBe("engraving");
-  expect(pictureVariant("graphite")).toBe("engraving");
-  expect(pictureVariant("graphite-pencil")).toBe("engraving");
 });
 
 test("unknown, empty and missing ids fall back to engraving", () => {
-  for (const value of ["default", "noir", "", null, undefined]) {
+  for (const value of ["default", "noir", "anime-ghibli", "toString", "", null, undefined]) {
     expect(pictureVariant(value)).toBe("engraving");
   }
 });
