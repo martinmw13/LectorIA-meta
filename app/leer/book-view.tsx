@@ -29,6 +29,8 @@ import type { ChapterPanel } from "../folio/panels";
 import { PanelsModal, PanelsOfferCard, PanelsQuietLink, SpoilerGateDialog } from "../folio/panels-modal";
 import { GOTO_SCENE_EVENT, setCurrentSceneId } from "./current-scene";
 import { attachFollowPause, pickCurrentScene, scrollToSceneId } from "./scroll-helpers";
+import { useNarration } from "../narration/context";
+import { ReadMark, useReadSync } from "../narration/read-sync";
 
 function pulse(el: HTMLElement | null) {
   if (!el) return;
@@ -61,6 +63,16 @@ export function BookView({
   const figEls = useRef(new Map<string, HTMLElement>());
   const maxChRef = useRef(0);
   const pic = usePictures({ bookId: model.bookId, textVersion: model.textVersion, sceneId: currentId, pref });
+  // Read-along sync: the reading column is both container and scroller,
+  // so word ranges look up p[data-n] inside it.
+  const narration = useNarration();
+  const { mark, treatment } = useReadSync({
+    enabled: narration.on,
+    audioRef: narration.audioRef,
+    manifest: narration.manifest,
+    span: narration.span,
+    columnRef: readColRef,
+  });
 
   const order = useMemo(() => model.chapters.flatMap((c) => c.scenes.map((s) => s.id)), [model]);
   const sceneOf = useMemo(() => {
@@ -232,6 +244,7 @@ export function BookView({
       />
       <Divider />
       <div className="read-col" ref={readColRef} tabIndex={-1} aria-label="Reading column" onMouseUp={onReadMouseUp}>
+        <ReadMark mark={mark} treatment={treatment} />
         {model.chapters.map((chapter) => {
           const panels = panelsOf.get(chapter.ch) ?? [];
           const coverLong = coverTitleLong(chapter.title);

@@ -1,0 +1,5 @@
+Implement docs/tasks/41-read-aloud.md in this repo (LectorIA-meta). Read it fully, plus docs/contracts/narration.md, core/narration.ts, app/reader.tsx, app/player.tsx, app/icons.tsx, app/skin.ts, app/tokens.css, core/reader.ts and the Folio reader in app/folio and app/leer.
+Rules: follow AGENTS.md and RESCUE_LOG.md. Keep files small (the pre-commit size hook rejects files over about 5k tokens, so split modules). No hex or rgb literals outside the tokens files, and no inline <svg> outside app/icons.tsx. No secrets. Never use --no-verify. Do not run `next start` or `next dev`.
+Add a row for "41: read aloud" to BUILT_DURING_HACKATHON.md.
+Work in small commits (the prepare-commit-msg hook adds the co-author trailer). Run npm test, npm run typecheck, npm run check:size and npm run check:secrets before finishing. Note: locally pipeline/ingest.test.ts fails on Node 20 because of jsdom/undici; that is pre-existing and CI uses Node 22, so ignore it only.
+When done, print a short summary of the files changed and any open questions.

@@ -31,6 +31,7 @@ export class AmbienceController {
   private levelId = "off";
   private volume = DEFAULT_AMBIENCE_VOLUME;
   private muted = false;
+  private duck = 1;
   private unlocked = false;
   private voice: AmbienceVoice | null = null;
   private pendingId: string | null = null;
@@ -42,7 +43,17 @@ export class AmbienceController {
   ) {}
 
   private targetGain(levelId: string): number {
-    return ambienceGain(this.volume, this.muted, levelById(this.ambience, levelId)?.gainDb ?? 0);
+    return ambienceGain(this.volume, this.muted, levelById(this.ambience, levelId)?.gainDb ?? 0) * this.duck;
+  }
+
+  // Read-aloud duck: the same ~20 dB-below-the-voice rule as the music.
+  // The narration controller already ramps the value over ~400 ms down
+  // and ~800 ms up, so each step only needs a short smoothing ramp.
+  setDuck(duck: number): void {
+    const next = Number.isFinite(duck) ? Math.min(1, Math.max(0, duck)) : 1;
+    if (next === this.duck) return;
+    this.duck = next;
+    this.voice?.ramp(this.targetGain(this.levelId), VOLUME_RAMP_SEC);
   }
 
   private play(levelId: string): void {

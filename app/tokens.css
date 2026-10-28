@@ -73,3 +73,64 @@ html[data-theme="dark"] {
     --motion-expand: 0ms;
   }
 }
+
+/* Read-along narration. The word mark and sentence tint are tokens so
+ * skins switch them without touching components. The default skin (and
+ * any skin outside the three treatments) uses the engraving values in
+ * the theme blocks; watercolor/chihiro and ink/comic skins override them.
+ * Geometry (hairline rule, bleed radius, hand-drawn circle) lives in
+ * app/styles/narration.css and keys off the treatment attribute. */
+:root,
+html[data-theme="light"] {
+  --narration-mark: #ffffff;
+  --narration-mark-edge: rgba(28, 43, 51, 0.6);
+  --narration-glow: rgba(28, 43, 51, 0.12);
+  --narration-sentence: rgba(28, 43, 51, 0.055);
+  --narration-rule: rgba(28, 43, 51, 0.6);
+}
+
+html[data-theme="dark"] {
+  --narration-mark: #0b1215;
+  --narration-mark-edge: rgba(228, 230, 235, 0.6);
+  --narration-glow: rgba(0, 0, 0, 0.4);
+  --narration-sentence: rgba(228, 230, 235, 0.07);
+  --narration-rule: rgba(228, 230, 235, 0.55);
+}
+
+/* Watercolor: warm sienna bleed with a darker pooled edge. */
+html[data-skin="watercolor"],
+html[data-skin="chihiro"] {
+  --narration-mark: rgba(214, 134, 96, 0.3);
+  --narration-mark-edge: rgba(184, 98, 62, 0.35);
+  --narration-glow: rgba(214, 134, 96, 0.25);
+  --narration-sentence: rgba(101, 139, 168, 0.12);
+  --narration-rule: rgba(184, 98, 62, 0.5);
+}
+
+html[data-skin="watercolor"][data-theme="dark"],
+html[data-skin="chihiro"][data-theme="dark"] {
+  --narration-mark: rgba(214, 134, 96, 0.32);
+  --narration-mark-edge: rgba(214, 134, 96, 0.5);
+  --narration-glow: rgba(214, 134, 96, 0.28);
+  --narration-sentence: rgba(101, 139, 168, 0.16);
+  --narration-rule: rgba(214, 134, 96, 0.6);
+}
+
+/* Ink doodle: the circle stroke is the mark; the tint stays faint. */
+html[data-skin="ink"],
+html[data-skin="comic"] {
+  --narration-mark: rgba(43, 52, 66, 0.85);
+  --narration-mark-edge: rgba(43, 52, 66, 0.5);
+  --narration-glow: rgba(43, 52, 66, 0.12);
+  --narration-sentence: rgba(28, 43, 51, 0.05);
+  --narration-rule: rgba(43, 52, 66, 0.7);
+}
+
+html[data-skin="ink"][data-theme="dark"],
+html[data-skin="comic"][data-theme="dark"] {
+  --narration-mark: rgba(228, 230, 235, 0.8);
+  --narration-mark-edge: rgba(228, 230, 235, 0.45);
+  --narration-glow: rgba(0, 0, 0, 0.4);
+  --narration-sentence: rgba(228, 230, 235, 0.06);
+  --narration-rule: rgba(228, 230, 235, 0.6);
+}

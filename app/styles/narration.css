@@ -1,0 +1,137 @@
+/* Read-aloud control and read-along word mark. All colours come from
+   narration tokens; geometry keys off the treatment attribute. */
+
+.read-aloud {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+
+.read-aloud-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 8px;
+  border: none;
+  background: none;
+  color: var(--color-text);
+  cursor: pointer;
+  flex: none;
+}
+
+.read-aloud-btn:hover {
+  color: var(--color-accent);
+}
+
+.read-aloud-btn:focus-visible {
+  color: var(--color-accent);
+}
+
+.read-aloud-btn svg {
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.read-aloud-btn:focus-visible,
+.read-aloud-volume input:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.read-aloud-label {
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.read-aloud-volume {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+}
+
+.read-aloud-volume input {
+  width: 64px;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
+.read-aloud-note {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* Word mark: an absolutely positioned overlay that never touches flow,
+   so pagination never reflows under the highlight. */
+.narr-mark {
+  position: absolute;
+  pointer-events: none;
+  z-index: 3;
+  transition:
+    left 120ms ease-out,
+    top 120ms ease-out,
+    width 120ms ease-out,
+    height 120ms ease-out;
+}
+
+.narr-mark[data-treatment="engraving"] .narr-word {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  font-variant: small-caps;
+  font-weight: 600;
+  background: var(--narration-mark);
+  color: var(--color-text);
+}
+
+.narr-mark[data-treatment="engraving"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 1px;
+  background: var(--narration-rule);
+}
+
+.narr-mark[data-treatment="watercolor"] {
+  background: var(--narration-mark);
+  border-radius: 40% 60% 52% 48% / 50% 46% 54% 50%;
+  box-shadow:
+    inset 0 0 0 1.5px var(--narration-mark-edge),
+    0 0 6px var(--narration-glow);
+  filter: blur(0.4px);
+}
+
+.narr-mark[data-treatment="ink-doodle"] svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: none;
+  stroke: var(--narration-mark);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+::highlight(narration-sentence) {
+  background: var(--narration-sentence);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .narr-mark {
+    transition: none;
+  }
+}
