@@ -1,5 +1,6 @@
 import { buildReaderModel } from "@/core/reader";
 import { loadOzBook } from "@/server/books";
+import { PicturePanel } from "./picture-panel";
 import { Reader } from "./reader";
 import type { SceneMeta } from "./reader";
 
@@ -27,7 +28,7 @@ export default function Home() {
                 {chapter.scenes.map((scene) => (
                   <section key={scene.id} data-scene-id={scene.id} aria-label={scene.title}>
                     {scene.paragraphs.map((p) => (
-                      <p key={p.id} id={p.id}>
+                      <p key={p.id} id={p.id} data-n={p.n}>
                         {p.text}
                       </p>
                     ))}
@@ -38,7 +39,7 @@ export default function Home() {
           </Reader>
         </main>
         <aside className="companion" aria-label="Companion">
-          Chat comes later.
+          <PicturePanel bookId={model.bookId} textVersion={model.textVersion} />
         </aside>
       </div>
     </>
