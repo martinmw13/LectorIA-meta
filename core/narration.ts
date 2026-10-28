@@ -153,14 +153,6 @@ export function narrationKey(hashHex: string, voice: string): string {
   return `narration/v${NARRATION_FORMAT}/${voice}/${hashHex.slice(0, 32)}`;
 }
 
-export function narrationAudioPath(key: string): string {
-  return `${key}.mp3`;
-}
-
-export function narrationManifestPath(key: string): string {
-  return `${key}.json`;
-}
-
 export interface ChapterChunkTiming {
   n: number;
   start: number;
