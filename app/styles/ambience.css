@@ -40,7 +40,7 @@
 /* Per-skin motion tokens and ink colours, scoped to the rain button so they
    never leak into app tokens. Halos and bolt fills keep the prototype
    colours in both themes. */
-html[data-skin="engraving"] .player .skip.rain {
+.player .skip.rain[data-art="engraving"] {
   --rain-m-state: 520ms;
   --rain-m-draw: 560ms;
   --rain-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
@@ -48,19 +48,19 @@ html[data-skin="engraving"] .player .skip.rain {
   --rain-paper: #f7f1de;
 }
 
-html[data-skin="engraving"] .player .skip.rain[data-level="drizzle"] {
+.player .skip.rain[data-art="engraving"][data-level="drizzle"] {
   --rain-halo: #58aeff;
 }
 
-html[data-skin="engraving"] .player .skip.rain[data-level="moderate"] {
+.player .skip.rain[data-art="engraving"][data-level="moderate"] {
   --rain-halo: #f2b705;
 }
 
-html[data-skin="engraving"] .player .skip.rain[data-level="storm"] {
+.player .skip.rain[data-art="engraving"][data-level="storm"] {
   --rain-halo: #e5484d;
 }
 
-html[data-skin="watercolor"] .player .skip.rain {
+.player .skip.rain[data-art="watercolor"] {
   --rain-m-state: 560ms;
   --rain-m-draw: 500ms;
   --rain-ease: cubic-bezier(0.25, 0.8, 0.25, 1);
@@ -68,48 +68,48 @@ html[data-skin="watercolor"] .player .skip.rain {
   --rain-wc-drop: #2e6fe0;
 }
 
-html[data-skin="watercolor"] .player .skip.rain[data-level="drizzle"] {
+.player .skip.rain[data-art="watercolor"][data-level="drizzle"] {
   --rain-halo: #58aeff;
 }
 
-html[data-skin="watercolor"] .player .skip.rain[data-level="moderate"] {
+.player .skip.rain[data-art="watercolor"][data-level="moderate"] {
   --rain-halo: #f2b705;
 }
 
-html[data-skin="watercolor"] .player .skip.rain[data-level="storm"] {
+.player .skip.rain[data-art="watercolor"][data-level="storm"] {
   --rain-halo: #e5484d;
 }
 
-html[data-skin="ink"] .player .skip.rain {
+.player .skip.rain[data-art="ink"] {
   --rain-m-state: 440ms;
   --rain-m-draw: 600ms;
   --rain-ease: cubic-bezier(0.34, 1.5, 0.64, 1);
   --rain-pen: #0866ff;
 }
 
-html[data-skin="ink"] .player .skip.rain[data-level="drizzle"] {
+.player .skip.rain[data-art="ink"][data-level="drizzle"] {
   --rain-halo: #58aeff;
 }
 
-html[data-skin="ink"] .player .skip.rain[data-level="moderate"] {
+.player .skip.rain[data-art="ink"][data-level="moderate"] {
   --rain-halo: #f2b705;
 }
 
-html[data-skin="ink"] .player .skip.rain[data-level="storm"] {
+.player .skip.rain[data-art="ink"][data-level="storm"] {
   --rain-halo: #e5484d;
 }
 
 /* Dark player bar: lighten the inks so the art stays legible. */
-html[data-skin="engraving"][data-theme="dark"] .player .skip.rain {
+html[data-theme="dark"] .player .skip.rain[data-art="engraving"] {
   --rain-ink: #e9dfc6;
   --rain-paper: #3a332a;
 }
 
-html[data-skin="watercolor"][data-theme="dark"] .player .skip.rain {
+html[data-theme="dark"] .player .skip.rain[data-art="watercolor"] {
   --rain-wc-line: #c9d4e8;
 }
 
-html[data-skin="ink"][data-theme="dark"] .player .skip.rain {
+html[data-theme="dark"] .player .skip.rain[data-art="ink"] {
   --rain-pen: #5a9bff;
 }
 
@@ -141,15 +141,15 @@ html[data-skin="ink"][data-theme="dark"] .player .skip.rain {
 
 /* State change (click): entrance plus drops drip and bolt flash, gated on
    data-anim with the key={burst} remount so it never plays on mount. */
-html[data-skin="engraving"] .player .skip.rain[data-anim] .face {
+.player .skip.rain[data-art="engraving"][data-anim] .face {
   animation: rb-coin-in var(--rain-m-state) var(--rain-ease) both;
 }
 
-html[data-skin="watercolor"] .player .skip.rain[data-anim] .face {
+.player .skip.rain[data-art="watercolor"][data-anim] .face {
   animation: rb-wet-in var(--rain-m-state) var(--rain-ease) both;
 }
 
-html[data-skin="ink"] .player .skip.rain[data-anim] .face {
+.player .skip.rain[data-art="ink"][data-anim] .face {
   animation: rb-pop-in var(--rain-m-state) var(--rain-ease) both;
 }
 
@@ -193,24 +193,24 @@ html[data-skin="ink"] .player .skip.rain[data-anim] .face {
     transform: rotate(7.5deg);
   }
 
-  html[data-skin="engraving"] .player .skip.rain:hover .shim {
+  .player .skip.rain[data-art="engraving"]:hover .shim {
     opacity: 0.6;
     animation: rb-shimmer 900ms linear;
   }
 
-  html[data-skin="engraving"] .player .skip.rain:hover .face {
+  .player .skip.rain[data-art="engraving"]:hover .face {
     transform: translateY(-2px);
   }
 
-  html[data-skin="watercolor"] .player .skip.rain:hover .bloom {
+  .player .skip.rain[data-art="watercolor"]:hover .bloom {
     animation: rb-bleed 600ms var(--rain-ease) both;
   }
 
-  html[data-skin="watercolor"] .player .skip.rain:hover .halo {
+  .player .skip.rain[data-art="watercolor"]:hover .halo {
     transform: none;
   }
 
-  html[data-skin="ink"] .player .skip.rain:hover .face {
+  .player .skip.rain[data-art="ink"]:hover .face {
     animation: rb-wiggle 420ms ease;
   }
 }

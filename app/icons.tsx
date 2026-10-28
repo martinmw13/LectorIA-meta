@@ -66,9 +66,11 @@ export const BASE_ICONS: Record<string, IconDef> = {
 };
 
 export const ICON_SETS: Record<SkinId, Partial<Record<IconName, IconDef>>> = {
-  engraving: RAIN_ICONS.engraving,
-  watercolor: RAIN_ICONS.watercolor,
-  ink: RAIN_ICONS.ink,
+  engraving: RAIN_ICONS.engraving ?? {},
+  watercolor: RAIN_ICONS.watercolor ?? {},
+  ink: RAIN_ICONS.ink ?? {},
+  comic: {},
+  "anime-ghibli": {},
 };
 
 export function Icon({
@@ -77,7 +79,7 @@ export function Icon({
   skin = DEFAULT_SKIN,
   ...rest
 }: { name: IconName; size?: number; skin?: SkinId } & SVGProps<SVGSVGElement>) {
-  const def = ICON_SETS[skin]?.[name] ?? BASE_ICONS[name];
+  const def = ICON_SETS[skin]?.[name] ?? ICON_SETS[DEFAULT_SKIN]?.[name] ?? BASE_ICONS[name];
   if (!def) throw new Error(`unknown icon: ${name}`);
   return (
     <svg width={size ?? def.width} height={size ?? def.height} viewBox={def.viewBox} aria-hidden="true" {...rest}>

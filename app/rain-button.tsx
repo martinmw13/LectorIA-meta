@@ -12,8 +12,9 @@ import { loadAmbiencePrefs, saveAmbiencePrefs } from "./ambience-prefs";
 import { AmbienceController } from "./ambience-controller";
 import { WebAmbienceEngine } from "./ambience-engine";
 import { Icon } from "./icons";
-import type { RainIconName } from "./icons-rain";
-import { DEFAULT_SKIN, isSkinId, type SkinId } from "./skin";
+import { hasRainArt, type RainIconName } from "./icons-rain";
+import { DEFAULT_SKIN } from "./skin";
+import { useSkin } from "./use-skin";
 
 const RAIN = AMBIENCES[0]!;
 
@@ -27,15 +28,12 @@ export function RainAmbience({ muted }: { muted: boolean }) {
   const [level, setLevel] = useState("off");
   const [volume, setVolume] = useState(DEFAULT_AMBIENCE_VOLUME);
   const [burst, setBurst] = useState(0);
-  // Server render uses the default so hydration matches; the live data-skin
-  // value applies on mount.
-  const [skin, setSkin] = useState<SkinId>(DEFAULT_SKIN);
+  // Server render uses the default so hydration matches; the live skin
+  // applies on mount via useSyncExternalStore.
+  const skin = useSkin();
+  // Rain art exists only for three skins; the rest render the default.
+  const artSkin = hasRainArt(skin) ? skin : DEFAULT_SKIN;
   const burstTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    const current = document.documentElement.dataset.skin;
-    if (isSkinId(current)) setSkin(current);
-  }, []);
 
   useEffect(() => {
     const controller = new AmbienceController(new WebAmbienceEngine());
@@ -97,6 +95,7 @@ export function RainAmbience({ muted }: { muted: boolean }) {
         type="button"
         className="skip rain"
         data-level={level}
+        data-art={artSkin}
         data-anim={burst ? "1" : undefined}
         onClick={cycle}
         aria-label={label}
@@ -104,7 +103,7 @@ export function RainAmbience({ muted }: { muted: boolean }) {
       >
         {/* key replays the one-shot animation on rapid clicks */}
         <span className="face" key={burst}>
-          <Icon name={`rain-${level}` as RainIconName} skin={skin} />
+          <Icon name={`rain-${level}` as RainIconName} skin={artSkin} />
         </span>
       </button>
       {level !== "off" ? (
