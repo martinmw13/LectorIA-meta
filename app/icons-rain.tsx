@@ -106,8 +106,8 @@ function engraving(s: RainState): IconDef["body"] {
           d={CLOUD}
           fill="none"
           style={{ stroke: "var(--rain-ink)" }}
-          strokeWidth={1.1}
-          strokeDasharray="2 2.2"
+          strokeWidth={3.4}
+          strokeDasharray="7 5.5"
           opacity=".5"
         />
       )}
@@ -179,11 +179,11 @@ function watercolor(s: RainState): IconDef["body"] {
           d={CLOUD}
           fill="none"
           style={{ stroke: "var(--rain-wc-line)" }}
-          strokeWidth={s > 0 ? 1.3 : 1.1}
+          strokeWidth={s > 0 ? 1.3 : 3.4}
           strokeLinejoin="round"
           opacity={s > 0 ? 0.7 : 0.38}
           transform="translate(1 -1)"
-          strokeDasharray={s > 0 ? undefined : "3 2.4"}
+          strokeDasharray={s > 0 ? undefined : "7 5.5"}
         />
       </g>
       <Drops stroke="var(--rain-wc-drop)" width={2.6} linecap="round" s={s} />
@@ -247,9 +247,9 @@ function ink(s: RainState): IconDef["body"] {
             d={CLOUD}
             fill="none"
             style={{ stroke: "var(--rain-pen)" }}
-            strokeWidth="1.6"
+            strokeWidth="3.4"
             strokeLinecap="round"
-            strokeDasharray="2.6 3.2"
+            strokeDasharray="5.5 6.8"
             opacity=".45"
           />
         )}
