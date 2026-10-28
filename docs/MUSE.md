@@ -6,21 +6,21 @@ A Muse commit is a non-merge commit on main that carries the trailer `Co-authore
 
 ## Commits
 
-- Muse commits: 330 of 388 non-merge commits (85%).
+- Muse commits: 331 of 389 non-merge commits (85%).
 - Date range (UTC-3): 2026-10-27 to 2026-10-28.
 
 ## Lines
 
 | Scope | Muse added | Muse removed | Other added | Other removed | Muse share of added |
 | --- | --- | --- | --- | --- | --- |
-| Source code (`app/`, `core/`, `pipeline/`, `server/`, `scripts/`) | 40,876 | 8,572 | 7,446 | 2,691 | 85% |
-| All files | 234,184 | 12,595 | 27,725 | 2,913 | 89% |
+| Source code (`app/`, `core/`, `pipeline/`, `server/`, `scripts/`) | 40,921 | 8,587 | 7,446 | 2,691 | 85% |
+| All files | 234,229 | 12,610 | 27,725 | 2,913 | 89% |
 
 All files includes the Muse Code session transcripts in `agent-logs/`, the vendored skills in `.agents/` and `package-lock.json`.
 
 ## Pull requests
 
-55 merged PRs contain Muse commits. Each carries the `Muse Code` label.
+56 merged PRs contain Muse commits. Each carries the `Muse Code` label.
 
 | PR | Title | Merged (UTC-3) | Muse commits |
 | --- | --- | --- | --- |
@@ -78,4 +78,5 @@ All files includes the Muse Code session transcripts in `agent-logs/`, the vendo
 | [#75](https://github.com/martinmw13/LectorIA-meta/pull/75) | Pencil skin from the approved prototype | 2026-10-28 | 1 of 2 |
 | [#88](https://github.com/martinmw13/LectorIA-meta/pull/88) | refactor(player): extract music autostart into its own module | 2026-10-28 | 1 of 1 |
 | [#89](https://github.com/martinmw13/LectorIA-meta/pull/89) | refactor(skins): single source for muted text color under warmth | 2026-10-28 | 1 of 1 |
+| [#93](https://github.com/martinmw13/LectorIA-meta/pull/93) | fix(narration): pause follow-scroll on scrollbar drags and scene jumps | 2026-10-28 | 1 of 1 |
 | [#94](https://github.com/martinmw13/LectorIA-meta/pull/94) | feat(player): prototype motion for the music mode buttons in all six skins | 2026-10-28 | 1 of 2 |
