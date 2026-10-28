@@ -1,10 +1,17 @@
 // Picture state for one scene: the pane card plus inline figures.
 // The client sends ordinals and ids only, never text. Session caches
 // survive sub-page and scene moves, so a shown picture never refetches.
+//
+// Ordering rules: one request at a time across scene and figure (a second
+// request while one is in flight is a silent no-op); retryFigure only
+// works from the error phase; the caller must call hidePopover on pager
+// moves. The style pref arrives as a hook argument and is read through a
+// ref, so the callbacks stay stable when it changes.
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MSG_FAILED, MSG_RETRY } from "@/core/images";
+import { canIllustrateScene, canRetryFigure, canStart, finish, tryStart } from "./figure-placement";
 import type { ImageResponse } from "@/core/images";
 import { requestStyleFields, styleCredit } from "../image-style";
 import type { ImageStylePref } from "../image-style";
@@ -83,10 +90,12 @@ export function usePictures({
   bookId,
   textVersion,
   sceneId,
+  pref,
 }: {
   bookId: string;
   textVersion: string;
   sceneId: string;
+  pref: ImageStylePref;
 }) {
   const [card, setCard] = useState<SceneCard>(() => {
     const hit = sceneCache.get(sceneId);
@@ -101,6 +110,8 @@ export function usePictures({
   const popRef = useRef<HTMLButtonElement | null>(null);
   const openerRef = useRef<HTMLElement | null>(null);
   const busyRef = useRef(false);
+  const prefRef = useRef(pref);
+  prefRef.current = pref;
 
   const hidePopover = useCallback(() => setPopover(null), []);
 
@@ -126,26 +137,23 @@ export function usePictures({
     openerRef.current = null;
   }, []);
 
-  const illustrateScene = useCallback(
-    (pref: ImageStylePref) => {
-      if (!sceneId || busyRef.current || sceneCache.has(sceneId)) return;
-      busyRef.current = true;
-      setPopover(null);
-      setCard({ phase: "loading" });
-      void poll({ kind: "scene", bookId, textVersion, sceneId, ...requestStyleFields(pref) })
-        .then(({ url, caption }) => {
-          sceneCache.set(sceneId, { url, caption });
-          setCard({ phase: "ready", url, caption });
-        })
-        .catch((err: unknown) => {
-          setCard({ phase: "error", message: err instanceof Error ? err.message : MSG_FAILED });
-        })
-        .finally(() => {
-          busyRef.current = false;
-        });
-    },
-    [bookId, textVersion, sceneId],
-  );
+  const illustrateScene = useCallback(() => {
+    if (!canIllustrateScene({ sceneId, busy: busyRef.current, cached: sceneCache.has(sceneId) })) return;
+    if (!tryStart(busyRef)) return;
+    setPopover(null);
+    setCard({ phase: "loading" });
+    void poll({ kind: "scene", bookId, textVersion, sceneId, ...requestStyleFields(prefRef.current) })
+      .then(({ url, caption }) => {
+        sceneCache.set(sceneId, { url, caption });
+        setCard({ phase: "ready", url, caption });
+      })
+      .catch((err: unknown) => {
+        setCard({ phase: "error", message: err instanceof Error ? err.message : MSG_FAILED });
+      })
+      .finally(() => {
+        finish(busyRef);
+      });
+  }, [bookId, textVersion, sceneId]);
 
   const clearScene = useCallback(() => {
     sceneCache.delete(sceneId);
@@ -153,9 +161,9 @@ export function usePictures({
   }, [sceneId]);
 
   const requestFigure = useCallback(
-    (id: string, startN: number, quote: string, pref: ImageStylePref) => {
-      busyRef.current = true;
-      void poll({ kind: "passage", bookId, textVersion, n: startN, ...requestStyleFields(pref) })
+    (id: string, startN: number, quote: string) => {
+      // Callers acquire the gate; this only starts the request.
+      void poll({ kind: "passage", bookId, textVersion, n: startN, ...requestStyleFields(prefRef.current) })
         .then(({ url }) => {
           storeFigures((prev) =>
             prev.map((f) => (f.id === id ? { ...f, phase: "ready", url, message: null } : f)),
@@ -171,46 +179,44 @@ export function usePictures({
           );
         })
         .finally(() => {
-          busyRef.current = false;
+          finish(busyRef);
         });
     },
     [bookId, textVersion, storeFigures],
   );
 
-  const illustratePassage = useCallback(
-    (pref: ImageStylePref) => {
-      const view = viewRef.current;
-      const sel = window.getSelection();
-      if (!view || !sel || !sel.rangeCount || busyRef.current) return;
-      const quote = sel.toString().trim();
-      if (quote.length < 3) return;
-      const entries: ParaEntry[] = [...view.querySelectorAll("p[id][data-n]")].map((el) => ({
-        id: el.id,
-        n: Number(el.getAttribute("data-n")),
-      }));
-      const startN = pickStartN(entries, paraOf(sel.anchorNode)?.id ?? null, paraOf(sel.focusNode)?.id ?? null);
-      const endN = pickEndN(entries, paraOf(sel.anchorNode)?.id ?? null, paraOf(sel.focusNode)?.id ?? null);
-      if (startN === null || endN === null) return;
-      setPopover(null);
-      sel.removeAllRanges();
-      const id = `f${figureSeq++}`;
-      const credit = styleCredit(requestStyleFields(pref));
-      storeFigures((prev) => [
-        ...prev,
-        { id, phase: "loading", url: null, quote, startN, endN, credit, message: null },
-      ]);
-      requestFigure(id, startN, quote, pref);
-    },
-    [requestFigure, storeFigures],
-  );
+  const illustratePassage = useCallback(() => {
+    const view = viewRef.current;
+    const sel = window.getSelection();
+    if (!view || !sel || !sel.rangeCount || !canStart(busyRef.current)) return;
+    const quote = sel.toString().trim();
+    if (quote.length < 3) return;
+    const entries: ParaEntry[] = [...view.querySelectorAll("p[id][data-n]")].map((el) => ({
+      id: el.id,
+      n: Number(el.getAttribute("data-n")),
+    }));
+    const startN = pickStartN(entries, paraOf(sel.anchorNode)?.id ?? null, paraOf(sel.focusNode)?.id ?? null);
+    const endN = pickEndN(entries, paraOf(sel.anchorNode)?.id ?? null, paraOf(sel.focusNode)?.id ?? null);
+    if (startN === null || endN === null) return;
+    if (!tryStart(busyRef)) return;
+    setPopover(null);
+    sel.removeAllRanges();
+    const id = `f${figureSeq++}`;
+    const credit = styleCredit(requestStyleFields(prefRef.current));
+    storeFigures((prev) => [
+      ...prev,
+      { id, phase: "loading", url: null, quote, startN, endN, credit, message: null },
+    ]);
+    requestFigure(id, startN, quote);
+  }, [requestFigure, storeFigures]);
 
   const retryFigure = useCallback(
-    (id: string, pref: ImageStylePref) => {
-      if (busyRef.current) return;
+    (id: string) => {
       const found = figureCache.get(sceneId)?.find((f) => f.id === id);
-      if (!found || found.phase !== "error") return;
+      if (!canRetryFigure(found, busyRef.current)) return;
+      if (!tryStart(busyRef)) return;
       storeFigures((prev) => prev.map((f) => (f.id === id ? { ...f, phase: "loading", message: null } : f)));
-      requestFigure(id, found.startN, found.quote, pref);
+      requestFigure(id, found.startN, found.quote);
     },
     [requestFigure, storeFigures, sceneId],
   );
@@ -282,8 +288,6 @@ export function usePictures({
     clearScene,
     removeFigure,
     retryFigure,
-    lightbox,
-    openLightbox,
-    closeLightbox,
+    lightbox: { item: lightbox, open: openLightbox, close: closeLightbox },
   };
 }

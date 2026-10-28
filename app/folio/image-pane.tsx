@@ -3,17 +3,8 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { PICTURE_COPY, PictureIcon } from "./picture-copy";
 import type { SceneCard } from "./use-pictures";
-
-function PictureIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true">
-      <rect x="2.5" y="2.5" width="11" height="11" />
-      <circle cx="6" cy="7" r="1.4" />
-      <path d="M3.5 13 7 9.5l2.5 2.5 2-2 1 1" />
-    </svg>
-  );
-}
 
 export function ImagePane({
   card,
@@ -83,7 +74,7 @@ export function ImagePane({
           </>
         ) : card.phase === "loading" ? (
           <div className="pane-loading" role="status">
-            Sketching…
+            {PICTURE_COPY.loading}
           </div>
         ) : card.phase === "ready" ? (
           <>
@@ -123,7 +114,7 @@ export function ImagePane({
           <div className="pane-error" role="alert">
             <p>{card.message}</p>
             <button type="button" className="retry-text" onClick={onRetry}>
-              Try again
+              {PICTURE_COPY.retry}
             </button>
           </div>
         )}
@@ -135,8 +126,8 @@ export function ImagePane({
             type="button"
             className="pane-x"
             onClick={onClear}
-            aria-label="Remove picture"
-            title="Remove picture"
+            aria-label={PICTURE_COPY.remove}
+            title={PICTURE_COPY.remove}
           >
             ×
           </button>
