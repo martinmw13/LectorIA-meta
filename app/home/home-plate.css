@@ -1,4 +1,4 @@
-/* Right-page plate and the ex-libris style stamp. */
+/* Right-page plate. */
 
 .ob-plate { position: relative; margin: auto 0; width: 100%; min-height: 0; padding: 14px 16px 16px; background: var(--paper-2); overflow: hidden; text-align: center; --art-h: clamp(200px, calc(100vh - 440px), 430px); }
 html[data-skin="engraving"] .ob-plate { background: #F1E8CF; border: 1px solid var(--rule); box-shadow: 5px 5px 0 rgba(42, 36, 28, .22); }
@@ -80,40 +80,10 @@ html[data-skin="engraving"] .ob-wait, html[data-skin="pencil"] .ob-wait { font-s
 html[data-skin="comic"] .ob-wait { font-weight: 400; letter-spacing: .03em; }
 .ob-wait:hover { color: var(--color-accent-hover); }
 
-/* The one style control: ex-libris stamp */
-.ob-stampwrap { position: absolute; top: 2px; right: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; width: 132px; }
-.ob-stamp { position: relative; width: 104px; height: 104px; border-radius: 50%; cursor: pointer; padding: 0; background: none; border: 0; color: var(--text); }
-.ob-stamp:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 4px; border-radius: 50%; }
-.ob-stamp .ob-face { position: absolute; inset: 0; border-radius: 50%; transition: transform var(--m-fast) var(--ease), box-shadow var(--m-fast) var(--ease); }
-.ob-stamp:hover .ob-face { transform: translateY(-3px) rotate(4deg); }
-html[data-skin="engraving"] .ob-stamp .ob-face { background: #F7F1DE; border: 2px solid #2A241C; box-shadow: inset 0 0 0 3px #F7F1DE, inset 0 0 0 4px rgba(42, 36, 28, .6), 0 3px 0 rgba(42, 36, 28, .35), 0 8px 16px -8px rgba(42, 36, 28, .6); }
-html[data-skin="engraving"] .ob-stamp:hover .ob-face { box-shadow: inset 0 0 0 3px #F7F1DE, inset 0 0 0 4px rgba(42, 36, 28, .6), 0 5px 0 rgba(42, 36, 28, .3), 0 14px 24px -8px rgba(42, 36, 28, .6); }
-html[data-skin="watercolor"] .ob-stamp .ob-face { background: radial-gradient(circle at 42% 38%, rgba(220, 233, 255, .98), rgba(141, 184, 255, .55) 72%, rgba(141, 184, 255, .3)); border: 2px solid rgba(91, 127, 184, .9); filter: url(#f-wc-s); box-shadow: 0 8px 18px -10px rgba(31, 42, 68, .5); }
-html[data-skin="watercolor"] .ob-stamp:hover .ob-face { box-shadow: 0 14px 26px -10px rgba(31, 42, 68, .55); }
-html[data-skin="ink"] .ob-stamp .ob-face { background: #fff; border: 2.6px solid #0866FF; filter: url(#f-wob-s); box-shadow: 3px 4px 0 rgba(8, 102, 255, .16); }
-html[data-skin="ink"] .ob-stamp:hover .ob-face { box-shadow: 4px 8px 0 rgba(8, 102, 255, .2); }
-html[data-skin="pencil"] .ob-stamp .ob-face { background: #FDFDFB; border: 2px solid #2C2F34; box-shadow: inset 0 0 0 3px #FDFDFB, inset 0 0 0 4px rgba(44, 47, 52, .5), 0 3px 0 rgba(44, 47, 52, .3), 0 8px 16px -8px rgba(44, 47, 52, .5); }
-html[data-skin="comic"] .ob-stamp .ob-face { background: #fff; border: 3px solid #14161C; box-shadow: 4px 4px 0 rgba(20, 22, 28, .9); }
-html[data-skin="chihiro"] .ob-stamp .ob-face { background: radial-gradient(circle at 42% 38%, #FFFBF4, #F8D9A8 78%); border: 2px solid #9C2F1E; box-shadow: 0 0 14px rgba(255, 194, 90, .55), 0 8px 18px -10px rgba(170, 80, 40, .5); }
-.ob-stamp.ob-hit .ob-face { animation: stampdown 300ms var(--ease); }
-html[data-skin="engraving"] .ob-stamp.ob-hit .ob-face, html[data-skin="pencil"] .ob-stamp.ob-hit .ob-face { animation: engrave-press 380ms var(--ease); }
-html[data-skin="watercolor"] .ob-stamp.ob-hit .ob-face, html[data-skin="chihiro"] .ob-stamp.ob-hit .ob-face { animation: wet-press 380ms var(--ease); }
-html[data-skin="comic"] .ob-stamp.ob-hit .ob-face { animation: comic-thump 420ms var(--ease); }
-.ob-stamp svg.ob-ring { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.ob-stamp .ob-ringtxt { font-size: 12.5px; letter-spacing: .06em; font-family: var(--label); fill: var(--text); }
-html[data-skin="engraving"] .ob-ringtxt { fill: #2A241C; }
-html[data-skin="watercolor"] .ob-ringtxt { font-size: 15px; letter-spacing: .04em; fill: #1F2A44; font-weight: 700; }
-html[data-skin="ink"] .ob-ringtxt { font-size: 12px; fill: #0866FF; font-weight: 700; }
-html[data-skin="pencil"] .ob-ringtxt { font-size: 12.5px; letter-spacing: .14em; fill: #2C2F34; }
-html[data-skin="comic"] .ob-ringtxt { font-family: var(--display); font-size: 14px; letter-spacing: .08em; fill: #14161C; }
-html[data-skin="chihiro"] .ob-ringtxt { font-size: 12px; fill: #9C2F1E; font-weight: 600; }
-.ob-medal { position: absolute; inset: 26px; display: flex; align-items: center; justify-content: center; color: var(--color-accent); }
-.ob-medal svg { width: 100%; height: 100%; display: block; overflow: visible; }
-html[data-skin="pencil"] .ob-medal { color: #2C2F34; }
-html[data-skin="comic"] .ob-medal { color: #14161C; }
-html[data-skin="chihiro"] .ob-medal { color: #9C2F1E; }
-.ob-inkring { position: absolute; inset: -2px; border-radius: 50%; pointer-events: none; opacity: 0; border: 3px solid var(--color-accent); }
-.ob-stamp.ob-hit .ob-inkring { animation: inkring 550ms var(--ease); }
-.ob-now { margin: 6px 0 0; font-size: 12.5px; color: var(--muted); background: var(--paper); padding: 4px 10px; border-radius: 20px; box-shadow: 0 4px 14px rgba(20, 30, 60, .12); white-space: nowrap; opacity: 0; visibility: hidden; transform: translateY(-4px); transition: opacity 260ms var(--ease), transform 260ms var(--ease), visibility 0s linear 260ms; pointer-events: none; }
-.ob-now.ob-show { opacity: 1; visibility: visible; transform: none; transition: opacity 160ms var(--ease), transform 160ms var(--ease), visibility 0s; }
-.ob-now b { color: var(--color-accent); }
+/* The shared style stamp (app/style-stamp.tsx) takes the home's per-skin
+   label and display fonts on the spread, as in the prototype. */
+.ob-desk .style-stamp-ringtxt { font-family: var(--label); font-style: normal; }
+html[data-skin="watercolor"] .ob-desk .style-stamp-ringtxt { font-size: 15px; letter-spacing: .04em; font-weight: 700; }
+html[data-skin="pencil"] .ob-desk .style-stamp-ringtxt { letter-spacing: .14em; }
+html[data-skin="comic"] .ob-desk .style-stamp-ringtxt { font-family: var(--display); font-size: 14px; letter-spacing: .08em; font-weight: 400; }
+html[data-skin="chihiro"] .ob-desk .style-stamp-ringtxt { font-size: 12px; font-weight: 600; fill: #9C2F1E; }

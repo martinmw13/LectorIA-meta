@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSkin } from "../use-skin";
 import { shelf, shelfById } from "./shelf";
 import { coverFor } from "./covers";
-import { StyleStamp } from "./style-stamp";
+import { StyleStamp } from "../style-stamp";
 import { UploadSection } from "./upload";
 import { HomeIcon } from "./home-icons";
 
@@ -34,7 +34,9 @@ export function HomeSpread() {
 
   return (
     <>
-      <StyleStamp />
+      <div className="style-stamp-home">
+        <StyleStamp />
+      </div>
       <div className="ob-book">
         <section className="ob-page ob-left" aria-labelledby="obBrand">
           <div className="ob-rule" aria-hidden="true" />
