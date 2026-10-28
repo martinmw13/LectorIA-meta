@@ -130,6 +130,33 @@ describe("parseEpub", () => {
     expect(book.cover?.mediaType).toBe("image/png");
   });
 
+  it("drops Gutenberg front matter from chapter labels", () => {
+    const opf = OPF3.replace(
+      "The Wonderful Wizard of Oz",
+      "Alice&#8217;s Adventures in Wonderland",
+    ).replace("L. Frank Baum", "Lewis Carroll");
+    const nav =
+      `<?xml version="1.0" encoding="utf-8"?>` +
+      `<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">` +
+      `<head><title>Toc</title></head><body><nav epub:type="toc"><ol>` +
+      `<li><a href="ch1.xhtml">Alice's Adventures in Wonderland</a></li>` +
+      `<li><a href="ch1.xhtml">CONTENTS</a></li>` +
+      `<li><a href="ch1.xhtml">Table of Contents</a></li>` +
+      `<li><a href="ch1.xhtml">Project Gutenberg's Alice, by Lewis Carroll</a></li>` +
+      `<li><a href="ch1.xhtml">Chapter I. Down the Rabbit-Hole</a></li>` +
+      `</ol></nav></body></html>`;
+    const book = parseEpub(
+      epub3(opf, {
+        "OEBPS/nav.xhtml": strToU8(nav),
+        "OEBPS/ch1.xhtml": strToU8(chapterDoc("x")),
+        "OEBPS/ch2.xhtml": strToU8(chapterDoc("x")),
+        "OEBPS/ch3.xhtml": strToU8(chapterDoc("x")),
+        "OEBPS/cover.png": PNG_1X1,
+      }),
+    );
+    expect(book.chapters).toEqual(["Chapter I. Down the Rabbit-Hole"]);
+  });
+
   it("rejects non-EPUBs", () => {
     expect(codeOf(() => parseEpub(new Uint8Array([1, 2, 3, 4])))).toBe("not_epub");
     expect(codeOf(() => parseEpub(zipSync({ "META-INF/container.xml": strToU8(CONTAINER) })))).toBe("not_epub");

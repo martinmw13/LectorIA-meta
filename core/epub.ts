@@ -88,6 +88,24 @@ function clean(text: string | null | undefined): string {
   return (text ?? "").replace(/\s+/g, " ").trim();
 }
 
+// Gutenberg boilerplate (front matter, edition notices) carries no story.
+function normLabel(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isFrontMatter(label: string, title: string): boolean {
+  const norm = normLabel(label);
+  if (norm === "contents" || norm === "table of contents") return true;
+  if (norm.includes("project gutenberg")) return true;
+  const normTitle = normLabel(title);
+  if (normTitle.length > 0 && norm === normTitle) return true;
+  return false;
+}
+
 function decode(bytes: Uint8Array): string {
   return new TextDecoder().decode(bytes);
 }
@@ -285,7 +303,6 @@ export function parseEpub(bytes: Uint8Array): EpubBook {
     const ncxRaw = ncxPath ? rest[ncxPath] : undefined;
     if (ncxRaw) chapters = ncxChapters(parseXml(decode(ncxRaw)));
   }
-  chapters = chapters.slice(0, 500);
 
   let words = 0;
   let inflated = 0;
@@ -317,7 +334,7 @@ export function parseEpub(bytes: Uint8Array): EpubBook {
   return {
     title,
     author,
-    chapters,
+    chapters: chapters.filter((label) => !isFrontMatter(label, title)).slice(0, 500),
     words,
     cover: coverRaw ? { bytes: coverRaw, mediaType: coverType } : null,
   };
