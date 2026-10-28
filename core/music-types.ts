@@ -58,11 +58,9 @@ export interface MusicManifest {
   playlists: Playlist[];
 }
 
-// Session selection: style scopes every pick, soundtrackId is the home
-// in soundtrack mode, mode picks the ranking rule.
+// Session selection: style scopes every pick. Every scheduled select
+// and skip ranges over all same-style tracks by emotion score.
 export interface MusicSelection {
-  mode: "soundtrack" | "random";
-  soundtrackId: string | null;
   style: string | null;
 }
 
@@ -74,9 +72,9 @@ export interface SelectEnv {
 }
 
 export interface PersistedMusicPrefs {
-  mode: "soundtrack" | "random";
-  soundtrackId: string | null;
   style: string | null;
+  volume: number | null;
+  muted: boolean;
 }
 
 export interface SceneSignal {
@@ -96,14 +94,11 @@ export interface MusicWeights {
 export interface MusicConfig {
   similarity: Similarity;
   weights: MusicWeights;
-  switchMargin: number;
   dwellSec: number;
   // Route entries are deliberate jumps, so 5 s absorbs a double pressed
   // Next but still cues inside the first sub-page.
   sceneEntryDwellSec: number;
   minTrackSec: number;
-  hardCutMargin: number;
   crossfadeSec: number;
-  hardCutCrossfadeSec: number;
   randomTolerance: number;
 }

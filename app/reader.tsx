@@ -10,21 +10,28 @@ import {
   resolveInitialSelection,
   styleHasTracks,
 } from "@/core/music";
-import type { MusicManifest, MusicSelection, SceneSignal, Track } from "@/core/music";
+import type {
+  MusicManifest,
+  MusicSelection,
+  PersistedMusicPrefs,
+  SceneSignal,
+  Track,
+} from "@/core/music";
 import {
   enterPlaylist,
   exitPlaylist,
   initScheduler,
   noteTrackEnded,
   observeScene,
+  requestManualTrack,
   requestNext,
   switchStyle,
   tickScheduler,
 } from "@/core/music-schedule";
 import type { SchedulerState } from "@/core/music-schedule";
+import { popHistory, pushHistory } from "@/core/music-history";
 import { nextSceneEntry } from "@/core/reader";
-import { loadMusicPrefs, saveMusicPrefs } from "./music-prefs";
-import { mixOffSelection, styleSelection } from "./music-transitions";
+import { DEFAULT_VOLUME, loadMusicPrefs, saveMusicPrefs } from "./music-prefs";
 import { Player } from "./player";
 
 export interface SlimScene {
@@ -33,13 +40,13 @@ export interface SlimScene {
   emotion: SceneSignal | null;
 }
 
-// Route entries use the short dwell; scoring and hysteresis are untouched.
+// Route entries use the short dwell; the draw and the holds are unchanged.
 function entryDwell(): { dwellSec: number } {
   return { dwellSec: MUSIC_CONFIG.sceneEntryDwellSec };
 }
 
 // The Chopin playlist, when the manifest defines it with tracks. The
-// button stays hidden otherwise, and the player never persists the mode.
+// button stays hidden otherwise, and the player never persists the playlist.
 function findChopinPlaylist(manifest: MusicManifest) {
   const found = manifest.playlists.find((p) => p.id === CHOPIN_PLAYLIST_ID) ?? null;
   return found && found.trackIds.length > 0 ? found : null;
@@ -58,43 +65,64 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
   const [currentId, setCurrentId] = useState<string | null>(null);
   const [replayNonce, setReplayNonce] = useState(0);
   const [fadeSec, setFadeSec] = useState(0);
-  const [isFallback, setIsFallback] = useState(false);
   const [playlistOn, setPlaylistOn] = useState(false);
+  // Volume and mute persist next to the style in one prefs object; the
+  // player stays a controlled view over them. State starts at the server
+  // defaults so hydration matches, then a mount effect applies stored
+  // prefs (parsed once) to volume, muted, and style via prefsRef.
+  const [volume, setVolume] = useState(DEFAULT_VOLUME);
+  const [muted, setMuted] = useState(false);
+  const prefsRef = useRef<PersistedMusicPrefs | null>(null);
+  // Ref mirrors so persist handlers always save fresh sound values.
+  const volumeRef = useRef(volume);
+  volumeRef.current = volume;
+  const mutedRef = useRef(muted);
+  mutedRef.current = muted;
   const byId = useMemo(() => new Map(scenes.map((s) => [s.id, s.emotion])), [scenes]);
   const schedRef = useRef<SchedulerState>(initScheduler());
+  const historyRef = useRef<string[]>([]);
   const observedRef = useRef<string | null>(null);
   const liveRef = useRef({ routeSceneId, manifest, selection, currentId, byId, playlistOn });
   liveRef.current = { routeSceneId, manifest, selection, currentId, byId, playlistOn };
 
   const nowSec = () => Date.now() / 1000;
 
-  const applyDecision = useCallback((decision: {
-    state: SchedulerState;
-    switchToId: string | null;
-    crossfadeSec: number;
-    fallback: boolean;
-  }) => {
-    // A same-id switch (one-track playlist wrap) bails out of setCurrentId,
-    // so bump a replay nonce the player effect listens to instead.
-    const prevId = schedRef.current.currentId;
-    schedRef.current = decision.state;
-    setIsFallback(decision.fallback);
-    if (decision.switchToId !== null) {
-      setFadeSec(decision.crossfadeSec);
-      if (decision.switchToId === prevId) {
-        setReplayNonce((n) => n + 1);
-      } else {
-        setCurrentId(decision.switchToId);
+  const applyDecision = useCallback(
+    (
+      decision: {
+        state: SchedulerState;
+        switchToId: string | null;
+        crossfadeSec: number;
+      },
+      opts?: { push?: boolean },
+    ) => {
+      // A same-id switch (one-track playlist wrap) bails out of setCurrentId,
+      // so bump a replay nonce the player effect listens to instead.
+      const prevId = schedRef.current.currentId;
+      schedRef.current = decision.state;
+      if (decision.switchToId !== null) {
+        setFadeSec(decision.crossfadeSec);
+        if (decision.switchToId === prevId) {
+          setReplayNonce((n) => n + 1);
+        } else {
+          // Every automatic switch banks the outgoing id for Previous.
+          // The Previous handler passes push false so it never re-banks.
+          if (opts?.push !== false && prevId !== null) {
+            historyRef.current = pushHistory(historyRef.current, prevId);
+          }
+          setCurrentId(decision.switchToId);
+        }
       }
-    }
-  }, []);
+    },
+    [],
+  );
 
   const persist = useCallback((next: MusicSelection) => {
     setSelection(next);
     saveMusicPrefs({
-      mode: next.mode,
-      soundtrackId: next.soundtrackId,
       style: next.style,
+      volume: volumeRef.current,
+      muted: mutedRef.current,
     });
   }, []);
 
@@ -113,6 +141,19 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
     [applyDecision],
   );
 
+  // Stored prefs load once here, after the server-matching first render.
+  // Saves happen only on user actions below, so the defaults above never
+  // overwrite storage before this runs. The fetch below resolves later and
+  // reads the style through the ref.
+  useEffect(() => {
+    const prefs = loadMusicPrefs();
+    prefsRef.current = prefs;
+    if (prefs !== null) {
+      if (prefs.volume !== null) setVolume(prefs.volume);
+      setMuted(prefs.muted);
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     fetch("/music/manifest.json")
@@ -124,7 +165,7 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
         if (cancelled) return;
         const parsed = parseManifest(json);
         setManifest(parsed);
-        setSelection(resolveInitialSelection(parsed, loadMusicPrefs()));
+        setSelection(resolveInitialSelection(parsed, prefsRef.current));
       })
       .catch(() => {
         if (!cancelled) setMusicFailed(true);
@@ -175,6 +216,28 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
     );
   }
 
+  // Previous: back to the last played track, held like a Next. With no
+  // history the current track restarts from zero through the replay path,
+  // including in playlist mode.
+  function goPrev() {
+    const st = liveRef.current;
+    if (!st.manifest || !st.selection) return;
+    if (st.playlistOn) {
+      setReplayNonce((n) => n + 1);
+      return;
+    }
+    const popped = popHistory(historyRef.current);
+    if (!popped) {
+      setReplayNonce((n) => n + 1);
+      return;
+    }
+    historyRef.current = popped.hist;
+    applyDecision(
+      requestManualTrack(schedRef.current, st.manifest, popped.id, nowSec()),
+      { push: false },
+    );
+  }
+
   function togglePlaylist() {
     const st = liveRef.current;
     if (!st.manifest || !st.selection) return;
@@ -195,16 +258,24 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
     setPlaylistOn(true);
   }
 
-  function toggleMix() {
-    const st = liveRef.current;
-    if (!st.manifest || !st.selection || st.playlistOn) return;
-    if (st.selection.mode === "random") {
-      // Mixing off keeps the soundtrack of the playing track.
-      const playing = st.manifest.tracks.find((t) => t.id === st.currentId) ?? null;
-      persist(mixOffSelection(st.selection, playing));
-      return;
-    }
-    persist({ ...st.selection, mode: "random" });
+  function changeVolume(next: number) {
+    setVolume(next);
+    volumeRef.current = next;
+    saveMusicPrefs({
+      style: liveRef.current.selection?.style ?? null,
+      volume: next,
+      muted: mutedRef.current,
+    });
+  }
+
+  function changeMuted(next: boolean) {
+    setMuted(next);
+    mutedRef.current = next;
+    saveMusicPrefs({
+      style: liveRef.current.selection?.style ?? null,
+      volume: volumeRef.current,
+      muted: next,
+    });
   }
 
   function changeStyle(style: string) {
@@ -213,9 +284,9 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
     if (style === st.selection.style) return;
     const signal = st.byId.get(st.routeSceneId) ?? null;
     const decision = switchStyle(schedRef.current, signal, st.manifest, nowSec(), style);
-    if (decision.soundtrackId === null) return;
+    if (decision.switchToId === null) return;
     applyDecision(decision);
-    persist(styleSelection(st.selection, style, decision.soundtrackId));
+    persist({ style });
   }
 
   function ended(trackId: string) {
@@ -233,8 +304,6 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
   const track: Track | null = manifest?.tracks.find((t) => t.id === currentId) ?? null;
   const empty = manifest !== null && manifest.tracks.length === 0;
   const activeSignal = (routeSceneId && byId.get(routeSceneId)) || null;
-  const soundtrackName =
-    manifest?.soundtracks.find((s) => s.id === track?.soundtrack)?.name ?? null;
   // Styles with at least one emotion-selectable track; hidden while fewer
   // than two qualify.
   const stylesWithTracks =
@@ -247,34 +316,42 @@ export function Reader({ scenes, children }: { scenes: SlimScene[]; children: Re
       ? (activePlaylist?.trackIds.length ?? 0) > 1
       : manifest.tracks.length > 1 &&
         nextTrack(activeSignal ?? null, manifest, currentId, undefined, selection) !== null);
+  // Previous restarts the track with no history (including the current
+  // playlist piece), so it stays on whenever a track is cued.
+  const canPrev = currentId !== null;
 
   return (
     <>
-      <div className="player-bar">
-        {musicFailed || empty ? (
-          <p className="player-note">Music unavailable. The reader works without it.</p>
-        ) : (
-          <Player
-            track={track}
-            replayNonce={replayNonce}
-            fadeSec={fadeSec}
-            soundtrackName={soundtrackName}
-            isFallback={isFallback}
-            canSkip={canSkip}
-            onSkip={skip}
-            mixOn={selection?.mode === "random"}
-            onToggleMix={toggleMix}
-            styles={stylesWithTracks}
-            styleId={selection?.style ?? null}
-            onStyleChange={changeStyle}
-            onEnded={ended}
-            playlistOn={playlistOn}
-            playlistLabel={activePlaylist?.label ?? null}
-            onTogglePlaylist={togglePlaylist}
-            controlsDisabled={playlistOn}
-          />
-        )}
-      </div>
+      <header className="topbar">
+        <div className="bar-inner">
+          <span className="wordmark">Lectoria</span>
+          {musicFailed || empty ? (
+            <p className="player-note">Music unavailable. The reader works without it.</p>
+          ) : (
+            <Player
+              track={track}
+              replayNonce={replayNonce}
+              fadeSec={fadeSec}
+              canPrev={canPrev}
+              onPrev={goPrev}
+              canSkip={canSkip}
+              onSkip={skip}
+              volume={volume}
+              muted={muted}
+              onVolumeChange={changeVolume}
+              onMutedChange={changeMuted}
+              styles={stylesWithTracks}
+              styleId={selection?.style ?? null}
+              onStyleChange={changeStyle}
+              onEnded={ended}
+              playlistOn={playlistOn}
+              playlistLabel={activePlaylist?.label ?? null}
+              onTogglePlaylist={togglePlaylist}
+              controlsDisabled={playlistOn}
+            />
+          )}
+        </div>
+      </header>
       {children}
     </>
   );

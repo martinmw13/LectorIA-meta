@@ -27,12 +27,20 @@ false); `/` redirects to the first scene. The layout mounts the music
 container once and passes slim metadata for all scenes: id, chapter,
 and emotion triple only. Each scene page builds its view with
 `buildSceneView` and ships only that scene's text, its chapter title,
-and neighbor ids. Sub-pages come from `paginateScene` (250 words, split
-at paragraph boundaries). The pager moves sub-pages in client state and
+and neighbor ids. Sub-pages come from `paginateScene`, which closes a
+page when the next paragraph would pass 250 words or the line budget
+(`FIRST_PAGE_LINES` 16 on page one, `LINES_PER_PAGE` 17 after, each
+paragraph costing `ceil(chars / CHARS_PER_LINE)` lines with
+`CHARS_PER_LINE` 68), split at paragraph boundaries. The pager moves sub-pages in client state and
 pushes routes with `router.push`, never `<Link>`; going back lands on
 the previous scene's last sub-page through a one-shot client flag, never
 a URL param, so prerendered pages stay static. The client never
-receives other scenes' text, titles, or summaries.
+receives other scenes' text, titles, or summaries. The progress line
+reads `Chapter 1 · The Cyclone`, a spaced separator, then `Scene 1 of 4
+· Page 1 of 3` as two spans on one line. Book type is 1.1875rem / 1.7
+with no paragraph gaps and a 1.5em first-line indent on following
+paragraphs. The word budget stays the upper bound and the line budget
+keeps every sub-page inside 1280×800 without scroll.
 
 ## Music library
 
@@ -88,47 +96,37 @@ migration gives an empty list. Parse rejects duplicate playlist ids,
 empty labels, non-array `trackIds`, and any `trackIds` entry that names
 no track, with the playlist and the id in the message.
 
-## Soundtracks and selection
+## Selection
 
-One soundtrack plays at a time. `MusicSelection = { mode, soundtrackId,
-style }` is the session: `style` scopes every pick, `soundtrackId` is
-the home in `soundtrack` mode, `mode` picks the ranking rule. The style
-is the user's choice, changed with the style selector. The initial
-soundtrack is the one covering the most hand-labeled emotions, ties by
-lower id; a valid persisted id wins. The session persists `{ mode,
-soundtrackId, style }` in localStorage under `lectoria.music.v1`. On
-load a stored style with no tracks and a stored soundtrack outside the
-stored style fall back to the defaults. Storage exceptions never break
-playback.
+`MusicSelection = { style }` is the session: `style` scopes every pick.
+There is one mode only. Every scheduled select ranges over all tracks in
+the current style and draws among the tracks with the scene emotion (or
+the best same-style tracks when the emotion is missing) within
+`randomTolerance` (0.05) of the best score, keeps the current track when
+it is eligible, and avoids an immediate repeat otherwise. The style is
+the user's choice, changed with the style selector. The default style is
+the first listed style with tracks; a stored style with tracks wins. The
+session persists `{ style, volume, muted }` in localStorage under
+`lectoria.music.v1`. Old values with `mode` or `soundtrackId` load by
+`style` alone and ignore unknown fields; a stored object without
+`volume` or `muted` loads `volume: null` and `muted: false`. A bad
+`volume` (not a finite number in 0..1) loads null and the player starts
+at 0.8; a bad `muted` loads false. A stored style with no tracks falls
+back to the default. Storage exceptions never break playback. Dwell
+and min-track rules hold. The core never calls `Math.random`; the
+reader injects it and tests pass a seeded stub.
 
-In `soundtrack` mode each scene scores only the session soundtrack. When
-the soundtrack has no track with the scene emotion, the scheduler borrows
-the best same-style track for that scene only and reports `fallback`, so
-the bar can say `de otra banda sonora`. In `random` mode each scheduled
-select draws among same-style tracks with the scene emotion (or the best
-same-style tracks when the emotion is missing) within `randomTolerance`
-(0.05) of the best score, keeps the current track when it is eligible,
-and avoids an immediate repeat otherwise. Dwell and min-track rules hold
-in both modes. The core never calls `Math.random`; the reader injects it
-and tests pass a seeded stub.
+## Next track and style change
 
-## Change track, mix toggle, style change
+`nextTrack` cycles same-emotion tracks in score order across the whole
+style, wrapping and skipping the current, then the best same-style track
+overall when the emotion is missing. A null scene cycles the style set
+in id order. One track or none gives null.
 
-`nextTrack` cycles same-emotion tracks in score order, wrapping and
-skipping the current. In `soundtrack` mode it stays inside the current
-soundtrack first, then tries the same emotion in other same-style
-soundtracks, then the best same-style track overall. In `random` mode it
-ranges over all same-style soundtracks at once. A null scene cycles the
-style set in id order.
-
-The `Mezclar bandas` toggle flips `mode`. Turning it off keeps the
-soundtrack of the playing track. `requestStyleChange` moves the session
-to the best-coverage soundtrack of the new style and picks the best
-match for the scene inside that soundtrack, or the best same-style track
-by score when the picked soundtrack lacks the scene emotion. It never
-crosses styles. The scheduler applies it at once with the normal
-crossfade and holds the choice like a Next. There is no
-soundtrack-change button.
+`requestStyleChange` picks the best match for the scene in the new style
+by score. It never crosses styles. The scheduler applies it at once
+with the normal crossfade and holds the choice like a Next. There is no
+mix toggle and no soundtrack-change button.
 
 ## Playlist mode
 
@@ -140,9 +138,9 @@ and `noteTrackEnded` advance to the next entry in order and wrap from
 the last to the first, and playlist tracks run to their end because the
 player forces looping off. `exitPlaylist` clears the playlist state and
 switches at once to the best match for the current scene under the
-restored selection. The mode is never persisted, so a reload returns to
-emotion mode. The mix toggle and the style selector stay disabled while
-it is on, and the style list hides styles with only playlist tracks.
+restored selection. The playlist is never persisted, so a reload returns
+to emotion mode. The style selector stays disabled while it is on, and
+the style list hides styles with only playlist tracks.
 
 ## Similarity and config
 
@@ -155,12 +153,11 @@ it is on, and the style list hides styles with only playlist tracks.
 closeness. Scoring and ranking pass the resolved config weights in, so
 a weights override changes the ranking. `cosineSimilarity` over
 `buildFeatures` output stays as an exported alternative. One exported object,
-`MUSIC_CONFIG`, holds `similarity`, `weights`, `switchMargin` (0.07),
-`dwellSec` (20), `minTrackSec` (45), `hardCutMargin` (0.20),
-`crossfadeSec` (3), and `hardCutCrossfadeSec` (1.5). Everything else
-reads from it. Ranking ties go to the lower track id. Route entries use
-`sceneEntryDwellSec` (5) as the dwell override; scoring, hysteresis,
-and overrides are unchanged.
+`MUSIC_CONFIG`, holds `similarity`, `weights`, `dwellSec` (20),
+`sceneEntryDwellSec` (5), `minTrackSec` (45), `crossfadeSec` (3), and
+`randomTolerance` (0.05). Everything else reads from it. Ranking ties go
+to the lower track id. Route entries use `sceneEntryDwellSec` as the
+dwell override; scoring and overrides are unchanged.
 
 ## Selection scheduler
 
@@ -176,16 +173,16 @@ with the scene it belongs to.
 A newly entered scene becomes pending and the dwell clock restarts, so
 fast scrolling keeps only the newest scene. The first track ever plays
 at once with no dwell. After the pending scene holds for `dwellSec` it
-becomes active and the override clears. Then the best track switches in
-only when it beats the current score by `switchMargin` and the current
-track played `minTrackSec`, unless it wins by `hardCutMargin` (hard
-cut, short fade). A second passes the active scene back through the
-switch check, so a hold from `minTrackSec` releases on time, unless a
-skip override stands: ticks return no change while it is set, and only
-a new scene promotion clears it. A switch
-reports its crossfade length: 3 s normally,
-1.5 s for hard cuts. The skip choice holds until the next scene change;
-after that, dwell and hysteresis apply with the override track as the
+becomes active and the override clears. Then a scheduled select draws
+among the in-style tracks within `randomTolerance` of the best score,
+keeping the current track when it is eligible, and switches to the
+drawn track only once the current track played `minTrackSec`. A tick
+passes the active scene back through the same draw, so a hold from
+`minTrackSec` releases on time, unless a skip override stands: ticks
+return no change while it is set, and only a new scene promotion
+clears it. A switch reports the normal crossfade length (3 s, 0 s for
+the first track ever). The skip choice holds until the next scene change;
+after that, dwell and the draw apply with the override track as the
 current track. A null scene means a failed analysis with no vector, so
 it never triggers a switch. A non-looping track that ends fades into
 the best remaining track, excluding the one that ended, and clears the
@@ -193,8 +190,12 @@ skip override.
 
 ## Player
 
-`app/player.tsx` takes the track, the fade length for the latest switch,
-the scene title, a skip flag, and callbacks. It owns two `audio`
+`app/player.tsx` takes the track, `replayNonce`, the fade length for
+the latest switch, `canPrev`/`canSkip` with their handlers, volume and
+mute with their handlers, the style list with the current style and its
+handler, the end-of-track handler, and the playlist props
+(`playlistOn`, `playlistLabel`, `onTogglePlaylist`,
+`controlsDisabled`). It owns two `audio`
 elements, play state, volume, and the equal-power crossfade
 (cos/sin gains over the fade time, driven by `requestAnimationFrame`).
 It never uses the `loop` attribute. Volume lives in a ref, so the slider
@@ -212,23 +213,49 @@ frozen point. Audio starts once, on the first press, with fade 0.
 Audio starts only after the user presses play. Reduced motion is read in
 state with a change listener and affects visuals only, never the fade.
 
-The bar shows Play/Pause, Volume, a Cambiar track button (disabled when
-Next has nothing to offer), a Mezclar bandas toggle with `aria-pressed`,
-and a style selector listing only styles that have tracks (hidden while
-fewer than two qualify). A `Just play Chopin` toggle appears only when
-the manifest defines that playlist with tracks; its text comes from the
-playlist label, it carries `aria-pressed`, and it shows the Meta blue
-accent while pressed. It shows the track title with its emotion
-label, the soundtrack name, and attribution when present: composer or
-artist, license, and a source link. While the playlist plays, the bar
-hides the emotion label and the fallback note. A fallback pick adds the
-quiet note
-`de otra banda sonora`. On manifest failure the reader still renders and
-the bar shows a short neutral note. UI motion stays under 200 ms.
-Controls are real buttons and inputs with labels, visible focus, and
-keyboard use. `app/player.tsx` keeps the audio engine and bar layout;
-`app/player-controls.tsx` holds the buttons and the style selector;
-`app/music-prefs.ts` owns the storage helper.
+The bar is one sticky row, 56 px tall: the `Lectoria` wordmark left,
+the player centre, the Chopin button and the source icon link right.
+The inner row is centered with 24 px side padding, one bottom hairline
+in the border token, and nothing touching the viewport edges. The inner
+max-width is 56rem, wider than the 65ch book column on purpose so the
+full now-playing line fits at 1280 px. The player holds Previous,
+Play/Pause, Next, the now-playing line (flexible space, `min-width`
+16rem, truncated with an ellipsis, full line in the `title` tooltip),
+a mute icon button (`aria-pressed`, `aria-label` `Mute` / `Unmute`, the
+icon shows the muted state), a volume slider with `aria-label` `Volume`
+(96 px) next to it, a style selector with `aria-label`
+`Orchestra / Piano` and no visible label text listing only styles that
+have tracks (hidden while fewer than two qualify), then the Chopin
+button and the source icon link. The transport and mute buttons and the
+source icon link are icon-only inline SVGs (`currentColor`, 32 px hit
+area), quiet and neutral, Meta blue on hover and focus-visible, each
+with `aria-label` and `title`; the source link reads `Music source
+(opens in new tab)`. Previous walks the session history and restarts
+the current track with no history, including the current playlist piece
+in playlist mode; Next cycles same-emotion tracks in the style.
+A `Just play Chopin` round image button (`/art/chopin-just-play-me.png`,
+40 px, `alt` and `aria-label` `Just play Chopin`) appears only when
+the manifest defines that playlist with tracks; it carries
+`aria-pressed`, and while pressed it shows a 2 px Meta-blue ring plus
+scale 1.05. The now-playing line shows `display title · composer
+· source`: `displayTitle` drops quoted nicknames, key phrases, and
+opus/catalogue suffixes from the track title, and the source is the
+artist plus ` / <platform>` when the attribution names Musopen or
+Jamendo and the artist does not already say it, dropped when it would
+repeat the performer. The full manifest title plus the license and full
+attribution sits in the `title` tooltip. On manifest failure the reader
+still renders and the bar shows a short neutral note. UI motion stays
+under 200 ms. Controls are real buttons and inputs with labels, visible
+focus, and keyboard use. `app/player.tsx` keeps the audio engine,
+transport, and bar layout; `app/player-controls.tsx` holds the style
+selector and the playlist toggle; `app/music-prefs.ts` owns the storage
+helper. The heading keeps `h2:focus:not(:focus-visible){outline:none}`
+so mouse navigation shows no box while keyboard focus keeps its ring.
+No user-visible emotion labels exist; ids stay as they are.
+`core/music-credit.ts` builds the line as a pure function with tests,
+including the pure `displayTitle`.
+`core/music-history.ts` is the bounded history stack and
+`requestManualTrack` in `core/music-schedule.ts` holds a manual pick.
 
 ## Image api
 
@@ -237,16 +264,16 @@ discriminated union: `{ kind: "passage", bookId, textVersion, n }` names
 the paragraph where the selection starts, `{ kind: "scene", bookId,
 textVersion, sceneId }` names the scene. Validation is strict: known
 book, matching `textVersion`, integer `n` inside the book, known
-`sceneId`. Any other body is a 400 with a generic Spanish message.
-The client sends ordinals and ids only, never text. "Ilustrar
-escena" uses the scene id from the route.
+`sceneId`. Any other body is a 400 with a generic English message.
+The client sends ordinals and ids only, never text. "Illustrate
+scene" uses the scene id from the route.
 
 Responses (typed in `core/types.ts`): `{ status: "ready", url, cached,
 caption }` with a Vercel Blob URL, never bytes; `{ status: "pending" }`
 when another request holds the lock, in which case the client reposts
 every 3 s up to about 2 minutes; `{ status: "error", code, message }`
 where code is `quota`, `budget`, `unavailable`, or `bad_request` with a
-friendly Spanish message. Caption is the scene title for scenes and the
+friendly English message. Caption is the scene title for scenes and the
 first words of the paragraph for passages, built server-side.
 
 The passage cache key is book plus start paragraph plus `textVersion`

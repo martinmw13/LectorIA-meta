@@ -13,7 +13,7 @@ import {
 } from "./music-schedule";
 
 const env: SelectEnv = {
-  selection: { mode: "soundtrack", soundtrackId: "snd", style: "orchestral" },
+  selection: { style: "orchestral" },
   rng: () => 0,
 };
 
@@ -63,8 +63,8 @@ function firstActive(top: string, at = 0) {
   return observeScene(initScheduler(), "s1", signal(top), manifest, at, env);
 }
 
-// A scene whose best track beats sad-a by a mid margin: past the switch
-// margin but below the hard-cut line, so minTrackSec applies.
+// A scene whose best track beats sad-a well past the draw tolerance, so
+// the draw switches once minTrackSec passes.
 function midSignal(): SceneSignal {
   const mix = (w: number) => {
     const v = Object.fromEntries(
@@ -78,7 +78,6 @@ function midSignal(): SceneSignal {
     const best = rankTracks(s, manifest)[0] as Track;
     const gap = scoreTrack(s, best) - scoreTrack(s, current);
     if (gap >= 0.12) {
-      if (gap >= MUSIC_CONFIG.hardCutMargin) throw new Error("fixture gap too wide");
       return s;
     }
   }
@@ -105,14 +104,13 @@ describe("observeScene and tickScheduler", () => {
     expect(late.state.activeSceneId).toBe("s2");
     expect(late.switchToId).toBe(rankTracks(mid, manifest)[0]?.id);
     expect(late.crossfadeSec).toBe(MUSIC_CONFIG.crossfadeSec);
-    expect(late.hardCut).toBe(false);
   });
 
-  it("holds the current track while the score gap is within the margin", () => {
+  it("holds the current track while the score gap is within tolerance", () => {
     const s = signal("tristeza");
     const gap =
       scoreTrack(s, manifest.tracks[1] as Track) - scoreTrack(s, manifest.tracks[0] as Track);
-    expect(gap).toBeLessThan(MUSIC_CONFIG.switchMargin);
+    expect(gap).toBeLessThan(MUSIC_CONFIG.randomTolerance);
     let d = firstActive("tristeza");
     d = observeScene(d.state, "s2", s, manifest, 100, env);
     const settled = tickScheduler(d.state, s, manifest, 130, env);
@@ -120,38 +118,41 @@ describe("observeScene and tickScheduler", () => {
     expect(settled.switchToId).toBeNull();
   });
 
-  it("switches on either side of the 0.07 margin boundary", () => {
-    const mix = (w: number) => {
-      const v = Object.fromEntries(
-        EMOTIONS.map((id) => [id, vec("tristeza")[id] * (1 - w) + vec("calma")[id] * w]),
-      ) as unknown as Vector8;
-      return { vector: v, intensity: 0.5, tempo: 0.5 };
+  it("switches on either side of the draw tolerance boundary", () => {
+    // Two tracks apart in intensity only: the dominant emotion never
+    // changes, only the current track's standing in the draw.
+    const two: MusicManifest = {
+      version: 3,
+      styles: [{ id: "orchestral", name: "Orquesta" }],
+      soundtracks: [{ id: "snd", name: "Snd", style: "orchestral" }],
+      playlists: [],
+      tracks: [track("t0", "tristeza", 0.5, 0.5), track("t1", "tristeza", 0.9, 0.5)],
     };
-    const current = manifest.tracks[0] as Track;
-    const gapOf = (w: number) => {
-      const s = mix(w);
-      const best = rankTracks(s, manifest)[0] as Track;
-      return scoreTrack(s, best) - scoreTrack(s, current);
+    const at = (intensity: number): SceneSignal => ({ vector: vec("tristeza"), intensity, tempo: 0.5 });
+    const gapOf = (intensity: number) => {
+      const s = at(intensity);
+      const best = rankTracks(s, two)[0] as Track;
+      return scoreTrack(s, best) - scoreTrack(s, two.tracks[0] as Track);
     };
     let cross = 1;
-    for (let w = 0; w <= 1; w += 0.001) {
-      if (gapOf(w) >= MUSIC_CONFIG.switchMargin) {
-        cross = w;
+    for (let i = 0.5; i <= 1; i += 0.001) {
+      if (gapOf(i) >= MUSIC_CONFIG.randomTolerance) {
+        cross = i;
         break;
       }
     }
     const wLo = Math.max(0, cross - 0.01);
     const wHi = Math.min(1, cross + 0.01);
-    expect(gapOf(wLo)).toBeLessThan(MUSIC_CONFIG.switchMargin);
-    expect(gapOf(wHi)).toBeGreaterThanOrEqual(MUSIC_CONFIG.switchMargin);
-    const run = (w: number) => {
-      let d = firstActive("tristeza");
-      d = observeScene(d.state, "s2", mix(w), manifest, 100, env);
-      return tickScheduler(d.state, mix(w), manifest, 130, env);
+    expect(gapOf(wLo)).toBeLessThan(MUSIC_CONFIG.randomTolerance);
+    expect(gapOf(wHi)).toBeGreaterThanOrEqual(MUSIC_CONFIG.randomTolerance);
+    const run = (intensity: number) => {
+      let d = observeScene(initScheduler(), "s1", at(0.5), two, 0, env);
+      d = observeScene(d.state, "s2", at(intensity), two, 100, env);
+      return tickScheduler(d.state, at(intensity), two, 130, env);
     };
     expect(run(wLo).switchToId).toBeNull();
     const hi = run(wHi);
-    expect(hi.switchToId).toBe(rankTracks(mix(wHi), manifest)[0]?.id);
+    expect(hi.switchToId).toBe("t1");
   });
 
   it("holds a mid win until minTrackSec, then switches", () => {
@@ -164,21 +165,18 @@ describe("observeScene and tickScheduler", () => {
     const late = tickScheduler(early.state, mid, manifest, 56, env);
     expect(late.switchToId).toBe(rankTracks(mid, manifest)[0]?.id);
     expect(late.crossfadeSec).toBe(MUSIC_CONFIG.crossfadeSec);
-    expect(late.hardCut).toBe(false);
   });
 
-  it("hard-cuts with the short fade before minTrackSec", () => {
+  it("holds the current track before minTrackSec, then switches with the normal fade", () => {
     const s = signal("calma");
-    const gap =
-      scoreTrack(s, manifest.tracks[3] as Track) - scoreTrack(s, manifest.tracks[0] as Track);
-    expect(gap).toBeGreaterThanOrEqual(MUSIC_CONFIG.hardCutMargin);
     let d = firstActive("tristeza");
     d = observeScene(d.state, "s2", s, manifest, 10, env);
-    const settled = tickScheduler(d.state, s, manifest, 30, env);
-    expect(settled.state.activeSceneId).toBe("s2");
+    const early = tickScheduler(d.state, s, manifest, 30, env);
+    expect(early.state.activeSceneId).toBe("s2");
+    expect(early.switchToId).toBeNull();
+    const settled = tickScheduler(early.state, s, manifest, 60, env);
     expect(settled.switchToId).toBe("calm");
-    expect(settled.hardCut).toBe(true);
-    expect(settled.crossfadeSec).toBe(MUSIC_CONFIG.hardCutCrossfadeSec);
+    expect(settled.crossfadeSec).toBe(MUSIC_CONFIG.crossfadeSec);
   });
 
   it("keeps only the newest scene on a fast scroll", () => {
@@ -212,7 +210,7 @@ describe("observeScene and tickScheduler", () => {
 });
 
 describe("requestNext", () => {
-  it("holds the override on the same scene past minTrackSec, even with a hard-cut gap", () => {
+  it("holds the override on the same scene past minTrackSec, even with a wide gap", () => {
     let d = firstActive("tristeza");
     d = requestNext(d.state, signal("tristeza"), manifest, 5, env);
     expect(d.state.overrideId).toBe("sad-b");
@@ -220,7 +218,7 @@ describe("requestNext", () => {
     const best = rankTracks(calm, manifest)[0] as Track;
     const gap =
       scoreTrack(calm, best) - scoreTrack(calm, manifest.tracks[1] as Track);
-    expect(gap).toBeGreaterThanOrEqual(MUSIC_CONFIG.hardCutMargin);
+    expect(gap).toBeGreaterThanOrEqual(MUSIC_CONFIG.randomTolerance);
     const held = tickScheduler(d.state, calm, manifest, 5 + MUSIC_CONFIG.minTrackSec + 10, env);
     expect(held.switchToId).toBeNull();
     expect(held.state.currentId).toBe("sad-b");
@@ -232,7 +230,7 @@ describe("requestNext", () => {
     const best = rankTracks(mid, manifest)[0] as Track;
     expect(
       scoreTrack(mid, best) - scoreTrack(mid, manifest.tracks[1] as Track),
-    ).toBeGreaterThanOrEqual(MUSIC_CONFIG.switchMargin);
+    ).toBeGreaterThanOrEqual(MUSIC_CONFIG.randomTolerance);
     let d = firstActive("tristeza");
     d = requestNext(d.state, signal("tristeza"), manifest, 5, env);
     const held = tickScheduler(d.state, mid, manifest, 5 + MUSIC_CONFIG.minTrackSec + 5, env);
@@ -248,7 +246,6 @@ describe("requestNext", () => {
     const settled = tickScheduler(d.state, signal("calma"), manifest, 50 + MUSIC_CONFIG.dwellSec + 1, env);
     expect(settled.state.overrideId).toBeNull();
     expect(settled.switchToId).toBe("calm");
-    expect(settled.hardCut).toBe(true);
   });
 
   it("holds the override until the scene changes, then clears it", () => {

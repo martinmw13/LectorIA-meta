@@ -30,8 +30,15 @@ export interface ReaderModel {
   chapters: ReaderChapter[];
 }
 
-// 250 words fill a desktop view at the 65ch measure without scroll.
+// 1280x800 fit: ~560 px of text area at the 19 px / 1.7 book line holds
+// 17 lines; the 65ch column fits ~68 chars per line, so each paragraph
+// costs ceil(chars / 68) lines and short dialogue lines each take a full
+// line. Page one also carries the scene heading, so it budgets one less.
+// Paragraphs stay whole; one over budget takes its own page.
 export const PAGE_WORD_BUDGET = 250;
+export const CHARS_PER_LINE = 68;
+export const LINES_PER_PAGE = 17;
+export const FIRST_PAGE_LINES = 16;
 
 export interface SubPage {
   paragraphs: ReaderParagraph[];
@@ -45,8 +52,12 @@ export function countWords(text: string): number {
   return words.length;
 }
 
-// Split one scene into sub-pages by word budget at paragraph boundaries.
-// A paragraph never splits; an oversize one takes its own page.
+export function estimateLines(text: string): number {
+  return Math.max(1, Math.ceil(text.length / CHARS_PER_LINE));
+}
+
+// Split one scene into sub-pages at paragraph boundaries: a page closes
+// when the next paragraph would pass the word budget or the line budget.
 export function paginateScene(
   paragraphs: ReaderParagraph[],
   budgetWords: number = PAGE_WORD_BUDGET,
@@ -54,6 +65,7 @@ export function paginateScene(
   const pages: SubPage[] = [];
   let current: ReaderParagraph[] = [];
   let words = 0;
+  let lines = 0;
   const flush = () => {
     if (current.length === 0) return;
     pages.push({
@@ -64,12 +76,16 @@ export function paginateScene(
     });
     current = [];
     words = 0;
+    lines = 0;
   };
   for (const p of paragraphs) {
     const w = countWords(p.text);
-    if (current.length > 0 && words + w > budgetWords) flush();
+    const l = estimateLines(p.text);
+    const budget = pages.length === 0 ? FIRST_PAGE_LINES : LINES_PER_PAGE;
+    if (current.length > 0 && (words + w > budgetWords || lines + l > budget)) flush();
     current.push(p);
     words += w;
+    lines += l;
   }
   flush();
   if (pages.length === 0) pages.push({ paragraphs: [], startN: 0, endN: 0, words: 0 });

@@ -10,10 +10,5 @@ export default function LeerLayout({ children }: { children: React.ReactNode }) 
   const slim = model.chapters.flatMap((chapter) =>
     chapter.scenes.map((scene) => ({ id: scene.id, ch: chapter.ch, emotion: scene.emotion })),
   );
-  return (
-    <>
-      <header className="topbar">Lectoria</header>
-      <Reader scenes={slim}>{children}</Reader>
-    </>
-  );
+  return <Reader scenes={slim}>{children}</Reader>;
 }

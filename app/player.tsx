@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MUSIC_CONFIG } from "@/core/music";
+import { MUSIC_CONFIG, nowPlaying } from "@/core/music";
 import { effectiveEnd, gainVolume } from "@/core/music-playback";
 import type { StyleInfo, Track } from "@/core/music";
 import { PlayerControls } from "./player-controls";
@@ -14,12 +14,14 @@ export function Player({
   track,
   replayNonce,
   fadeSec,
-  soundtrackName,
-  isFallback,
+  canPrev,
+  onPrev,
   canSkip,
   onSkip,
-  mixOn,
-  onToggleMix,
+  volume,
+  muted,
+  onVolumeChange,
+  onMutedChange,
   styles,
   styleId,
   onStyleChange,
@@ -32,12 +34,14 @@ export function Player({
   track: Track | null;
   replayNonce: number;
   fadeSec: number;
-  soundtrackName: string | null;
-  isFallback: boolean;
+  canPrev: boolean;
+  onPrev: () => void;
   canSkip: boolean;
   onSkip: () => void;
-  mixOn: boolean;
-  onToggleMix: () => void;
+  volume: number;
+  muted: boolean;
+  onVolumeChange: (volume: number) => void;
+  onMutedChange: (muted: boolean) => void;
   styles: StyleInfo[];
   styleId: string | null;
   onStyleChange: (style: string) => void;
@@ -53,7 +57,12 @@ export function Player({
   const levelRef = useRef<[number, number]>([1, 0]);
   const gainRef = useRef<[number, number]>([0, 0]);
   const segmentEndRef = useRef<string | null>(null);
-  const volumeRef = useRef(0.8);
+  // Slider value and mute live in the reader (persisted prefs); refs
+  // mirror the props so the engine never re-runs on volume moves.
+  const volumeRef = useRef(volume);
+  volumeRef.current = volume;
+  const mutedRef = useRef(muted);
+  mutedRef.current = muted;
   const fadeRef = useRef<number | null>(null);
   const loopArmedRef = useRef<string | null>(null);
   const trackRef = useRef<Track | null>(track);
@@ -72,7 +81,6 @@ export function Player({
   }
   const [started, setStarted] = useState(false);
   const [playing, setPlaying] = useState(false);
-  const [volume, setVolume] = useState(0.8);
   const requestPlayRef = useRef((_: Track, __: number) => {});
 
   const [reducedMotion, setReducedMotion] = useState(
@@ -91,11 +99,12 @@ export function Player({
 
   function applyLevels() {
     const els = [firstRef.current, secondRef.current];
+    const audible = mutedRef.current ? 0 : volumeRef.current;
     els.forEach((el, i) => {
       if (el)
         el.volume = gainVolume(
           levelRef.current[i] ?? 0,
-          volumeRef.current,
+          audible,
           gainRef.current[i] ?? 0,
         );
     });
@@ -268,31 +277,81 @@ export function Player({
   }
 
   function changeVolume(value: number) {
-    setVolume(value);
     volumeRef.current = value;
     applyLevels();
+    onVolumeChange(value);
   }
 
-  const credit = track ? [track.composer, track.artist].filter(Boolean).join(", ") : "";
-  const detail = track
-    ? [playlistOn ? null : track.emotion, soundtrackName, credit || null, track.license || null]
-        .filter(Boolean)
-        .join(" · ")
-    : null;
+  function toggleMute() {
+    const next = !mutedRef.current;
+    mutedRef.current = next;
+    applyLevels();
+    onMutedChange(next);
+  }
+
+  const now = track ? nowPlaying(track) : null;
 
   return (
     <div className="player" role="region" aria-label="Music player" data-reduced-motion={reducedMotion}>
       <audio ref={firstRef} preload="auto" onTimeUpdate={(e) => handleTimeUpdate(0, e.currentTarget)} onEnded={() => handleEnded(0)} />
       <audio ref={secondRef} preload="auto" onTimeUpdate={(e) => handleTimeUpdate(1, e.currentTarget)} onEnded={() => handleEnded(1)} />
-      <button type="button" onClick={toggle} aria-label={playing ? "Pause music" : "Play music"}>
-        {playing ? "Pause" : "Play"}
+      <button type="button" className="skip" onClick={onPrev} disabled={!canPrev} aria-label="Previous track" title="Previous track">
+        <svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <rect x="2.5" y="3" width="2" height="10" rx="0.5" />
+          <path d="M13.5 3.5v9L6 8z" />
+        </svg>
       </button>
-      <span className="player-track" aria-live="polite">
-        {track ? track.title : "Music unavailable"}
-        {detail ? ` · ${detail}` : ""}
+      <button type="button" className="skip" onClick={toggle} aria-label={playing ? "Pause" : "Play"} title={playing ? "Pause" : "Play"}>
+        {playing ? (
+          <svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <rect x="4" y="3" width="2.6" height="10" rx="0.5" />
+            <rect x="9.4" y="3" width="2.6" height="10" rx="0.5" />
+          </svg>
+        ) : (
+          <svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <path d="M5 3.5v9l7.5-4.5z" />
+          </svg>
+        )}
+      </button>
+      <button type="button" className="skip" onClick={onSkip} disabled={!canSkip} aria-label="Next track" title="Next track">
+        <svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <path d="M2.5 3.5v9l7.5-4.5z" />
+          <rect x="11.5" y="3" width="2" height="10" rx="0.5" />
+        </svg>
+      </button>
+      <span className="player-track" aria-live="polite" title={now?.full}>
+        {now?.line ?? "Music unavailable"}
       </span>
+      <button
+        type="button"
+        className="skip"
+        onClick={toggleMute}
+        aria-pressed={muted}
+        aria-label={muted ? "Unmute" : "Mute"}
+        title={muted ? "Unmute" : "Mute"}
+      >
+        <svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <path d="M2.5 6v4h2.6L9 13V3L5.1 6H2.5z" />
+          {muted ? (
+            <path
+              d="M11 6.5l4 4m0-4l-4 4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
+          ) : (
+            <path
+              d="M11 5.6a3.4 3.4 0 0 1 0 4.8M12.8 3.8a6 6 0 0 1 0 8.4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
+          )}
+        </svg>
+      </button>
       <label className="player-volume">
-        Volume
         <input
           type="range"
           min={0}
@@ -304,10 +363,6 @@ export function Player({
         />
       </label>
       <PlayerControls
-        canNext={canSkip}
-        onNext={onSkip}
-        mixOn={mixOn}
-        onToggleMix={onToggleMix}
         styles={styles}
         styleId={styleId}
         onStyleChange={onStyleChange}
@@ -316,11 +371,19 @@ export function Player({
         onTogglePlaylist={onTogglePlaylist}
         controlsDisabled={controlsDisabled}
       />
-      {isFallback && !playlistOn ? <span className="player-note">de otra banda sonora</span> : null}
-      {track?.attribution ? <span className="player-note">{track.attribution}</span> : null}
       {track?.sourceUrl ? (
-        <a className="player-note" href={track.sourceUrl} rel="noopener noreferrer" target="_blank">
-          Source
+        <a
+          className="skip"
+          href={track.sourceUrl}
+          rel="noopener noreferrer"
+          target="_blank"
+          aria-label="Music source (opens in new tab)"
+          title="Music source (opens in new tab)"
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+            <path d="M6.5 3.5H3.5v9h9V9.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M9.5 3.5h3v3M12.2 3.8 7.5 8.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </a>
       ) : null}
     </div>

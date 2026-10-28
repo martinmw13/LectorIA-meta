@@ -1,6 +1,5 @@
 import { buildReaderModel, buildSceneView, paginateScene } from "@/core/reader";
 import { loadOzBook } from "@/server/books";
-import { PicturePanel } from "../../picture-panel";
 import { ScenePage } from "../scene-page";
 
 // One static route per scene. Unknown ids 404; no other scene text
@@ -30,11 +29,15 @@ export default async function SceneRoute({ params }: { params: Promise<{ sceneId
   return (
     <div className="shell">
       <main className="book">
-        <ScenePage key={sceneId} view={view} chapters={chapters} views={views} />
+        <ScenePage
+          key={sceneId}
+          view={view}
+          chapters={chapters}
+          views={views}
+          bookId={model.bookId}
+          textVersion={model.textVersion}
+        />
       </main>
-      <aside className="companion" aria-label="Companion">
-        <PicturePanel bookId={model.bookId} textVersion={model.textVersion} sceneId={sceneId} />
-      </aside>
     </div>
   );
 }
