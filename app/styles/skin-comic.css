@@ -1,0 +1,121 @@
+/* Comic skin: hero art buttons (Orchestra, Piano, Just Chopin! and Read
+   aloud) from the approved comic prototype. Each drawing sits on its own
+   POW burst, so the boxless button still reads as something to press.
+   Hover tilts and pops it in two hard frames, like a panel cut; a press
+   squashes it; a new mode punches in once. Nothing moves at rest. */
+
+html[data-skin="comic"] .stickers[data-art="hero"] .sticker img,
+html[data-skin="comic"] .player .chopin img {
+  width: 48px;
+  height: 48px;
+  transform: none;
+  filter: none;
+  box-shadow: none;
+  border-radius: 0;
+  opacity: 1;
+}
+
+html[data-skin="comic"] .stickers[data-art="hero"] {
+  gap: 20px;
+}
+
+html[data-skin="comic"] .stickers[data-art="hero"] + .sticker-wrap {
+  margin-left: 12px;
+}
+
+/* Captions: each burst names itself beneath in bold ink caps. */
+html[data-skin="comic"] :is(.sticker, .chopin) {
+  position: relative;
+}
+
+html[data-skin="comic"] :is(.stickers[data-art="hero"] .sticker, .sticker-wrap .chopin)::after {
+  content: attr(title);
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 11px);
+  transform: translateX(-50%);
+  font-weight: 800;
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1;
+  white-space: nowrap;
+  color: #14161c;
+  pointer-events: none;
+}
+
+html[data-skin="comic"] .player .sticker-wrap .chopin::after {
+  content: "Just Chopin!";
+}
+
+html[data-skin="comic"] :is(.stickers[data-art="hero"] .sticker, .player .sticker-wrap .chopin)[aria-pressed="true"]::after {
+  color: var(--color-accent);
+}
+
+/* The pressed mode: a flat ink dot, square like a printed tick. */
+html[data-skin="comic"] .sticker-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+}
+
+html[data-skin="comic"] .read-aloud-art {
+  width: 44px;
+  height: 44px;
+  display: block;
+}
+
+html[data-skin="comic"] .read-aloud-label {
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #14161c;
+}
+
+html[data-skin="comic"] :is(.sticker img, .chopin img, .read-aloud-art) {
+  transform-origin: 50% 60%;
+  transition: transform 120ms steps(2, end);
+}
+
+@media (hover: hover) {
+  html[data-skin="comic"] :is(.sticker, .chopin, .read-aloud-btn):hover :is(img, .read-aloud-art) {
+    transform: rotate(-4deg) scale(1.08);
+  }
+
+  html[data-skin="comic"] :is(.stickers[data-art="hero"] .sticker, .player .sticker-wrap .chopin):hover::after,
+  html[data-skin="comic"] .read-aloud-btn:hover .read-aloud-label {
+    color: var(--color-accent);
+  }
+}
+
+html[data-skin="comic"] :is(.sticker, .chopin, .read-aloud-btn):active :is(img, .read-aloud-art) {
+  transform: scale(0.9);
+}
+
+@keyframes comic-pow {
+  0% {
+    transform: scale(0.55) rotate(-12deg);
+  }
+  60% {
+    transform: scale(1.16) rotate(4deg);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+html[data-skin="comic"] :is(.sticker, .player .chopin)[data-anim="1"] img {
+  animation: comic-pow 400ms cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-skin="comic"] :is(.sticker img, .chopin img, .read-aloud-art) {
+    transition: none;
+  }
+
+  html[data-skin="comic"] :is(.sticker, .chopin, .read-aloud-btn):is(:hover, :active) :is(img, .read-aloud-art),
+  html[data-skin="comic"] :is(.sticker, .player .chopin)[data-anim="1"] img {
+    transform: none;
+    animation: none;
+  }
+}

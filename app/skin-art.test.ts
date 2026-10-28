@@ -9,6 +9,10 @@ describe("heroArt", () => {
     expect(heroArt("engraving")).not.toBeNull();
   });
 
+  it("gives every skin its own music art, so no skin falls back to the old stickers", () => {
+    for (const skin of SKINS) expect(heroArt(skin), skin).not.toBeNull();
+  });
+
   it("points every skin's art at a real, well-formed SVG or PNG in public/", () => {
     for (const skin of SKINS) {
       const art = heroArt(skin);
