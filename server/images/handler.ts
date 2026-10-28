@@ -38,58 +38,66 @@ export async function handleImagesPost(req: Request): Promise<Response> {
     );
   }
 
-  const { book, scenes } = loadOzBook();
   try {
-    validateAgainstBook(
-      parsed,
-      {
-        id: book.id,
-        textVersion: book.textVersion,
-        paragraphNs: new Set(book.paragraphs.map((p) => p.n)),
-        sceneIds: new Set(scenes.map((s) => s.id)),
-      },
+    const { book, scenes } = loadOzBook();
+    try {
+      validateAgainstBook(
+        parsed,
+        {
+          id: book.id,
+          textVersion: book.textVersion,
+          paragraphNs: new Set(book.paragraphs.map((p) => p.n)),
+          sceneIds: new Set(scenes.map((s) => s.id)),
+        },
+      );
+    } catch {
+      return Response.json(
+        { status: "error", code: "bad_request", message: MSG_BAD_REQUEST } satisfies ImageResponse,
+        { status: 400 },
+      );
+    }
+
+    const byN = new Map(book.paragraphs.map((p) => [p.n, p.text]));
+    const sceneOf = scenes.find((s) =>
+      parsed.kind === "passage" ? parsed.n >= s.start_n && parsed.n <= s.end_n : s.id === parsed.sceneId,
     );
+    const sceneParas = sceneOf
+      ? book.paragraphs.filter((p) => p.n >= sceneOf.start_n && p.n <= sceneOf.end_n)
+      : [];
+    const content: ImageContent = {
+      passageText: parsed.kind === "passage" ? (byN.get(parsed.n) ?? "") : "",
+      sceneTitle: sceneOf?.title ?? "",
+      sceneClip: sceneParas.map((p) => p.text).join(" "),
+    };
+
+    const cookieValue = parseAnonCookie(req.headers.get("cookie"));
+    let anonId = cookieValue ? verifyAnonCookie(cookieValue, env.sessionSecret) : null;
+    let setCookie: string | null = null;
+    if (!anonId) {
+      const issued = issueAnonId(env.sessionSecret);
+      anonId = issued.id;
+      setCookie = serializeAnonCookie(issued.value);
+    }
+
+    const res = await orchestrate(parsed, {
+      kv: createRestKV(env.upstashUrl, env.upstashToken),
+      store: createBlobStore(),
+      generate: createMetaClient(env.metaKey),
+      env,
+      content,
+      ip: clientIp(req.headers.get("x-forwarded-for")),
+      anonId,
+      day: utcDay(),
+    });
+
+    const { json, status } = toResponse(res);
+    const headers = setCookie ? { "Set-Cookie": setCookie } : undefined;
+    return Response.json(json, { status, headers });
   } catch {
+    console.error("image request failed");
     return Response.json(
-      { status: "error", code: "bad_request", message: MSG_BAD_REQUEST } satisfies ImageResponse,
-      { status: 400 },
+      { status: "error", code: "unavailable", message: MSG_UNAVAILABLE } satisfies ImageResponse,
+      { status: 503 },
     );
   }
-
-  const byN = new Map(book.paragraphs.map((p) => [p.n, p.text]));
-  const sceneOf = scenes.find((s) =>
-    parsed.kind === "passage" ? parsed.n >= s.start_n && parsed.n <= s.end_n : s.id === parsed.sceneId,
-  );
-  const sceneParas = sceneOf
-    ? book.paragraphs.filter((p) => p.n >= sceneOf.start_n && p.n <= sceneOf.end_n)
-    : [];
-  const content: ImageContent = {
-    passageText: parsed.kind === "passage" ? (byN.get(parsed.n) ?? "") : "",
-    sceneTitle: sceneOf?.title ?? "",
-    sceneClip: sceneParas.map((p) => p.text).join(" "),
-  };
-
-  const cookieValue = parseAnonCookie(req.headers.get("cookie"));
-  let anonId = cookieValue ? verifyAnonCookie(cookieValue, env.sessionSecret) : null;
-  let setCookie: string | null = null;
-  if (!anonId) {
-    const issued = issueAnonId(env.sessionSecret);
-    anonId = issued.id;
-    setCookie = serializeAnonCookie(issued.value);
-  }
-
-  const res = await orchestrate(parsed, {
-    kv: createRestKV(env.upstashUrl, env.upstashToken),
-    store: createBlobStore(),
-    generate: createMetaClient(env.metaKey),
-    env,
-    content,
-    ip: clientIp(req.headers.get("x-forwarded-for")),
-    anonId,
-    day: utcDay(),
-  });
-
-  const { json, status } = toResponse(res);
-  const headers = setCookie ? { "Set-Cookie": setCookie } : undefined;
-  return Response.json(json, { status, headers });
 }

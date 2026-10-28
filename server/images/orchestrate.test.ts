@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createMemoryKV, spendKey } from "@/core/images";
+import { createMemoryKV, imageKey, lockKeyFor, spendKey } from "@/core/images";
 import type { ImageGenerator, ImageRequest, ImageStore } from "@/core/images";
 import type { ImageEnv } from "./env";
 import { orchestrate } from "./orchestrate";
@@ -77,11 +77,22 @@ describe("orchestrate", () => {
 
   it("gives pending to a second requester holding no lock", async () => {
     const d = deps();
-    d.generate = { generate: async () => new Promise<Uint8Array>(() => {}) };
+    let releaseGen!: (bytes: Uint8Array) => void;
+    let genCalled!: () => void;
+    const called = new Promise<void>((resolve) => (genCalled = resolve));
+    d.generate = {
+      generate: () =>
+        new Promise<Uint8Array>((resolve) => {
+          releaseGen = resolve;
+          genCalled();
+        }),
+    };
     const held = orchestrate(passage, { ...d, token: "owner" });
+    await called;
     const res = await orchestrate(passage, { ...d, token: "other" });
     expect(res).toEqual({ status: "pending" });
-    void held;
+    releaseGen(new Uint8Array([1]));
+    expect(await held).toMatchObject({ status: "ready" });
   });
 
   it("refuses the 6th image per person and refunds both counters", async () => {
@@ -125,6 +136,51 @@ describe("orchestrate", () => {
     const res = await orchestrate(passage, d);
     expect(res).toMatchObject({ status: "error", code: "budget" });
     expect(await d.kv.get(spendKey())).toBe("0");
+  });
+
+  it("refuses when the cookie counter runs out while IPs stay fresh", async () => {
+    const d = deps();
+    for (let i = 0; i < 5; i++) {
+      const res = await orchestrate({ ...passage, n: 400 + i }, { ...d, ip: `10.0.0.${i}` });
+      expect(res.status).toBe("ready");
+    }
+    const res = await orchestrate({ ...passage, n: 405 }, { ...d, ip: "10.9.9.9" });
+    expect(res).toMatchObject({ status: "error", code: "quota" });
+    expect(await d.kv.get(spendKey())).toBe("50000");
+  });
+
+  it("resets quota on UTC day rollover", async () => {
+    const d = deps();
+    for (let i = 0; i < 5; i++) {
+      const res = await orchestrate({ ...passage, n: 200 + i }, { ...d, day: "2026-10-27" });
+      expect(res.status).toBe("ready");
+    }
+    const refused = await orchestrate(passage, { ...d, day: "2026-10-27" });
+    expect(refused).toMatchObject({ status: "error", code: "quota" });
+    const next = await orchestrate({ ...passage, n: 300 }, { ...d, day: "2026-10-28" });
+    expect(next.status).toBe("ready");
+  });
+
+  it("returns generic text when KV throws after the lock", async () => {
+    const d = deps();
+    const kv = { ...d.kv, incrBy: async (): Promise<number> => {
+      throw new Error("kv-boom-marker");
+    } };
+    const res = await orchestrate(passage, { ...d, kv });
+    expect(res).toMatchObject({ status: "error", code: "unavailable" });
+    expect(JSON.stringify(res)).not.toContain("kv-boom-marker");
+    expect(await kv.setNxEx(lockKeyFor(imageKey(passage)), "probe", 150)).toBe(true);
+  });
+
+  it("returns ready with the URL when the index write fails", async () => {
+    const d = deps();
+    d.kv.set = async () => {
+      throw new Error("index-boom-marker");
+    };
+    const res = await orchestrate(passage, d);
+    expect(res).toMatchObject({ status: "ready", cached: false });
+    expect(JSON.stringify(res)).not.toContain("index-boom-marker");
+    expect(await d.kv.setNxEx(lockKeyFor(imageKey(passage)), "probe", 150)).toBe(true);
   });
 
   it("recovers from a lost save race through the winner file", async () => {

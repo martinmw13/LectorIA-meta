@@ -145,7 +145,8 @@ plus `PROMPT_VERSION` (`v1`); the scene key is book plus scene id plus
 the same versions. Both map to a deterministic Blob path
 (`addRandomSuffix: false`, `allowOverwrite: false`). An Upstash Redis
 index maps key to Blob URL, so hits are one GET; on an index miss the
-server checks the Blob path before generating and backfills the index.
+server lists by exact path prefix (head equivalent) before generating
+and backfills the index.
 A Redis lock per key returns `pending` to concurrent requests. Quota is
 5 new images per person per day by hashed IP and signed cookie,
 whichever runs out first; a shared spend counter in integer

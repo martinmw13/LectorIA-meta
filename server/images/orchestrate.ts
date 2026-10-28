@@ -60,63 +60,111 @@ export async function orchestrate(
 
   const token = deps.token ?? randomUUID();
   if (!(await deps.kv.setNxEx(lockKey, token, LOCK_TTL_SEC))) return { status: "pending" };
-  const release = () => deps.kv.releaseIfToken(lockKey, token);
 
-  if (!verifyHuman()) {
-    await release();
-    return { status: "error", code: "unavailable", message: MSG_FAILED };
-  }
+  // Best-effort unlock: a release failure must never turn into a client 500.
+  const release = async (): Promise<void> => {
+    try {
+      await deps.kv.releaseIfToken(lockKey, token);
+    } catch {
+      // Lock expires on its own; nothing to do.
+    }
+  };
 
   const keys = quotaKeysFor({ day: deps.day, ip: deps.ip, salt: deps.env.ipSalt, anonId: deps.anonId });
-  if (!(await checkQuota(deps.kv, keys)).ok) {
-    await release();
-    return { status: "error", code: "quota", message: MSG_QUOTA };
-  }
-
-  const total = await deps.kv.incrBy(spendKey(), imageCostMicro());
-  if (budgetExceeded(total, deps.env.spendCapMicro)) {
-    await deps.kv.decrBy(spendKey(), imageCostMicro());
-    await refundQuota(deps.kv, keys);
-    await release();
-    return { status: "error", code: "budget", message: MSG_BUDGET };
-  }
-  const refundSpend = () => deps.kv.decrBy(spendKey(), imageCostMicro());
-
-  let bytes: Uint8Array;
-  try {
-    bytes = await deps.generate.generate(
-      buildPrompt({
-        kind: req.kind,
-        passageText: deps.content.passageText,
-        sceneTitle: deps.content.sceneTitle,
-        sceneClip: deps.content.sceneClip,
-      }),
-    );
-  } catch {
-    await refundSpend();
-    await refundQuota(deps.kv, keys);
-    await release();
-    console.error("image generate failed");
-    return { status: "error", code: "unavailable", message: MSG_FAILED };
-  }
-
-  try {
-    const url = await deps.store.save(key, bytes);
-    await deps.kv.set(indexKey, url);
-    await release();
-    return { status: "ready", url, cached: false, caption: captionFor(req, deps.content) };
-  } catch {
-    // A lost save race leaves the winner's file behind; backfill from it.
-    const raced = await deps.store.findUrl(key);
-    if (raced) {
-      await deps.kv.set(indexKey, raced);
-      await release();
-      return { status: "ready", url: raced, cached: true, caption: captionFor(req, deps.content) };
+  let quotaTaken = false;
+  let spendTaken = false;
+  // Best-effort refunds that clear their flag only after the write lands,
+  // so the outer catch refunds each reserve exactly once.
+  const refundQuotaOnce = async (): Promise<void> => {
+    try {
+      await refundQuota(deps.kv, keys);
+      quotaTaken = false;
+    } catch {
+      // Redis down: nothing reserved server-side to retry against.
     }
-    await refundSpend();
-    await refundQuota(deps.kv, keys);
+  };
+  const refundSpendOnce = async (): Promise<void> => {
+    try {
+      await deps.kv.decrBy(spendKey(), imageCostMicro());
+      spendTaken = false;
+    } catch {
+      // Redis down: nothing reserved server-side to retry against.
+    }
+  };
+
+  try {
+    if (!verifyHuman()) {
+      await release();
+      return { status: "error", code: "unavailable", message: MSG_FAILED };
+    }
+
+    if (!(await checkQuota(deps.kv, keys)).ok) {
+      await release();
+      return { status: "error", code: "quota", message: MSG_QUOTA };
+    }
+    quotaTaken = true;
+
+    const total = await deps.kv.incrBy(spendKey(), imageCostMicro());
+    spendTaken = true;
+    if (budgetExceeded(total, deps.env.spendCapMicro)) {
+      await refundSpendOnce();
+      await refundQuotaOnce();
+      await release();
+      return { status: "error", code: "budget", message: MSG_BUDGET };
+    }
+
+    let bytes: Uint8Array;
+    try {
+      bytes = await deps.generate.generate(
+        buildPrompt({
+          kind: req.kind,
+          passageText: deps.content.passageText,
+          sceneTitle: deps.content.sceneTitle,
+          sceneClip: deps.content.sceneClip,
+        }),
+      );
+    } catch {
+      await refundSpendOnce();
+      await refundQuotaOnce();
+      await release();
+      console.error("image generate failed");
+      return { status: "error", code: "unavailable", message: MSG_FAILED };
+    }
+
+    try {
+      const url = await deps.store.save(key, bytes);
+      try {
+        await deps.kv.set(indexKey, url);
+      } catch {
+        console.error("image index failed");
+        await release();
+        return { status: "ready", url, cached: false, caption: captionFor(req, deps.content) };
+      }
+      await release();
+      return { status: "ready", url, cached: false, caption: captionFor(req, deps.content) };
+    } catch {
+      // A lost save race leaves the winner's file behind; backfill from it.
+      const raced = await deps.store.findUrl(key);
+      if (raced) {
+        try {
+          await deps.kv.set(indexKey, raced);
+        } catch {
+          console.error("image index failed");
+        }
+        await release();
+        return { status: "ready", url: raced, cached: true, caption: captionFor(req, deps.content) };
+      }
+      await refundSpendOnce();
+      await refundQuotaOnce();
+      await release();
+      console.error("image store failed");
+      return { status: "error", code: "unavailable", message: MSG_FAILED };
+    }
+  } catch {
+    if (spendTaken) await refundSpendOnce();
+    if (quotaTaken) await refundQuotaOnce();
     await release();
-    console.error("image store failed");
+    console.error("image request failed");
     return { status: "error", code: "unavailable", message: MSG_FAILED };
   }
 }
