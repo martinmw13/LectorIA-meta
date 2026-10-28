@@ -87,18 +87,38 @@ export type AnalyzedScene = Scene & SceneEmotion;
 export const LOW_CONFIDENCE = 0.6;
 export const FEATURE_WEIGHTS = { intensity: 0.5, tempo: 0.5 } as const;
 
-// Image API contract. Request names the selection by paragraph ordinals;
-// the response is a Blob URL, never bytes. No routes yet.
-export interface ImageRequest {
+// Image API contract. Passage names the paragraph where the selection
+// starts; scene names the scene id. The cache key holds only the key
+// fields plus PROMPT_VERSION, so a repeat tap reuses the stored image.
+export type ImageKind = "passage" | "scene";
+
+export interface PassageRequest {
+  kind: "passage";
   bookId: string;
   textVersion: string;
-  firstN: number;
-  lastN: number;
+  n: number;
 }
 
-export interface ImageResponse {
-  url: string;
+export interface SceneRequest {
+  kind: "scene";
+  bookId: string;
+  textVersion: string;
+  sceneId: string;
 }
+
+export type ImageRequest = PassageRequest | SceneRequest;
+
+export type ImageErrorCode = "quota" | "budget" | "unavailable" | "bad_request";
+
+export type ImageResponse =
+  | { status: "ready"; url: string; cached: boolean; caption: string }
+  | { status: "pending" }
+  | { status: "error"; code: ImageErrorCode; message: string };
+
+export const PROMPT_VERSION = "v1" as const;
+
+// shortcut: USD 0.01 per image per the spike, revisit if Meta reprices.
+export const IMAGE_COST_MICRO = 10000 as const;
 
 export interface ChatMessage {
   role: "user" | "assistant";
