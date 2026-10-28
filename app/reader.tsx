@@ -318,7 +318,25 @@ export function Reader({
     });
   }
 
-  function jumpChapter(ch: number) {
+  // Follows scroll only: every live scene registers with narration so the
+// voice plays on through scenes and chapters, but narration never sets
+// the live scene itself — auto-follow scrolling moves it.
+function SceneSync({ scenes }: { scenes: SlimScene[] }) {
+  const liveId = useCurrentSceneId();
+  const { registerScene } = useNarration();
+  const last = useRef<string | null>(null);
+  useEffect(() => {
+    if (!liveId || last.current === liveId) return;
+    last.current = liveId;
+    const found = scenes.find((scene) => scene.id === liveId);
+    if (found) {
+      registerScene({ id: found.id, ch: found.ch, startN: found.startN, endN: found.endN });
+    }
+  }, [liveId, scenes, registerScene]);
+  return null;
+}
+
+function jumpChapter(ch: number) {
     const found = chapters.find((c) => c.ch === ch);
     if (found) requestGotoScene(found.firstSceneId);
   }
@@ -341,7 +359,6 @@ export function Reader({
     ? EMOTIONS.map((id) => ({ label: DEV_LABELS[id], value: current.vector[id] ?? 0 }))
     : [];
 
-  const sceneOrder = useMemo(() => scenes.map((s) => s.id), [scenes]);
   const advanceScene = useCallback(
     (nextSceneId: string) => {
       requestGotoScene(nextSceneId);
@@ -350,7 +367,13 @@ export function Reader({
   );
 
   return (
-    <NarrationProvider entries={narration} sceneOrder={sceneOrder} onAdvanceScene={advanceScene}>
+    <NarrationProvider
+      entries={narration}
+      scenes={scenes}
+      musicLevel={muted ? 0 : volume}
+      onAdvanceScene={advanceScene}
+    >
+      <SceneSync scenes={scenes} />
       <div className="folio">
         <TopLine
           bookTitle={bookTitle}

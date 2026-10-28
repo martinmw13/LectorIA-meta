@@ -99,6 +99,40 @@ describe("ambience controller", () => {
     ]);
   });
 
+  it("ducks the rain with the voice and restores after", async () => {
+    const { engine, loads, starts } = fakeEngine();
+    const controller = new AmbienceController(engine);
+    await controller.unlock();
+    controller.setLevel("drizzle");
+    await unlockedLevel(loads, "drizzle");
+    controller.setDuck(0.125);
+    expect(starts[0]!.voice.ramps).toEqual([[0.4 * 0.125, 0.1]]);
+    controller.setDuck(0.125);
+    expect(starts[0]!.voice.ramps).toHaveLength(1);
+    controller.setDuck(1);
+    expect(starts[0]!.voice.ramps).toEqual([
+      [0.4 * 0.125, 0.1],
+      [0.4, 0.1],
+    ]);
+  });
+
+  it("clamps the duck and treats a bad value as no duck", async () => {
+    const { engine, loads, starts } = fakeEngine();
+    const controller = new AmbienceController(engine);
+    await controller.unlock();
+    controller.setLevel("drizzle");
+    await unlockedLevel(loads, "drizzle");
+    controller.setDuck(0);
+    expect(starts[0]!.voice.ramps).toEqual([[0, 0.1]]);
+    controller.setDuck(NaN);
+    expect(starts[0]!.voice.ramps).toEqual([
+      [0, 0.1],
+      [0.4, 0.1],
+    ]);
+    controller.setDuck(9);
+    expect(starts[0]!.voice.ramps).toHaveLength(2);
+  });
+
   it("ramps volume changes over 0.1 s", async () => {
     const { engine, loads, starts } = fakeEngine();
     const controller = new AmbienceController(engine);

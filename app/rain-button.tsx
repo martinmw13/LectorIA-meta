@@ -22,7 +22,7 @@ const ANIM_MS = 1400;
 
 // The button owns its controller: it loads prefs once, saves on change,
 // and starts the stored level on the first gesture anywhere in the page.
-export function RainAmbience({ muted }: { muted: boolean }) {
+export function RainAmbience({ muted, duck = 1 }: { muted: boolean; duck?: number }) {
   const controllerRef = useRef<AmbienceController | null>(null);
   const [level, setLevel] = useState("off");
   const [volume, setVolume] = useState(DEFAULT_AMBIENCE_VOLUME);
@@ -60,6 +60,10 @@ export function RainAmbience({ muted }: { muted: boolean }) {
   useEffect(() => {
     controllerRef.current?.setMuted(muted);
   }, [muted]);
+
+  useEffect(() => {
+    controllerRef.current?.setDuck(duck);
+  }, [duck]);
 
   useEffect(
     () => () => {

@@ -1,34 +1,38 @@
 // Read-aloud controller: one dedicated audio element per reader mount,
 // per-chapter manifests fetched lazily, duck signal for the music
-// player. The element lives in the layout-level provider, so sub-page
-// and scene navigation never interrupt playback.
+// player. The element lives in the layout-level provider, so scrolling
+// never interrupts playback. Play starts at the live scene (the scene
+// under the reading line); pausing keeps the position, so pressing play
+// again in the same scene resumes where it paused.
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { parseChapterNarration, sceneSpan, type ChapterNarration } from "@/core/narration";
+import { getCurrentSceneId } from "../leer/current-scene";
 import {
   NARRATION_DUCK_DOWN_MS,
-  NARRATION_DUCK_LEVEL,
   NARRATION_DUCK_UP_MS,
+  duckMultiplier,
   rampDuck,
 } from "./duck";
 import { DEFAULT_NARRATION_PREFS, loadNarrationPrefs, saveNarrationPrefs } from "./prefs";
 import type { NarrationChapterEntry, NarrationPrefs, NarrationStatus } from "./types";
 
 export interface NarrationSceneRef {
-  sceneId: string;
+  id: string;
   ch: number;
   startN: number;
   endN: number;
 }
 
 function sameScene(a: NarrationSceneRef | null, b: NarrationSceneRef): boolean {
-  return a !== null && a.sceneId === b.sceneId && a.ch === b.ch && a.startN === b.startN && a.endN === b.endN;
+  return a !== null && a.id === b.id && a.ch === b.ch && a.startN === b.startN && a.endN === b.endN;
 }
 
 export function useNarrationController(opts: {
   entries: NarrationChapterEntry[];
-  sceneOrder: string[];
+  scenes: NarrationSceneRef[];
+  musicLevel: number;
   onAdvanceScene: (nextSceneId: string) => void;
 }) {
   const [prefs, setPrefs] = useState<NarrationPrefs>(DEFAULT_NARRATION_PREFS);
@@ -44,8 +48,10 @@ export function useNarrationController(opts: {
   advanceRef.current = opts.onAdvanceScene;
   const entriesRef = useRef(opts.entries);
   entriesRef.current = opts.entries;
-  const orderRef = useRef(opts.sceneOrder);
-  orderRef.current = opts.sceneOrder;
+  const scenesRef = useRef(opts.scenes);
+  scenesRef.current = opts.scenes;
+  const musicRef = useRef(opts.musicLevel);
+  musicRef.current = opts.musicLevel;
   const sceneRef = useRef(scene);
   sceneRef.current = scene;
   const prefsRef = useRef(prefs);
@@ -158,8 +164,8 @@ export function useNarrationController(opts: {
   // Scene moves seek at once; playback resumes when the manifest lands.
   const prevSceneId = useRef<string | null>(null);
   useEffect(() => {
-    if (scene !== null && prevSceneId.current !== scene.sceneId) {
-      prevSceneId.current = scene.sceneId;
+    if (scene !== null && prevSceneId.current !== scene.id) {
+      prevSceneId.current = scene.id;
       advancingRef.current = false;
       if (cacheRef.current.get(scene.ch) !== undefined) {
         seekScene();
@@ -198,29 +204,31 @@ export function useNarrationController(opts: {
       const span = sceneSpan(heard, current.startN, current.endN);
       if (span !== null && audio.currentTime >= span.endSec - 0.15) {
         advancingRef.current = true;
-        const at = orderRef.current.indexOf(current.sceneId);
-        const next = at >= 0 ? orderRef.current[at + 1] : undefined;
+        const order = scenesRef.current;
+        const at = order.findIndex((s) => s.id === current.id);
+        const next = at >= 0 ? order[at + 1] : undefined;
         if (next === undefined) {
           wantPlay.current = false;
           audio.pause();
           advancingRef.current = false;
           return;
         }
-        advanceRef.current(next);
+        advanceRef.current(next.id);
       }
     };
     const onEnded = () => {
       if (advancingRef.current) return;
       advancingRef.current = true;
       const current = sceneRef.current;
-      const at = current !== null ? orderRef.current.indexOf(current.sceneId) : -1;
-      const next = at >= 0 ? orderRef.current[at + 1] : undefined;
+      const order = scenesRef.current;
+      const at = current !== null ? order.findIndex((s) => s.id === current.id) : -1;
+      const next = at >= 0 ? order[at + 1] : undefined;
       if (next === undefined) {
         wantPlay.current = false;
         advancingRef.current = false;
         return;
       }
-      advanceRef.current(next);
+      advanceRef.current(next.id);
     };
     const onError = () => {
       setStatus("error");
@@ -242,9 +250,12 @@ export function useNarrationController(opts: {
     };
   }, []);
 
-  // Duck ramp: down fast when the voice starts, back up slow on pause.
+  // Duck ramp: the music sits about 20 dB below the live voice level,
+  // down fast when the voice starts, back up slow on pause. Pause, the
+  // end of the book, errors, and switching off all restore the level.
   useEffect(() => {
-    const target = prefs.on && playing ? NARRATION_DUCK_LEVEL : 1;
+    const target =
+      prefs.on && playing ? duckMultiplier(musicRef.current, prefsRef.current.volume) : 1;
     if (duckRef.current === target) {
       setDuck(target);
       return;
@@ -261,7 +272,7 @@ export function useNarrationController(opts: {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [playing, prefs.on]);
+  }, [playing, prefs.on, prefs.volume, opts.musicLevel]);
 
   // The narration volume rides its own slider, never the music mute.
   useEffect(() => {
@@ -279,6 +290,9 @@ export function useNarrationController(opts: {
     setScene((prev) => (sameScene(prev, next) ? prev : next));
   }, []);
 
+  // Press play at the live scene: the scene under the reading line, at
+  // its span start — or where it paused when still in that scene. The
+  // live scene keeps following scroll only; narration never sets it.
   const toggle = useCallback(() => {
     const audio = audioRef.current;
     if (playing) {
@@ -288,7 +302,27 @@ export function useNarrationController(opts: {
     }
     if (!prefsRef.current.on) {
       persist({ on: true, volume: prefsRef.current.volume });
+    }
+    const order = scenesRef.current;
+    const liveId = getCurrentSceneId();
+    const found = liveId !== null ? order.find((s) => s.id === liveId) : undefined;
+    const target = found ?? sceneRef.current ?? order[0] ?? null;
+    if (target === null) {
       wantPlay.current = true;
+      return;
+    }
+    if (!sameScene(sceneRef.current, target)) {
+      setScene(target);
+      wantPlay.current = true;
+      return;
+    }
+    wantPlay.current = true;
+    const heard = cacheRef.current.get(target.ch);
+    if (audio && heard && audio.dataset.key === heard.key) {
+      // Still positioned in this scene: resume where it paused.
+      void audio.play().catch(() => {
+        wantPlay.current = false;
+      });
       return;
     }
     playCurrent();

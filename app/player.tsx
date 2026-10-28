@@ -48,8 +48,8 @@ export function Player({
   onAdvance: (to?: MusicModeId) => void;
   onEnded: (trackId: string) => void;
   playlistOn: boolean;
-  // Read-aloud duck multiplier: 1 normally, about -18 dB while the
-  // voice plays. The rain layer is separate and never ducked.
+  // Read-aloud duck multiplier: 1 normally, the music level relative
+  // to the voice while narration plays. The rain layer ducks the same.
   duck?: number;
 }) {
   const firstRef = useRef<HTMLAudioElement | null>(null);
@@ -401,7 +401,7 @@ export function Player({
           aria-label="Volume"
         />
       </label>
-      <RainAmbience muted={muted} />
+      <RainAmbience muted={muted} duck={duck} />
       <span className="player-track" aria-live="polite" title={now?.full} ref={slotRef}>
         <span className="player-track-inner" ref={innerRef}>
           {head ?? "The music is resting"}

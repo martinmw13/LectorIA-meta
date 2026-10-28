@@ -1,26 +1,27 @@
 // Layout-level narration state: the provider owns the one audio
-// element, so scene and sub-page navigation never interrupt playback.
-// ScenePage registers its scene and consumes the manifest for highlight.
+// element, so scrolling never interrupts playback.
 "use client";
 
 import { createContext, useContext } from "react";
-import { useNarrationController, type NarrationController } from "./use-narration";
+import { useNarrationController, type NarrationController, type NarrationSceneRef } from "./use-narration";
 import type { NarrationChapterEntry } from "./types";
 
 const NarrationContext = createContext<NarrationController | null>(null);
 
 export function NarrationProvider({
   entries,
-  sceneOrder,
+  scenes,
+  musicLevel,
   onAdvanceScene,
   children,
 }: {
   entries: NarrationChapterEntry[];
-  sceneOrder: string[];
+  scenes: NarrationSceneRef[];
+  musicLevel: number;
   onAdvanceScene: (nextSceneId: string) => void;
   children: React.ReactNode;
 }) {
-  const controller = useNarrationController({ entries, sceneOrder, onAdvanceScene });
+  const controller = useNarrationController({ entries, scenes, musicLevel, onAdvanceScene });
   return (
     <NarrationContext.Provider value={controller}>
       <audio ref={controller.audioRef} preload="auto" aria-label="Read aloud" />
