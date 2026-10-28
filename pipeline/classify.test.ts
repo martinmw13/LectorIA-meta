@@ -128,4 +128,27 @@ describe("runClassify with fake clients", () => {
     const scenes = await runClassify({ bookKey: "oz", force: true, dir }, { jev, meta });
     expect(scenes.every((s) => s.final === null && s.error !== null)).toBe(true);
   });
+
+  it("carries provenance.resplit forward and refuses duplicate scene ids", async () => {
+    const dir = setupDir();
+    const jev: JevClient = {
+      model: "jev-1.14.0",
+      classify: async () => jevResult(),
+    };
+    const meta: MetaClient = {
+      model: "meta-test",
+      completeJson: async () => ({ data: {}, promptTokens: 1, cachedTokens: 0, completionTokens: 1 }),
+    };
+    await runClassify({ bookKey: "oz", force: true, dir }, { jev, meta });
+    const first = JSON.parse(readFileSync(join(dir, "analysis.json"), "utf8")) as { provenance: Record<string, unknown> };
+    const resplit = { auto_margin: 0.3, splits: [] };
+    writeFileSync(join(dir, "analysis.json"), JSON.stringify({ ...first, provenance: { ...first.provenance, resplit } }));
+    await runClassify({ bookKey: "oz", force: true, dir }, { jev, meta });
+    const second = JSON.parse(readFileSync(join(dir, "analysis.json"), "utf8")) as { provenance: { resplit: unknown } };
+    expect(second.provenance.resplit).toEqual(resplit);
+
+    const scenesFile = JSON.parse(readFileSync(join(dir, "scenes.json"), "utf8")) as { scenes: unknown[] };
+    writeFileSync(join(dir, "scenes.json"), JSON.stringify({ ...scenesFile, scenes: [scenesFile.scenes[0], scenesFile.scenes[0]] }));
+    await expect(runClassify({ bookKey: "oz", force: true, dir }, { jev, meta })).rejects.toThrow(/duplicate scene id/);
+  });
 });

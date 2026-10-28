@@ -102,6 +102,7 @@ describe("splitIds", () => {
   it("keeps the first id and suffixes the rest", () => {
     expect(splitIds("c5s2", 3)).toEqual(["c5s2", "c5s2b", "c5s2c"]);
     expect(splitIds("c5s2", 1)).toEqual(["c5s2"]);
+    expect(() => splitIds("c5s2", 27)).toThrow(/at most 26/);
   });
 });
 
