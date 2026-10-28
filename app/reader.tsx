@@ -87,7 +87,7 @@ function BandPlay({
   onEnded: (trackId: string) => void;
   playlistOn: boolean;
 }) {
-  const { duck } = useNarration();
+  const { duck, ambienceDuck } = useNarration();
   return (
     <div className="band-play">
       <ReadAloud />
@@ -112,6 +112,7 @@ function BandPlay({
           onEnded={onEnded}
           playlistOn={playlistOn}
           duck={duck}
+          ambienceDuck={ambienceDuck}
         />
       )}
     </div>

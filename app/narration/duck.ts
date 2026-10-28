@@ -15,6 +15,13 @@ export function duckMultiplier(musicLevel: number, voiceVolume: number, duckDb =
   return Math.min(1, (voiceVolume * 10 ** (-duckDb / 20)) / musicLevel);
 }
 
+// Rain and ambience duck on their own: a flat ~20 dB cut while the
+// voice plays, so a muted music track never leaves the rain at full
+// level under the narration.
+export function ambienceDuckTarget(narrating: boolean, duckDb = NARRATION_DUCK_DB): number {
+  return narrating ? 10 ** (-duckDb / 20) : 1;
+}
+
 // One ramp step toward target: a linear slide of the multiplier (full
 // 0..1 range per duration), so frame-by-frame steps land within the
 // duration instead of easing for seconds. Pure, so the controller and
