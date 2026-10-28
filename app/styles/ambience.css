@@ -1,7 +1,17 @@
-/* Rain ambience button next to the music volume. The cloud art is the
+/* Rain ambience button after the music modes. The cloud art is the
    button: no box, frame, or fill. The 34px hit area comes from .skip; the
    art renders at 30px with overflow visible so halos may bleed out without
    moving the player layout. */
+
+/* Rain is its own group after the music modes; the extra left margin
+   keeps it from reading as a fourth music mode. */
+.player .rain-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+  margin-left: 14px;
+}
 
 .player .skip.rain {
   border: none;

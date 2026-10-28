@@ -376,6 +376,28 @@ export function Player({
           <rect x="11.5" y="3" width="2" height="10" rx="0.5" />
         </svg>
       </button>
+      <span className="player-track" aria-live="polite" title={now?.full} ref={slotRef}>
+        <span className="player-track-inner" ref={innerRef}>
+          {head ?? "The music is resting"}
+          {showSource && track?.sourceUrl ? (
+            <>
+              {" · "}
+              <a
+                href={track.sourceUrl}
+                rel="noopener noreferrer"
+                target="_blank"
+                aria-label={`${track.artist} (opens in new tab)`}
+                title={`${track.artist} (opens in new tab)`}
+              >
+                {track.artist}{" "}
+                <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden="true">
+                  <path d="M3 9 9 3M4.5 3H9v4.5" />
+                </svg>
+              </a>
+            </>
+          ) : null}
+        </span>
+      </span>
       <button
         type="button"
         className="skip"
@@ -416,30 +438,10 @@ export function Player({
           aria-label="Volume"
         />
       </label>
-      <RainAmbience muted={muted} duck={ambienceDuck} />
-      <span className="player-track" aria-live="polite" title={now?.full} ref={slotRef}>
-        <span className="player-track-inner" ref={innerRef}>
-          {head ?? "The music is resting"}
-          {showSource && track?.sourceUrl ? (
-            <>
-              {" · "}
-              <a
-                href={track.sourceUrl}
-                rel="noopener noreferrer"
-                target="_blank"
-                aria-label={`${track.artist} (opens in new tab)`}
-                title={`${track.artist} (opens in new tab)`}
-              >
-                {track.artist}{" "}
-                <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden="true">
-                  <path d="M3 9 9 3M4.5 3H9v4.5" />
-                </svg>
-              </a>
-            </>
-          ) : null}
-        </span>
-      </span>
       <MusicStyleControl modes={modes} current={current} onAdvance={onAdvance} />
+      <span className="rain-group">
+        <RainAmbience muted={muted} duck={ambienceDuck} />
+      </span>
     </div>
   );
 }
