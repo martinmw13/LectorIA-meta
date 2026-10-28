@@ -2,15 +2,14 @@
 // so dwell and the min-track hold are testable without timers.
 import {
   MUSIC_CONFIG,
+  bestRanked,
   candidatesFor,
   nextTrack,
-  pickRandomTrack,
   requestStyleChange,
-  rankTracks,
   resolveConfig,
-  scoreTrack,
+  selectScheduled,
 } from "./music";
-import type { MusicConfig, MusicManifest, SceneSignal, SelectEnv, Track } from "./music";
+import type { MusicConfig, MusicManifest, SceneSignal, SelectEnv } from "./music";
 
 export interface SchedulerState {
   currentId: string | null;
@@ -46,48 +45,9 @@ function noChange(state: SchedulerState): ScheduleDecision {
   return { state, switchToId: null, crossfadeSec: 0 };
 }
 
-function topRanked(
-  signal: SceneSignal | null,
-  manifest: MusicManifest,
-  config: MusicConfig,
-  excludeId?: string | null,
-): { id: string; score: number } | null {
-  if (signal === null) {
-    const ids = [...manifest.tracks]
-      .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
-      .filter((t) => t.id !== excludeId);
-    const first = ids[0];
-    return first ? { id: first.id, score: 0 } : null;
-  }
-  const ranked = rankTracks(signal, manifest, config).filter((t) => t.id !== excludeId);
-  const best = ranked[0];
-  return best ? { id: best.id, score: scoreTrack(signal, best, config) } : null;
-}
-
-// Scheduled select: the draw keeps the current
-// track when it is eligible, so rescans do not churn. Dwell is handled
-// by promotion; min-track holds the current pick.
-function evaluateRandom(
-  state: SchedulerState,
-  signal: SceneSignal,
-  styleTracks: Track[],
-  scoped: MusicManifest,
-  nowSec: number,
-  config: MusicConfig,
-  env: SelectEnv,
-): ScheduleDecision {
-  const pick = pickRandomTrack(styleTracks, signal, state.currentId, env.rng, config);
-  if (!pick || pick.id === state.currentId) return noChange(state);
-  if (state.currentId !== null && nowSec - state.currentStartedSec < config.minTrackSec) {
-    return noChange(state);
-  }
-  return {
-    state: { ...state, currentId: pick.id, currentStartedSec: nowSec },
-    switchToId: pick.id,
-    crossfadeSec: state.currentId === null ? 0 : config.crossfadeSec,
-  };
-}
-
+// Scheduled select: the one draw from the selection module keeps the
+// current track when it is eligible, so rescans do not churn. Dwell is
+// handled by promotion; the draw itself holds the min-track pick.
 function evaluateSwitch(
   state: SchedulerState,
   signal: SceneSignal | null,
@@ -100,8 +60,21 @@ function evaluateSwitch(
   if (state.playlist !== null) return noChange(state);
   const styleTracks = candidatesFor(env.selection, manifest);
   if (styleTracks.length === 0) return noChange(state);
-  const scoped = { ...manifest, tracks: styleTracks };
-  return evaluateRandom(state, signal, styleTracks, scoped, nowSec, config, env);
+  const pick = selectScheduled({
+    cands: styleTracks,
+    scene: signal,
+    currentId: state.currentId,
+    currentStartedSec: state.currentStartedSec,
+    nowSec,
+    rng: env.rng,
+    override: config,
+  });
+  if (!pick || pick.id === state.currentId) return noChange(state);
+  return {
+    state: { ...state, currentId: pick.id, currentStartedSec: nowSec },
+    switchToId: pick.id,
+    crossfadeSec: state.currentId === null ? 0 : config.crossfadeSec,
+  };
 }
 
 function promote(
@@ -241,9 +214,9 @@ export function noteTrackEnded(
 ): ScheduleDecision {
   const config = resolveConfig(override ?? MUSIC_CONFIG);
   if (state.playlist !== null) return advancePlaylist(state, manifest, nowSec, config);
-  const styleTracks = candidatesFor(env.selection, manifest).filter((t) => t.id !== endedId);
+  const styleTracks = candidatesFor(env.selection, manifest);
   if (styleTracks.length === 0) return noChange(state);
-  const best = topRanked(signal, { ...manifest, tracks: styleTracks }, config);
+  const best = bestRanked(signal, styleTracks, endedId, config);
   if (!best) return noChange(state);
   return {
     state: {
@@ -343,7 +316,7 @@ export function exitPlaylist(
     overrideSceneId: null,
     playlist: null,
   };
-  const best = topRanked(signal, { ...manifest, tracks: styleTracks }, config);
+  const best = bestRanked(signal, styleTracks, null, config);
   if (!best) return { ...noChange(cleared), state: cleared };
   return {
     state: { ...cleared, currentId: best.id, currentStartedSec: nowSec },

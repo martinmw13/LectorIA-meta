@@ -92,19 +92,35 @@ export function scoreTrack(
   return config.similarity(scene, track, config.weights);
 }
 
+// One id tie-break for every ranking. Lower id wins, so ranking is stable.
+export function compareTrackId(a: { id: string }, b: { id: string }): number {
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+}
+
+export interface RankedTrack {
+  track: Track;
+  score: number;
+}
+
+// One ranking core: each track scored once, best first, ties to lower id.
+export function rankScored(
+  scene: SceneSignal,
+  tracks: Track[],
+  override?: Partial<MusicConfig>,
+): RankedTrack[] {
+  const config = resolveConfig(override);
+  return tracks
+    .map((track) => ({ track, score: config.similarity(scene, track, config.weights) }))
+    .sort((a, b) => b.score - a.score || compareTrackId(a.track, b.track));
+}
+
 // Best score first. Ties go to the lower track id, so ranking is stable.
 export function rankTracks(
   scene: SceneSignal,
   manifest: MusicManifest,
   override?: Partial<MusicConfig>,
 ): Track[] {
-  const config = resolveConfig(override);
-  return [...manifest.tracks].sort((a, b) => {
-    const diff =
-      config.similarity(scene, b, config.weights) - config.similarity(scene, a, config.weights);
-    if (diff !== 0) return diff;
-    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
-  });
+  return rankScored(scene, manifest.tracks, override).map((entry) => entry.track);
 }
 
 // Dominant emotion of a scene: argmax of the renormalized vector, with
