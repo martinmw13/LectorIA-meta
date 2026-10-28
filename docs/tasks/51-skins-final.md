@@ -1,4 +1,4 @@
-# Task 50: final skin ids and one icon fallback rule
+# Task 51: final skin ids and one icon fallback rule
 
 Changed: `SKINS` in `app/skin.ts` is now the final five: `engraving`, `watercolor`, `ink`, `pencil` (Study variant, `/workspace/prototypes/skins-lapiz/study.html`) and `chihiro` (Lantern, `/workspace/prototypes/skins-chihiro/lantern.html`). `comic` and `anime-ghibli` are gone. A stored value of either is no longer valid, so it falls back to `engraving`.
 

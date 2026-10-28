@@ -18,7 +18,8 @@
     "check:isolation": "node scripts/check-isolation.mjs",
     "check:size": "node scripts/check-file-size.mjs",
     "prepare": "git rev-parse --git-dir >/dev/null 2>&1 && git config core.hooksPath .githooks || true",
-    "test:hooks": "node --test scripts/*.test.mjs"
+    "test:hooks": "node --test scripts/*.test.mjs",
+    "muse:stats": "node scripts/muse-stats.mjs"
   },
   "dependencies": {
     "@vercel/blob": "2.8.2",
