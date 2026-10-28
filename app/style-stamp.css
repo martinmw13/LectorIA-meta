@@ -2,10 +2,6 @@
  * switcher. Faces keep their skin paper in both themes (opaque objects
  * stay readable); the pill, focus ring and medal use theme tokens. */
 
-.home-wrap {
-  position: relative;
-}
-
 .style-stamp-home {
   position: absolute;
   top: 2px;

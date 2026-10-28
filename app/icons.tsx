@@ -6,13 +6,20 @@ import { RAIN_ICONS_EXTRA } from "./icons-rain-extra";
 export type IconName =
   | "moon"
   | "sun"
+  | "eye"
   | "eye-off"
   | "pencil"
   | "picture"
   | "expand"
   | "read-aloud"
   | "ink-circle"
+  | "upload"
+  | "key"
+  | "external"
+  | "heart"
+  | "book"
   | "brush"
+  | "check-box"
   | "vault"
   | RainIconName;
 
@@ -40,6 +47,17 @@ export const BASE_ICONS: Record<string, IconDef> = {
       <>
         <circle cx="8" cy="8" r="3.2" />
         <path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M12.6 3.4l-1.4 1.4M4.8 11.2 3.4 12.6" />
+      </>
+    ),
+  },
+  eye: {
+    width: 24,
+    height: 24,
+    viewBox: "0 0 24 24",
+    body: (
+      <>
+        <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+        <circle cx="12" cy="12" r="2.8" />
       </>
     ),
   },
@@ -122,6 +140,79 @@ export const BASE_ICONS: Record<string, IconDef> = {
     height: 44,
     viewBox: "0 0 100 44",
     body: <path d="M50 -2 C 80 -3, 104 10, 100 28 C 96 44, 20 46, 4 30 C -6 16, 18 1, 56 2" />,
+  },
+  // Home spread set: 24-grid stroke icons, stroked by the caller in
+  // currentColor. check-box carries the ob-tick hook the home CSS flips.
+  upload: {
+    width: 24,
+    height: 24,
+    viewBox: "0 0 24 24",
+    body: (
+      <>
+        <path d="M12 15V3" />
+        <path d="M7 8l5-5 5 5" />
+        <path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4" />
+      </>
+    ),
+  },
+  key: {
+    width: 24,
+    height: 24,
+    viewBox: "0 0 24 24",
+    body: (
+      <>
+        <circle cx="7.5" cy="15.5" r="4" />
+        <path d="M10.5 12.5 20 3" />
+        <path d="M15.5 7.5 18 10" />
+      </>
+    ),
+  },
+  external: {
+    width: 24,
+    height: 24,
+    viewBox: "0 0 24 24",
+    body: (
+      <>
+        <path d="M14 4h6v6" />
+        <path d="M20 4 10 14" />
+        <path d="M20 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h5" />
+      </>
+    ),
+  },
+  heart: {
+    width: 24,
+    height: 24,
+    viewBox: "0 0 24 24",
+    body: (
+      <path d="M12 20S4.5 15.6 3 11.4C1.9 8.3 3.8 5 7 5c2 0 3.4 1.1 5 3.3C13.6 6.1 15 5 17 5c3.2 0 5.1 3.3 4 6.4C19.5 15.6 12 20 12 20Z" />
+    ),
+  },
+  book: {
+    width: 24,
+    height: 24,
+    viewBox: "0 0 24 24",
+    body: (
+      <>
+        <path d="M12 6.5C10 5 7 4.5 4 4.5v14c3 0 6 .5 8 2 2-1.5 5-2 8-2v-14c-3 0-6 .5-8 2Z" />
+        <path d="M12 6.5v14" />
+      </>
+    ),
+  },
+  "check-box": {
+    width: 24,
+    height: 24,
+    viewBox: "0 0 24 24",
+    body: (
+      <>
+        <rect x="3.5" y="3.5" width="17" height="17" />
+        <path
+          className="ob-tick"
+          d="M7 12.6l3.6 3.6L17.5 8.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </>
+    ),
   },
 };
 

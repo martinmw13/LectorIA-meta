@@ -1,4 +1,4 @@
-# 63: style switcher stamp
+# 64: style switcher stamp
 
 The app has six skins but no switcher except `?skin=` in the URL. Add one
 shared `<StyleStamp>` ex-libris button: large with a skin-name ring on the

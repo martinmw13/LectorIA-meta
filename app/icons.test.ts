@@ -10,6 +10,9 @@ import { DEFAULT_SKIN, SKINS } from "./skin";
 // migrates to the registry. app/folio/picture-draw.tsx is the Picture this
 // drawing canvas, not an icon. app/folio/picture-button.tsx holds the
 // per-skin button art until it moves into the registry as a skinned icon.
+// app/home/home-defs.tsx holds SVG filter defs, not icons.
+// app/home/spread.tsx holds decorative per-skin art (lantern, ink
+// underline, read arrows), shown per skin through page CSS.
 // app/style-stamp.tsx holds the dynamic skin-name ring: a textPath whose
 // text changes per skin cannot live in the static registry.
 const ALLOWLIST = new Set([
@@ -17,6 +20,8 @@ const ALLOWLIST = new Set([
   "app/player.tsx",
   "app/folio/picture-draw.tsx",
   "app/folio/picture-button.tsx",
+  "app/home/home-defs.tsx",
+  "app/home/spread.tsx",
   "app/style-stamp.tsx",
 ]);
 
