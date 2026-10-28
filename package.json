@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "check:secrets": "node scripts/check-secrets.mjs",
+    "check:isolation": "node scripts/check-isolation.mjs",
     "check:size": "node scripts/check-file-size.mjs",
     "prepare": "git rev-parse --git-dir >/dev/null 2>&1 && git config core.hooksPath .githooks || true",
     "test:hooks": "node --test scripts/*.test.mjs"
