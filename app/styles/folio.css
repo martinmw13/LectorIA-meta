@@ -36,8 +36,7 @@ scrolls at desktop size; the reading column scrolls inside itself. */
   white-space: nowrap;
 }
 
-.wordmark em,
-.home-brand em {
+.wordmark em {
   font-style: normal;
 }
 

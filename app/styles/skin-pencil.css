@@ -51,7 +51,7 @@ html[data-skin="pencil"] .top-center {
   color: var(--color-text-muted);
 }
 
-html[data-skin="pencil"] :is(.wordmark, .home-brand) {
+html[data-skin="pencil"] .wordmark {
   font-family: var(--font-pencil-title);
   font-weight: 600;
   font-size: 26px;

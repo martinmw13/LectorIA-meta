@@ -18,10 +18,9 @@ export type MusicStyleControlProps = {
 // One pop cycle: how long the newly current button replays its animation.
 const ANIM_MS = 450;
 
-function stickerFor(id: string, label: string, art: HeroArt | null): string {
+function stickerFor(id: string, label: string, art: HeroArt): string {
   const piano = /piano/i.test(id) || /piano/i.test(label);
-  if (art) return piano ? art.piano : art.orchestra;
-  return piano ? "/art/stickers/piano.svg" : "/art/stickers/violin.svg";
+  return piano ? art.piano : art.orchestra;
 }
 
 export function MusicStyleControl({ modes, current, onAdvance }: MusicStyleControlProps) {
@@ -57,7 +56,7 @@ export function MusicStyleControl({ modes, current, onAdvance }: MusicStyleContr
   return (
     <>
       {styles.length >= 2 ? (
-        <span className="stickers" role="group" aria-label="Music style" data-art={art ? "hero" : undefined}>
+        <span className="stickers" role="group" aria-label="Music style" data-art="hero">
           {styles.map((s) => (
             <span className="sticker-wrap" key={s.id}>
               <button
@@ -88,7 +87,7 @@ export function MusicStyleControl({ modes, current, onAdvance }: MusicStyleContr
             title="Just play Chopin"
           >
             <img
-              src={art?.chopin ?? "/art/chopin-just-play-me.png"}
+              src={art.chopin}
               alt="Just play Chopin"
               width={40}
               height={40}

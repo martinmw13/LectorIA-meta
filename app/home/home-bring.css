@@ -92,6 +92,7 @@ a.ob-action { text-decoration: underline; }
 .ob-mini { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 10px; align-items: start; margin-top: 4px; }
 .ob-mini-cover { width: 56px; height: 56px; border-radius: 6px; object-fit: cover; display: block; }
 .ob-mini-mono { width: 56px; height: 56px; border-radius: 6px; background: var(--paper-2); border: 1px solid var(--muted); display: flex; align-items: center; justify-content: center; font-family: var(--display); font-size: 24px; color: var(--muted); }
+html:is([data-skin="watercolor"], [data-skin="ink"]) .ob-mini-mono { font-weight: 500; }
 .ob-mini-title { font-family: var(--display); font-size: 17px; margin: 0; font-weight: 700; line-height: 1.2; }
 html[data-skin="engraving"] .ob-mini-title, html[data-skin="pencil"] .ob-mini-title { font-weight: 400; font-style: italic; }
 html[data-skin="comic"] .ob-mini-title { font-weight: 400; letter-spacing: .03em; }
