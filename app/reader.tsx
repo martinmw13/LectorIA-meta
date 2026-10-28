@@ -15,6 +15,7 @@ import { NarrationProvider, useNarration } from "./narration/context";
 import { ReadAloud } from "./narration/read-aloud";
 import type { NarrationChapterEntry } from "./narration/types";
 import { Player } from "./player";
+import { ReaderChat } from "./chat/reader-chat";
 import { THEME_KEY, TopLine } from "./folio/chrome";
 import { initialTheme } from "./theme";
 import { DevPanel } from "./folio/dev-panel";
@@ -339,6 +340,9 @@ export function Reader({
 
   const bookIndex = routeSceneId ? scenes.findIndex((s) => s.id === routeSceneId) : -1;
   const current = routeSceneId ? byId.get(routeSceneId) ?? null : null;
+  // Reader chat position: the scene in view, or the first scene on load.
+  const chatScene = (routeSceneId ? scenes.find((s) => s.id === routeSceneId) : null) ?? scenes[0];
+  const chatChapter = chapters.find((c) => c.ch === chatScene?.ch) ?? chapters[0];
   const devBars = current
     ? EMOTIONS.map((id) => ({ label: DEV_LABELS[id], value: current.vector[id] ?? 0 }))
     : [];
@@ -378,6 +382,14 @@ export function Reader({
           onEnded={ended}
           playlistOn={playlistOn}
         />
+      {chatScene && chatChapter && (
+        <ReaderChat
+          bookId="oz"
+          upToN={chatScene.endN}
+          chapter={chatChapter.ch}
+          chapterTitle={chatChapter.title}
+        />
+      )}
       <DevPanel
         open={devOpen}
         onClose={() => setDevOpen(false)}

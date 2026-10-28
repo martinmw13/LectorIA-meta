@@ -13,6 +13,8 @@ import { DEFAULT_SKIN, SKINS } from "./skin";
 // app/home/home-defs.tsx holds SVG filter defs, not icons.
 // app/home/spread.tsx holds decorative per-skin art (lantern, ink
 // underline, read arrows), shown per skin through page CSS.
+// app/chat/chat-bubble.tsx holds the chat launcher bubble, restyled per
+// skin by CSS classes on its paths, like picture-button.tsx.
 const ALLOWLIST = new Set([
   "app/icons.tsx",
   "app/player.tsx",
@@ -20,6 +22,7 @@ const ALLOWLIST = new Set([
   "app/folio/picture-button.tsx",
   "app/home/home-defs.tsx",
   "app/home/spread.tsx",
+  "app/chat/chat-bubble.tsx",
 ]);
 
 function walk(dir: string, out: string[] = []): string[] {
