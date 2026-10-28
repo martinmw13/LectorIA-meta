@@ -10,11 +10,18 @@ import { DEFAULT_SKIN, SKINS } from "./skin";
 // migrates to the registry. app/folio/picture-draw.tsx is the Picture this
 // drawing canvas, not an icon. app/folio/picture-button.tsx holds the
 // per-skin button art until it moves into the registry as a skinned icon.
+// app/home/home-defs.tsx holds SVG filter defs, not icons.
+// app/home/spread.tsx holds decorative per-skin art (lantern, ink
+// underline, read arrows), shown per skin through page CSS.
+// app/home/style-stamp.tsx holds the ring-text dial, not an icon.
 const ALLOWLIST = new Set([
   "app/icons.tsx",
   "app/player.tsx",
   "app/folio/picture-draw.tsx",
   "app/folio/picture-button.tsx",
+  "app/home/home-defs.tsx",
+  "app/home/spread.tsx",
+  "app/home/style-stamp.tsx",
 ]);
 
 function walk(dir: string, out: string[] = []): string[] {
