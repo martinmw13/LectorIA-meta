@@ -4,7 +4,7 @@
 // they never touch music state.
 "use client";
 
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { buildNavIndex, navReducer, subPageCount, subPageKind, textPageAt } from "@/core/reader";
 import type { NavAction, SceneView } from "@/core/reader";
@@ -12,6 +12,8 @@ import { effectiveImageStylePref, loadImageStylePref, saveImageStylePref } from 
 import type { ImageStylePref } from "../image-style";
 import { useSkin } from "../use-skin";
 import { BandPager, Divider } from "../folio/chrome";
+import { useNarration } from "../narration/context";
+import { ReadMark, useReadSync } from "../narration/read-sync";
 import { figuresAfter, groupFiguresByEndN, pageOfOrdinal } from "../folio/figure-placement";
 import { ImagePane } from "../folio/image-pane";
 import { InlineFigureView, SelectionPopover } from "../folio/inline-figures";
@@ -123,7 +125,28 @@ export function ScenePage({
   const gateOpener = useRef<HTMLElement | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const readColRef = useRef<HTMLDivElement | null>(null);
+  const bodyTextRef = useRef<HTMLDivElement | null>(null);
   const figEls = useRef(new Map<string, HTMLElement>());
+  // Last hand navigation, for the auto-turn gate: the voice keeps
+  // reading but never yanks the page within ~8 s of a manual move.
+  const lastManualRef = useRef<number | null>(null);
+  const narration = useNarration();
+  const sceneStartN = view.pages[0]?.startN ?? 0;
+  const sceneEndN = view.pages[view.pages.length - 1]?.endN ?? 0;
+
+  useEffect(() => {
+    narration.registerScene({ sceneId: view.sceneId, ch: view.ch, startN: sceneStartN, endN: sceneEndN });
+  }, [narration, view.sceneId, view.ch, sceneStartN, sceneEndN]);
+
+  // One node serves both the picture popover and the read-along mark.
+  const viewRef = pic.viewRef;
+  const setBodyText = useCallback(
+    (node: HTMLDivElement | null) => {
+      bodyTextRef.current = node;
+      viewRef(node);
+    },
+    [viewRef],
+  );
   const kind = subPageKind(page, view.pages.length, cover, end);
   const sub = kind === "text" ? (view.pages[textPageAt(page, cover)] ?? view.pages[0]) : undefined;
   const textIndex = textPageAt(page, cover);
@@ -189,6 +212,7 @@ export function ScenePage({
   const figsByN = useMemo(() => groupFiguresByEndN(pic.figures), [pic.figures]);
 
   function gotoFigure(fig: InlineFigure) {
+    lastManualRef.current = Date.now();
     const at = pageOfOrdinal(view.pages, fig.endN);
     if (at < 0) return;
     setPage(at + (cover ? 1 : 0));
@@ -211,6 +235,7 @@ export function ScenePage({
   // route push, a same-scene result means a client sub-page move.
   function move(action: NavAction) {
     pic.hidePopover();
+    lastManualRef.current = Date.now();
     const next = navReducer({ sceneId: view.sceneId, page }, action, index);
     if (next.sceneId !== view.sceneId) {
       hasNavigated = true;
@@ -231,6 +256,25 @@ export function ScenePage({
   function goPrev() {
     move({ kind: "prev" });
   }
+
+  // Read-along follow: the voice turns the sub-page on its own. This
+  // path never stamps a manual move, so the gate lets it through.
+  const syncEnabled = narration.on && narration.manifest !== null && kind === "text";
+  const { mark, treatment } = useReadSync({
+    enabled: syncEnabled,
+    audioRef: narration.audioRef,
+    manifest: narration.manifest,
+    span: narration.span,
+    containerRef: bodyTextRef,
+    scrollerRef: readColRef,
+    pages: view.pages,
+    textPage: textIndex,
+    onTurnPage: (textIndex) => {
+      setPage(textIndex + (cover ? 1 : 0));
+      readColRef.current?.scrollTo(0, 0);
+    },
+    lastManualRef,
+  });
 
   // Scene entry resets orientation; sub-page moves keep the heading.
   useEffect(() => {
@@ -391,10 +435,11 @@ export function ScenePage({
                 {view.pages.length > 1 ? ` · Page ${textIndex + 1} of ${view.pages.length}` : ""}
               </span>
             </div>
-            <div className={`body-text${textIndex === 0 ? " dropcap" : ""}`} ref={pic.viewRef}>
+            <div className={`body-text${textIndex === 0 ? " dropcap" : ""}`} ref={setBodyText}>
+              <ReadMark mark={syncEnabled ? mark : null} treatment={treatment} />
               {sub?.paragraphs.map((p, i, arr) => (
                 <Fragment key={p.id}>
-                  <p id={p.id} data-n={p.n} data-cont={p.cont ? true : undefined}>
+                  <p id={p.id} data-n={p.n} data-cont={p.cont ? true : undefined} data-from={p.from ?? 0}>
                     {p.text}
                   </p>
                   {/* A figure for n lands after its last visible fragment. */}

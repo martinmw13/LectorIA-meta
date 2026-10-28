@@ -3,12 +3,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { currentMode, musicModes, parseManifest } from "@/core/music";
-import type { MusicManifest, MusicModeId, SceneSignal } from "@/core/music";
+import type { MusicManifest, MusicMode, MusicModeId, SceneSignal, Track } from "@/core/music";
 import { EMOTIONS } from "@/core/types";
 import { dispatch, startSession } from "@/core/music-session";
 import type { MusicIntent, MusicSession, SessionView } from "@/core/music-session";
 import { nextSceneEntry } from "@/core/reader";
 import { DEFAULT_VOLUME, createMusicPrefsStore } from "./music-prefs";
+import { NarrationProvider, useNarration } from "./narration/context";
+import { ReadAloud } from "./narration/read-aloud";
+import type { NarrationChapterEntry } from "./narration/types";
 import { Player } from "./player";
 import { THEME_KEY, TopLine } from "./folio/chrome";
 import { initialTheme } from "./theme";
@@ -17,6 +20,8 @@ import { DevPanel } from "./folio/dev-panel";
 export interface SlimScene {
   id: string;
   ch: number;
+  startN: number;
+  endN: number;
   emotion: SceneSignal | null;
 }
 
@@ -41,17 +46,91 @@ const DEV_LABELS: Record<(typeof EMOTIONS)[number], string> = {
 // music on scene entry only, from the route id. Sub-page moves never
 // reach the session. Params can lag a render, so the last observed id
 // is compared before every scene entry.
+// Band contents run inside the narration provider so the music duck
+// and the read-aloud control share the controller.
+function BandPlay({
+  musicFailed,
+  empty,
+  track,
+  replayNonce,
+  fadeSec,
+  canPrev,
+  onPrev,
+  canSkip,
+  onSkip,
+  volume,
+  muted,
+  onVolumeChange,
+  onMutedChange,
+  modes,
+  current,
+  onAdvance,
+  onEnded,
+  playlistOn,
+}: {
+  musicFailed: boolean;
+  empty: boolean;
+  track: Track | null;
+  replayNonce: number;
+  fadeSec: number;
+  canPrev: boolean;
+  onPrev: () => void;
+  canSkip: boolean;
+  onSkip: () => void;
+  volume: number;
+  muted: boolean;
+  onVolumeChange: (volume: number) => void;
+  onMutedChange: (muted: boolean) => void;
+  modes: MusicMode[];
+  current: MusicModeId | null;
+  onAdvance: (to?: MusicModeId) => void;
+  onEnded: (trackId: string) => void;
+  playlistOn: boolean;
+}) {
+  const { duck } = useNarration();
+  return (
+    <div className="band-play">
+      <ReadAloud />
+      {musicFailed || empty ? (
+        <p className="player-note">The music is resting. The book is all yours.</p>
+      ) : (
+        <Player
+          track={track}
+          replayNonce={replayNonce}
+          fadeSec={fadeSec}
+          canPrev={canPrev}
+          onPrev={onPrev}
+          canSkip={canSkip}
+          onSkip={onSkip}
+          volume={volume}
+          muted={muted}
+          onVolumeChange={onVolumeChange}
+          onMutedChange={onMutedChange}
+          modes={modes}
+          current={current}
+          onAdvance={onAdvance}
+          onEnded={onEnded}
+          playlistOn={playlistOn}
+          duck={duck}
+        />
+      )}
+    </div>
+  );
+}
+
 export function Reader({
   scenes,
   chapters,
   bookTitle,
   bookAuthor,
+  narration,
   children,
 }: {
   scenes: SlimScene[];
   chapters: ChapterJump[];
   bookTitle: string;
   bookAuthor: string;
+  narration: NarrationChapterEntry[];
   children: React.ReactNode;
 }) {
   const routeParams = useParams();
@@ -260,43 +339,48 @@ export function Reader({
     ? EMOTIONS.map((id) => ({ label: DEV_LABELS[id], value: current.vector[id] ?? 0 }))
     : [];
 
+  const sceneOrder = useMemo(() => scenes.map((s) => s.id), [scenes]);
+  const advanceScene = useCallback(
+    (nextSceneId: string) => {
+      router.push(`/leer/${nextSceneId}`);
+    },
+    [router],
+  );
+
   return (
-    <div className="folio">
-      <TopLine
-        bookTitle={bookTitle}
-        author={bookAuthor}
-        ch={routeSceneId ? (scenes[bookIndex]?.ch ?? chapters[0]?.ch ?? 1) : 1}
-        chaptersTotal={chapters.length}
-        chapters={chapters}
-        onJumpChapter={jumpChapter}
-        theme={theme}
-        onToggleTheme={toggleTheme}
-      />
-      {children}
-      <div className="band-play">
-        {musicFailed || empty ? (
-          <p className="player-note">The music is resting. The book is all yours.</p>
-        ) : (
-          <Player
-            track={track}
-            replayNonce={view?.replayNonce ?? 0}
-            fadeSec={view?.fadeSec ?? 0}
-            canPrev={canPrev}
-            onPrev={goPrev}
-            canSkip={canSkip}
-            onSkip={skip}
-            volume={volume}
-            muted={muted}
-            onVolumeChange={changeVolume}
-            onMutedChange={changeMuted}
-            modes={modes}
-            current={modeCurrent}
-            onAdvance={advanceMode}
-            onEnded={ended}
-            playlistOn={playlistOn}
-          />
-        )}
-      </div>
+    <NarrationProvider entries={narration} sceneOrder={sceneOrder} onAdvanceScene={advanceScene}>
+      <div className="folio">
+        <TopLine
+          bookTitle={bookTitle}
+          author={bookAuthor}
+          ch={routeSceneId ? (scenes[bookIndex]?.ch ?? chapters[0]?.ch ?? 1) : 1}
+          chaptersTotal={chapters.length}
+          chapters={chapters}
+          onJumpChapter={jumpChapter}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+        />
+        {children}
+        <BandPlay
+          musicFailed={musicFailed}
+          empty={empty}
+          track={track}
+          replayNonce={view?.replayNonce ?? 0}
+          fadeSec={view?.fadeSec ?? 0}
+          canPrev={canPrev}
+          onPrev={goPrev}
+          canSkip={canSkip}
+          onSkip={skip}
+          volume={volume}
+          muted={muted}
+          onVolumeChange={changeVolume}
+          onMutedChange={changeMuted}
+          modes={modes}
+          current={modeCurrent}
+          onAdvance={advanceMode}
+          onEnded={ended}
+          playlistOn={playlistOn}
+        />
       <DevPanel
         open={devOpen}
         onClose={() => setDevOpen(false)}
@@ -306,6 +390,8 @@ export function Reader({
         tempo={current?.tempo ?? null}
         trackTitle={track?.title ?? "No track cued"}
       />
-    </div>
+      </div>
+    </NarrationProvider>
   );
 }
+
