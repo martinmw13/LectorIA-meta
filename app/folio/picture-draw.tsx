@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { PictureSkin } from "./picture-skin";
 import { DRAW_NOTE, DRAW_STATUS, stillStrokes, strokesForSkin } from "./picture-draw-paths";
+import { Paper, Tool } from "./picture-draw-tools";
 
 function useReducedMotion(): boolean {
   // Start still so server HTML matches; the real value applies on mount.
@@ -19,67 +20,6 @@ function useReducedMotion(): boolean {
     return () => mq.removeEventListener("change", onChange);
   }, []);
   return reduced;
-}
-
-function Paper({ skin, grainId }: { skin: PictureSkin; grainId: string }) {
-  if (skin === "watercolor") {
-    return (
-      <g>
-        <path
-          d="M3 4Q80 0 150 3T297 2L299 120Q296 250 299 377Q150 381 2 378Q-1 250 2 120Z"
-          fill="#FFFDF8"
-          stroke="#E4DCCB"
-        />
-        <rect width="300" height="380" filter={`url(#${grainId})`} opacity="0.5" />
-      </g>
-    );
-  }
-  if (skin === "ink") {
-    return (
-      <g>
-        <rect width="300" height="380" fill="#FFFFFF" stroke="#E3E8F2" />
-        {Array.from({ length: 14 }, (_, i) => 34 + i * 24).map((y) => (
-          <path key={y} d={`M0 ${y}H300`} stroke="#0866FF" strokeOpacity="0.09" />
-        ))}
-        <path d="M38 0V380" stroke="#E5484D" strokeOpacity="0.25" />
-      </g>
-    );
-  }
-  return (
-    <g>
-      <rect width="300" height="380" fill="#F7F1DE" />
-      <rect width="300" height="380" filter={`url(#${grainId})`} opacity="0.9" />
-      <rect x="12" y="12" width="276" height="356" fill="none" stroke="#2A241C" strokeWidth="0.6" opacity="0.35" />
-    </g>
-  );
-}
-
-function Tool({ skin }: { skin: PictureSkin }) {
-  if (skin === "watercolor") {
-    return (
-      <g>
-        <path d="M0 0C-1 -5 1 -10 5 -13C9 -10 10 -5 0 0Z" fill="#7FB0FF" stroke="#1F2A44" strokeWidth="0.8" />
-        <path d="M4 -12L9 -21L14 -18L9 -9Z" fill="#B7BEC9" stroke="#1F2A44" strokeWidth="0.8" />
-        <path d="M11.5 -19.5L34 -60" stroke="#1F2A44" strokeWidth="5.2" strokeLinecap="round" />
-      </g>
-    );
-  }
-  if (skin === "ink") {
-    return (
-      <g>
-        <path d="M0 0L3.4 -7.2L6.6 -5.6Z" fill="#1B1F2A" />
-        <path d="M3.4 -7.2L22 -46L28.6 -42.8L6.6 -5.6Z" fill="#fff" stroke="#0866FF" strokeWidth="1.5" strokeLinejoin="round" />
-        <path d="M19 -40L22.5 -47.5L29 -44.3L25.5 -36.8Z" fill="#0866FF" />
-      </g>
-    );
-  }
-  return (
-    <g>
-      <path d="M0 0L14 -26" stroke="#9AA1AA" strokeWidth="1.2" />
-      <path d="M12.5 -23L28 -52" stroke="#2A241C" strokeWidth="5" strokeLinecap="round" />
-      <path d="M13 -24L27 -50" stroke="#6B4A2A" strokeWidth="3.2" strokeLinecap="round" />
-    </g>
-  );
 }
 
 interface FlatStroke {

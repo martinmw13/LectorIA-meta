@@ -13,7 +13,7 @@ import {
 } from "./image-style";
 
 describe("presets", () => {
-  it("lists the ten presets with labels", () => {
+  it("lists the twelve presets with labels", () => {
     expect(IMAGE_STYLE_PRESETS.map((p) => [p.id, p.label])).toEqual([
       ["denslow", "Denslow ink (1900)"],
       ["realistic", "Realistic"],
@@ -25,6 +25,8 @@ describe("presets", () => {
       ["oil", "Oil painting"],
       ["woodcut", "Woodcut"],
       ["pen-pencil", "Pen and pencil"],
+      ["graphite", "Graphite study"],
+      ["lantern-dusk", "Lantern dusk"],
     ]);
     expect(DEFAULT_IMAGE_STYLE).toBe("denslow");
     expect(MAX_CUSTOM_STYLE_CHARS).toBe(60);
@@ -155,12 +157,14 @@ describe("styleSegment", () => {
 });
 
 describe("skin defaults", () => {
-  it("maps the four decided skins to valid presets", () => {
+  it("maps all six skins to valid presets", () => {
     expect(SKIN_DEFAULT_IMAGE_STYLE).toEqual({
       engraving: "denslow",
       watercolor: "watercolor",
       ink: "pen-pencil",
       comic: "comic",
+      pencil: "graphite",
+      chihiro: "lantern-dusk",
     });
     const ids = new Set(IMAGE_STYLE_PRESETS.map((p) => p.id));
     for (const id of Object.values(SKIN_DEFAULT_IMAGE_STYLE)) {
@@ -185,13 +189,13 @@ describe("resolveEffectiveStyle", () => {
     expect(resolveEffectiveStyle(undefined, "watercolor")).toEqual({ preset: "watercolor" });
     expect(resolveEffectiveStyle(undefined, "ink")).toEqual({ preset: "pen-pencil" });
     expect(resolveEffectiveStyle(undefined, "comic")).toEqual({ preset: "comic" });
+    expect(resolveEffectiveStyle(undefined, "pencil")).toEqual({ preset: "graphite" });
+    expect(resolveEffectiveStyle(undefined, "chihiro")).toEqual({ preset: "lantern-dusk" });
   });
 
-  it("falls back to denslow for default, unmapped, or unknown skins", () => {
+  it("falls back to denslow for default or unknown skins", () => {
     for (const skin of [
       "default",
-      "pencil",
-      "chihiro",
       "anime-ghibli",
       "realistic",
       "nope",
@@ -232,7 +236,7 @@ describe("styleDescriptorLine", () => {
   });
 
   it("keeps the new skin presets guarded by the silver shoes and no 1939 tail", () => {
-    for (const id of ["pen-pencil", "realistic", "comic", "anime"] as const) {
+    for (const id of ["pen-pencil", "realistic", "comic", "anime", "graphite", "lantern-dusk"] as const) {
       const line = styleDescriptorLine({ kind: "preset", id });
       expect(line).toContain("silver shoes");
       expect(line).toContain("1939");
@@ -242,6 +246,9 @@ describe("styleDescriptorLine", () => {
     expect(styleDescriptorLine({ kind: "preset", id: "realistic" })).toContain(
       "realistic painterly illustration",
     );
+    expect(styleDescriptorLine({ kind: "preset", id: "graphite" })).toContain("no color.");
+    expect(styleDescriptorLine({ kind: "preset", id: "lantern-dusk" })).toMatch(/no purple\. /);
+    expect(styleDescriptorLine({ kind: "preset", id: "lantern-dusk" }).toLowerCase()).not.toMatch(/ghibli|studio/);
   });
 
   it("frames custom text as a description, not an instruction", () => {

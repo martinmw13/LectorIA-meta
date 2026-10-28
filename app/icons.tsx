@@ -1,6 +1,7 @@
 import type { ReactNode, SVGProps } from "react";
 import { DEFAULT_SKIN, type SkinId } from "./skin";
 import { RAIN_ICONS, type RainIconName } from "./icons-rain";
+import { RAIN_ICONS_EXTRA } from "./icons-rain-extra";
 
 export type IconName =
   | "moon"
@@ -93,6 +94,19 @@ export const BASE_ICONS: Record<string, IconDef> = {
       </>
     ),
   },
+  // Paintbrush for the style-stamp medal. Callers set the stroke.
+  brush: {
+    width: 24,
+    height: 24,
+    viewBox: "0 0 24 24",
+    body: (
+      <>
+        <path d="M20.5 3.5 14 10" />
+        <path d="M13.2 10.8C10 12 6.6 15 5.2 19.3L4.5 21l1.7-.7c4.3-1.4 7.3-4.8 8.5-8Z" />
+        <path d="M12.6 9.4l2.1 2.1" />
+      </>
+    ),
+  },
   // Loose hand-drawn circle for the ink-doodle word mark. Sized by the
   // caller with preserveAspectRatio="none" so it hugs the word rect.
   "ink-circle": {
@@ -158,18 +172,6 @@ export const BASE_ICONS: Record<string, IconDef> = {
       </>
     ),
   },
-  brush: {
-    width: 24,
-    height: 24,
-    viewBox: "0 0 24 24",
-    body: (
-      <>
-        <path d="M20.5 3.5 14 10" />
-        <path d="M13.2 10.8C10 12 6.6 15 5.2 19.3L4.5 21l1.7-.7c4.3-1.4 7.3-4.8 8.5-8Z" />
-        <path d="M12.6 9.4l2.1 2.1" />
-      </>
-    ),
-  },
   "check-box": {
     width: 24,
     height: 24,
@@ -192,9 +194,9 @@ export const ICON_SETS: Record<SkinId, Partial<Record<IconName, IconDef>>> = {
   engraving: RAIN_ICONS.engraving ?? {},
   watercolor: RAIN_ICONS.watercolor ?? {},
   ink: RAIN_ICONS.ink ?? {},
-  pencil: {},
-  comic: {},
-  chihiro: {},
+  pencil: RAIN_ICONS_EXTRA.pencil,
+  comic: RAIN_ICONS_EXTRA.comic,
+  chihiro: RAIN_ICONS_EXTRA.chihiro,
 };
 
 // The one fallback rule: a skin draws its own icon when it has one,

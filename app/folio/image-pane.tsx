@@ -5,8 +5,8 @@
 import { useRef, useState } from "react";
 import { PICTURE_COPY } from "./picture-copy";
 import { PictureButton } from "./picture-button";
-import { PictureDraw, usePictureLoaded } from "./picture-draw";
-import { usePictureSkin, usePictureSkinId } from "./picture-skin";
+import { usePictureSkin } from "./picture-skin";
+import { PictureSlot } from "./picture-slot";
 import type { SceneCard } from "./use-pictures";
 
 export function ImagePane({
@@ -31,10 +31,6 @@ export function ImagePane({
   const [expanded, setExpanded] = useState(false);
   const timer = useRef<number | null>(null);
   const skin = usePictureSkin();
-  const skinId = usePictureSkinId();
-  // Frozen drawing stays under the image until it loads; the reveal
-  // class only applies after load so it plays over the paper, not a gap.
-  const { loaded, imgRef, markLoaded } = usePictureLoaded(card.phase === "ready" ? card.url : "");
 
   function armExpand() {
     if (timer.current !== null) return;
@@ -81,37 +77,33 @@ export function ImagePane({
               </p>
             ) : null}
           </>
-        ) : card.phase === "loading" ? (
-          <div className="pane-loading" role="status" data-picture-skin={skinId}>
-            <PictureDraw skin={skin} />
-          </div>
-        ) : card.phase === "ready" ? (
+        ) : card.phase === "loading" || card.phase === "ready" ? (
           <>
-            {loaded ? null : (
-              <div className="pane-loading" data-picture-skin={skinId}>
-                <PictureDraw skin={skin} frozen />
-              </div>
-            )}
-            <img
-              ref={imgRef}
-              onLoad={markLoaded}
-              onError={markLoaded}
-              className={loaded ? `pane-img rv-${skin}` : "pane-img pic-waiting"}
-              src={card.url}
-              alt={card.caption}
-              tabIndex={0}
-              onMouseEnter={armExpand}
-              onMouseLeave={cancelExpand}
-              onFocus={cancelExpand}
-              onClick={(e) => {
-                cancelExpand();
-                onOpen(card.url, card.caption, e.currentTarget);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") onOpen(card.url, card.caption, e.currentTarget);
-              }}
+            <PictureSlot
+              phase={card.phase}
+              url={card.phase === "ready" ? card.url : ""}
+              alt={card.phase === "ready" ? card.caption : ""}
+              className="pane-slot"
+              imgProps={
+                card.phase === "ready"
+                  ? {
+                      className: "pane-img",
+                      tabIndex: 0,
+                      onMouseEnter: armExpand,
+                      onMouseLeave: cancelExpand,
+                      onFocus: cancelExpand,
+                      onClick: (e) => {
+                        cancelExpand();
+                        onOpen(card.url, card.caption, e.currentTarget);
+                      },
+                      onKeyDown: (e) => {
+                        if (e.key === "Enter") onOpen(card.url, card.caption, e.currentTarget);
+                      },
+                    }
+                  : undefined
+              }
             />
-            {expanded ? (
+            {expanded && card.phase === "ready" ? (
               <>
                 <div className="expand-dim" aria-hidden="true" />
                 <img

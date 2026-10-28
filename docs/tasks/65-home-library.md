@@ -1,4 +1,4 @@
-# 62: home library port
+# 65: home library port
 
 Port the chosen 05a open-book prototype into `app/page.tsx`: shelf grid
 on the left page, the selected book's plate on the right, the ex-libris
