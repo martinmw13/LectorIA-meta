@@ -27,8 +27,11 @@ false); `/` redirects to the first scene. The layout mounts the music
 container once and passes slim metadata for all scenes: id, chapter,
 and emotion triple only. Each scene page builds its view with
 `buildSceneView` and ships only that scene's text, its chapter title,
-and neighbor ids. Sub-pages come from `paginateScene` (250 words, split
-at paragraph boundaries). The pager moves sub-pages in client state and
+and neighbor ids. Sub-pages come from `paginateScene`, which closes a
+page when the next paragraph would pass 250 words or the line budget
+(`FIRST_PAGE_LINES` 16 on page one, `LINES_PER_PAGE` 17 after, each
+paragraph costing `ceil(chars / CHARS_PER_LINE)` lines with
+`CHARS_PER_LINE` 68), split at paragraph boundaries. The pager moves sub-pages in client state and
 pushes routes with `router.push`, never `<Link>`; going back lands on
 the previous scene's last sub-page through a one-shot client flag, never
 a URL param, so prerendered pages stay static. The client never
@@ -36,9 +39,8 @@ receives other scenes' text, titles, or summaries. The progress line
 reads `Chapter 1 · The Cyclone`, a spaced separator, then `Scene 1 of 4
 · Page 1 of 3` as two spans on one line. Book type is 1.1875rem / 1.7
 with no paragraph gaps and a 1.5em first-line indent on following
-paragraphs. The tightened chrome fits a typical sub-page at 1280×800
-without scroll; the densest full-budget pages still need some window
-scroll (23+ lines of text alone exceed the 800 px budget).
+paragraphs. The word budget stays the upper bound and the line budget
+keeps every sub-page inside 1280×800 without scroll.
 
 ## Music library
 
