@@ -14,6 +14,9 @@ import { WebAmbienceEngine } from "./ambience-engine";
 
 const RAIN = AMBIENCES[0]!;
 
+// One drop cycle: how long the button replays its animation after a click.
+const ANIM_MS = 1400;
+
 const DROPS: Record<string, Array<[number, number]>> = {
   drizzle: [
     [7.5, 14.2],
@@ -43,6 +46,8 @@ export function RainAmbience({ muted }: { muted: boolean }) {
   const controllerRef = useRef<AmbienceController | null>(null);
   const [level, setLevel] = useState("off");
   const [volume, setVolume] = useState(DEFAULT_AMBIENCE_VOLUME);
+  const [burst, setBurst] = useState(0);
+  const burstTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const controller = new AmbienceController(new WebAmbienceEngine());
@@ -71,6 +76,13 @@ export function RainAmbience({ muted }: { muted: boolean }) {
     controllerRef.current?.setMuted(muted);
   }, [muted]);
 
+  useEffect(
+    () => () => {
+      if (burstTimer.current) clearTimeout(burstTimer.current);
+    },
+    [],
+  );
+
   function cycle() {
     const controller = controllerRef.current;
     if (!controller) return;
@@ -79,6 +91,9 @@ export function RainAmbience({ muted }: { muted: boolean }) {
     controller.setLevel(id);
     setLevel(id);
     saveAmbiencePrefs({ level: id, volume });
+    setBurst((b) => b + 1);
+    if (burstTimer.current) clearTimeout(burstTimer.current);
+    burstTimer.current = setTimeout(() => setBurst(0), ANIM_MS);
   }
 
   function changeVolume(value: number) {
@@ -94,11 +109,19 @@ export function RainAmbience({ muted }: { muted: boolean }) {
         type="button"
         className="skip rain"
         data-level={level}
+        data-anim={burst ? "1" : undefined}
         onClick={cycle}
         aria-label={label}
         title={label}
       >
-        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+        {/* key replays the one-shot animation on rapid clicks */}
+        <svg
+          key={burst}
+          width="20"
+          height="20"
+          viewBox="0 0 20 20"
+          aria-hidden="true"
+        >
           <path
             className="rain-cloud"
             d="M14.5 12.2h-8.3a3.4 3.4 0 0 1-.6-6.7 4.6 4.6 0 0 1 9-1.1 3 3 0 0 1-.1 7.8z"
