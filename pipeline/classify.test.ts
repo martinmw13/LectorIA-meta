@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { runClassify } from "./classify";
+import { resplitInputOf } from "./freshness";
 import type { JevClient, JevResult } from "./jev";
 import type { MetaClient } from "./meta";
 import { jevCostUsd, metaCostUsd } from "./prices";
@@ -129,7 +130,7 @@ describe("runClassify with fake clients", () => {
     expect(scenes.every((s) => s.final === null && s.error !== null)).toBe(true);
   });
 
-  it("carries provenance.resplit forward and refuses duplicate scene ids", async () => {
+  it("carries a matching provenance.resplit forward and drops a stale one", async () => {
     const dir = setupDir();
     const jev: JevClient = {
       model: "jev-1.14.0",
@@ -140,12 +141,20 @@ describe("runClassify with fake clients", () => {
       completeJson: async () => ({ data: {}, promptTokens: 1, cachedTokens: 0, completionTokens: 1 }),
     };
     await runClassify({ bookKey: "oz", force: true, dir }, { jev, meta });
+    const scenes = (JSON.parse(readFileSync(join(dir, "scenes.json"), "utf8")) as { scenes: { id: unknown; start_n: unknown; end_n: unknown }[] }).scenes;
+    const matching = { input: resplitInputOf(scenes), auto_margin: 0.3, splits: [] };
     const first = JSON.parse(readFileSync(join(dir, "analysis.json"), "utf8")) as { provenance: Record<string, unknown> };
-    const resplit = { auto_margin: 0.3, splits: [] };
-    writeFileSync(join(dir, "analysis.json"), JSON.stringify({ ...first, provenance: { ...first.provenance, resplit } }));
+    writeFileSync(join(dir, "analysis.json"), JSON.stringify({ ...first, provenance: { ...first.provenance, resplit: matching } }));
     await runClassify({ bookKey: "oz", force: true, dir }, { jev, meta });
     const second = JSON.parse(readFileSync(join(dir, "analysis.json"), "utf8")) as { provenance: { resplit: unknown } };
-    expect(second.provenance.resplit).toEqual(resplit);
+    expect(second.provenance.resplit).toEqual(matching);
+
+    const stale = { input: "does-not-match", auto_margin: 0.3, splits: [] };
+    const third = JSON.parse(readFileSync(join(dir, "analysis.json"), "utf8")) as { provenance: Record<string, unknown> };
+    writeFileSync(join(dir, "analysis.json"), JSON.stringify({ ...third, provenance: { ...third.provenance, resplit: stale } }));
+    await runClassify({ bookKey: "oz", force: true, dir }, { jev, meta });
+    const fourth = JSON.parse(readFileSync(join(dir, "analysis.json"), "utf8")) as { provenance: { resplit?: unknown } };
+    expect(fourth.provenance.resplit).toBeUndefined();
 
     const scenesFile = JSON.parse(readFileSync(join(dir, "scenes.json"), "utf8")) as { scenes: unknown[] };
     writeFileSync(join(dir, "scenes.json"), JSON.stringify({ ...scenesFile, scenes: [scenesFile.scenes[0], scenesFile.scenes[0]] }));

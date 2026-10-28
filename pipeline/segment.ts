@@ -5,7 +5,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { validateSceneCoverage } from "../core/scenes";
 import type { Book, Chapter, Scene, SceneInput } from "../core/types";
-import { readIfFresh } from "./cache";
+import { decide, segmentKeys } from "./freshness";
 import type { StepCtx } from "./ingest";
 import { runPool } from "./http";
 import type { MetaClient } from "./meta";
@@ -72,9 +72,9 @@ export interface SegmentUsage {
 export async function runSegment(ctx: StepCtx, deps: { meta: MetaClient }): Promise<Scene[]> {
   const book = JSON.parse(readFileSync(join(ctx.dir, "book.json"), "utf8")) as Book;
   const outPath = join(ctx.dir, "scenes.json");
-  if (!ctx.force) {
-    const fresh = readIfFresh<{ textVersion: string; scenes: Scene[] }>(outPath, book.textVersion);
-    if (fresh) return fresh.scenes;
+  const keys = segmentKeys(ctx.dir);
+  if (decide(ctx.force, keys.recorded, keys.current).reuse) {
+    return (JSON.parse(readFileSync(outPath, "utf8")) as { scenes: Scene[] }).scenes;
   }
   const usage: SegmentUsage = {
     model: deps.meta.model,

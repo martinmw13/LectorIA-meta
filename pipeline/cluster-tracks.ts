@@ -7,7 +7,7 @@ import type { WeightedPoint } from "../core/cluster";
 import { bpmRange, buildTrackPrompt } from "../core/music-prompt";
 import { EMOTIONS, FEATURE_WEIGHTS } from "../core/types";
 import type { AnalyzedScene, Book, EmotionId } from "../core/types";
-import { readIfFresh } from "./cache";
+import { clusterKeys, decide } from "./freshness";
 import type { StepCtx } from "./ingest";
 
 const SEED = 42;
@@ -18,7 +18,8 @@ export async function runCluster(ctx: StepCtx): Promise<void> {
     scenes: AnalyzedScene[];
   };
   const outPath = join(ctx.dir, "music-clusters.json");
-  if (!ctx.force && readIfFresh(outPath, book.textVersion)) return;
+  const keys = clusterKeys(ctx.dir);
+  if (decide(ctx.force, keys.recorded, keys.current).reuse) return;
   const classified = analysis.scenes.filter((s): s is AnalyzedScene & { final: NonNullable<AnalyzedScene["final"]> } => s.final !== null);
   const byId = new Map(classified.map((s) => [s.id, s]));
   const unclustered = analysis.scenes.filter((s) => s.final === null).map((s) => s.id);
@@ -54,6 +55,6 @@ export async function runCluster(ctx: StepCtx): Promise<void> {
     });
   writeFileSync(
     outPath,
-    `${JSON.stringify({ bookId: book.id, textVersion: book.textVersion, k, seed: SEED, feature_weights: FEATURE_WEIGHTS, clusters, unclustered, provenance: { date: new Date().toISOString() } })}\n`,
+    `${JSON.stringify({ bookId: book.id, textVersion: book.textVersion, k, seed: SEED, feature_weights: FEATURE_WEIGHTS, clusters, unclustered, provenance: { date: new Date().toISOString(), input: keys.current } })}\n`,
   );
 }
