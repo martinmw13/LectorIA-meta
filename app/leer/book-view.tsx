@@ -1,0 +1,336 @@
+// The whole book as one continuous scroll: every chapter with its panels
+// strip inline, every scene a section. The scene most in view drives the
+// picture card, the vault, the pager, and the music session. Native
+// scrolling only: no wheel hijacking, no sub-pages, no page-turn keys.
+"use client";
+
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ReaderModel } from "@/core/reader";
+import { effectiveImageStylePref, loadImageStylePref, saveImageStylePref } from "../image-style";
+import type { ImageStylePref } from "../image-style";
+import { useSkin } from "../use-skin";
+import { BandPager, Divider } from "../folio/chrome";
+import { figuresAfter, groupFiguresByEndN } from "../folio/figure-placement";
+import { ImagePane } from "../folio/image-pane";
+import { InlineFigureView, SelectionPopover } from "../folio/inline-figures";
+import { Lightbox } from "../folio/lightbox";
+import { usePictures } from "../folio/use-pictures";
+import type { InlineFigure } from "../folio/use-pictures";
+import { PictureVault } from "../folio/vault";
+import {
+  chapterSetAside,
+  coverTitleLong,
+  markChapterEndReached,
+  markChapterSetAside,
+  markPanelsShownAnyway,
+  panelsUnlocked,
+} from "../folio/panels";
+import type { ChapterPanel } from "../folio/panels";
+import { PanelsModal, PanelsOfferCard, PanelsQuietLink, SpoilerGateDialog } from "../folio/panels-modal";
+import { GOTO_SCENE_EVENT, setCurrentSceneId } from "./current-scene";
+import { attachFollowPause, pickCurrentScene, scrollToSceneId } from "./scroll-helpers";
+
+function pulse(el: HTMLElement | null) {
+  if (!el) return;
+  el.classList.remove("pulse");
+  void el.offsetWidth;
+  el.classList.add("pulse");
+  window.setTimeout(() => el.classList.remove("pulse"), 650);
+}
+
+export function BookView({
+  model,
+  initialSceneId,
+  panelsByChapter,
+}: {
+  model: ReaderModel;
+  initialSceneId: string;
+  panelsByChapter: { ch: number; panels: ChapterPanel[] }[];
+}) {
+  const [storedPref, setStoredPref] = useState<ImageStylePref | null>(null);
+  // Server render uses the default so hydration matches; the live skin
+  // applies on mount via useSyncExternalStore.
+  const skin = useSkin();
+  const pref = effectiveImageStylePref(storedPref, skin);
+  const [currentId, setCurrentId] = useState(initialSceneId);
+  const [panelsCh, setPanelsCh] = useState<number | null>(null);
+  const [gateCh, setGateCh] = useState<number | null>(null);
+  const [aside, setAside] = useState<Record<number, boolean>>({});
+  const gateOpener = useRef<HTMLElement | null>(null);
+  const readColRef = useRef<HTMLDivElement | null>(null);
+  const figEls = useRef(new Map<string, HTMLElement>());
+  const maxChRef = useRef(0);
+  const pic = usePictures({ bookId: model.bookId, textVersion: model.textVersion, sceneId: currentId, pref });
+
+  const order = useMemo(() => model.chapters.flatMap((c) => c.scenes.map((s) => s.id)), [model]);
+  const sceneOf = useMemo(() => {
+    const map = new Map<string, { ch: number; k: number; n: number; chapterTitle: string }>();
+    for (const chapter of model.chapters) {
+      chapter.scenes.forEach((s, i) => {
+        map.set(s.id, { ch: chapter.ch, k: i + 1, n: chapter.scenes.length, chapterTitle: chapter.title });
+      });
+    }
+    return map;
+  }, [model]);
+  const panelsOf = useMemo(() => new Map(panelsByChapter.map((e) => [e.ch, e.panels])), [panelsByChapter]);
+  const titles = useMemo(() => new Map(model.chapters.map((c) => [c.ch, c.title])), [model]);
+  const info = sceneOf.get(currentId);
+  const bookIndex = order.indexOf(currentId);
+  const lastChapter = model.chapters[model.chapters.length - 1]?.ch ?? 0;
+
+  // One commit path for every scene change: state, the live store the
+  // music container reads, and the deep-link URL. No router pushes, so
+  // scrolling never remounts.
+  const commitScene = useCallback((id: string) => {
+    setCurrentId((prev) => (prev === id ? prev : id));
+    setCurrentSceneId(id);
+    window.history.replaceState(null, "", `/leer/${id}`);
+  }, []);
+
+  // Reading past a chapter unlocks its panels, like reaching the old end
+  // page did. Backward scrolling never relocks.
+  useEffect(() => {
+    const at = model.chapters.findIndex((c) => c.ch === info?.ch);
+    if (at > maxChRef.current) {
+      for (let i = maxChRef.current; i < at; i++) {
+        const ch = model.chapters[i]?.ch;
+        if (ch !== undefined) markChapterEndReached(ch);
+      }
+      maxChRef.current = at;
+    }
+  }, [info, model.chapters]);
+
+  // Land on the deep-linked scene with no animation, focus the column so
+  // native keys scroll it, and pause narration follow on user input.
+  useEffect(() => {
+    const col = readColRef.current;
+    if (!col) return;
+    col.focus({ preventScroll: true });
+    setCurrentSceneId(initialSceneId);
+    scrollToSceneId(col, initialSceneId, false);
+    return attachFollowPause(col);
+  }, [initialSceneId]);
+
+  // The scene most in view wins; ties keep document order. One observer,
+  // no scroll listeners, no layout reads on scroll.
+  useEffect(() => {
+    const col = readColRef.current;
+    if (!col) return;
+    const seen = new Map<string, { id: string; ratio: number }>();
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const id = (entry.target as HTMLElement).dataset.sceneId;
+          if (!id) continue;
+          if (entry.isIntersecting) seen.set(id, { id, ratio: entry.intersectionRatio });
+          else seen.delete(id);
+        }
+        const next = pickCurrentScene(order, seen);
+        if (next) commitScene(next);
+      },
+      { root: col, threshold: [0, 0.25, 0.5, 0.75, 1] },
+    );
+    for (const section of col.querySelectorAll("[data-scene-id]")) io.observe(section);
+    return () => io.disconnect();
+  }, [order, commitScene]);
+
+  // Chapter jumps from outside the column arrive here.
+  useEffect(() => {
+    const onGoto = (event: Event) => gotoScene((event as CustomEvent<string>).detail);
+    window.addEventListener(GOTO_SCENE_EVENT, onGoto);
+    return () => window.removeEventListener(GOTO_SCENE_EVENT, onGoto);
+  }, [gotoScene]);
+
+  useEffect(() => {
+    setStoredPref(loadImageStylePref());
+  }, []);
+
+  function changePref(next: ImageStylePref) {
+    setStoredPref(next);
+    saveImageStylePref(next);
+  }
+
+  function requestPanels(ch: number, opener: HTMLElement | null) {
+    if (panelsUnlocked(ch)) {
+      setPanelsCh(ch);
+      return;
+    }
+    gateOpener.current = opener;
+    setGateCh(ch);
+  }
+
+  function showAnyway() {
+    if (gateCh === null) return;
+    markPanelsShownAnyway(gateCh);
+    setGateCh(null);
+    setPanelsCh(gateCh);
+  }
+
+  function notYet() {
+    setGateCh(null);
+    gateOpener.current?.focus?.();
+    gateOpener.current = null;
+  }
+
+  function readFirst(ch: number) {
+    markChapterSetAside(ch);
+    setAside((prev) => ({ ...prev, [ch]: true }));
+  }
+
+  function showChapterAnyway(ch: number) {
+    markPanelsShownAnyway(ch);
+    setPanelsCh(ch);
+  }
+
+  const figsByN = useMemo(() => groupFiguresByEndN(pic.figures), [pic.figures]);
+
+  function gotoFigure(fig: InlineFigure) {
+    const el = figEls.current.get(fig.id) ?? null;
+    el?.scrollIntoView({ block: "nearest" });
+    pulse(el);
+  }
+
+  function gotoScenePicture() {
+    const img = document.querySelector(".img-pane .pane-img");
+    pulse(img instanceof HTMLElement ? img : null);
+  }
+
+  function gotoScene(id: unknown) {
+    if (typeof id !== "string") return;
+    pic.hidePopover();
+    const col = readColRef.current;
+    if (col) scrollToSceneId(col, id, true);
+  }
+
+  // A selection that starts in another scene moves the current scene
+  // there; the popover follows without a second tap. Chapter headings and
+  // the panels strip sit outside scene sections, so they never offer it.
+  function onReadMouseUp() {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+    const node = sel.anchorNode;
+    const el = node instanceof Element ? node : node?.parentElement ?? null;
+    const section = el?.closest?.("[data-scene-id]") ?? null;
+    const id = section instanceof HTMLElement ? section.dataset.sceneId : null;
+    if (!id || id === currentId) return;
+    commitScene(id);
+    requestAnimationFrame(() => pic.rescan());
+  }
+
+  return (
+    <>
+      <ImagePane
+        card={pic.card}
+        onPicture={() => pic.illustrateScene()}
+        onRetry={() => pic.illustrateScene()}
+        onClear={pic.clearScene}
+        onOpen={pic.lightbox.open}
+        onPictureChapter={info ? (opener) => requestPanels(info.ch, opener) : null}
+      />
+      <Divider />
+      <div className="read-col" ref={readColRef} tabIndex={-1} aria-label="Reading column" onMouseUp={onReadMouseUp}>
+        {model.chapters.map((chapter) => {
+          const panels = panelsOf.get(chapter.ch) ?? [];
+          const coverLong = coverTitleLong(chapter.title);
+          const setAside = aside[chapter.ch] ?? chapterSetAside(chapter.ch);
+          return (
+            <div className="chapter-block" key={chapter.ch}>
+              <div className="kicker">Chapter</div>
+              <p className="cover-num" data-long={coverLong} aria-label={`Chapter ${chapter.ch}`}>
+                {chapter.ch}
+              </p>
+              <h1 className="chapter-title cover-title" data-long={coverLong}>
+                {chapter.title}
+              </h1>
+              <hr className="cover-rule" />
+              {setAside ? (
+                <PanelsQuietLink onOpen={(el) => requestPanels(chapter.ch, el)} />
+              ) : (
+                <PanelsOfferCard
+                  panels={panels}
+                  onShowAnyway={() => showChapterAnyway(chapter.ch)}
+                  onReadFirst={() => readFirst(chapter.ch)}
+                />
+              )}
+              {chapter.scenes.map((s) => (
+                <section key={s.id} className="book-section" data-scene-id={s.id} aria-label={s.title}>
+                  <div
+                    className="body-text dropcap"
+                    ref={s.id === currentId ? pic.viewRef : undefined}
+                  >
+                    {s.paragraphs.map((p, i, arr) => (
+                      <Fragment key={p.id}>
+                        <p id={p.id} data-n={p.n}>
+                          {p.text}
+                        </p>
+                        {figuresAfter(arr, i, figsByN).map((fig) => (
+                          <InlineFigureView
+                            key={fig.id}
+                            figure={fig}
+                            onRemove={() => pic.removeFigure(fig.id)}
+                            onRetry={() => pic.retryFigure(fig.id)}
+                            onOpen={pic.lightbox.open}
+                            refCb={(el) => {
+                              if (el) figEls.current.set(fig.id, el);
+                              else figEls.current.delete(fig.id);
+                            }}
+                          />
+                        ))}
+                      </Fragment>
+                    ))}
+                    {s.id === currentId && pic.popover !== null ? (
+                      <SelectionPopover pos={pic.popover} popRef={pic.popRef} onPick={() => pic.illustratePassage()} />
+                    ) : null}
+                  </div>
+                </section>
+              ))}
+              {chapter.ch === lastChapter ? (
+                <p className="the-end">The end.</p>
+              ) : (
+                <div className="chapter-relive">
+                  <button
+                    type="button"
+                    className="panels-link"
+                    onClick={(e) => requestPanels(chapter.ch, e.currentTarget)}
+                  >
+                    Relive this chapter in panels
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <PictureVault
+        scene={pic.card.phase === "ready" ? { url: pic.card.url, caption: pic.card.caption } : null}
+        figures={pic.figures}
+        onGotoScene={gotoScenePicture}
+        onGotoFigure={gotoFigure}
+        onOpen={pic.lightbox.open}
+        pref={pref}
+        onPrefChange={changePref}
+      />
+      <BandPager
+        k={info?.k ?? 1}
+        n={info?.n ?? 1}
+        bookIndex={Math.max(0, bookIndex)}
+        bookTotal={order.length}
+        onPrev={() => gotoScene(bookIndex > 0 ? order[bookIndex - 1] : undefined)}
+        onNext={() => gotoScene(bookIndex < order.length - 1 ? order[bookIndex + 1] : undefined)}
+        atStart={bookIndex <= 0}
+        atBookEnd={bookIndex >= order.length - 1}
+      />
+      <Lightbox item={pic.lightbox.item} onClose={pic.lightbox.close} />
+      {gateCh !== null ? <SpoilerGateDialog onShow={showAnyway} onNotYet={notYet} /> : null}
+      {panelsCh !== null ? (
+        <PanelsModal
+          ch={panelsCh}
+          chapterTitle={titles.get(panelsCh) ?? ""}
+          panels={panelsOf.get(panelsCh) ?? []}
+          onClose={() => setPanelsCh(null)}
+          onOpenArt={pic.lightbox.open}
+        />
+      ) : null}
+    </>
+  );
+}
