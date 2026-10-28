@@ -36,7 +36,9 @@ receives other scenes' text, titles, or summaries. The progress line
 reads `Chapter 1 · The Cyclone`, a spaced separator, then `Scene 1 of 4
 · Page 1 of 3` as two spans on one line. Book type is 1.1875rem / 1.7
 with no paragraph gaps and a 1.5em first-line indent on following
-paragraphs.
+paragraphs. The tightened chrome fits a typical sub-page at 1280×800
+without scroll; the densest full-budget pages still need some window
+scroll (23+ lines of text alone exceed the 800 px budget).
 
 ## Music library
 
