@@ -24,7 +24,12 @@ word windows, classifies each window with Jev, and splits at the
 strongest persistent dominant-emotion shift (auto at margin 0.30,
 Muse decides 0.15 to 0.30, none below). The first part keeps the
 scene id with letter-suffixed later parts; provenance lands under
-`provenance.resplit` in `analysis.json`.
+`provenance.resplit` in `analysis.json`: one entry per cut (`from`,
+`at_n`, `margin`, `window_left`/`window_right` from the window means,
+`final_left`/`final_right` from the re-classified parts,
+`decided_by`), plus `merged_back` (parts re-classified to the same top
+emotion and folded back), `rejected` (Muse declined), and
+`window_failures` (Jev failed, scene left whole).
 
 ## Scene reader
 

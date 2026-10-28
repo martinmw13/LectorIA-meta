@@ -28,9 +28,14 @@ Target is 5 to 30 splits on Oz.
 The first part keeps the scene id so old links keep working; later
 parts add a letter suffix (`c5s2b`, `c5s2c`). One Meta call per split
 scene writes titles, summaries, and characters; each part is
-re-classified with the standard classify path. Coverage validation
-runs before writing. Provenance lands under `provenance.resplit`,
-and the step skips when that entry exists unless forced. A first part
-keeps its "Picture scene" image key; no such image is live yet.
-Oz kept the defaults: 18 splits, all above the 0.30 auto margin
-(lowest 0.315), every part over 120 words, so neither number moved.
+re-classified with the standard classify path. Adjacent parts that
+re-classify to the same top emotion merge back (a full collapse keeps
+the original scene); ids come from `splitIds` over the survivors.
+Coverage validation and a duplicate-id check run before writing.
+Provenance lands under `provenance.resplit` as one entry per cut plus
+`merged_back`, `rejected`, and `window_failures` lists, and the step
+skips when that entry exists unless forced. `classify` carries
+`provenance.resplit` forward. A first part keeps its "Picture scene"
+image key; no such image is live yet.
+Oz kept the defaults: 18 splits, all above the 0.30 auto margin or
+Muse-approved, every part over 120 words, so neither number moved.
