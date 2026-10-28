@@ -64,11 +64,11 @@ If no row fits, read `.agents/skills/poteto-help/SKILL.md`, which maps situation
 
 ## Workflow
 
-Each task follows the same loop. Muse Spark 1.3 Standard (`muse-spark-1.3`) writes the design in `docs/tasks/NN-name.md` and the review in `docs/reviews/NN.md`. `muse-spark-1.3-contributor` implements. Implement and review run at most two rounds.
+Each task follows the same loop. Muse Spark 1.3 Standard (`muse-spark-1.3`) writes the design in `docs/tasks/NN-name.md`; the orchestrating agent writes the review in `docs/reviews/NN.md`. `muse-spark-1.3-contributor` implements. Implement and review run at most two rounds.
 
 A rescue by another tool happens only after those rounds. Log it in `RESCUE_LOG.md` with the date, the task, the tool, why Muse got stuck, what changed, and the commits. Rescue commits carry a `Rescue: <tool>` trailer and no Muse Code trailer; the hook skips them.
 
-Save every Muse Code session transcript as JSONL in `agent-logs/NN-<step>.jsonl`. Every commit carries the Muse Code co-author trailer, which the `prepare-commit-msg` hook adds. Update `BUILT_DURING_HACKATHON.md` with each task.
+Save every Muse Code session transcript as JSONL in `agent-logs/NN-<step>.jsonl`. Commits Muse Code wrote carry the Muse Code co-author trailer, which the `prepare-commit-msg` hook adds. Muse Code implements core logic and main features. The orchestrating agent writes mechanical work directly: tests, e2e, small style fixes, skin CSS and tokens, docs, simple refactors, and the reviews in `docs/reviews/NN.md`. Those commits carry a `Written-by: <tool>` trailer instead, and the hook skips them. Update `BUILT_DURING_HACKATHON.md` with each task.
 
 ## Lectoria rules
 
