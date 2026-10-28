@@ -7,6 +7,7 @@ import carol from "./fixtures/clean/se-carol.json";
 import pg11 from "./fixtures/clean/pg11.json";
 import pg77472 from "./fixtures/clean/pg77472.json";
 import pg63361 from "./fixtures/clean/pg63361.json";
+import editionLines from "./fixtures/clean/edition-lines.json";
 
 function sectionsOf(fixture: { sections: unknown }): RawSection[] {
   return fixture.sections as unknown as RawSection[];
@@ -64,6 +65,27 @@ describe("pg11 Alice", () => {
     expect(judge).not.toHaveBeenCalled();
     expect(report.llm).toBeNull();
     expect(report.kept).toHaveLength(12);
+  });
+
+  it("never surfaces the title-page edition line as a chapter", async () => {
+    const judge = vi.fn(contentJudge());
+    const { chapters } = await cleanSections("Alice’s Adventures in Wonderland", sectionsOf(pg11), judge);
+    for (const chapter of chapters) {
+      expect(chapter.title).not.toMatch(/MILLENNIUM FULCRUM|EDITION/);
+      expect(chapter.paragraphs[0] ?? "").not.toMatch(/MILLENNIUM FULCRUM|EDITION/);
+    }
+    expect(chapters[0]?.title).toBe("Down the Rabbit-Hole");
+  });
+});
+
+describe("edition-lines fixture", () => {
+  it("removes the edition-notice front section by rule, never the judge", async () => {
+    const judge = vi.fn(contentJudge());
+    const { chapters, report } = await cleanSections("Edition Lines Test", sectionsOf(editionLines), judge);
+    expect(removedRule(report, "front")).toBe("edition-line");
+    expect(chapters.map((c) => c.title)).toEqual(["Down the Test Hole", "The Dry Pond"]);
+    expect(judge).not.toHaveBeenCalled();
+    expect(report.llm).toBeNull();
   });
 });
 
