@@ -1,0 +1,50 @@
+{
+  "version": 2,
+  "tracks": [
+    {
+      "id": "oz-test-01",
+      "src": "/music/placeholder/oz-test-01-calma-t01.mp3",
+      "title": "Calm, flute and harp",
+      "emotion": "calma",
+      "vector": {
+        "calma": 0.694,
+        "alegria": 0.08,
+        "tristeza": 0.034,
+        "suspenso": 0.046,
+        "misterio": 0.012,
+        "aventura": 0.094,
+        "combate": 0.0,
+        "asombro": 0.04
+      },
+      "intensity": 0.229,
+      "tempo": 0.245,
+      "durationSec": 10,
+      "loop": true,
+      "source": "generated",
+      "license": "CC-BY-NC-4.0",
+      "attribution": "MusicGen placeholder output for the demo. Replace with the final recording."
+    },
+    {
+      "id": "oz-test-02",
+      "src": "/music/placeholder/oz-test-02-suspenso-t07.mp3",
+      "title": "Suspense, tremolo strings",
+      "emotion": "suspenso",
+      "vector": {
+        "calma": 0.011,
+        "alegria": 0.008,
+        "tristeza": 0.012,
+        "suspenso": 0.849,
+        "misterio": 0.026,
+        "aventura": 0.066,
+        "combate": 0.022,
+        "asombro": 0.006
+      },
+      "intensity": 0.53,
+      "tempo": 0.539,
+      "durationSec": 10,
+      "source": "generated",
+      "license": "CC-BY-NC-4.0",
+      "attribution": "MusicGen placeholder output for the demo. Replace with the final recording."
+    }
+  ]
+}
