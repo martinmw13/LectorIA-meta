@@ -73,13 +73,13 @@ function engraving(s: RainState): IconDef["body"] {
   return (
     <>
       <defs>
-        <pattern id="rb-hatch" width="2.6" height="2.6" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
-          <rect width="2.6" height="2.6" style={{ fill: "var(--rain-paper)" }} />
-          <path d="M0 0V2.6" style={{ stroke: "var(--rain-ink)" }} strokeWidth=".9" />
+        <pattern id="rb-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
+          <rect width="6" height="6" style={{ fill: "var(--rain-paper)" }} />
+          <path d="M0 0V6" style={{ stroke: "var(--rain-ink)" }} strokeWidth=".7" />
         </pattern>
-        <pattern id="rb-hatch2" width="2.2" height="2.2" patternUnits="userSpaceOnUse" patternTransform="rotate(-30)">
-          <rect width="2.2" height="2.2" style={{ fill: "var(--rain-ink)" }} />
-          <path d="M0 0V2.2" style={{ stroke: "var(--rain-paper)" }} strokeWidth=".45" />
+        <pattern id="rb-hatch2" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(-30)">
+          <rect width="4" height="4" style={{ fill: "var(--rain-ink)" }} />
+          <path d="M0 0V4" style={{ stroke: "var(--rain-paper)" }} strokeWidth=".6" />
         </pattern>
         <pattern id="rb-e-shimmer" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(-35)">
           <path d="M0 0V3" stroke="#FFFDF5" strokeWidth=".9" />

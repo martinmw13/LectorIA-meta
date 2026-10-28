@@ -113,6 +113,20 @@ html[data-theme="dark"] .player .skip.rain[data-art="ink"] {
   --rain-pen: #5a9bff;
 }
 
+/* Dark bar: the Off dashed outline keeps its skin line colour via the vars
+   above and rests at an opacity that stays visible yet reads as off. */
+html[data-theme="dark"] .player .skip.rain[data-art="engraving"][data-level="off"] svg path {
+  opacity: 0.58;
+}
+
+html[data-theme="dark"] .player .skip.rain[data-art="watercolor"][data-level="off"] svg path {
+  opacity: 0.58;
+}
+
+html[data-theme="dark"] .player .skip.rain[data-art="ink"][data-level="off"] svg path {
+  opacity: 0.58;
+}
+
 /* Still at rest: nothing loops, nothing animates on first paint. The etched
    and drawn strokes rest solid (dasharray 1 over pathLength 1). */
 .player .skip.rain .etch,
