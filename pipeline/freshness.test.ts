@@ -269,6 +269,37 @@ describe("full unforced rerun", () => {
   });
 });
 
+describe("narrate keys", () => {
+  it("redoes with no previous output and reuses on the same input", async () => {
+    const dir = setupDir();
+    const { narrateInputOf, narrateKeys } = await import("./freshness");
+    expect(narrateKeys(dir)).toEqual({
+      recorded: undefined,
+      current: narrateInputOf("sha256:x", "af_heart", "kokoro-82m/0.9.4", 0.95, 2),
+    });
+    expect(narrateInputOf("sha256:x", "af_heart", "kokoro-82m/0.9.4", 0.95, 2)).not.toBe(
+      narrateInputOf("sha256:y", "af_heart", "kokoro-82m/0.9.4", 0.95, 2),
+    );
+    const { runNarrate } = await import("./narrate");
+    let calls = 0;
+    const store = { getManifest: async () => null, putAudio: async (key: string) => `https://x/${key}.mp3`, putManifest: async () => {} };
+    await runNarrate({ bookKey: "oz", force: true, dir }, {
+      synthesize: async ({ texts, gaps }: { texts: string[]; gaps: number[] }) => {
+        calls += 1;
+        return { mp3: new Uint8Array([1]), durationSec: 2, spans: texts.map(() => ({ t0: 0, t1: 1, words: [] })), gpuSec: 1 };
+      },
+      store,
+      capUsd: 2,
+    });
+    expect(calls).toBe(1);
+    expect(planSteps(dir, ["segment", "narrate"], false)).toEqual([
+      { step: "segment", reuse: false, reason: "no previous output" },
+      { step: "narrate", reuse: false, reason: "upstream step redoes" },
+    ]);
+    expect(narrateKeys(dir).recorded).toBe(narrateKeys(dir).current);
+  });
+});
+
 describe("stamped oz data", () => {
   it("planSteps reuses every step", () => {
     expect(planSteps(join("data", "books", "oz"), ["segment", "classify", "resplit", "cluster"], false)).toEqual([

@@ -1,4 +1,4 @@
-// CLI: npm run build:book -- oz [--step ingest|segment|classify|resplit|cluster] [--force] [--dry-run]
+// CLI: npm run build:book -- oz [--step ingest|segment|classify|resplit|cluster|narrate] [--force] [--dry-run]
 // --dry-run prints one freshness line per selected step and stops before
 // any client, write, or network call.
 import { readFileSync } from "node:fs";
@@ -12,10 +12,11 @@ import { planSteps } from "./freshness";
 import type { FreshStep } from "./freshness";
 import { createJevClient } from "./jev";
 import { createMetaClient } from "./meta";
+import { runNarrate } from "./narrate";
 import { runResplit } from "./resplit";
 import { runSegment } from "./segment";
 
-const STEPS = ["ingest", "segment", "classify", "resplit", "cluster"] as const;
+const STEPS = ["ingest", "segment", "classify", "resplit", "cluster", "narrate"] as const;
 
 function loadEnv(): void {
   try {
@@ -39,7 +40,7 @@ async function main(): Promise<void> {
   const stepArg = stepFlag === -1 ? undefined : args[stepFlag + 1];
   const force = args.includes("--force");
   const dryRun = args.includes("--dry-run");
-  if (!bookKey) throw new Error("usage: build:book <book> [--step ingest|segment|classify|resplit|cluster] [--force] [--dry-run]");
+  if (!bookKey) throw new Error("usage: build:book <book> [--step ingest|segment|classify|resplit|cluster|narrate] [--force] [--dry-run]");
   bookConfig(bookKey); // fails fast on unknown keys with the valid list
   const only = stepArg ?? "";
   if (only !== "" && !(STEPS as readonly string[]).includes(only)) {
@@ -60,6 +61,7 @@ async function main(): Promise<void> {
     classify: only === "" || only === "classify",
     resplit: only === "" || only === "resplit",
     cluster: only === "" || only === "cluster",
+    narrate: only === "" || only === "narrate",
   };
   if (run.ingest) {
     const epub = bookConfig(bookKey).format === "epub";
@@ -90,6 +92,14 @@ async function main(): Promise<void> {
   if (run.cluster) {
     await runCluster(ctx);
     console.log("cluster: wrote music-clusters.json");
+  }
+  if (run.narrate) {
+    // The Kokoro client loads lazily only when this step runs, so the
+    // other steps never touch Modal. Narration needs neither
+    // META_API_KEY nor JEV_API_KEY.
+    const { createKokoroClient } = await import("./kokoro");
+    const client = createKokoroClient();
+    await runNarrate(ctx, { synthesize: (req) => client.synthesize(req) });
   }
   printSummary(ctx.dir);
 }

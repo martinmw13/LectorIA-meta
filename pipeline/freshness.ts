@@ -4,6 +4,7 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { NARRATION_FORMAT, NARRATION_MODEL, NARRATION_SPEED, NARRATION_VOICE } from "../core/narration";
 
 export function fingerprint(value: unknown): string {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex").slice(0, 16);
@@ -60,6 +61,10 @@ export function clusterInputOf(scenes: { id: unknown; final: unknown }[]): strin
   return fingerprint(scenes.map((s) => ({ id: s.id, final: s.final })));
 }
 
+export function narrateInputOf(textVersion: unknown, voice: unknown, model: unknown, speed: unknown, format: unknown): string {
+  return fingerprint({ textVersion, voice, model, speed, format });
+}
+
 export function segmentKeys(dir: string): StepKeys {
   const book = asRecord(readJson(join(dir, "book.json")));
   const scenes = asRecord(readJson(join(dir, "scenes.json")));
@@ -88,11 +93,26 @@ export function clusterKeys(dir: string): StepKeys {
   return { recorded: asString(asRecord(clusters.provenance).input), current: list === undefined ? "" : clusterInputOf(list) };
 }
 
-export type FreshStep = "segment" | "classify" | "resplit" | "cluster";
+export function narrateKeys(dir: string): StepKeys {
+  const book = asRecord(readJson(join(dir, "book.json")));
+  const narration = asRecord(readJson(join(dir, "narration.json")));
+  return {
+    recorded: asString(asRecord(narration.provenance).input),
+    current: narrateInputOf(asString(book.textVersion) ?? "", NARRATION_VOICE, NARRATION_MODEL, NARRATION_SPEED, NARRATION_FORMAT),
+  };
+}
 
-const STEP_ORDER: FreshStep[] = ["segment", "classify", "resplit", "cluster"];
+export type FreshStep = "segment" | "classify" | "resplit" | "cluster" | "narrate";
 
-const STEP_KEYS: Record<FreshStep, (dir: string) => StepKeys> = { segment: segmentKeys, classify: classifyKeys, resplit: resplitKeys, cluster: clusterKeys };
+const STEP_ORDER: FreshStep[] = ["segment", "classify", "resplit", "cluster", "narrate"];
+
+const STEP_KEYS: Record<FreshStep, (dir: string) => StepKeys> = {
+  segment: segmentKeys,
+  classify: classifyKeys,
+  resplit: resplitKeys,
+  cluster: clusterKeys,
+  narrate: narrateKeys,
+};
 
 export interface StepPlan {
   step: FreshStep;
