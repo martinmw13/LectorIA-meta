@@ -173,7 +173,7 @@ function parseTrack(entry: unknown, i: number, soundtrack: string, style: string
   if (!isRecord(entry)) throw new Error(`track ${i} must be an object`);
   {
     const { id, src, title, emotion, vector, intensity, tempo } = entry;
-    const { durationSec, startSec, loop, playlistOnly } = entry;
+    const { durationSec, startSec, gainDb, endSec, loop, playlistOnly } = entry;
     const { source, artist, composer, license, attribution, sourceUrl } = entry;
     if (typeof id !== "string" || id === "") throw new Error(`track ${i} needs a string id`);
     if (!isSrc(src)) throw new Error(`track ${id} src must be a /music/ path or https URL`);
@@ -192,10 +192,31 @@ function parseTrack(entry: unknown, i: number, soundtrack: string, style: string
       if (typeof startSec !== "number" || !Number.isFinite(startSec) || startSec < 0) {
         throw new Error(`track ${id} startSec must be >= 0`);
       }
-      if (startSec >= durationSec) {
-        throw new Error(`track ${id} startSec must be below durationSec`);
-      }
+      // No upper bound here: startSec is an absolute media position while
+      // durationSec is the playable length, so mid-file segments can start
+      // past it. The endSec check below bounds the segment instead.
       start = startSec;
+    }
+    let gain = 0;
+    if (gainDb !== undefined) {
+      if (typeof gainDb !== "number" || !Number.isFinite(gainDb) || gainDb < -24 || gainDb > 12) {
+        throw new Error(`track ${id} gainDb must be a finite number in -24..12`);
+      }
+      gain = gainDb;
+    }
+    let end: number | undefined;
+    if (endSec !== undefined) {
+      if (typeof endSec !== "number" || !Number.isFinite(endSec)) {
+        throw new Error(`track ${id} endSec must be a finite number`);
+      }
+      if (endSec <= start) {
+        throw new Error(`track ${id} endSec must be above startSec`);
+      }
+      // durationSec rounds to 1 decimal, so allow that slack on the end.
+      if (endSec - start > durationSec + 0.051) {
+        throw new Error(`track ${id} endSec must not pass startSec + durationSec`);
+      }
+      end = endSec;
     }
     let loops = true;
     if (loop !== undefined) {
@@ -242,6 +263,8 @@ function parseTrack(entry: unknown, i: number, soundtrack: string, style: string
       tempo,
       durationSec,
       startSec: start,
+      gainDb: gain,
+      ...(end === undefined ? {} : { endSec: end }),
       loop: loops,
       soundtrack,
       style,

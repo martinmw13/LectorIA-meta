@@ -25,6 +25,8 @@ export interface Track {
   tempo: number;
   durationSec: number;
   startSec: number;
+  gainDb: number;
+  endSec?: number;
   loop: boolean;
   soundtrack: string;
   style: string;

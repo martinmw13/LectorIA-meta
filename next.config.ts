@@ -13,7 +13,7 @@ const csp = [
   `script-src ${scriptSrc}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://*.public.blob.vercel-storage.com",
-  "media-src 'self' blob:",
+  "media-src 'self' blob: https://3vuhzq2wmortnuxj.public.blob.vercel-storage.com",
   "connect-src 'self'",
   "font-src 'self'",
   'frame-src https://challenges.cloudflare.com',

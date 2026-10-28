@@ -40,6 +40,7 @@ function track(
     tempo,
     durationSec: 120,
     startSec: 0,
+    gainDb: 0,
     loop: true,
     soundtrack,
     style,

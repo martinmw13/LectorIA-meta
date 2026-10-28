@@ -41,6 +41,7 @@ function track(
     tempo,
     durationSec: 120,
     startSec: 0,
+    gainDb: 0,
     loop: true,
     soundtrack,
     style,
@@ -246,7 +247,7 @@ describe("parseManifest v2", () => {
     expect(bad((t) => { t.intensity = 2; })).toThrow();
     expect(bad((t) => { t.durationSec = 0; })).toThrow();
     expect(bad((t) => { t.startSec = -1; })).toThrow();
-    expect(bad((t) => { t.startSec = 120; })).toThrow();
+    expect(bad((t) => { t.endSec = 5; t.startSec = 120; })).toThrow();
     expect(bad((t) => { t.loop = "yes"; })).toThrow();
     expect(bad((t) => { t.source = "remix"; })).toThrow();
     expect(bad((t) => { t.license = ""; })).toThrow();

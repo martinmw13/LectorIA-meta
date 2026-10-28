@@ -38,6 +38,7 @@ function track(id: string, top: string, intensity = 0.5, tempo = 0.5): Track {
     tempo,
     durationSec: 120,
     startSec: 0,
+    gainDb: 0,
     loop: true,
     soundtrack: "snd",
     style: "orchestral",

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { MUSIC_CONFIG } from "@/core/music";
+import { effectiveEnd, gainVolume } from "@/core/music-playback";
 import type { StyleInfo, Track } from "@/core/music";
 import { PlayerControls } from "./player-controls";
 
@@ -50,6 +51,8 @@ export function Player({
   const secondRef = useRef<HTMLAudioElement | null>(null);
   const audibleRef = useRef(0);
   const levelRef = useRef<[number, number]>([1, 0]);
+  const gainRef = useRef<[number, number]>([0, 0]);
+  const segmentEndRef = useRef<string | null>(null);
   const volumeRef = useRef(0.8);
   const fadeRef = useRef<number | null>(null);
   const loopArmedRef = useRef<string | null>(null);
@@ -89,7 +92,12 @@ export function Player({
   function applyLevels() {
     const els = [firstRef.current, secondRef.current];
     els.forEach((el, i) => {
-      if (el) el.volume = Math.min(1, Math.max(0, (levelRef.current[i] ?? 0) * volumeRef.current));
+      if (el)
+        el.volume = gainVolume(
+          levelRef.current[i] ?? 0,
+          volumeRef.current,
+          gainRef.current[i] ?? 0,
+        );
     });
   }
 
@@ -113,6 +121,8 @@ export function Player({
     cancelFade();
     if (trackRef.current?.id !== next.id) loopArmedRef.current = null;
     trackRef.current = next;
+    segmentEndRef.current = null;
+    gainRef.current[dstIdx] = next.gainDb ?? 0;
     dst.src = next.src;
     dst.onloadedmetadata = () => {
       if (next.startSec > 0 && Number.isFinite(dst.duration) && next.startSec < dst.duration) {
@@ -172,6 +182,8 @@ export function Player({
       if (!started && next) {
         const el = [firstRef.current, secondRef.current][audibleRef.current];
         if (el && !el.src.endsWith(next.src)) el.src = next.src;
+        gainRef.current[audibleRef.current] = next.gainDb ?? 0;
+        applyLevels();
       }
       return;
     }
@@ -187,12 +199,21 @@ export function Player({
 
   function handleTimeUpdate(index: number, el: HTMLAudioElement) {
     const next = trackRef.current;
-    // A playlist track always runs to its end so the scheduler advances.
-    if (!next || !next.loop || playlistOn || index !== audibleRef.current) return;
+    if (!next || index !== audibleRef.current) return;
+    const end = effectiveEnd(next.endSec, el.duration);
+    if (!Number.isFinite(end)) return;
+    // A non-looping or playlist track ends at the segment end, where the
+    // media may keep playing, so fire the ended path once per play.
+    if (!next.loop || playlistOn) {
+      if (el.currentTime >= end && segmentEndRef.current !== next.id) {
+        segmentEndRef.current = next.id;
+        onEndedRef.current(next.id);
+      }
+      return;
+    }
     const fade = loopFadeSec();
-    const duration = el.duration;
-    if (!Number.isFinite(duration) || duration <= fade * 2) return;
-    const remain = duration - el.currentTime;
+    if (end <= fade * 2) return;
+    const remain = end - el.currentTime;
     if (remain <= fade && loopArmedRef.current !== next.id) {
       loopArmedRef.current = next.id;
       requestPlayRef.current(next, fade);
@@ -209,11 +230,12 @@ export function Player({
       return;
     }
     const next = trackRef.current;
-    if (!next) return;
+    if (!next || segmentEndRef.current === next.id) return;
     if (next.loop && !playlistOn) {
       requestPlayRef.current(next, loopFadeSec());
       return;
     }
+    segmentEndRef.current = next.id;
     onEndedRef.current(next.id);
   }
 
