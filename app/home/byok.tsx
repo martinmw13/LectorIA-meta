@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "react";
+import { useId, useState } from "react";
 import { approxPages, FREE_BOOK_MAX_WORDS } from "@/core/upload-policy";
 
 type Provider = "meta" | "openai";
@@ -26,7 +26,6 @@ export function ByokStep({
   const urlErrorId = useId();
   const freePages = approxPages(FREE_BOOK_MAX_WORDS);
 
-  useEffect(() => () => setKey(""), []);
   const urlOk = baseUrl.trim() === "" || /^https:\/\//.test(baseUrl.trim());
   const ready =
     key.trim() !== "" && (provider === "meta" || (urlOk && baseUrl.trim() !== "" && model.trim() !== ""));

@@ -1,5 +1,5 @@
 import type { EpubBook } from "@/core/epub";
-import { WORDS_PER_PAGE } from "@/core/upload-policy";
+import { approxPages } from "@/core/upload-policy";
 
 // Parsed book card: cover or a quiet serif monogram, then the facts.
 export function BookCard({ book, coverUrl }: { book: EpubBook; coverUrl: string | null }) {
@@ -17,11 +17,11 @@ export function BookCard({ book, coverUrl }: { book: EpubBook; coverUrl: string 
         <h3 className="home-card-title">{book.title}</h3>
         <p className="home-card-meta">
           {book.author ?? "Unknown author"} · {book.chapters.length}{" "}
-          {book.chapters.length === 1 ? "chapter" : "chapters"} · About{" "}
-          {Math.max(1, Math.round(book.words / WORDS_PER_PAGE))} pages
+          {book.chapters.length === 1 ? "chapter" : "chapters"} · About {approxPages(book.words)}{" "}
+          pages
         </p>
-        {book.chapters.slice(0, 3).map((chapter) => (
-          <p className="home-card-meta" key={chapter}>
+        {book.chapters.slice(0, 3).map((chapter, index) => (
+          <p className="home-card-meta" key={index}>
             {chapter}
           </p>
         ))}
