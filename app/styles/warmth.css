@@ -13,20 +13,43 @@ body::before {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background: #ffb347;
+  background: #ffa53a;
   mix-blend-mode: multiply;
-  opacity: calc(var(--warmth) * 0.16);
+  opacity: calc(var(--warmth) * 0.6);
 }
 
-/* On dark paper multiply would vanish, so a faint amber lift instead. */
+/* On dark paper multiply would vanish, so a gentle amber lift instead. */
 html[data-theme="dark"] body::before {
   mix-blend-mode: normal;
-  opacity: calc(var(--warmth) * 0.07);
+  opacity: calc(var(--warmth) * 0.14);
+}
+
+/* Muted text slides toward warm brown as the paper deepens, so it keeps
+   >= 4.5:1 at full warmth. Body text keeps >= 8:1 unchanged. Same
+   selectors as the skin tokens; this file loads later, so it wins. */
+html[data-skin="engraving"]:not([data-theme="dark"]) {
+  --color-text-muted: color-mix(in srgb, #75684f, #2b1a0a calc(5% + var(--warmth) * 40%));
+}
+
+html[data-skin="watercolor"]:not([data-theme="dark"]) {
+  --color-text-muted: color-mix(in srgb, #5d6a85, #2b1a0a calc(var(--warmth) * 30%));
+}
+
+html[data-skin="ink"]:not([data-theme="dark"]) {
+  --color-text-muted: color-mix(in srgb, #5b6474, #2b1a0a calc(var(--warmth) * 22%));
+}
+
+html[data-skin="pencil"][data-theme="light"] {
+  --color-text-muted: color-mix(in srgb, #6b6f76, #2b1a0a calc(var(--warmth) * 38%));
+}
+
+html[data-skin="chihiro"][data-theme="light"] {
+  --color-text-muted: color-mix(in srgb, #6e625a, #2b1a0a calc(var(--warmth) * 26%));
 }
 
 /* Pencil lays an opaque sheet over the paper; warm the sheet too. */
 html[data-skin="pencil"][data-theme="light"] .read-col {
-  background: color-mix(in srgb, #fdfdfb, #ffb347 calc(var(--warmth) * 12%));
+  background: color-mix(in srgb, #fdfdfb, #ffa53a calc(var(--warmth) * 48%));
 }
 
 .warmth {
