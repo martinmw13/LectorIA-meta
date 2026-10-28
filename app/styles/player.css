@@ -133,13 +133,17 @@
   line-height: 0;
 }
 
+/* Stickers keep their white die-cut in both themes. */
 .sticker img {
   display: block;
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
   transform: rotate(-6deg);
-  filter: saturate(0.6) drop-shadow(0 0 0 #fff) drop-shadow(0 0 1px #fff)
-    drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+  filter: saturate(0.6) drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff)
+    drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff)
+    drop-shadow(1.4px 1.4px 0 #fff) drop-shadow(-1.4px -1.4px 0 #fff)
+    drop-shadow(1.4px -1.4px 0 #fff) drop-shadow(-1.4px 1.4px 0 #fff)
+    drop-shadow(0 3px 5px rgba(0, 0, 0, 0.22));
   opacity: 0.85;
   transition: transform 150ms ease, filter var(--motion-duration) ease, opacity
     var(--motion-duration) ease;
@@ -150,9 +154,12 @@
 }
 
 .sticker:hover img {
-  transform: rotate(0deg) translateY(-1px);
-  filter: saturate(1) drop-shadow(0 0 0 #fff) drop-shadow(0 0 1px #fff)
-    drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35));
+  transform: rotate(0deg) translateY(-2px);
+  filter: saturate(1) drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff)
+    drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff)
+    drop-shadow(1.4px 1.4px 0 #fff) drop-shadow(-1.4px -1.4px 0 #fff)
+    drop-shadow(1.4px -1.4px 0 #fff) drop-shadow(-1.4px 1.4px 0 #fff)
+    drop-shadow(0 3px 5px rgba(0, 0, 0, 0.22));
   opacity: 1;
 }
 
@@ -164,9 +171,21 @@
 
 .sticker[aria-pressed="true"] img {
   transform: rotate(0deg);
-  filter: saturate(1) drop-shadow(0 0 0 #fff) drop-shadow(0 0 1px #fff)
-    drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+  filter: saturate(1) drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff)
+    drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff)
+    drop-shadow(1.4px 1.4px 0 #fff) drop-shadow(-1.4px -1.4px 0 #fff)
+    drop-shadow(1.4px -1.4px 0 #fff) drop-shadow(-1.4px 1.4px 0 #fff)
+    drop-shadow(0 3px 5px rgba(0, 0, 0, 0.22));
   opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sticker img,
+  .sticker:hover img,
+  .sticker[aria-pressed="true"] img {
+    transform: none;
+    transition: none;
+  }
 }
 
 .sticker-dot {
@@ -182,10 +201,10 @@
 
 .player .chopin {
   flex: none;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   padding: 0;
-  border: 1px solid transparent;
+  border: 2px solid transparent;
   border-radius: 50%;
   background: transparent;
   overflow: hidden;

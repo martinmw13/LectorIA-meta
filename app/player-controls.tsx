@@ -41,7 +41,7 @@ export function PlayerControls({
                 title={s.name}
                 disabled={controlsDisabled}
               >
-                <img src={stickerFor(s)} alt="" width={34} height={34} />
+                <img src={stickerFor(s)} alt="" width={40} height={40} />
               </button>
               <span className="sticker-dot" aria-hidden="true" />
             </span>
