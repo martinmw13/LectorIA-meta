@@ -6,21 +6,21 @@ A Muse commit is a non-merge commit on main that carries the trailer `Co-authore
 
 ## Commits
 
-- Muse commits: 332 of 390 non-merge commits (85%).
+- Muse commits: 333 of 391 non-merge commits (85%).
 - Date range (UTC-3): 2026-10-27 to 2026-10-28.
 
 ## Lines
 
 | Scope | Muse added | Muse removed | Other added | Other removed | Muse share of added |
 | --- | --- | --- | --- | --- | --- |
-| Source code (`app/`, `core/`, `pipeline/`, `server/`, `scripts/`) | 41,147 | 8,604 | 7,446 | 2,691 | 85% |
-| All files | 235,567 | 12,750 | 27,725 | 2,913 | 89% |
+| Source code (`app/`, `core/`, `pipeline/`, `server/`, `scripts/`) | 41,213 | 8,652 | 7,446 | 2,691 | 85% |
+| All files | 235,633 | 12,798 | 27,725 | 2,913 | 89% |
 
 All files includes the Muse Code session transcripts in `agent-logs/`, the vendored skills in `.agents/` and `package-lock.json`.
 
 ## Pull requests
 
-57 merged PRs contain Muse commits. Each carries the `Muse Code` label.
+58 merged PRs contain Muse commits. Each carries the `Muse Code` label.
 
 | PR | Title | Merged (UTC-3) | Muse commits |
 | --- | --- | --- | --- |
@@ -81,3 +81,4 @@ All files includes the Muse Code session transcripts in `agent-logs/`, the vendo
 | [#93](https://github.com/martinmw13/LectorIA-meta/pull/93) | fix(narration): pause follow-scroll on scrollbar drags and scene jumps | 2026-10-28 | 1 of 1 |
 | [#94](https://github.com/martinmw13/LectorIA-meta/pull/94) | feat(player): prototype motion for the music mode buttons in all six skins | 2026-10-28 | 1 of 2 |
 | [#95](https://github.com/martinmw13/LectorIA-meta/pull/95) | perf(music): serve re-encoded tracks from public instead of Blob | 2026-10-28 | 1 of 2 |
+| [#97](https://github.com/martinmw13/LectorIA-meta/pull/97) | fix(player): start music on first gesture anywhere in the player | 2026-10-28 | 1 of 1 |
