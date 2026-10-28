@@ -1,10 +1,12 @@
 // One scene view: heading, reading column, pictures, vault, pager.
 // Sub-page moves stay in client state; scene moves push a new route.
+// The chapter cover and end page are sub-pages of their scene, so
+// they never touch music state.
 "use client";
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { buildNavIndex, navReducer } from "@/core/reader";
+import { buildNavIndex, navReducer, subPageCount, subPageKind, textPageAt } from "@/core/reader";
 import type { NavAction, SceneView } from "@/core/reader";
 import { loadImageStylePref, saveImageStylePref } from "../image-style";
 import type { ImageStylePref } from "../image-style";
@@ -15,6 +17,21 @@ import { Lightbox } from "../folio/lightbox";
 import { usePictures } from "../folio/use-pictures";
 import type { InlineFigure } from "../folio/use-pictures";
 import { PictureVault } from "../folio/vault";
+import {
+  chapterSetAside,
+  markChapterEndReached,
+  markChapterSetAside,
+  markPanelsShownAnyway,
+  panelsUnlocked,
+} from "../folio/panels";
+import type { ChapterPanel } from "../folio/panels";
+import {
+  BlurredThumbs,
+  PanelsModal,
+  PanelsOfferCard,
+  PanelsQuietLink,
+  SpoilerGateDialog,
+} from "../folio/panels-modal";
 
 // One-shot entry intent: set just before pushing the previous scene
 // route, so the new page opens on its last sub-page. Client memory only,
@@ -43,6 +60,8 @@ export function ScenePage({
   textVersion,
   bookIndex,
   bookTotal,
+  panels,
+  nextChapter,
 }: {
   view: SceneView;
   views: { sceneId: string; pages: number }[];
@@ -50,12 +69,17 @@ export function ScenePage({
   textVersion: string;
   bookIndex: number;
   bookTotal: number;
+  panels: ChapterPanel[];
+  nextChapter: { ch: number; firstSceneId: string } | null;
 }) {
   const pic = usePictures({ bookId, textVersion, sceneId: view.sceneId });
   const [pref, setPref] = useState<ImageStylePref>({ kind: "preset", id: "denslow" });
   const router = useRouter();
   const index = useMemo(() => buildNavIndex(views), [views]);
-  const lastPage = view.pages.length - 1;
+  const cover = view.isChapterFirst;
+  const end = view.isChapterLast;
+  const total = subPageCount(view.pages.length, cover, end);
+  const lastPage = total - 1;
   const [page, setPage] = useState(() => {
     if (enterAtEnd) {
       enterAtEnd = false;
@@ -63,10 +87,16 @@ export function ScenePage({
     }
     return 0;
   });
+  const [panelsOpen, setPanelsOpen] = useState(false);
+  const [gateOpen, setGateOpen] = useState(false);
+  const [offerAside, setOfferAside] = useState(() => chapterSetAside(view.ch));
+  const gateOpener = useRef<HTMLElement | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const readColRef = useRef<HTMLDivElement | null>(null);
   const figEls = useRef(new Map<string, HTMLElement>());
-  const sub = view.pages[page] ?? view.pages[0];
+  const kind = subPageKind(page, view.pages.length, cover, end);
+  const sub = kind === "text" ? (view.pages[textPageAt(page, cover)] ?? view.pages[0]) : undefined;
+  const textIndex = textPageAt(page, cover);
   const atStart = view.prevSceneId === null && page === 0;
   const atBookEnd = view.nextSceneId === null && page === lastPage;
 
@@ -74,9 +104,46 @@ export function ScenePage({
     setPref(loadImageStylePref());
   }, []);
 
+  // The end page marks the chapter finished, unlocking the panels.
+  useEffect(() => {
+    if (kind === "end") markChapterEndReached(view.ch);
+  }, [kind, view.ch]);
+
   function changePref(next: ImageStylePref) {
     setPref(next);
     saveImageStylePref(next);
+  }
+
+  function requestPanels(opener: HTMLElement | null) {
+    if (panelsUnlocked(view.ch)) {
+      setPanelsOpen(true);
+      return;
+    }
+    gateOpener.current = opener;
+    setGateOpen(true);
+  }
+
+  function showAnyway() {
+    markPanelsShownAnyway(view.ch);
+    setGateOpen(false);
+    setPanelsOpen(true);
+  }
+
+  function notYet() {
+    setGateOpen(false);
+    gateOpener.current?.focus?.();
+    gateOpener.current = null;
+  }
+
+  function readFirst() {
+    markChapterSetAside(view.ch);
+    setOfferAside(true);
+  }
+
+  function goNextChapter() {
+    if (!nextChapter) return;
+    hasNavigated = true;
+    router.push(`/leer/${nextChapter.firstSceneId}`);
   }
 
   const figsByN = useMemo(() => {
@@ -97,7 +164,7 @@ export function ScenePage({
   function gotoFigure(fig: InlineFigure) {
     const at = pageOf(fig.endN);
     if (at < 0) return;
-    setPage(at);
+    setPage(at + (cover ? 1 : 0));
     readColRef.current?.scrollTo(0, 0);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -172,57 +239,103 @@ export function ScenePage({
   return (
     <>
       <ImagePane
-        card={pic.card}
+        // The cover always shows the placeholder: nothing to picture yet,
+        // and a cached scene picture would spoil the chapter.
+        card={kind === "cover" ? { phase: "idle" } : pic.card}
         onPicture={() => pic.illustrateScene(pref)}
         onRetry={() => pic.illustrateScene(pref)}
         onClear={pic.clearScene}
         onOpen={pic.openLightbox}
+        bare={kind === "cover"}
+        onPictureChapter={
+          kind === "cover" ? null : kind === "end" ? () => setPanelsOpen(true) : requestPanels
+        }
       />
       <Divider />
       <div className="read-col" ref={readColRef} aria-label="Reading column">
-        <div className="kicker">Chapter {view.ch}</div>
-        <h1 className="chapter-title" id="scene-heading" ref={headingRef} tabIndex={-1}>
-          {view.chapterTitle}
-        </h1>
-        <div className="scene-line">
-          <span>
-            Scene {view.k} of {view.n}
-            {view.pages.length > 1 ? ` · Page ${page + 1} of ${view.pages.length}` : ""}
-          </span>
-        </div>
-        <div
-          className={`body-text${page === 0 ? " dropcap" : ""}`}
-          ref={pic.viewRef}
-        >
-          {sub?.paragraphs.map((p, i, arr) => (
-            <Fragment key={p.id}>
-              <p id={p.id} data-n={p.n} data-cont={p.cont ? true : undefined}>
-                {p.text}
-              </p>
-              {/* A figure for n lands after its last visible fragment. */}
-              {(arr[i + 1]?.n !== p.n ? (figsByN.get(p.n) ?? []) : []).map((fig) => (
-                <InlineFigureView
-                  key={fig.id}
-                  figure={fig}
-                  onRemove={() => pic.removeFigure(fig.id)}
-                  onRetry={() => pic.retryFigure(fig.id, pref)}
-                  onOpen={pic.openLightbox}
-                  refCb={(el) => {
-                    if (el) figEls.current.set(fig.id, el);
-                    else figEls.current.delete(fig.id);
-                  }}
-                />
+        {kind === "cover" ? (
+          <>
+            <div className="kicker">Chapter</div>
+            <p className="cover-num" aria-label={`Chapter ${view.ch}`}>
+              {view.ch}
+            </p>
+            <h1 className="chapter-title" id="scene-heading" ref={headingRef} tabIndex={-1}>
+              {view.chapterTitle}
+            </h1>
+            <hr className="cover-rule" />
+            {offerAside ? (
+              <PanelsQuietLink onOpen={requestPanels} />
+            ) : (
+              <PanelsOfferCard panels={panels} onShowAnyway={showAnyway} onReadFirst={readFirst} />
+            )}
+            <button type="button" className="cover-begin" onClick={goNext}>
+              Begin the chapter →
+            </button>
+          </>
+        ) : kind === "end" ? (
+          <>
+            <div className="kicker">End of Chapter {view.ch}</div>
+            <div className="end-card">
+              <BlurredThumbs panels={panels} unblurredCount={Math.min(4, panels.length)} />
+              <h2>Relive this chapter in panels</h2>
+              <div className="panels-btns">
+                <button type="button" className="panels-primary" onClick={() => setPanelsOpen(true)}>
+                  Open the panels
+                </button>
+              </div>
+            </div>
+            {nextChapter ? (
+              <button type="button" className="end-next" onClick={goNextChapter}>
+                On to Chapter {nextChapter.ch} →
+              </button>
+            ) : (
+              <p className="the-end">The end.</p>
+            )}
+          </>
+        ) : (
+          <>
+            <div className="kicker">Chapter {view.ch}</div>
+            <h1 className="chapter-title" id="scene-heading" ref={headingRef} tabIndex={-1}>
+              {view.chapterTitle}
+            </h1>
+            <div className="scene-line">
+              <span>
+                Scene {view.k} of {view.n}
+                {view.pages.length > 1 ? ` · Page ${textIndex + 1} of ${view.pages.length}` : ""}
+              </span>
+            </div>
+            <div className={`body-text${textIndex === 0 ? " dropcap" : ""}`} ref={pic.viewRef}>
+              {sub?.paragraphs.map((p, i, arr) => (
+                <Fragment key={p.id}>
+                  <p id={p.id} data-n={p.n} data-cont={p.cont ? true : undefined}>
+                    {p.text}
+                  </p>
+                  {/* A figure for n lands after its last visible fragment. */}
+                  {(arr[i + 1]?.n !== p.n ? (figsByN.get(p.n) ?? []) : []).map((fig) => (
+                    <InlineFigureView
+                      key={fig.id}
+                      figure={fig}
+                      onRemove={() => pic.removeFigure(fig.id)}
+                      onRetry={() => pic.retryFigure(fig.id, pref)}
+                      onOpen={pic.openLightbox}
+                      refCb={(el) => {
+                        if (el) figEls.current.set(fig.id, el);
+                        else figEls.current.delete(fig.id);
+                      }}
+                    />
+                  ))}
+                </Fragment>
               ))}
-            </Fragment>
-          ))}
-          {pic.popover !== null ? (
-            <SelectionPopover
-              pos={pic.popover}
-              popRef={pic.popRef}
-              onPick={() => pic.illustratePassage(pref)}
-            />
-          ) : null}
-        </div>
+              {pic.popover !== null ? (
+                <SelectionPopover
+                  pos={pic.popover}
+                  popRef={pic.popRef}
+                  onPick={() => pic.illustratePassage(pref)}
+                />
+              ) : null}
+            </div>
+          </>
+        )}
       </div>
       <PictureVault
         scene={pic.card.phase === "ready" ? { url: pic.card.url, caption: pic.card.caption } : null}
@@ -244,6 +357,16 @@ export function ScenePage({
         atBookEnd={atBookEnd}
       />
       <Lightbox item={pic.lightbox} onClose={pic.closeLightbox} />
+      {gateOpen ? <SpoilerGateDialog onShow={showAnyway} onNotYet={notYet} /> : null}
+      {panelsOpen ? (
+        <PanelsModal
+          ch={view.ch}
+          chapterTitle={view.chapterTitle}
+          panels={panels}
+          onClose={() => setPanelsOpen(false)}
+          onOpenArt={pic.openLightbox}
+        />
+      ) : null}
     </>
   );
 }

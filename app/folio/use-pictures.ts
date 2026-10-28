@@ -37,6 +37,13 @@ const POLL_MS = 3000;
 const POLL_MAX = 40;
 
 const sceneCache = new Map<string, { url: string; caption: string }>();
+
+// Read-only view of the session cache for the panels grid. Never
+// writes, so it cannot change picture behaviour.
+export function getCachedScenePicture(sceneId: string): { url: string; caption: string } | null {
+  const hit = sceneCache.get(sceneId);
+  return hit ? { url: hit.url, caption: hit.caption } : null;
+}
 const figureCache = new Map<string, InlineFigure[]>();
 let figureSeq = 1;
 
