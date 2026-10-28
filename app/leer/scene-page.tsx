@@ -77,19 +77,21 @@ export function ScenePage({ view, chapters }: { view: SceneView; chapters: Chapt
   }
 
   return (
-    <article className="scene-view" aria-labelledby="scene-heading" key={`${view.sceneId}:${page}`}>
-      <p className="scene-progress">
-        Capítulo {view.ch}, {view.chapterTitle}. Escena {view.k} de {view.n}
-        {view.pages.length > 1 ? `. Página ${page + 1} de ${view.pages.length}` : ""}
-      </p>
-      <h2 id="scene-heading" ref={headingRef} tabIndex={-1}>
-        {view.title}
-      </h2>
-      {sub?.paragraphs.map((p) => (
-        <p key={p.id} id={p.id} data-n={p.n}>
-          {p.text}
+    <article aria-labelledby="scene-heading">
+      <div className="scene-view" key={`${view.sceneId}:${page}`}>
+        <p className="scene-progress">
+          Capítulo {view.ch}, {view.chapterTitle}. Escena {view.k} de {view.n}
+          {view.pages.length > 1 ? `. Página ${page + 1} de ${view.pages.length}` : ""}
         </p>
-      ))}
+        <h2 id="scene-heading" ref={headingRef} tabIndex={-1}>
+          {view.title}
+        </h2>
+        {sub?.paragraphs.map((p) => (
+          <p key={p.id} id={p.id} data-n={p.n}>
+            {p.text}
+          </p>
+        ))}
+      </div>
       <nav className="scene-nav" aria-label="Escenas">
         <button type="button" onClick={goPrev} disabled={atStart} aria-label="Anterior">
           Anterior
