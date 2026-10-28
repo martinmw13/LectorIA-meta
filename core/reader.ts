@@ -7,6 +7,9 @@ export interface ReaderParagraph {
   id: string;
   n: number;
   text: string;
+  // Set on fragments after the first when paginateScene splits one
+  // paragraph across pages. Fragments share n; ids stay unique.
+  cont?: boolean;
 }
 
 export interface ReaderScene {
@@ -30,15 +33,24 @@ export interface ReaderModel {
   chapters: ReaderChapter[];
 }
 
-// 1280x800 fit: ~560 px of text area at the 19 px / 1.7 book line holds
-// 17 lines; the 65ch column fits ~68 chars per line, so each paragraph
-// costs ceil(chars / 68) lines and short dialogue lines each take a full
-// line. Page one also carries the scene heading, so it budgets one less.
-// Paragraphs stay whole; one over budget takes its own page.
+// 1280x800 fit: the reading column is 595 px tall and the heading block
+// (kicker, title, Scene/Page line) takes ~115 px of it on every page,
+// leaving ~480 px for text. At 20.5px/1.7 each line costs 34.85 px, so a
+// page holds 13 lines; the ~538 px measure fits ~58 chars per line, so
+// each paragraph costs ceil((chars + indent) / 58) lines and short
+// dialogue lines each take a full line. Page one also carries the drop cap, so it
+// budgets one less. Paragraphs stay whole; one over budget takes its own
+// page.
 export const PAGE_WORD_BUDGET = 250;
-export const CHARS_PER_LINE = 68;
-export const LINES_PER_PAGE = 17;
-export const FIRST_PAGE_LINES = 16;
+const READ_COL_PX = 595;
+const HEADING_PX = 115;
+const LINE_PX = 20.5 * 1.7;
+export const CHARS_PER_LINE = 58;
+// First-line indent (1.5em ≈ 30 px ≈ 4 chars) eats measure on every
+// indented paragraph: all but the scene opener and cont fragments.
+export const INDENT_CHARS = 4;
+export const LINES_PER_PAGE = Math.floor((READ_COL_PX - HEADING_PX) / LINE_PX);
+export const FIRST_PAGE_LINES = LINES_PER_PAGE - 1;
 
 export interface SubPage {
   paragraphs: ReaderParagraph[];
@@ -52,16 +64,72 @@ export function countWords(text: string): number {
   return words.length;
 }
 
-export function estimateLines(text: string): number {
-  return Math.max(1, Math.ceil(text.length / CHARS_PER_LINE));
+export function estimateLines(text: string, indented = false): number {
+  return Math.max(1, Math.ceil((text.length + (indented ? INDENT_CHARS : 0)) / CHARS_PER_LINE));
 }
 
-// Split one scene into sub-pages at paragraph boundaries: a page closes
-// when the next paragraph would pass the word budget or the line budget.
+// Title measure: ~26 chars per line at the 44 px chapter-title size in
+// the 538 px column. "The Cyclone" is 1 line,
+// "The Discovery of Oz, the Terrible" is 2.
+export const TITLE_CHARS_PER_LINE = 26;
+const WRAPPED_TITLE_PENALTY = 2;
+
+export function chapterTitleLines(title: string): number {
+  if (title.length === 0) return 1;
+  return Math.max(1, Math.ceil(title.length / TITLE_CHARS_PER_LINE));
+}
+
+// Latest sentence end (`. `, `! `, `? `, `; `, closing quotes included)
+// at or before maxChars, as a cut index into text, or -1 when none fits.
+// The cut sits just past the space, so fragments join back exactly.
+function sentenceCut(text: string, maxChars: number): number {
+  const re = /[.!?;]["'”’)\]]* /g;
+  let cut = -1;
+  for (;;) {
+    const m = re.exec(text);
+    if (m === null) break;
+    const end = m.index + m[0].length;
+    if (end > maxChars || end >= text.length) break;
+    cut = end;
+  }
+  return cut;
+}
+
+// Latest cut at or before maxChars that fits maxWords: the sentence cut
+// when one fits, else the last space, else a hard cut. Backs off to an
+// earlier space while the prefix holds too many words.
+function findCut(text: string, maxChars: number, maxWords: number): number {
+  const cap = Math.min(maxChars, text.length - 1);
+  let cut = sentenceCut(text, cap);
+  if (cut <= 0) {
+    const at = text.lastIndexOf(" ", cap);
+    // at + 1 can pass maxChars by one char (a 2-line 59-char slip
+    // into a 1-line slot), so clamp: the space opens the next fragment.
+    cut = at <= 0 ? cap : Math.min(at + 1, cap);
+  }
+  while (cut > 1 && countWords(text.slice(0, cut)) > maxWords) {
+    const at = text.lastIndexOf(" ", cut - 2);
+    if (at <= 0) break;
+    cut = at + 1;
+  }
+  return Math.max(1, Math.min(cut, text.length - 1));
+}
+
+// Split one scene into sub-pages: a page closes when the next paragraph
+// would pass the word budget or the line budget. A paragraph that fits
+// the remaining budget, or a fresh page when the current one has text,
+// moves whole. One longer than a full page fills the current page at a
+// sentence boundary (word boundary fallback) and continues on the next;
+// fragments share n, later ones carry cont. A wrapped chapter title
+// costs every page WRAPPED_TITLE_PENALTY lines.
 export function paginateScene(
   paragraphs: ReaderParagraph[],
   budgetWords: number = PAGE_WORD_BUDGET,
+  chapterTitle: string = "",
 ): SubPage[] {
+  const penalty = chapterTitleLines(chapterTitle) > 1 ? WRAPPED_TITLE_PENALTY : 0;
+  const budgetFor = (pageIndex: number): number =>
+    (pageIndex === 0 ? FIRST_PAGE_LINES : LINES_PER_PAGE) - penalty;
   const pages: SubPage[] = [];
   let current: ReaderParagraph[] = [];
   let words = 0;
@@ -78,14 +146,43 @@ export function paginateScene(
     words = 0;
     lines = 0;
   };
-  for (const p of paragraphs) {
-    const w = countWords(p.text);
-    const l = estimateLines(p.text);
-    const budget = pages.length === 0 ? FIRST_PAGE_LINES : LINES_PER_PAGE;
-    if (current.length > 0 && (words + w > budgetWords || lines + l > budget)) flush();
-    current.push(p);
+  const pushFrag = (p: ReaderParagraph, text: string, fragNo: number, indented: boolean) => {
+    const w = countWords(text);
+    const l = estimateLines(text, indented);
+    current.push(
+      fragNo === 0 ? { id: p.id, n: p.n, text } : { id: `${p.id}~${fragNo + 1}`, n: p.n, text, cont: true },
+    );
     words += w;
     lines += l;
+  };
+  for (let pi = 0; pi < paragraphs.length; pi++) {
+    const p = paragraphs[pi] as ReaderParagraph;
+    let rest = p.text;
+    let fragNo = 0;
+    while (rest.length > 0) {
+      // The scene opener carries the drop cap and cont fragments carry
+      // no indent; every other first fragment pays INDENT_CHARS.
+      const indented = pi > 0 && fragNo === 0;
+      const budget = budgetFor(pages.length);
+      const remainingLines = budget - lines;
+      const remainingWords = budgetWords - words;
+      const wRest = countWords(rest);
+      const lRest = estimateLines(rest, indented);
+      if (lRest <= remainingLines && wRest <= remainingWords) {
+        pushFrag(p, rest, fragNo, indented);
+        rest = "";
+      } else if (remainingLines <= 0 || remainingWords <= 0) {
+        flush();
+      } else if (current.length > 0 && lRest <= budgetFor(pages.length + 1) && wRest <= budgetWords) {
+        flush();
+      } else {
+        const cut = findCut(rest, remainingLines * CHARS_PER_LINE - (indented ? INDENT_CHARS : 0), remainingWords);
+        pushFrag(p, rest.slice(0, cut), fragNo, indented);
+        fragNo += 1;
+        rest = rest.slice(cut);
+        flush();
+      }
+    }
   }
   flush();
   if (pages.length === 0) pages.push({ paragraphs: [], startN: 0, endN: 0, words: 0 });
@@ -125,7 +222,7 @@ export function buildSceneView(
     chapterTitle: entry.chapterTitle,
     title: entry.scene.title,
     emotion: entry.scene.emotion,
-    pages: paginateScene(entry.scene.paragraphs, budgetWords),
+    pages: paginateScene(entry.scene.paragraphs, budgetWords, entry.chapterTitle),
     prevSceneId: prev?.scene.id ?? null,
     nextSceneId: next?.scene.id ?? null,
     k: chapterScenes.findIndex((e) => e.scene.id === sceneId) + 1,

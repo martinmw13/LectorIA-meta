@@ -40,18 +40,28 @@ and emotion triple only. Each scene page builds its view with
 `buildSceneView` and ships only that scene's text, its chapter title,
 and neighbor ids. Sub-pages come from `paginateScene`, which closes a
 page when the next paragraph would pass 250 words or the line budget
-(`FIRST_PAGE_LINES` 16 on page one, `LINES_PER_PAGE` 17 after, each
+(`FIRST_PAGE_LINES` 12 on page one, `LINES_PER_PAGE` 13 after, each
 paragraph costing `ceil(chars / CHARS_PER_LINE)` lines with
-`CHARS_PER_LINE` 68), split at paragraph boundaries. The pager moves sub-pages in client state and
+`CHARS_PER_LINE` 58). Paragraphs that outlast a page split at a
+sentence boundary (word fallback); fragments share `n`, later ones
+carry `cont`, and rejoin exactly. A two-line chapter title
+(`TITLE_CHARS_PER_LINE` 26) costs every page 2 lines. The pager moves sub-pages in client state and
 pushes routes with `router.push`, never `<Link>`; going back lands on
 the previous scene's last sub-page through a one-shot client flag, never
 a URL param, so prerendered pages stay static. The client never
-receives other scenes' text, titles, or summaries. The progress line
-reads `Chapter 1 · The Cyclone`, a spaced separator, then `Scene 1 of 4
-· Page 1 of 3` as two spans on one line. Book type is 1.1875rem / 1.7
-with no paragraph gaps and a 1.5em first-line indent on following
-paragraphs. The word budget stays the upper bound and the line budget
-keeps every sub-page inside 1280×800 without scroll.
+receives other scenes' text, titles, or summaries. One grid holds the
+top line, image pane, reading column, vault margin, and bottom band;
+route wrappers use `display: contents`, so music state persists across
+routes with no portal. The top line reads `LECTORIA`, book and author,
+then `Chapter N of 24` as a quiet chapter jump (a native select styled
+as text, options `1. The Cyclone`), then the theme toggle. Each page
+opens with a kicker `Chapter N`, the chapter title in Newsreader, then
+muted `Scene k of n` (plus `Page i of m`); no scene name appears
+anywhere. Book type is 20.5px / 1.7, no paragraph gaps, 1.5em indent,
+blue drop cap on page one. The body never scrolls at 1280×800; the
+reading column scrolls inside itself. The word budget stays the upper
+bound and the line budget keeps every sub-page inside 1280×800 without
+scroll.
 
 ## Music library
 
@@ -242,50 +252,32 @@ frozen point. Audio starts once, on the first press, with fade 0.
 Audio starts only after the user presses play. Reduced motion is read in
 state with a change listener and affects visuals only, never the fade.
 
-The bar is one sticky row, 56 px tall: the `Lectoria` wordmark left,
-the player centre, the Chopin button and the source icon link right.
-The inner row is centered with 24 px side padding, one bottom hairline
-in the border token, and nothing touching the viewport edges. The inner
-max-width is 56rem, wider than the 65ch book column on purpose so the
-full now-playing line fits at 1280 px. The player holds Previous,
-Play/Pause, Next, the now-playing line (flexible space, `min-width`
-16rem, truncated with an ellipsis, full line in the `title` tooltip),
-a mute icon button (`aria-pressed`, `aria-label` `Mute` / `Unmute`, the
-icon shows the muted state), a volume slider with `aria-label` `Volume`
-(96 px) next to it, a style selector with `aria-label`
-`Orchestra / Piano` and no visible label text listing only styles that
-have tracks (hidden while fewer than two qualify), then the Chopin
-button and the source icon link. The transport and mute buttons and the
-source icon link are icon-only inline SVGs (`currentColor`, 32 px hit
-area), quiet and neutral, Meta blue on hover and focus-visible, each
-with `aria-label` and `title`; the source link reads `Music source
-(opens in new tab)`. Previous walks the session history and restarts
-the current track with no history, including the current playlist piece
-in playlist mode; Next cycles same-emotion tracks in the style.
+The bottom band is one row: the pager with book ticks left, the player
+centre-right. The pager reads `Scene k of n` between `‹` `›` buttons
+(`Previous page` / `Next page`, arrow keys keep working), above one
+tick per scene (current in accent) and muted `Scene i of N`. The player
+holds Previous, Play/Pause, Next, mute (`Mute` / `Unmute`), a `Volume`
+slider, the now-playing line (ellipsis, full line in `title`), then
+the stickers and Chopin. The line shows `display title · composer`,
+then the source artist as a link with an arrow icon when the manifest
+gives a URL. Orchestra and Piano are sticker buttons
+(`/art/stickers/violin.svg`, `/art/stickers/piano.svg`, Noto Emoji,
+Apache-2.0), shown while two styles have tracks, with `aria-pressed`
+for the selected one, a white die-cut outline, and a Meta-blue dot
+below it. Previous walks the session history and restarts the track
+with no history; Next cycles same-emotion tracks in the style.
 A `Just play Chopin` round image button (`/art/chopin-just-play-me.png`,
-40 px, `alt` and `aria-label` `Just play Chopin`) appears only when
-the manifest defines that playlist with tracks; it carries
-`aria-pressed`, and while pressed it shows a 2 px Meta-blue ring plus
-scale 1.05. The now-playing line shows `display title · composer
-· source`: `displayTitle` drops quoted nicknames, key phrases, and
-opus/catalogue suffixes from the track title, and the source is the
-artist plus ` / <platform>` when the attribution names Musopen or
-Jamendo and the artist does not already say it, dropped when it would
-repeat the performer. The full manifest title plus the license and full
-attribution sits in the `title` tooltip. On manifest failure the reader
-still renders and the bar shows a short neutral note. UI motion stays
-under 200 ms. Controls are real buttons and inputs with labels, visible
-focus, and keyboard use. `app/player.tsx` keeps the audio engine,
-transport, and bar layout; `app/player-controls.tsx` holds the style
-selector and the playlist toggle; `app/music-prefs.ts` owns the storage
-helper. The heading keeps `h2:focus:not(:focus-visible){outline:none}`
-so mouse navigation shows no box while keyboard focus keeps its ring.
-No user-visible emotion labels exist; ids stay as they are.
-`core/music-credit.ts` builds the line as a pure function with tests,
-including the pure `displayTitle`.
-`core/music-history.ts` is the bounded history stack the session banks
-automatic switches on; `requestManualTrack` in `core/music-schedule.ts`
-holds a manual pick.
+40 px) appears only when the manifest defines that playlist; while
+pressed it shows a 2 px Meta-blue ring plus scale 1.05. On manifest
+failure the band shows `The music is resting. The book is all yours.`
+Motion stays under 200 ms, except the image hover expand at 260 ms.
+`app/player.tsx` keeps the audio engine, transport, and band layout;
+`app/player-controls.tsx` holds the stickers and playlist toggle;
+`app/music-prefs.ts` owns storage. The heading keeps
+`:focus:not(:focus-visible){outline:none}`. No user-visible emotion
+labels exist; ids stay as they are. `core/music-credit.ts` builds the
+line as a pure function with tests. `core/music-history.ts` is the
+bounded history stack; `requestManualTrack` holds a manual pick.
 
 ## Image api
 
@@ -327,6 +319,27 @@ bring-your-own-key path skips them. Free uploads allow one book per
 person (`FREE_BOOKS_PER_PERSON` = 1, hashed IP plus anon cookie, no
 day, ~10-day TTL; `checkBookQuota`/`refundBookQuota` in
 `server/images/quota.ts`, no route yet).
+
+## Picture vault and style pref
+
+The pane shows the scene picture behind a `Picture this scene` pill on
+a paper-grain placeholder (`Sketching…` while loading, retry on
+error). The image fills the pane, expands on a 250 ms hover (max 72vw
+by 78vh), and opens the shared lightbox on click. `Picture this` pops
+8 px above a 3+ char selection and inserts one figure after the
+selection end paragraph (`pickEndN` over ordinals), captioned with the
+selected text. Figures persist per scene in client memory, one request
+at a time. The vault lists the scene picture first, then figures in
+text order, each with jump-to-figure pulse and expand; the style picker
+below stores `{ kind: "preset", id } | { kind: "custom", text }` in
+`lectoria.imageStyle`. The style is UI only: `requestStyleFields` in
+`app/image-style.ts` returns `{}` until the `/api/images` style
+contract lands, and request bodies spread its result. The credit stays
+`In the style of W. W. Denslow` until the adapter sends a style. The
+developer view (Shift+D or `?dev`, hidden otherwise) shows emotion
+bars, intensity, tempo, and track from data the reader holds. Theme
+persists in `lectoria.theme`; fonts are Newsreader and Instrument Sans
+via `next/font/google`.
 
 ## Chat api
 
