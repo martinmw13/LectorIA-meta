@@ -257,6 +257,29 @@ export function ruleAdBody(sec: RawSection): { kind: string; reason: string } | 
   return null;
 }
 
+const EDITION_LINE_PATTERNS = [
+  /\bedition\b/i,
+  /all rights reserved/i,
+  /©|\bcopyright\b/i,
+  /^printed\b/i,
+  /^published\b/i,
+];
+
+const EDITION_LINE_WORDS = 120;
+
+// Front-matter edition notices ("Second Edition", "Printed in Great
+// Britain", "All rights reserved"). Runs after ad-body: publisher ads
+// share this vocabulary ("NEW TWO-SHILLING EDITION ... MACMILLAN"), so
+// the ad rule keeps its sections first.
+export function ruleEditionLine(sec: RawSection): { kind: string; reason: string } | null {
+  if (sec.blocks.length === 0 || sectionWords(sec) > EDITION_LINE_WORDS) return null;
+  const hits = sec.blocks.filter((b) => EDITION_LINE_PATTERNS.some((p) => p.test(b.text))).length;
+  if (hits / sec.blocks.length >= 0.5) {
+    return { kind: "front_matter", reason: "mostly edition/rights/print lines" };
+  }
+  return null;
+}
+
 const CHAPTER_LABEL = /^(?:chapter|stave|book|part)\s+[ivxlc0-9]+[.:]?\b/i;
 const BARE_NUMERAL = /^(?:[ivxlc]+|\d+)[.:]?$/i;
 
