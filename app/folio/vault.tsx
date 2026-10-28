@@ -2,8 +2,8 @@
 // order, then the drawing style picker.
 "use client";
 
-import { useState } from "react";
-import { STYLE_PRESETS } from "../image-style";
+import { useEffect, useRef, useState } from "react";
+import { STYLE_OTHER_VALUE, STYLE_PRESETS, resolveStyleSelect } from "../image-style";
 import type { ImageStylePref } from "../image-style";
 import { truncateCaption } from "./helpers";
 import type { InlineFigure } from "./use-pictures";
@@ -24,7 +24,12 @@ export function StylePicker({
   onChange: (pref: ImageStylePref) => void;
 }) {
   const [custom, setCustom] = useState(pref.kind === "custom" ? pref.text : "");
-  const selected = pref.kind === "custom" ? "__other" : pref.id;
+  const [otherOpen, setOtherOpen] = useState(false);
+  const customRef = useRef<HTMLInputElement | null>(null);
+  const selected = resolveStyleSelect(pref, otherOpen);
+  useEffect(() => {
+    if (otherOpen) customRef.current?.focus();
+  }, [otherOpen]);
   return (
     <div className="style-picker">
       <label className="mlabel" htmlFor="style-select">
@@ -35,11 +40,16 @@ export function StylePicker({
         value={selected}
         onChange={(e) => {
           const next = e.target.value;
-          if (next === "__other") {
+          if (next === STYLE_OTHER_VALUE) {
             setCustom(pref.kind === "custom" ? pref.text : "");
+            setOtherOpen(true);
             return;
           }
+          setOtherOpen(false);
           onChange({ kind: "preset", id: next });
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") setOtherOpen(false);
         }}
       >
         {STYLE_PRESETS.map((p) => (
@@ -47,16 +57,20 @@ export function StylePicker({
             {p.label}
           </option>
         ))}
-        <option value="__other">Other…</option>
+        <option value={STYLE_OTHER_VALUE}>Other…</option>
       </select>
-      {selected === "__other" ? (
+      {selected === STYLE_OTHER_VALUE ? (
         <div className="style-custom">
           <input
+            ref={customRef}
             type="text"
             value={custom}
             maxLength={60}
             placeholder="e.g. Japanese woodblock"
             onChange={(e) => setCustom(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") setOtherOpen(false);
+            }}
             aria-label="Custom drawing style"
           />
           <button

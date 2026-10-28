@@ -19,6 +19,14 @@ export const STYLE_PRESETS: StylePreset[] = [
 
 export const DEFAULT_IMAGE_STYLE: ImageStylePref = { kind: "preset", id: "denslow" };
 
+export const STYLE_OTHER_VALUE = "__other";
+
+// The select shows Other… while its custom field is open, even when the
+// saved pref is still a preset; Escape or a preset choice closes it.
+export function resolveStyleSelect(pref: ImageStylePref, otherOpen: boolean): string {
+  return otherOpen || pref.kind === "custom" ? STYLE_OTHER_VALUE : pref.id;
+}
+
 export const DENSLOW_CREDIT = "In the style of W. W. Denslow";
 
 export function parseImageStylePref(json: unknown): ImageStylePref {

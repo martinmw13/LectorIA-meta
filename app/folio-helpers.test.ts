@@ -2,9 +2,11 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_IMAGE_STYLE,
+  STYLE_OTHER_VALUE,
   loadImageStylePref,
   parseImageStylePref,
   requestStyleFields,
+  resolveStyleSelect,
   saveImageStylePref,
   styleCredit,
 } from "./image-style";
@@ -89,6 +91,14 @@ describe("parseImageStylePref", () => {
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+
+  it("keeps Other… open until a preset or Escape closes it", () => {
+    expect(resolveStyleSelect({ kind: "preset", id: "denslow" }, false)).toBe("denslow");
+    expect(resolveStyleSelect({ kind: "preset", id: "denslow" }, true)).toBe(STYLE_OTHER_VALUE);
+    expect(resolveStyleSelect({ kind: "custom", text: "Woodblock" }, false)).toBe(
+      STYLE_OTHER_VALUE,
+    );
   });
 
   it("sends no style yet and credits Denslow", () => {
