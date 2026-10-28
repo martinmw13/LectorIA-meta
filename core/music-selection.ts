@@ -84,10 +84,9 @@ export interface ScheduledDraw {
 
 // The one scheduled draw: same-style tracks with the scene's dominant
 // emotion (or the whole style set when none matches), kept within
-// randomTolerance of the best. The current track stays when eligible;
-// otherwise the min-track hold keeps it until it played long enough,
-// and the draw skips it when an alternative exists. One rng call per
-// draw, only when a draw happens.
+// randomTolerance of the best. The current track stays when eligible
+// with no rng call; otherwise the draw runs first (one rng call, its
+// pick discarded under the min-track hold), matching evaluateRandom.
 export function selectScheduled(draw: ScheduledDraw): Track | null {
   const { cands, scene, currentId, rng } = draw;
   if (cands.length === 0 || scene === null) return null;
@@ -100,11 +99,12 @@ export function selectScheduled(draw: ScheduledDraw): Track | null {
   const eligible = kept.filter((entry) => entry.score >= best - config.randomTolerance);
   const current = currentId !== null ? eligible.find((entry) => entry.track.id === currentId) : undefined;
   if (current) return current.track;
-  if (currentId !== null && draw.nowSec - draw.currentStartedSec < config.minTrackSec) return null;
   const rest = eligible.filter((entry) => entry.track.id !== currentId);
   const drawFrom = rest.length > 0 ? rest : eligible;
   if (drawFrom.length === 0) return null;
-  return (drawFrom[Math.floor(rng() * drawFrom.length)] as RankedTrack).track;
+  const picked = (drawFrom[Math.floor(rng() * drawFrom.length)] as RankedTrack).track;
+  if (currentId !== null && draw.nowSec - draw.currentStartedSec < config.minTrackSec) return null;
+  return picked;
 }
 
 // Random mode draw: the scheduled draw without the min-track hold, which

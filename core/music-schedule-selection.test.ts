@@ -128,6 +128,25 @@ describe("scheduled select", () => {
     expect(d.switchToId).toBeNull();
   });
 
+  it("draws once per tick, discarding the hold pick but skipping a kept track", () => {
+    const counting = () => {
+      let calls = 0;
+      return { rng: () => (calls++, 0), calls: () => calls };
+    };
+    const draw = counting();
+    const d = tickScheduler(playing("a-far", 0), signal("calma"), manifest, 100, orchSeeded(draw.rng));
+    expect(d.switchToId).toBe("a-calma");
+    expect(draw.calls()).toBe(1);
+    const held = counting();
+    const h = tickScheduler(playing("a-far", 0), signal("calma"), manifest, 10, orchSeeded(held.rng));
+    expect(h.switchToId).toBeNull();
+    expect(held.calls()).toBe(1);
+    const kept = counting();
+    const k = tickScheduler(playing("a-calma", 0), signal("calma"), manifest, 100, orchSeeded(kept.rng));
+    expect(k.switchToId).toBeNull();
+    expect(kept.calls()).toBe(0);
+  });
+
   it("is deterministic under a seeded rng", () => {
     const run = () =>
       tickScheduler(playing("a-far", 0), signal("calma"), manifest, 100, orchSeeded(() => 0.99));
