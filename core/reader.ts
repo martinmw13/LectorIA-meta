@@ -37,8 +37,8 @@ export interface ReaderModel {
 // (kicker, title, Scene/Page line) takes ~115 px of it on every page,
 // leaving ~480 px for text. At 20.5px/1.7 each line costs 34.85 px, so a
 // page holds 13 lines; the ~538 px measure fits ~58 chars per line, so
-// each paragraph costs ceil(chars / 58) lines and short dialogue lines
-// each take a full line. Page one also carries the drop cap, so it
+// each paragraph costs ceil((chars + indent) / 58) lines and short
+// dialogue lines each take a full line. Page one also carries the drop cap, so it
 // budgets one less. Paragraphs stay whole; one over budget takes its own
 // page.
 export const PAGE_WORD_BUDGET = 250;
@@ -46,6 +46,9 @@ const READ_COL_PX = 595;
 const HEADING_PX = 115;
 const LINE_PX = 20.5 * 1.7;
 export const CHARS_PER_LINE = 58;
+// First-line indent (1.5em ≈ 30 px ≈ 4 chars) eats measure on every
+// indented paragraph: all but the scene opener and cont fragments.
+export const INDENT_CHARS = 4;
 export const LINES_PER_PAGE = Math.floor((READ_COL_PX - HEADING_PX) / LINE_PX);
 export const FIRST_PAGE_LINES = LINES_PER_PAGE - 1;
 
@@ -61,8 +64,8 @@ export function countWords(text: string): number {
   return words.length;
 }
 
-export function estimateLines(text: string): number {
-  return Math.max(1, Math.ceil(text.length / CHARS_PER_LINE));
+export function estimateLines(text: string, indented = false): number {
+  return Math.max(1, Math.ceil((text.length + (indented ? INDENT_CHARS : 0)) / CHARS_PER_LINE));
 }
 
 // Title measure: ~26 chars per line at the 44 px chapter-title size in
@@ -143,34 +146,38 @@ export function paginateScene(
     words = 0;
     lines = 0;
   };
-  const pushFrag = (p: ReaderParagraph, text: string, fragNo: number) => {
+  const pushFrag = (p: ReaderParagraph, text: string, fragNo: number, indented: boolean) => {
     const w = countWords(text);
-    const l = estimateLines(text);
+    const l = estimateLines(text, indented);
     current.push(
       fragNo === 0 ? { id: p.id, n: p.n, text } : { id: `${p.id}~${fragNo + 1}`, n: p.n, text, cont: true },
     );
     words += w;
     lines += l;
   };
-  for (const p of paragraphs) {
+  for (let pi = 0; pi < paragraphs.length; pi++) {
+    const p = paragraphs[pi] as ReaderParagraph;
     let rest = p.text;
     let fragNo = 0;
     while (rest.length > 0) {
+      // The scene opener carries the drop cap and cont fragments carry
+      // no indent; every other first fragment pays INDENT_CHARS.
+      const indented = pi > 0 && fragNo === 0;
       const budget = budgetFor(pages.length);
       const remainingLines = budget - lines;
       const remainingWords = budgetWords - words;
       const wRest = countWords(rest);
-      const lRest = estimateLines(rest);
+      const lRest = estimateLines(rest, indented);
       if (lRest <= remainingLines && wRest <= remainingWords) {
-        pushFrag(p, rest, fragNo);
+        pushFrag(p, rest, fragNo, indented);
         rest = "";
       } else if (remainingLines <= 0 || remainingWords <= 0) {
         flush();
       } else if (current.length > 0 && lRest <= budgetFor(pages.length + 1) && wRest <= budgetWords) {
         flush();
       } else {
-        const cut = findCut(rest, remainingLines * CHARS_PER_LINE, remainingWords);
-        pushFrag(p, rest.slice(0, cut), fragNo);
+        const cut = findCut(rest, remainingLines * CHARS_PER_LINE - (indented ? INDENT_CHARS : 0), remainingWords);
+        pushFrag(p, rest.slice(0, cut), fragNo, indented);
         fragNo += 1;
         rest = rest.slice(cut);
         flush();

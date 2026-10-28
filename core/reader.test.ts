@@ -7,6 +7,7 @@ import {
   countWords,
   estimateLines,
   FIRST_PAGE_LINES,
+  INDENT_CHARS,
   isSceneEntry,
   LINES_PER_PAGE,
   navReducer,
@@ -123,6 +124,14 @@ describe("buildReaderModel", () => {
     const pages = paginateScene(paras);
     expect(pages.map((p) => p.paragraphs.length)).toEqual([12, 8]);
     expect(pages.flatMap((p) => p.paragraphs.map((q) => q.n))).toEqual(paras.map((p) => p.n));
+  });
+
+  it("counts the first-line indent in line estimates", () => {
+    expect(INDENT_CHARS).toBe(4);
+    expect(estimateLines("x".repeat(58))).toBe(1);
+    expect(estimateLines("x".repeat(58), true)).toBe(2);
+    const paras = Array.from({ length: FIRST_PAGE_LINES }, (_, i) => ({ id: `n${i}`, n: i + 1, text: "x".repeat(58) }));
+    expect(paginateScene(paras).length).toBeGreaterThan(1);
   });
 
   it("moves a paragraph whole to a fresh page when it fits there", () => {
