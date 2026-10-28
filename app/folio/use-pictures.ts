@@ -162,7 +162,7 @@ export function usePictures({
 
   const requestFigure = useCallback(
     (id: string, startN: number, quote: string) => {
-      tryStart(busyRef);
+      // Callers acquire the gate; this only starts the request.
       void poll({ kind: "passage", bookId, textVersion, n: startN, ...requestStyleFields(prefRef.current) })
         .then(({ url }) => {
           storeFigures((prev) =>
@@ -198,6 +198,7 @@ export function usePictures({
     const startN = pickStartN(entries, paraOf(sel.anchorNode)?.id ?? null, paraOf(sel.focusNode)?.id ?? null);
     const endN = pickEndN(entries, paraOf(sel.anchorNode)?.id ?? null, paraOf(sel.focusNode)?.id ?? null);
     if (startN === null || endN === null) return;
+    if (!tryStart(busyRef)) return;
     setPopover(null);
     sel.removeAllRanges();
     const id = `f${figureSeq++}`;
@@ -213,6 +214,7 @@ export function usePictures({
     (id: string) => {
       const found = figureCache.get(sceneId)?.find((f) => f.id === id);
       if (!canRetryFigure(found, busyRef.current)) return;
+      if (!tryStart(busyRef)) return;
       storeFigures((prev) => prev.map((f) => (f.id === id ? { ...f, phase: "loading", message: null } : f)));
       requestFigure(id, found.startN, found.quote);
     },

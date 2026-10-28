@@ -12,9 +12,9 @@ export function groupFiguresByEndN<F extends { endN: number }>(figures: F[]): Ma
 }
 
 // Figures to render after paragraph i of the visible sub-page: only when
-// it is the last visible fragment of its ordinal on this page. A paragraph
-// split across pages shows its figures only on the page holding its last
-// visible fragment there.
+// it is the last visible fragment of its ordinal on this page. Each page
+// renders after its own last visible fragment, so a paragraph split
+// across two pages shows its figures on both.
 export function figuresAfter<P extends { n: number }, F>(
   paragraphs: P[],
   i: number,
