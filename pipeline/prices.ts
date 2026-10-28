@@ -19,3 +19,25 @@ export function metaCostUsd(input: { prompt: number; cached: number; completion:
     (input.completion / 1_000_000) * PRICES.metaOutputPer1M
   );
 }
+
+// Muse Spark Open on a Modal Shared Endpoint (per-token, scales to zero).
+export const MODAL_PRICES = {
+  modalInputPer1M: 1.25,
+  modalCachedPer1M: 0.15,
+  modalOutputPer1M: 4.25,
+} as const;
+
+export function modalCostUsd(input: { prompt: number; cached: number; completion: number }): number {
+  const fresh = Math.max(0, input.prompt - input.cached);
+  return (
+    (fresh / 1_000_000) * MODAL_PRICES.modalInputPer1M +
+    (input.cached / 1_000_000) * MODAL_PRICES.modalCachedPer1M +
+    (input.completion / 1_000_000) * MODAL_PRICES.modalOutputPer1M
+  );
+}
+
+// Open-weights models served by Modal ship as meta-models/*.
+export function costUsdFor(model: string, input: { prompt: number; cached: number; completion: number }): number {
+  if (model.startsWith("meta-models/")) return modalCostUsd(input);
+  return metaCostUsd(input);
+}

@@ -22,3 +22,4 @@ next-env.d.ts
 # Book sources (only processed public-domain JSON is committed)
 *.epub
 data/raw/
+pipeline/out/
