@@ -30,14 +30,14 @@ html[data-skin="watercolor"]:not([data-theme="dark"]) body {
 }
 
 /* ---------- Type: Caveat labels, Lora body ---------- */
-html[data-skin="watercolor"] :is(.kicker, .mlabel, .panels-kicker, .top-center, .pager-label, .tick-label, .chapter-jump-text) {
+html[data-skin="watercolor"] :is(.kicker, .mlabel, .top-center, .pager-label, .tick-label, .chapter-jump-text) {
   font-family: var(--font-wc-hand);
   font-weight: 400;
   text-transform: none;
   letter-spacing: 0;
 }
 
-html[data-skin="watercolor"] :is(.kicker, .mlabel, .panels-kicker) {
+html[data-skin="watercolor"] :is(.kicker, .mlabel) {
   font-size: 18px;
   color: var(--color-text-muted);
 }
@@ -189,21 +189,6 @@ html[data-skin="watercolor"] .pic-btn {
   color: var(--color-text);
 }
 
-/* ---------- Cards: a torn-edge wash instead of a box ---------- */
-html[data-skin="watercolor"] .panels-offer {
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='f' x='-5%25' y='-10%25' width='110%25' height='120%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.025' numOctaves='3' seed='5' result='n'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='n' scale='9' xChannelSelector='R' yChannelSelector='G' result='d'/%3E%3CfeGaussianBlur in='d' stdDeviation='1.2'/%3E%3C/filter%3E%3CradialGradient id='g' cx='.25' cy='.1' r='1.2'%3E%3Cstop offset='0' stop-color='%238DB8FF' stop-opacity='.35'/%3E%3Cstop offset='.55' stop-color='%23DCE9FF' stop-opacity='.5'/%3E%3Cstop offset='1' stop-color='%23FFFDF8' stop-opacity='.9'/%3E%3C/radialGradient%3E%3C/defs%3E%3Crect x='8' y='8' width='384' height='284' fill='url(%23g)' filter='url(%23f)'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
-}
-
-html[data-skin="watercolor"] .panels-name {
-  font-family: var(--font-wc-hand);
-  font-weight: 700;
-  font-size: 30px;
-  letter-spacing: 0;
-}
-
 /* Margin rows: Lora titles, ink-blue wash icons, picture thumbs on a
    soft white deckle instead of a bordered card. */
 html[data-skin="watercolor"] .mtool-icon {
@@ -228,24 +213,12 @@ html[data-skin="watercolor"] .vault-item {
   box-shadow: 0 1px 6px rgba(31, 42, 68, 0.12);
 }
 
-html[data-skin="watercolor"] .panels-spoiler {
-  font-family: var(--font-book);
-  font-size: 15px;
-  color: var(--color-text);
-}
-
-html[data-skin="watercolor"] .panels-veil {
-  background: rgba(255, 253, 248, 0.6);
+html[data-skin="watercolor"] :is(.vault-thumb, .panel) {
   border-radius: 14px 9px 16px 8px;
 }
 
-html[data-skin="watercolor"] :is(.thumb-tile, .vault-thumb, .panel) {
-  border-radius: 14px 9px 16px 8px;
-}
-
-/* Boxless buttons: the word is the button, in Caveat. The primary one
-   sits on a blue wash that bleeds wider on hover. */
-html[data-skin="watercolor"] :is(.panels-primary, .panels-quiet, .panels-link, .pane-chapter) {
+/* Boxless buttons: the word is the button, in Caveat. */
+html[data-skin="watercolor"] :is(.panels-link, .pane-chapter) {
   background: none;
   border: 0;
   border-radius: 0;
@@ -255,13 +228,6 @@ html[data-skin="watercolor"] :is(.panels-primary, .panels-quiet, .panels-link, .
   font-size: 22px;
   letter-spacing: 0;
   color: var(--color-text);
-}
-
-html[data-skin="watercolor"] .panels-primary {
-  color: var(--color-accent);
-  padding-bottom: 6px;
-  background: radial-gradient(60% 50% at 50% 60%, rgba(8, 102, 255, 0.42), rgba(8, 102, 255, 0.18) 70%, transparent 100%)
-    50% 100% / 110% 12px no-repeat;
 }
 
 /* ---------- Player: soft hand-inked icons, no boxes ---------- */
@@ -431,13 +397,9 @@ html[data-skin="watercolor"] .read-aloud-label {
     background: radial-gradient(circle at 40% 40%, rgba(141, 184, 255, 0.45), rgba(220, 233, 255, 0) 70%);
   }
 
-  html[data-skin="watercolor"] :is(.panels-quiet, .panels-link, .pane-chapter, .pic-btn):hover {
+  html[data-skin="watercolor"] :is(.panels-link, .pane-chapter, .pic-btn):hover {
     color: var(--color-text);
     background: radial-gradient(60% 70% at 50% 55%, rgba(141, 184, 255, 0.45), transparent 75%);
-  }
-
-  html[data-skin="watercolor"] .panels-primary:hover {
-    animation: wc-mark-bleed 520ms cubic-bezier(0.25, 0.8, 0.25, 1);
   }
 
   html[data-skin="watercolor"] :is(.sticker, .chopin, .read-aloud-btn):hover img {
@@ -445,20 +407,7 @@ html[data-skin="watercolor"] .read-aloud-label {
   }
 }
 
-@keyframes wc-mark-bleed {
-  from {
-    background-size: 60% 8px;
-  }
-  to {
-    background-size: 110% 12px;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  html[data-skin="watercolor"] .panels-primary:hover {
-    animation: none;
-  }
-
   html[data-skin="watercolor"] :is(.sticker, .chopin, .read-aloud-btn):hover img {
     transform: none;
   }
