@@ -7,6 +7,8 @@ import { Icon } from "../icons";
 export const PICTURE_COPY = {
   retry: "Try again",
   remove: "Remove picture",
+  // Shown when another picture is still on its way.
+  oneAtATime: "One picture at a time",
 } as const;
 
 export function PictureIcon({ size = 13 }: { size?: number }) {

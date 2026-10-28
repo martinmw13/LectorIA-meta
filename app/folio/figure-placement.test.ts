@@ -2,11 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   canIllustrateScene,
   canRetryFigure,
-  canStart,
   figuresAfter,
-  finish,
   groupFiguresByEndN,
-  tryStart,
 } from "./figure-placement";
 
 const p = (n: number, id: string) => ({ n, id });
@@ -65,17 +62,6 @@ describe("figuresAfter", () => {
 });
 
 describe("request gates", () => {
-  it("one request at a time: a scene in flight blocks a figure and vice versa", () => {
-    const gate = { current: false };
-    expect(tryStart(gate)).toBe(true);
-    expect(tryStart(gate)).toBe(false);
-    expect(canStart(gate.current)).toBe(false);
-    finish(gate);
-    expect(canStart(gate.current)).toBe(true);
-    expect(tryStart(gate)).toBe(true);
-    finish(gate);
-  });
-
   it("retry only from the error phase", () => {
     expect(canRetryFigure({ phase: "error" }, false)).toBe(true);
     expect(canRetryFigure({ phase: "loading" }, false)).toBe(false);

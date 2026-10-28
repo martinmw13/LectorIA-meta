@@ -2,16 +2,18 @@
 // The client sends ordinals and ids only, never text. Session caches
 // survive sub-page and scene moves, so a shown picture never refetches.
 //
-// Ordering rules: one request at a time across scene and figure (a second
-// request while one is in flight is a silent no-op); retryFigure only
-// works from the error phase; the caller must call hidePopover on pager
-// moves. The style pref arrives as a hook argument and is read through a
+// Ordering rules: one request at a time across scene and figure. The
+// module-level `inFlight` record names what is generating, so a scene
+// switch shows `loading` only for that; a second request while one is in
+// flight shows a short hint where it was asked. retryFigure only works
+// from the error phase; the caller must call hidePopover on pager moves. The style pref arrives as a hook argument and is read through a
 // ref, so the callbacks stay stable when it changes.
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MSG_FAILED, MSG_RETRY } from "@/core/images";
-import { canIllustrateScene, canRetryFigure, canStart, finish, tryStart } from "./figure-placement";
+import { canIllustrateScene, canRetryFigure } from "./figure-placement";
+import { PICTURE_COPY } from "./picture-copy";
 import type { ImageResponse } from "@/core/images";
 import { requestStyleFields, styleCredit } from "../image-style";
 import type { ImageStylePref } from "../image-style";
@@ -19,7 +21,7 @@ import { pickEndN, pickStartN } from "../picture-selection";
 import type { ParaEntry } from "../picture-selection";
 
 export type SceneCard =
-  | { phase: "idle" }
+  | { phase: "idle"; hint?: string }
   | { phase: "loading" }
   | { phase: "ready"; url: string; caption: string }
   | { phase: "error"; message: string };
@@ -42,6 +44,31 @@ export interface LightboxItem {
 
 const POLL_MS = 3000;
 const POLL_MAX = 40;
+const HINT_MS = 2400;
+
+// What is generating right now, across scene moves. One at a time.
+export type InFlight = { kind: "scene"; sceneId: string } | { kind: "figure"; sceneId: string; id: string } | null;
+let inFlight: InFlight = null;
+
+function release(mine: InFlight): void {
+  if (inFlight === mine) inFlight = null;
+}
+
+function sceneCard(sceneId: string): SceneCard {
+  const hit = sceneCache.get(sceneId);
+  if (hit) return { phase: "ready", url: hit.url, caption: hit.caption };
+  return inFlight?.kind === "scene" && inFlight.sceneId === sceneId ? { phase: "loading" } : { phase: "idle" };
+}
+
+// Cached figures for a scene; a loading one shows only while it really is
+// the request in flight.
+function sceneFigures(sceneId: string): InlineFigure[] {
+  return (figureCache.get(sceneId) ?? []).filter(
+    (f) => f.phase !== "loading" || (inFlight?.kind === "figure" && inFlight.sceneId === sceneId && inFlight.id === f.id),
+  );
+}
+
+type HintAt = { where: "scene" } | { where: "popover" } | { where: "figure"; id: string } | null;
 
 const sceneCache = new Map<string, { url: string; caption: string }>();
 
@@ -107,13 +134,10 @@ export function usePictures({
   sceneId: string;
   pref: ImageStylePref;
 }) {
-  const [card, setCard] = useState<SceneCard>(() => {
-    const hit = sceneCache.get(sceneId);
-    return hit ? { phase: "ready", url: hit.url, caption: hit.caption } : { phase: "idle" };
-  });
-  const [figures, setFigures] = useState<InlineFigure[]>(() =>
-    (figureCache.get(sceneId) ?? []).filter((f) => f.phase !== "loading"),
-  );
+  const [card, setCard] = useState<SceneCard>(() => sceneCard(sceneId));
+  const [figures, setFigures] = useState<InlineFigure[]>(() => sceneFigures(sceneId));
+  const [hintAt, setHintAt] = useState<HintAt>(null);
+  const hintTimer = useRef<number | null>(null);
   const [popover, setPopover] = useState<{ top: number; left: number } | null>(null);
   const [lightbox, setLightbox] = useState<LightboxItem | null>(null);
   // The text view mounts late on a chapter's first scene (cover first),
@@ -129,7 +153,6 @@ export function usePictures({
   // any scroll container (window or the reading column) moves the text.
   const rangeRef = useRef<Range | null>(null);
   const openerRef = useRef<HTMLElement | null>(null);
-  const busyRef = useRef(false);
   const prefRef = useRef(pref);
   prefRef.current = pref;
   // The continuous reader reuses one hook call while the scene in view
@@ -142,22 +165,35 @@ export function usePictures({
   // The card and figures follow the scene in view through the session
   // caches; in-flight requests keep filling the cache they started.
   useEffect(() => {
-    const hit = sceneCache.get(sceneId);
-    setCard(hit ? { phase: "ready", url: hit.url, caption: hit.caption } : { phase: "idle" });
-    setFigures((figureCache.get(sceneId) ?? []).filter((f) => f.phase !== "loading"));
+    setCard(sceneCard(sceneId));
+    setFigures(sceneFigures(sceneId));
     setPopover(null);
+    setHintAt(null);
   }, [sceneId]);
 
-  const storeFigures = useCallback(
-    (next: InlineFigure[] | ((prev: InlineFigure[]) => InlineFigure[])) => {
-      setFigures((prev) => {
-        const value = typeof next === "function" ? (next as (p: InlineFigure[]) => InlineFigure[])(prev) : next;
-        figureCache.set(sceneId, value);
-        return value;
-      });
+  useEffect(
+    () => () => {
+      if (hintTimer.current !== null) window.clearTimeout(hintTimer.current);
     },
-    [sceneId],
+    [],
   );
+
+  // Another picture is generating: say so where the reader asked.
+  const showHint = useCallback((at: NonNullable<HintAt>) => {
+    setHintAt(at);
+    if (hintTimer.current !== null) window.clearTimeout(hintTimer.current);
+    hintTimer.current = window.setTimeout(() => {
+      hintTimer.current = null;
+      setHintAt(null);
+    }, HINT_MS);
+  }, []);
+
+  // Writes the scene's own cache entry; paints only if it is still current.
+  const storeFigures = useCallback((scene: string, update: (prev: InlineFigure[]) => InlineFigure[]) => {
+    const value = update(figureCache.get(scene) ?? []);
+    figureCache.set(scene, value);
+    if (sceneRef.current === scene) setFigures(value);
+  }, []);
 
   const openLightbox = useCallback((src: string, caption: string, opener: HTMLElement | null) => {
     openerRef.current = opener;
@@ -171,9 +207,15 @@ export function usePictures({
   }, []);
 
   const illustrateScene = useCallback(() => {
-    if (!canIllustrateScene({ sceneId, busy: busyRef.current, cached: sceneCache.has(sceneId) })) return;
-    if (!tryStart(busyRef)) return;
+    if (inFlight !== null && sceneId !== "" && !sceneCache.has(sceneId)) {
+      showHint({ where: "scene" });
+      return;
+    }
+    if (!canIllustrateScene({ sceneId, busy: inFlight !== null, cached: sceneCache.has(sceneId) })) return;
+    const mine: InFlight = { kind: "scene", sceneId };
+    inFlight = mine;
     setPopover(null);
+    setHintAt(null);
     setCard({ phase: "loading" });
     void poll({ kind: "scene", bookId, textVersion, sceneId, ...requestStyleFields(prefRef.current) })
       .then(({ url, caption }) => {
@@ -186,9 +228,9 @@ export function usePictures({
         }
       })
       .finally(() => {
-        finish(busyRef);
+        release(mine);
       });
-  }, [bookId, textVersion, sceneId]);
+  }, [bookId, textVersion, sceneId, showHint]);
 
   const clearScene = useCallback(() => {
     sceneCache.delete(sceneId);
@@ -196,16 +238,17 @@ export function usePictures({
   }, [sceneId]);
 
   const requestFigure = useCallback(
-    (id: string, startN: number, quote: string) => {
-      // Callers acquire the gate; this only starts the request.
+    (scene: string, id: string, startN: number) => {
+      // Callers claim inFlight; this starts the request and releases it.
+      const mine = inFlight;
       void poll({ kind: "passage", bookId, textVersion, n: startN, ...requestStyleFields(prefRef.current) })
         .then(({ url }) => {
-          storeFigures((prev) =>
+          storeFigures(scene, (prev) =>
             prev.map((f) => (f.id === id ? { ...f, phase: "ready", url, message: null } : f)),
           );
         })
         .catch((err: unknown) => {
-          storeFigures((prev) =>
+          storeFigures(scene, (prev) =>
             prev.map((f) =>
               f.id === id
                 ? { ...f, phase: "error", message: err instanceof Error ? err.message : MSG_FAILED }
@@ -214,7 +257,7 @@ export function usePictures({
           );
         })
         .finally(() => {
-          finish(busyRef);
+          release(mine);
         });
     },
     [bookId, textVersion, storeFigures],
@@ -223,7 +266,11 @@ export function usePictures({
   const illustratePassage = useCallback(() => {
     const view = viewNodeRef.current;
     const sel = window.getSelection();
-    if (!view || !sel || !sel.rangeCount || !canStart(busyRef.current)) return;
+    if (!view || !sel || !sel.rangeCount) return;
+    if (inFlight !== null) {
+      showHint({ where: "popover" });
+      return;
+    }
     const quote = sel.toString().trim();
     if (quote.length < 3) return;
     const entries: ParaEntry[] = [...view.querySelectorAll("p[id][data-n]")].map((el) => ({
@@ -233,34 +280,40 @@ export function usePictures({
     const startN = pickStartN(entries, paraOf(sel.anchorNode)?.id ?? null, paraOf(sel.focusNode)?.id ?? null);
     const endN = pickEndN(entries, paraOf(sel.anchorNode)?.id ?? null, paraOf(sel.focusNode)?.id ?? null);
     if (startN === null || endN === null) return;
-    if (!tryStart(busyRef)) return;
     setPopover(null);
     sel.removeAllRanges();
     const id = `f${figureSeq++}`;
+    const scene = sceneRef.current;
+    inFlight = { kind: "figure", sceneId: scene, id };
     const credit = styleCredit(requestStyleFields(prefRef.current));
-    storeFigures((prev) => [
+    storeFigures(scene, (prev) => [
       ...prev,
       { id, phase: "loading", url: null, quote, startN, endN, credit, message: null },
     ]);
-    requestFigure(id, startN, quote);
-  }, [requestFigure, storeFigures]);
+    requestFigure(scene, id, startN);
+  }, [requestFigure, storeFigures, showHint]);
 
   const retryFigure = useCallback(
     (id: string) => {
       const found = figureCache.get(sceneId)?.find((f) => f.id === id);
-      if (!canRetryFigure(found, busyRef.current)) return;
-      if (!tryStart(busyRef)) return;
-      storeFigures((prev) => prev.map((f) => (f.id === id ? { ...f, phase: "loading", message: null } : f)));
-      requestFigure(id, found.startN, found.quote);
+      if (found?.phase === "error" && inFlight !== null) {
+        showHint({ where: "figure", id });
+        return;
+      }
+      if (!canRetryFigure(found, inFlight !== null)) return;
+      inFlight = { kind: "figure", sceneId, id };
+      setHintAt(null);
+      storeFigures(sceneId, (prev) => prev.map((f) => (f.id === id ? { ...f, phase: "loading", message: null } : f)));
+      requestFigure(sceneId, id, found.startN);
     },
-    [requestFigure, storeFigures, sceneId],
+    [requestFigure, storeFigures, sceneId, showHint],
   );
 
   const removeFigure = useCallback(
     (id: string) => {
-      storeFigures((prev) => prev.filter((f) => f.id !== id));
+      storeFigures(sceneId, (prev) => prev.filter((f) => f.id !== id));
     },
-    [storeFigures],
+    [storeFigures, sceneId],
   );
 
   // Re-read the live selection against the current text view. The
@@ -336,10 +389,28 @@ export function usePictures({
     };
   }, [popover]);
 
+  // The hint rides on what the caller already renders, so callers need
+  // no extra slot: the idle or error card, the popover, the failed figure.
+  const hint = PICTURE_COPY.oneAtATime;
+  const shownCard = useMemo<SceneCard>(() => {
+    if (hintAt?.where !== "scene") return card;
+    if (card.phase === "idle") return { phase: "idle", hint };
+    return card.phase === "error" ? { phase: "error", message: hint } : card;
+  }, [card, hintAt, hint]);
+  const shownPopover = useMemo(
+    () => (popover && hintAt?.where === "popover" ? { ...popover, hint } : popover),
+    [popover, hintAt, hint],
+  );
+  const shownFigures = useMemo(() => {
+    if (hintAt?.where !== "figure") return figures;
+    const id = hintAt.id;
+    return figures.map((f) => (f.id === id && f.phase === "error" ? { ...f, message: hint } : f));
+  }, [figures, hintAt, hint]);
+
   return {
-    card,
-    figures,
-    popover,
+    card: shownCard,
+    figures: shownFigures,
+    popover: shownPopover,
     viewRef,
     popRef,
     illustrateScene,

@@ -75,6 +75,11 @@ export function ImagePane({
             ) : (
               <PictureButton skin={skin} label="Picture this scene" onClick={onPicture} />
             )}
+            {card.hint ? (
+              <p className="pic-hint" role="status">
+                {card.hint}
+              </p>
+            ) : null}
           </>
         ) : card.phase === "loading" ? (
           <div className="pane-loading" role="status" data-picture-skin={skinId}>
