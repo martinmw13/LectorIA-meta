@@ -357,12 +357,12 @@ describe("chaptersToPrepare", () => {
 });
 
 describe("cost", () => {
-  it("estimates an average Oz chapter near USD 0.003 warm", () => {
+  it("estimates an average Oz chapter near USD 0.006 warm", () => {
     // ~9,000 chars ≈ 10 min of audio: 9000/15*0.02+8 = 20 s GPU.
     const micro = estimateNarrationMicro(9000);
-    expect(micro).toBe(Math.ceil(20 * 0.000222 * 1e6));
-    expect(micro / 1e6).toBeCloseTo(0.0044, 3);
-    expect(actualNarrationMicro(7.1)).toBe(Math.ceil(7.1 * 0.000222 * 1e6));
+    expect(micro).toBe(Math.ceil(20 * 0.000306 * 1e6));
+    expect(micro / 1e6).toBeCloseTo(0.0061, 3);
+    expect(actualNarrationMicro(7.1)).toBe(Math.ceil(7.1 * 0.000306 * 1e6));
     expect(Number.isInteger(estimateNarrationMicro(0))).toBe(true);
   });
 });

@@ -62,14 +62,16 @@ function.
 Integer micro-dollars. `estimateNarrationMicro(chars)` reserves the
 cap before generating: about 15 chars of audio per second, GPU time
 about 2% of audio after encode, plus 8 s of cold start/overhead, at
-the Modal L4 rate (`KOKORO_L4_USD_PER_SEC`, about USD 0.80/h). The
+the A10G rate (`KOKORO_GPU_USD_PER_SEC`, about USD 1.10/h). The Modal
+function tries GPUs in order `["L4", "A10G", "T4"]`, and caps use the
+A10G rate so they stay conservative whichever GPU serves. The
 server reserves on both the global spend key and the daily spend key
 (`spendKey()`, `dailySpendKey(day)` from `core/images`), refunding
 both past either cap; the global `DAILY_SPEND_CAP_USD` applies. The
 offline run caps with `NARRATION_CAP_USD` (default 2) and stops with a
 report instead of spending more. Worked number: an average Oz chapter
 of ~9,000 chars is about 10 min of audio, about 20 s of warm GPU,
-about USD 0.004.
+about USD 0.006.
 
 ## Rolling window
 

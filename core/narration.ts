@@ -491,15 +491,16 @@ export function chaptersToPrepare(event: PrepareEvent, ch: number, totalChapters
   return out;
 }
 
-// Modal L4, about USD 0.80/h.
-export const KOKORO_L4_USD_PER_SEC = 0.000222;
+// Modal GPU fallback list is ["L4", "A10G", "T4"]; caps use the A10G
+// rate, about USD 1.10/h, the most expensive of the three.
+export const KOKORO_GPU_USD_PER_SEC = 0.000306;
 
 // About 15 chars of audio per second, GPU time about 2% of audio after
 // encode, plus 8 s of cold start/overhead. Integer micro-dollars.
 export function estimateNarrationMicro(chars: number): number {
-  return Math.ceil((Math.max(0, chars) / 15 * 0.02 + 8) * KOKORO_L4_USD_PER_SEC * 1e6);
+  return Math.ceil((Math.max(0, chars) / 15 * 0.02 + 8) * KOKORO_GPU_USD_PER_SEC * 1e6);
 }
 
 export function actualNarrationMicro(gpuSec: number): number {
-  return Math.ceil(Math.max(0, gpuSec) * KOKORO_L4_USD_PER_SEC * 1e6);
+  return Math.ceil(Math.max(0, gpuSec) * KOKORO_GPU_USD_PER_SEC * 1e6);
 }

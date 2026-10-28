@@ -87,7 +87,7 @@ def check(texts, gaps, voice, speed):
         raise ValueError("speed must be 0.5..1.5")
 
 
-@app.function(gpu="L4", scaledown_window=60, timeout=600, max_containers=4, volumes={"/root/.cache/huggingface": vol})
+@app.function(gpu=["L4", "A10G", "T4"], scaledown_window=60, timeout=600, max_containers=4, volumes={"/root/.cache/huggingface": vol})
 def narrate(texts: list[str], gaps: list[float], voice: str, speed: float) -> dict:
     started = time.monotonic()
     check(texts, gaps, voice, speed)

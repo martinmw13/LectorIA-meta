@@ -136,12 +136,13 @@ describe("runNarrate", () => {
     expect(stats.estimatedMicro).toBe(0);
 
     // A zero estimate would still reserve; with a real cap the first
-    // chapter generates and the rest stop.
+    // chapter generates and the rest stop. One test chapter reserves
+    // 2494 micro, so the cap fits one but not two.
     const dir2 = mkdtempSync(join(tmpdir(), "narrate-cap2-"));
     setupBook(dir2);
     const again = fakeSynthesize();
     const store2 = memoryStore();
-    const stats2 = await runNarrate({ bookKey: "oz", force: false, dir: dir2 }, { synthesize: again.synthesize, store: store2.store, capUsd: 0.002 });
+    const stats2 = await runNarrate({ bookKey: "oz", force: false, dir: dir2 }, { synthesize: again.synthesize, store: store2.store, capUsd: 0.003 });
     expect(stats2.stopped).toBe(true);
     expect(again.calls()).toBeLessThan(2);
     expect(again.calls()).toBeGreaterThanOrEqual(1);
