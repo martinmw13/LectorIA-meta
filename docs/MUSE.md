@@ -6,21 +6,21 @@ A Muse commit is a non-merge commit on main that carries the trailer `Co-authore
 
 ## Commits
 
-- Muse commits: 327 of 370 non-merge commits (88%).
+- Muse commits: 327 of 371 non-merge commits (88%).
 - Date range (UTC-3): 2026-10-27 to 2026-10-28.
 
 ## Lines
 
 | Scope | Muse added | Muse removed | Other added | Other removed | Muse share of added |
 | --- | --- | --- | --- | --- | --- |
-| Source code (`app/`, `core/`, `pipeline/`, `server/`, `scripts/`) | 40,345 | 8,491 | 4,471 | 916 | 90% |
-| All files | 233,647 | 12,511 | 24,703 | 1,017 | 90% |
+| Source code (`app/`, `core/`, `pipeline/`, `server/`, `scripts/`) | 40,345 | 8,491 | 5,111 | 958 | 89% |
+| All files | 233,647 | 12,511 | 25,345 | 1,060 | 90% |
 
 All files includes the Muse Code session transcripts in `agent-logs/`, the vendored skills in `.agents/` and `package-lock.json`.
 
 ## Pull requests
 
-51 merged PRs contain Muse commits. Each carries the `Muse Code` label.
+52 merged PRs contain Muse commits. Each carries the `Muse Code` label.
 
 | PR | Title | Merged (UTC-3) | Muse commits |
 | --- | --- | --- | --- |
@@ -75,3 +75,4 @@ All files includes the Muse Code session transcripts in `agent-logs/`, the vendo
 | [#59](https://github.com/martinmw13/LectorIA-meta/pull/59) | Narration: keep a new chapter's first scene, controller-owned click-to-seek | 2026-10-28 | 4 of 5 |
 | [#64](https://github.com/martinmw13/LectorIA-meta/pull/64) | Add a style switcher stamp to the home and reader | 2026-10-28 | 5 of 7 |
 | [#74](https://github.com/martinmw13/LectorIA-meta/pull/74) | Open-book home library (task 65) | 2026-10-28 | 6 of 11 |
+| [#75](https://github.com/martinmw13/LectorIA-meta/pull/75) | Pencil skin from the approved prototype | 2026-10-28 | 1 of 2 |
