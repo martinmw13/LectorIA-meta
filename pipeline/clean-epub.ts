@@ -7,7 +7,7 @@ import { basename, join } from "node:path";
 import { JSDOM } from "jsdom";
 import { cleanSections } from "../core/clean";
 import type { Judge } from "../core/clean";
-import { readEpubSections } from "../core/epub-sections";
+import { readEpubSections } from "../core/epub";
 import { createCleanJudgeFromEnv } from "./clean-providers";
 
 function loadEnv(): void {
