@@ -54,7 +54,11 @@ function navLabels(doc: Document, fileOf: (href: string) => string): Map<string,
   for (const a of [...scope.getElementsByTagName("a")]) {
     const href = a.getAttribute("href");
     if (href === null) continue;
-    labels.set(fileOf(href.split("#")[0] ?? ""), textOf(a));
+    // First label wins: several nav entries can point at one file (the
+    // license entry may share the last chapter file), and the first in
+    // document order names the chapter.
+    const key = fileOf(href.split("#")[0] ?? "");
+    if (!labels.has(key)) labels.set(key, textOf(a));
   }
   return labels;
 }
@@ -66,7 +70,8 @@ function ncxLabels(doc: Document, fileOf: (href: string) => string): Map<string,
     const content = point.getElementsByTagName("content")[0];
     const src = content?.getAttribute("src");
     if (label !== undefined && src !== undefined && src !== null) {
-      labels.set(fileOf(src.split("#")[0] ?? ""), textOf(label));
+      const key = fileOf(src.split("#")[0] ?? "");
+      if (!labels.has(key)) labels.set(key, textOf(label));
     }
   }
   return labels;

@@ -75,6 +75,20 @@ describe("readEpubSections", () => {
     expect(ch4?.blocks.length).toBeGreaterThan(0);
   });
 
+  it("keeps the first nav label when entries share a file", () => {
+    const files: Record<string, string> = {
+      "META-INF/container.xml": container(),
+      "OEBPS/content.opf": opf(
+        [item("ncx", "toc.ncx", "application/x-dtbncx+xml"), item("ch24", "ch24.xhtml")].join(""),
+        '<itemref idref="ch24"/>',
+      ),
+      "OEBPS/toc.ncx": `<?xml version="1.0"?><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/"><navMap><navPoint id="n1"><navLabel><text>The Riches of Content</text></navLabel><content src="ch24.xhtml"/></navPoint><navPoint id="n2"><navLabel><text>THE FULL PROJECT GUTENBERG LICENSE</text></navLabel><content src="ch24.xhtml"/></navPoint></navMap></ncx>`,
+      "OEBPS/ch24.xhtml": `<html ${NS}><head><title>The Riches of Content</title></head><body><h1>The Riches of Content</h1><p>Story.</p></body></html>`,
+    };
+    const { sections } = readEpubSections(book(files), parse);
+    expect(sections[0]?.navLabel).toBe("The Riches of Content");
+  });
+
   it("reads NCX labels for EPUB2 books", () => {
     const files: Record<string, string> = {
       "META-INF/container.xml": container(),
