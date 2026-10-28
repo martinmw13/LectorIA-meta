@@ -20,3 +20,16 @@ switch with one crossfade. `playlistToggled` and `styleChanged` still work. A
 stored Chopin mode starts the session in the playlist; without the
 playlist the stored style stands.
 
+All three mode intents route through one `transition` function taking a
+`ModeTarget` (`style`, `enterPlaylist`, or `exitPlaylist` with a style
+or null). The transition owns the signal, the scheduler decision
+(`switchStyle`, `enterPlaylist`, `exitPlaylist`), the fold, the
+selection update, and the settle. Each intent only maps to a target,
+plus its own guards that differ by design: `styleChanged` keeps the
+route-null guard, the playlist-on no-op, and the same-selection no-op;
+`playlistToggled` keeps the missing-playlist no-op and never checks the
+route; `modeAdvanced` keeps target validation against the mode list,
+the same-mode no-op, and the route-null and same-selection guards on
+the style-to-style tail only, so playlist paths act even with a null
+route.
+
