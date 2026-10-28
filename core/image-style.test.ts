@@ -4,14 +4,17 @@ import {
   IMAGE_STYLE_PRESETS,
   ImageStyleError,
   MAX_CUSTOM_STYLE_CHARS,
+  SKIN_DEFAULT_IMAGE_STYLE,
+  SKIN_IDS,
   normalizeCustomStyle,
   parseStyleChoice,
+  resolveEffectiveStyle,
   styleDescriptorLine,
   styleSegment,
 } from "./image-style";
 
 describe("presets", () => {
-  it("lists the nine presets with labels", () => {
+  it("lists the ten presets with labels", () => {
     expect(IMAGE_STYLE_PRESETS.map((p) => [p.id, p.label])).toEqual([
       ["denslow", "Denslow ink (1900)"],
       ["realistic", "Realistic"],
@@ -22,6 +25,7 @@ describe("presets", () => {
       ["comic", "Comic book"],
       ["oil", "Oil painting"],
       ["woodcut", "Woodcut"],
+      ["pen-pencil", "Pen and pencil"],
     ]);
     expect(DEFAULT_IMAGE_STYLE).toBe("denslow");
     expect(MAX_CUSTOM_STYLE_CHARS).toBe(60);
@@ -151,14 +155,77 @@ describe("styleSegment", () => {
   });
 });
 
+describe("skin defaults", () => {
+  it("covers every skin id with a valid preset id", () => {
+    expect([...SKIN_IDS]).toEqual([
+      "engraving",
+      "watercolor",
+      "ink",
+      "realistic",
+      "comic",
+      "anime",
+    ]);
+    const ids = new Set(IMAGE_STYLE_PRESETS.map((p) => p.id));
+    for (const skin of SKIN_IDS) {
+      expect(ids.has(SKIN_DEFAULT_IMAGE_STYLE[skin])).toBe(true);
+    }
+    expect(SKIN_DEFAULT_IMAGE_STYLE).toEqual({
+      engraving: "denslow",
+      watercolor: "watercolor",
+      ink: "pen-pencil",
+      realistic: "realistic",
+      comic: "comic",
+      anime: "anime",
+    });
+  });
+});
+
+describe("resolveEffectiveStyle", () => {
+  it("lets an explicit pick win over the skin", () => {
+    expect(resolveEffectiveStyle({ preset: "pencil" }, "watercolor")).toEqual({
+      preset: "pencil",
+    });
+    expect(resolveEffectiveStyle({ custom: "crayon drawing" }, "ink")).toEqual({
+      custom: "crayon drawing",
+    });
+  });
+
+  it("falls back to the skin default", () => {
+    expect(resolveEffectiveStyle(undefined, "watercolor")).toEqual({ preset: "watercolor" });
+    expect(resolveEffectiveStyle(undefined, "ink")).toEqual({ preset: "pen-pencil" });
+    expect(resolveEffectiveStyle(undefined, "anime")).toEqual({ preset: "anime" });
+  });
+
+  it("ignores an unknown skin", () => {
+    expect(resolveEffectiveStyle(undefined, "nope")).toEqual({ preset: "denslow" });
+  });
+
+  it("falls back to denslow with no skin", () => {
+    expect(resolveEffectiveStyle(undefined, undefined)).toEqual({ preset: "denslow" });
+  });
+});
+
 describe("styleDescriptorLine", () => {
   it("frames presets as an art style with the shared guards", () => {
     const line = styleDescriptorLine({ kind: "preset", id: "watercolor" });
-    expect(line.startsWith("Art style: loose watercolor painting,")).toBe(true);
+    expect(line.startsWith("Art style: soft translucent washes,")).toBe(true);
     expect(line).toContain("silver shoes");
     expect(line).toContain("no ruby slippers");
     expect(line).toContain("no real people");
     expect(line).toContain("No text, no captions, no lettering in the image.");
+  });
+
+  it("keeps the new skin presets guarded by the silver shoes and no 1939 tail", () => {
+    for (const id of ["pen-pencil", "realistic", "comic", "anime"] as const) {
+      const line = styleDescriptorLine({ kind: "preset", id });
+      expect(line).toContain("silver shoes");
+      expect(line).toContain("1939");
+      expect(line).toContain("no ruby slippers");
+      expect(line).toContain("No text, no captions, no lettering in the image.");
+    }
+    expect(styleDescriptorLine({ kind: "preset", id: "realistic" })).toContain(
+      "shallow depth of field",
+    );
   });
 
   it("frames custom text as a description, not an instruction", () => {

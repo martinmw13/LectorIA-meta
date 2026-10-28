@@ -1,7 +1,7 @@
 // Drawing style preference for POST /api/images. Persisted in
 // localStorage, parsed defensively. Preset ids come from the server's
 // table so they always match; the server re-checks custom text.
-import { IMAGE_STYLE_PRESETS } from "@/core/image-style";
+import { IMAGE_STYLE_PRESETS, resolveEffectiveStyle } from "@/core/image-style";
 import type { ImageStylePresetId, StyleChoice } from "@/core/image-style";
 
 export const IMAGE_STYLE_KEY = "lectoria.imageStyle";
@@ -40,15 +40,42 @@ export function parseImageStylePref(json: unknown): ImageStylePref {
   return DEFAULT_IMAGE_STYLE;
 }
 
-export function loadImageStylePref(): ImageStylePref {
+// Null means no explicit pick stored. Invalid stored values also read
+// as null so the skin default (Denslow today) applies.
+export function loadImageStylePref(): ImageStylePref | null {
   try {
-    if (typeof window === "undefined") return DEFAULT_IMAGE_STYLE;
+    if (typeof window === "undefined") return null;
     const raw = window.localStorage.getItem(IMAGE_STYLE_KEY);
-    if (!raw) return DEFAULT_IMAGE_STYLE;
-    return parseImageStylePref(JSON.parse(raw));
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return null;
+    const rec = parsed as Record<string, unknown>;
+    if (rec.kind === "preset" && typeof rec.id === "string") {
+      if (rec.id === "denslow" || STYLE_PRESETS.some((p) => p.id === rec.id)) {
+        return { kind: "preset", id: rec.id };
+      }
+      return null;
+    }
+    if (rec.kind === "custom" && typeof rec.text === "string" && rec.text.trim().length > 0) {
+      return { kind: "custom", text: rec.text.trim().slice(0, 60) };
+    }
+    return null;
   } catch {
-    return DEFAULT_IMAGE_STYLE;
+    return null;
   }
+}
+
+// The picker shows this; the request sends requestStyleFields of it.
+// No explicit pick falls back to the skin default (Denslow today).
+export function effectiveImageStylePref(pref: ImageStylePref | null, skin?: string): ImageStylePref {
+  const explicit: StyleChoice | undefined =
+    pref === null
+      ? undefined
+      : pref.kind === "custom"
+        ? { custom: pref.text }
+        : { preset: pref.id as ImageStylePresetId };
+  const eff = resolveEffectiveStyle(explicit, skin);
+  return "custom" in eff ? { kind: "custom", text: eff.custom } : { kind: "preset", id: eff.preset };
 }
 
 export function saveImageStylePref(pref: ImageStylePref): void {

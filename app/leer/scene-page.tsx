@@ -8,7 +8,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { buildNavIndex, navReducer, subPageCount, subPageKind, textPageAt } from "@/core/reader";
 import type { NavAction, SceneView } from "@/core/reader";
-import { loadImageStylePref, saveImageStylePref } from "../image-style";
+import { effectiveImageStylePref, loadImageStylePref, saveImageStylePref } from "../image-style";
 import type { ImageStylePref } from "../image-style";
 import { BandPager, Divider } from "../folio/chrome";
 import { ImagePane } from "../folio/image-pane";
@@ -74,7 +74,8 @@ export function ScenePage({
   nextChapter: { ch: number; firstSceneId: string } | null;
 }) {
   const pic = usePictures({ bookId, textVersion, sceneId: view.sceneId });
-  const [pref, setPref] = useState<ImageStylePref>({ kind: "preset", id: "denslow" });
+  const [storedPref, setStoredPref] = useState<ImageStylePref | null>(null);
+  const pref = effectiveImageStylePref(storedPref, undefined);
   const router = useRouter();
   const index = useMemo(() => buildNavIndex(views), [views]);
   const cover = view.isChapterFirst;
@@ -103,7 +104,7 @@ export function ScenePage({
   const atBookEnd = view.nextSceneId === null && page === lastPage;
 
   useEffect(() => {
-    setPref(loadImageStylePref());
+    setStoredPref(loadImageStylePref());
   }, []);
 
   // The end page marks the chapter finished, unlocking the panels.
@@ -112,7 +113,7 @@ export function ScenePage({
   }, [kind, view.ch]);
 
   function changePref(next: ImageStylePref) {
-    setPref(next);
+    setStoredPref(next);
     saveImageStylePref(next);
   }
 

@@ -9,14 +9,15 @@ export interface ImageStylePreset {
 
 export const IMAGE_STYLE_PRESETS = [
   { id: "denslow", label: "Denslow ink (1900)", descriptor: "faithful 1900 first-edition book illustration" },
-  { id: "realistic", label: "Realistic", descriptor: "realistic painterly illustration, natural light, lifelike detail" },
+  { id: "realistic", label: "Realistic", descriptor: "photorealistic cinematic illustration, natural cinematic lighting, shallow depth of field, lifelike textures, period-accurate 1900 Kansas and Oz costume, Dorothy in blue-and-white gingham" },
   { id: "anime", label: "Anime", descriptor: "anime-style illustration, clean line art, cel shading, vivid color" },
   { id: "pencil", label: "Pencil sketch", descriptor: "graphite pencil sketch on cream paper, fine hatching, mostly monochrome" },
-  { id: "watercolor", label: "Watercolor", descriptor: "loose watercolor painting, soft washes, visible paper texture" },
+  { id: "watercolor", label: "Watercolor", descriptor: "soft translucent washes, gentle storybook palette, light pencil underdrawing, visible paper texture" },
   { id: "storybook", label: "Storybook", descriptor: "modern children's picture-book illustration, soft gouache, warm colors" },
   { id: "comic", label: "Comic book", descriptor: "comic-book art, bold inks, halftone shading, strong flat colors" },
   { id: "oil", label: "Oil painting", descriptor: "classical oil painting, rich brushwork, warm glazes" },
   { id: "woodcut", label: "Woodcut", descriptor: "woodcut print, carved black lines, two-color print" },
+  { id: "pen-pencil", label: "Pen and pencil", descriptor: "blue ballpoint pen line drawing with loose pencil shading on notebook paper, hand-drawn doodle feel" },
 ] as const;
 
 // The denslow descriptor is unused: denslow parses to undefined, so the
@@ -24,6 +25,33 @@ export const IMAGE_STYLE_PRESETS = [
 export type ImageStylePresetId = (typeof IMAGE_STYLE_PRESETS)[number]["id"];
 
 export const DEFAULT_IMAGE_STYLE = "denslow" as const;
+
+// Prototype skins only, not built in the UI. One entry per skin maps it
+// to its default preset; a future skin adds one entry here.
+export const SKIN_IDS = ["engraving", "watercolor", "ink", "realistic", "comic", "anime"] as const;
+export type SkinId = (typeof SKIN_IDS)[number];
+export const SKIN_DEFAULT_IMAGE_STYLE: Record<SkinId, ImageStylePresetId> = {
+  engraving: "denslow",
+  watercolor: "watercolor",
+  ink: "pen-pencil",
+  realistic: "realistic",
+  comic: "comic",
+  anime: "anime",
+};
+
+// Explicit sticky pick wins; else the active skin's default (unknown or
+// missing skin ignored); else denslow.
+export function resolveEffectiveStyle(
+  explicit: StyleChoice | undefined,
+  skin: string | undefined,
+): StyleChoice {
+  if (explicit !== undefined) return explicit;
+  if (skin !== undefined) {
+    const fallback = (SKIN_DEFAULT_IMAGE_STYLE as Record<string, ImageStylePresetId>)[skin];
+    if (fallback !== undefined) return { preset: fallback };
+  }
+  return { preset: DEFAULT_IMAGE_STYLE };
+}
 
 export const MAX_CUSTOM_STYLE_CHARS = 60;
 

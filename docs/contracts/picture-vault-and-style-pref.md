@@ -10,7 +10,7 @@ selected text. Figures persist per scene in client memory, one request
 at a time. The vault lists the scene picture first, then figures in
 text order, each with jump-to-figure pulse and expand; the style picker
 below stores `{ kind: "preset", id } | { kind: "custom", text }` in
-`lectoria.imageStyle`. `requestStyleFields` returns `{}` for Denslow
+`lectoria.imageStyle` (`loadImageStylePref` returns null when no explicit pick is stored). `requestStyleFields` returns `{}` for Denslow
 and `{ style: { preset } }` or `{ style: { custom } }` otherwise;
 request bodies spread it; the credit is the preset label or the custom
 text. The developer view (Shift+D or `?dev`, hidden otherwise) shows emotion

@@ -1,8 +1,11 @@
 // Pure folio helpers: caption truncation, pane split clamp, style pref.
 import { describe, expect, it, vi } from "vitest";
+import { SKIN_DEFAULT_IMAGE_STYLE } from "@/core/image-style";
 import {
   DEFAULT_IMAGE_STYLE,
   STYLE_OTHER_VALUE,
+  STYLE_PRESETS,
+  effectiveImageStylePref,
   loadImageStylePref,
   parseImageStylePref,
   requestStyleFields,
@@ -104,6 +107,61 @@ describe("parseImageStylePref", () => {
       kind: "custom",
       text: "x".repeat(60),
     });
+  });
+});
+
+describe("loadImageStylePref null and effectiveImageStylePref", () => {
+  function stubStorage(store: Record<string, string>) {
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: (key: string) => store[key] ?? null,
+        setItem: (key: string, value: string) => {
+          store[key] = value;
+        },
+      },
+    });
+  }
+
+  it("returns null when nothing valid is stored", () => {
+    const store: Record<string, string> = {};
+    stubStorage(store);
+    try {
+      expect(loadImageStylePref()).toBeNull();
+      store["lectoria.imageStyle"] = "{bad json";
+      expect(loadImageStylePref()).toBeNull();
+      store["lectoria.imageStyle"] = JSON.stringify({ kind: "preset", id: "nope" });
+      expect(loadImageStylePref()).toBeNull();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("resolves null to denslow with no skin", () => {
+    expect(effectiveImageStylePref(null, undefined)).toEqual({ kind: "preset", id: "denslow" });
+    expect(effectiveImageStylePref(null, "nope")).toEqual({ kind: "preset", id: "denslow" });
+  });
+
+  it("resolves null to the skin default", () => {
+    expect(effectiveImageStylePref(null, "watercolor")).toEqual({
+      kind: "preset",
+      id: "watercolor",
+    });
+    expect(effectiveImageStylePref(null, "ink")).toEqual({ kind: "preset", id: "pen-pencil" });
+  });
+
+  it("lets an explicit pick win and round-trips the request fields", () => {
+    const eff = effectiveImageStylePref({ kind: "preset", id: "pencil" }, "watercolor");
+    expect(eff).toEqual({ kind: "preset", id: "pencil" });
+    expect(requestStyleFields(eff)).toEqual({ style: { preset: "pencil" } });
+    const custom = effectiveImageStylePref({ kind: "custom", text: "crayon drawing" }, "ink");
+    expect(requestStyleFields(custom)).toEqual({ style: { custom: "crayon drawing" } });
+  });
+
+  it("lists every skin default in the picker presets", () => {
+    const ids = new Set(STYLE_PRESETS.map((p) => p.id));
+    for (const id of Object.values(SKIN_DEFAULT_IMAGE_STYLE)) {
+      expect(ids.has(id)).toBe(true);
+    }
   });
 });
 

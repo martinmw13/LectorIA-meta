@@ -147,6 +147,33 @@ describe("styled imageKey", () => {
     const c = imageKey({ ...passage, style: { kind: "preset", id: "watercolor" } });
     expect(new Set([a, b, c]).size).toBe(3);
   });
+
+  it("keys pen-pencil apart from watercolor and the default", () => {
+    const plain = imageKey({ ...passage });
+    const watercolor = imageKey({ ...passage, style: { kind: "preset", id: "watercolor" } });
+    const penPencil = imageKey({ ...passage, style: { kind: "preset", id: "pen-pencil" } });
+    expect(new Set([plain, watercolor, penPencil]).size).toBe(3);
+    expect(watercolor).toBe("images/oz/t123/v1/style-watercolor/p836.webp");
+    expect(penPencil).toBe("images/oz/t123/v1/style-pen-pencil/p836.webp");
+  });
+
+  it("regenerates nothing for the same style", () => {
+    const a = imageKey({ ...passage, style: { kind: "preset", id: "pen-pencil" } });
+    const b = imageKey({ ...passage, style: { kind: "preset", id: "pen-pencil" } });
+    expect(a).toBe(b);
+  });
+
+  it("keys an explicit denslow like the default", () => {
+    expect(imageKey(parseImageRequest({ ...passage, style: { preset: "denslow" } }))).toBe(
+      imageKey({ ...passage }),
+    );
+  });
+
+  it("keys a skin default like an explicit pick of the same preset", () => {
+    const fromSkin = imageKey(parseImageRequest({ ...passage, style: { preset: "watercolor" } }));
+    const explicit = imageKey({ ...passage, style: { kind: "preset", id: "watercolor" } });
+    expect(fromSkin).toBe(explicit);
+  });
 });
 
 describe("styled buildPrompt", () => {
@@ -178,7 +205,7 @@ describe("styled buildPrompt", () => {
       style: { kind: "preset", id: "watercolor" },
     });
     expect(prompt).not.toContain("Denslow");
-    expect(prompt).toContain("Art style: loose watercolor painting,");
+    expect(prompt).toContain("Art style: soft translucent washes,");
     expect(prompt).toContain("silver shoes");
   });
 
