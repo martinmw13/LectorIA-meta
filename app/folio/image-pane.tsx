@@ -9,10 +9,13 @@ import { PictureButton } from "./picture-button";
 import { usePictureSkin } from "./picture-skin";
 import { PictureWait } from "./picture-draw";
 import { PictureSlot } from "./picture-slot";
+import { TurnstileWidget } from "../turnstile";
 import type { SceneCard } from "./use-pictures";
 
 export function ImagePane({
   card,
+  needHuman,
+  onHumanPass,
   onPicture,
   onRetry,
   onClear,
@@ -21,6 +24,9 @@ export function ImagePane({
   onPictureChapter,
 }: {
   card: SceneCard;
+  // When the API asks for a human proof, the pane shows the check once.
+  needHuman: boolean;
+  onHumanPass: (token: string) => void;
   onPicture: () => void;
   onRetry: () => void;
   onClear: () => void;
@@ -123,12 +129,27 @@ export function ImagePane({
           </>
         ) : (
           <div className="pane-error" role="alert">
-            <p>{card.message}</p>
-            <button type="button" className="retry-text" onClick={onRetry}>
-              {PICTURE_COPY.retry}
-            </button>
+            {needHuman ? (
+              <>
+                <p>{PICTURE_COPY.human}</p>
+                <TurnstileWidget onToken={onHumanPass} />
+              </>
+            ) : (
+              <>
+                <p>{card.message}</p>
+                <button type="button" className="retry-text" onClick={onRetry}>
+                  {PICTURE_COPY.retry}
+                </button>
+              </>
+            )}
           </div>
         )}
+        {needHuman && card.phase !== "error" ? (
+          <div className="pane-error" role="alert">
+            <p>{PICTURE_COPY.human}</p>
+            <TurnstileWidget onToken={onHumanPass} />
+          </div>
+        ) : null}
       </div>
       {card.phase === "loading" ? <PictureWait skin={skin} /> : null}
       {card.phase === "ready" ? (

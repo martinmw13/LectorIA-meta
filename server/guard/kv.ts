@@ -1,5 +1,5 @@
 import "server-only";
-import type { KV } from "@/core/images";
+import type { KV } from "@/core/types";
 
 // Upstash REST client over built-in fetch. Single commands only, no
 // pipeline: the route issues few calls and a helper would add lines.

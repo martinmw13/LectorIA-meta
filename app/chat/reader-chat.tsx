@@ -52,7 +52,7 @@ export function ReaderChat({
             setByokKey(key);
             chat.retry({ key });
           }}
-          onHumanToken={(token) => {
+          onHumanPass={(token) => {
             chat.setNeedHuman(false);
             setTurnstileToken(token);
             chat.retry({ token });

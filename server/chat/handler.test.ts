@@ -6,12 +6,12 @@ import {
 } from "@/core/chat";
 import type { ChatErrorBody } from "@/core/chat";
 import { createMemoryKV } from "@/core/images";
-import { spendKey, dailySpendKey } from "@/core/images";
-import { hashIp } from "@/server/images/quota";
+import { dailySpendKey, spendKey } from "@/server/guard/spend";
+import { hashIp } from "@/server/guard/request";
 import { handleChatPost } from "./handler";
 import type { ChatHandlerDeps } from "./handler";
 import type { ChatEnv } from "./env";
-import { resetTurnstileWarnForTests } from "./turnstile";
+import { resetTurnstileWarnForTests } from "@/server/guard/human";
 import type { ChatStreamChunk, ChatStreamer, UpstreamMessage } from "./stream";
 
 const ENV: ChatEnv = {
@@ -349,11 +349,10 @@ describe("handleChatPost", () => {
     expect(passed.status).toBe(200);
     expect(siteFetch).toHaveBeenCalledOnce();
     await passed.text();
-    const human = passed.headers
-      .getSetCookie()
-      .find((c) => c.startsWith("chat_human="))
-      ?.split(";")[0];
+    const setCookies = passed.headers.getSetCookie();
+    const human = setCookies.find((c) => c.startsWith("human_ok="))?.split(";")[0];
     expect(human).toBeDefined();
+    expect(setCookies.find((c) => c.startsWith("human_ok="))).toContain("Path=/api");
 
     const cookie = `${anonCookieFrom(passed)}; ${human}`;
     const again = await handleChatPost(post(validBody()), {
@@ -377,6 +376,27 @@ describe("handleChatPost", () => {
     );
     expect(withCookies.status).toBe(200);
     expect(siteFetch).toHaveBeenCalledOnce();
+  });
+
+  it("accepts an outstanding legacy chat_human cookie without siteverify", async () => {
+    const kv = createMemoryKV();
+    const turnEnv: ChatEnv = { ...ENV, turnstileSecret: "ts-secret" };
+    const siteFetch = vi.fn(async () => Response.json({ success: true }));
+    const { createHmac } = await import("node:crypto");
+    const expiry = Math.floor(Date.now() / 1000) + 3600;
+    const sig = createHmac("sha256", ENV.sessionSecret).update(`chat_human:${expiry}`).digest("hex");
+    const res = await handleChatPost(
+      post(validBody(), { Cookie: `chat_human=${expiry}.${sig}` }),
+      {
+        env: turnEnv,
+        kv,
+        now: NOW,
+        fetchFn: siteFetch as unknown as typeof fetch,
+        createStreamer: factoryFor(OK_CHUNKS),
+      },
+    );
+    expect(res.status).toBe(200);
+    expect(siteFetch).not.toHaveBeenCalled();
   });
 
   it("never leaks the key, upstream text, or question in responses or logs", async () => {

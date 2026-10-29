@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { createMemoryKV, dailySpendKey, spendKey } from "@/core/images";
+import { createMemoryKV } from "@/core/images";
+import { dailySpendKey, spendKey } from "@/server/guard/spend";
 import { NARRATION_FORMAT, NARRATION_MODEL, NARRATION_SPEED, NARRATION_VOICE } from "@/core/narration";
 import type { ChapterNarration } from "@/core/narration";
 import { createNarrationDeps } from "./cache";

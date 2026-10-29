@@ -20,11 +20,11 @@ let saved: Record<string, string | undefined>;
 
 beforeEach(() => {
   saved = {};
-  for (const k of [...Object.keys(BASE), ...REDIS_KEYS, "SPEND_CAP_USD", "DAILY_SPEND_CAP_USD"]) {
+  for (const k of [...Object.keys(BASE), ...REDIS_KEYS, "SPEND_CAP_USD", "DAILY_SPEND_CAP_USD", "TURNSTILE_SECRET_KEY"]) {
     saved[k] = process.env[k];
   }
   Object.assign(process.env, BASE);
-  for (const k of [...REDIS_KEYS, "SPEND_CAP_USD", "DAILY_SPEND_CAP_USD"]) delete process.env[k];
+  for (const k of [...REDIS_KEYS, "SPEND_CAP_USD", "DAILY_SPEND_CAP_USD", "TURNSTILE_SECRET_KEY"]) delete process.env[k];
 });
 
 afterEach(() => {
@@ -77,6 +77,14 @@ describe("readImageEnv redis fallback", () => {
     expect(() => readImageEnv()).toThrow(
       "UPSTASH_REDIS_REST_TOKEN|KV_REST_API_TOKEN",
     );
+  });
+
+  it("reads an optional TURNSTILE_SECRET_KEY", () => {
+    process.env.UPSTASH_REDIS_REST_URL = "https://upstash-url";
+    process.env.UPSTASH_REDIS_REST_TOKEN = "upstash-token";
+    expect(readImageEnv().turnstileSecret).toBeUndefined();
+    process.env.TURNSTILE_SECRET_KEY = "ts-secret";
+    expect(readImageEnv().turnstileSecret).toBe("ts-secret");
   });
 
   it("defaults the daily spend cap to 2 USD", () => {

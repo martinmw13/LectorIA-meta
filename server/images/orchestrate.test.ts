@@ -1,15 +1,19 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { createHmac } from "node:crypto";
 import {
   MSG_CREDITS_OUT,
+  MSG_HUMAN,
   createMemoryKV,
-  dailySpendKey,
   imageKey,
   indexKeyFor,
   lockKeyFor,
-  spendKey,
+  quotaKeys,
 } from "@/core/images";
 import type { ImageGenerator, ImageRequest, ImageStore } from "@/core/images";
 import { MAX_RANGES_PER_SCENE, parseRanges, rangeListKeyFor } from "@/core/image-ranges";
+import { dailySpendKey, spendKey } from "@/server/guard/spend";
+import { hashIp } from "@/server/guard/request";
+import { issueHumanCookie } from "@/server/guard/human";
 import type { ImageEnv } from "./env";
 import { orchestrate } from "./orchestrate";
 import type { OrchestrateDeps } from "./orchestrate";
@@ -405,5 +409,75 @@ describe("orchestrate range reuse", () => {
     expect(res).toEqual({ status: "pending" });
     releaseGen(new Uint8Array([1]));
     expect(await held).toMatchObject({ status: "ready" });
+  });
+});
+
+describe("human gate", () => {
+  const noFetch = vi.fn(async () => {
+    throw new Error("siteverify must not be called");
+  });
+
+  function gate(over: Partial<NonNullable<OrchestrateDeps["human"]>> = {}): NonNullable<OrchestrateDeps["human"]> {
+    return {
+      cookieHeader: null,
+      ip: "9.9.9.9",
+      sessionSecret: "s",
+      turnstileSecret: "ts-secret",
+      fetchFn: noFetch as unknown as typeof fetch,
+      ...over,
+    };
+  }
+
+  it("blocks without a cookie or token, taking nothing and freeing the lock", async () => {
+    const d = deps({ human: gate() });
+    const res = await orchestrate(passage, d);
+    expect(res).toEqual({ status: "error", code: "human", message: MSG_HUMAN });
+    expect(await d.kv.get(spendKey())).toBeNull();
+    expect(await d.kv.get(dailySpendKey(d.day))).toBeNull();
+    const keys = quotaKeys({ day: d.day, ipHash: hashIp("9.9.9.9", "salt"), anonId: "anon-1" });
+    expect(await d.kv.get(keys.ip)).toBeNull();
+    expect(await d.kv.get(keys.anon)).toBeNull();
+    // Lock released: a new request generates instead of pending.
+    expect(await d.kv.setNxEx(lockKeyFor(imageKey(passage)), "probe", 150)).toBe(true);
+    expect(noFetch).not.toHaveBeenCalled();
+  });
+
+  it("proceeds with a valid human_ok cookie", async () => {
+    const value = issueHumanCookie("s").split(";")[0];
+    const d = deps({ human: gate({ cookieHeader: value }) });
+    const res = await orchestrate(passage, d);
+    expect(res.status).toBe("ready");
+    expect(noFetch).not.toHaveBeenCalled();
+  });
+
+  it("proceeds with a legacy chat_human cookie", async () => {
+    const expiry = Math.floor(Date.now() / 1000) + 3600;
+    const sig = createHmac("sha256", "s").update(`chat_human:${expiry}`).digest("hex");
+    const d = deps({ human: gate({ cookieHeader: `chat_human=${expiry}.${sig}` }) });
+    const res = await orchestrate(passage, d);
+    expect(res.status).toBe("ready");
+    expect(noFetch).not.toHaveBeenCalled();
+  });
+
+  it("proceeds on a valid token and surfaces the issued cookie", async () => {
+    const siteFetch = vi.fn(async () => Response.json({ success: true }));
+    const humanOut: { setCookie?: string } = {};
+    const d = deps({
+      human: gate({ token: "tok", fetchFn: siteFetch as unknown as typeof fetch }),
+      humanOut,
+    });
+    const res = await orchestrate(passage, d);
+    expect(res.status).toBe("ready");
+    expect(siteFetch).toHaveBeenCalledOnce();
+    expect(humanOut.setCookie).toMatch(/^human_ok=/);
+    expect(humanOut.setCookie).toContain("Path=/api");
+  });
+
+  it("does not require a human on a cached hit", async () => {
+    const d = deps();
+    expect((await orchestrate(passage, d)).status).toBe("ready");
+    const hit = await orchestrate(passage, deps({ kv: d.kv, store: d.store, human: gate() }));
+    expect(hit).toMatchObject({ status: "ready", cached: true });
+    expect(noFetch).not.toHaveBeenCalled();
   });
 });

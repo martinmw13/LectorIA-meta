@@ -1,4 +1,4 @@
-export const MAX_IMAGE_BODY_BYTES = 8192 as const;
+import { MAX_IMAGE_BODY_BYTES } from "@/core/images";
 
 export type CappedBody =
   | { ok: true; text: string }

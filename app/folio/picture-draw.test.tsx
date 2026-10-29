@@ -6,6 +6,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, expect, test, vi } from "vitest";
 import { ImagePane } from "./image-pane";
+import { PICTURE_COPY } from "./picture-copy";
 import { usePictureLoaded } from "./picture-draw";
 import { InlineFigureView } from "./inline-figures";
 import type { SceneCard } from "./use-pictures";
@@ -13,10 +14,12 @@ import type { InlineFigure } from "./use-pictures";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-function Harness({ card }: { card: SceneCard }) {
+function Harness({ card, needHuman = false }: { card: SceneCard; needHuman?: boolean }) {
   return (
     <ImagePane
       card={card}
+      needHuman={needHuman}
+      onHumanPass={() => {}}
       onPicture={() => {}}
       onRetry={() => {}}
       onClear={() => {}}
@@ -270,6 +273,25 @@ test("inline ready figure keeps the frozen drawing until the image loads", () =>
   });
   expect(host.querySelector("svg.picdraw-art")).toBeNull();
   expect(host.querySelector("img.gen-ready")?.className).toMatch(/rv-engraving/);
+  act(() => {
+    root.unmount();
+  });
+});
+
+// A figure failing on the human check leaves the scene card idle, so the
+// pane must surface the check there too (the widget renders nothing
+// without a site key, so assert the copy line).
+test("idle card with needHuman shows the human line", () => {
+  const raf = vi.fn(() => 0);
+  stubEnv(raf);
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  const root = createRoot(host);
+  act(() => {
+    root.render(<Harness card={{ phase: "idle" }} needHuman={true} />);
+  });
+  expect(host.querySelector(".pane-error")?.textContent).toContain(PICTURE_COPY.human);
+  expect(host.querySelectorAll(".pane-error")).toHaveLength(1);
   act(() => {
     root.unmount();
   });

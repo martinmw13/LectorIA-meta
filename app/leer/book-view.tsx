@@ -179,6 +179,8 @@ export function BookView({
     <>
       <ImagePane
         card={pic.card}
+        needHuman={pic.needHuman}
+        onHumanPass={pic.submitHumanToken}
         onPicture={() => pic.illustrateScene()}
         onRetry={() => pic.illustrateScene()}
         onClear={pic.clearScene}

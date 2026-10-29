@@ -4,6 +4,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { TurnstileWidget } from "../turnstile";
 import type { ImageStylePref } from "../image-style";
 import type { ChapterPanel } from "./panels";
 import { PICTURE_COPY } from "./picture-copy";
@@ -36,7 +37,7 @@ export function PanelsModal({
   const chapterLabel = `Chapter ${ch}, ${chapterTitle}`;
   const reached = ch <= reachedCh;
   const skin = usePictureSkin();
-  const { page, retry } = useChapterPage({ bookId, textVersion, ch, pref, reachedCh });
+  const { page, retry, needHuman, submitHumanPass } = useChapterPage({ bookId, textVersion, ch, pref, reachedCh });
   const closeRef = useRef<HTMLButtonElement | null>(null);
   const boxRef = useRef<HTMLDivElement | null>(null);
 
@@ -100,9 +101,13 @@ export function PanelsModal({
             ) : (
               <div className="panels-frame panels-miss" role="alert">
                 <p>{page.message}</p>
-                <button type="button" className="retry-text" onClick={retry}>
-                  {PICTURE_COPY.retry}
-                </button>
+                {needHuman ? (
+                  <TurnstileWidget onToken={submitHumanPass} />
+                ) : (
+                  <button type="button" className="retry-text" onClick={retry}>
+                    {PICTURE_COPY.retry}
+                  </button>
+                )}
               </div>
             )}
             {page.phase === "loading" ? <PictureWait skin={skin} note={PANELS_NOTE} /> : null}

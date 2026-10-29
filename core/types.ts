@@ -93,6 +93,8 @@ export interface PassageRequest {
   n: number;
   endN?: number;
   style?: ImageStyle;
+  // Single-use proof, never part of the cache key.
+  turnstileToken?: string;
 }
 
 export interface SceneRequest {
@@ -101,6 +103,22 @@ export interface SceneRequest {
   textVersion: string;
   sceneId: string;
   style?: ImageStyle;
+  // Single-use proof, never part of the cache key.
+  turnstileToken?: string;
+}
+
+// Minimal store surface the route needs; server modules and tests
+// implement it. Lives here so server and core share one shape.
+export interface KV {
+  get(key: string): Promise<string | null>;
+  setNxEx(key: string, value: string, exSec: number): Promise<boolean>;
+  set(key: string, value: string): Promise<void>;
+  incr(key: string): Promise<number>;
+  incrBy(key: string, by: number): Promise<number>;
+  decr(key: string): Promise<number>;
+  decrBy(key: string, by: number): Promise<number>;
+  expire(key: string, sec: number): Promise<void>;
+  releaseIfToken(key: string, token: string): Promise<boolean>;
 }
 
 export interface ChapterRequest {
@@ -113,11 +131,13 @@ export interface ChapterRequest {
   // determined client.
   reachedCh: number;
   style?: ImageStyle;
+  // Single-use proof, never part of the cache key.
+  turnstileToken?: string;
 }
 
 export type ImageRequest = PassageRequest | SceneRequest | ChapterRequest;
 
-export type ImageErrorCode = "quota" | "budget" | "daily_budget" | "unavailable" | "bad_request";
+export type ImageErrorCode = "quota" | "budget" | "daily_budget" | "human" | "unavailable" | "bad_request";
 
 export type ImageResponse =
   | { status: "ready"; url: string; cached: boolean; caption: string }

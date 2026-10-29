@@ -11,7 +11,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MSG_FAILED, MSG_RETRY } from "@/core/images";
+import { MSG_FAILED, MSG_HUMAN, MSG_RETRY } from "@/core/images";
 import { canIllustrateScene, canRetryFigure } from "./figure-placement";
 import { PICTURE_COPY } from "./picture-copy";
 import type { ImageResponse } from "@/core/images";
@@ -100,17 +100,36 @@ async function postImage(body: unknown): Promise<ImageResponse> {
 }
 
 // Shared by the chapter page hook: one poll loop for every picture kind.
-export async function poll(body: unknown): Promise<{ url: string; caption: string }> {
+// Thrown when the API needs a human proof; the caller surfaces the
+// widget once instead of polling through the failure.
+export class HumanNeeded extends Error {
+  constructor() {
+    super(MSG_HUMAN);
+    this.name = "HumanNeeded";
+  }
+}
+
+export async function poll(
+  body: Record<string, unknown>,
+  token?: string,
+): Promise<{ url: string; caption: string }> {
   let left = POLL_MAX;
+  let first = true;
   for (;;) {
     let res: ImageResponse;
     try {
-      res = await postImage(body);
+      // The token rides the first post only; later polls reuse the cookie.
+      const payload = first && token ? { ...body, turnstileToken: token } : body;
+      first = false;
+      res = await postImage(payload);
     } catch {
       throw new Error(MSG_FAILED);
     }
     if (res.status === "ready") return { url: res.url, caption: res.caption };
-    if (res.status === "error") throw new Error(res.message);
+    if (res.status === "error") {
+      if (res.code === "human") throw new HumanNeeded();
+      throw new Error(res.message);
+    }
     left -= 1;
     if (left <= 0) throw new Error(MSG_RETRY);
     await new Promise((done) => setTimeout(done, POLL_MS));
@@ -134,6 +153,17 @@ export function usePictures({
   const hintTimer = useRef<number | null>(null);
   const [popover, setPopover] = useState<{ top: number; left: number } | null>(null);
   const [lightbox, setLightbox] = useState<LightboxItem | null>(null);
+  const [needHuman, setNeedHuman] = useState(false);
+  const humanRetry = useRef<((token: string) => void) | null>(null);
+
+  // The widget token retries the failed request once, with the token on
+  // the first post only; later polls reuse the issued cookie.
+  const submitHumanToken = useCallback((token: string) => {
+    const retry = humanRetry.current;
+    humanRetry.current = null;
+    setNeedHuman(false);
+    retry?.(token);
+  }, []);
   // The text view mounts late on a chapter's first scene (cover first),
   // so the node is tracked in state and the listener follows it.
   const viewNodeRef = useRef<HTMLDivElement | null>(null);
@@ -200,7 +230,7 @@ export function usePictures({
     openerRef.current = null;
   }, []);
 
-  const illustrateScene = useCallback(() => {
+  const illustrateScene = useCallback((token?: string) => {
     if (inFlight !== null && sceneId !== "" && !sceneCache.has(sceneId)) {
       showHint({ where: "scene" });
       return;
@@ -211,13 +241,17 @@ export function usePictures({
     setPopover(null);
     setHintAt(null);
     setCard({ phase: "loading" });
-    void poll({ kind: "scene", bookId, textVersion, sceneId, ...requestStyleFields(prefRef.current) })
+    void poll({ kind: "scene", bookId, textVersion, sceneId, ...requestStyleFields(prefRef.current) }, token)
       .then(({ url, caption }) => {
         sceneCache.set(sceneId, { url, caption });
         if (sceneRef.current === sceneId) setCard({ phase: "ready", url, caption });
       })
       .catch((err: unknown) => {
         if (sceneRef.current === sceneId) {
+          if (err instanceof HumanNeeded) {
+            humanRetry.current = (t) => illustrateScene(t);
+            setNeedHuman(true);
+          }
           setCard({ phase: "error", message: err instanceof Error ? err.message : MSG_FAILED });
         }
       })
@@ -232,17 +266,20 @@ export function usePictures({
   }, [sceneId]);
 
   const requestFigure = useCallback(
-    (scene: string, id: string, startN: number, endN: number) => {
+    (scene: string, id: string, startN: number, endN: number, token?: string) => {
       // Callers claim inFlight; this starts the request and releases it.
       const mine = inFlight;
-      void poll({
-        kind: "passage",
-        bookId,
-        textVersion,
-        n: startN,
-        ...(endN > startN ? { endN } : {}),
-        ...requestStyleFields(prefRef.current),
-      })
+      void poll(
+        {
+          kind: "passage",
+          bookId,
+          textVersion,
+          n: startN,
+          ...(endN > startN ? { endN } : {}),
+          ...requestStyleFields(prefRef.current),
+        },
+        token,
+      )
         .then(({ url }) => {
           storeFigures(scene, (prev) =>
             prev.map((f) => (f.id === id ? { ...f, phase: "ready", url, message: null } : f)),
@@ -256,12 +293,30 @@ export function usePictures({
                 : f,
             ),
           );
+          if (err instanceof HumanNeeded) {
+            const retryWithToken = (t: string) => {
+              if (inFlight !== null) {
+                showHint({ where: "figure", id });
+                humanRetry.current = retryWithToken;
+                setNeedHuman(true);
+                return;
+              }
+              inFlight = { kind: "figure", sceneId: scene, id };
+              setHintAt(null);
+              storeFigures(scene, (prev) =>
+                prev.map((f) => (f.id === id ? { ...f, phase: "loading", message: null } : f)),
+              );
+              requestFigure(scene, id, startN, endN, t);
+            };
+            humanRetry.current = retryWithToken;
+            setNeedHuman(true);
+          }
         })
         .finally(() => {
           release(mine);
         });
     },
-    [bookId, textVersion, storeFigures],
+    [bookId, textVersion, storeFigures, showHint],
   );
 
   const illustratePassage = useCallback(() => {
@@ -410,6 +465,8 @@ export function usePictures({
 
   return {
     card: shownCard,
+    needHuman,
+    submitHumanToken,
     figures: shownFigures,
     popover: shownPopover,
     viewRef,
