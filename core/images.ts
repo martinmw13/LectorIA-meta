@@ -11,12 +11,15 @@ import type { ImageStyle } from "./image-style";
 import { CHAPTER_PROMPT_VERSION, IMAGE_COST_MICRO, PROMPT_VERSION } from "./types";
 import type { ImageKind, ImageRequest } from "./types";
 
-export type { ImageErrorCode, ImageKind, ImageRequest, ImageResponse } from "./types";
+export type { ImageErrorCode, ImageKind, ImageRequest, ImageResponse, KV } from "./types";
+import type { KV } from "./types";
 export { ImageStyleError, ImageValidationError } from "./image-style";
 export type { ImageStyle, ImageStylePresetId, StyleChoice } from "./image-style";
 
 export const DAILY_IMAGE_LIMIT = 5;
 export const QUOTA_TTL_SEC = 48 * 3600;
+// Body cap for the image route; the guard reader enforces it.
+export const MAX_IMAGE_BODY_BYTES = 8192 as const;
 export const LOCK_TTL_SEC = 150;
 export const MAX_PASSAGE_CHARS = 600;
 export const MAX_SCENE_CLIP_CHARS = 1200;
@@ -31,21 +34,8 @@ export const CREDITS_OUT_LIBRARY_HREF = "/";
 export const MSG_UNAVAILABLE = "Pictures aren't available right now.";
 export const MSG_FAILED = "That picture didn't come out. Try again?";
 export const MSG_RETRY = "This one is taking a while. Try again in a moment.";
+export const MSG_HUMAN = "One quick check that you're a person first.";
 export const MSG_STYLE = "That style won't work here. Try another?";
-
-// Minimal store surface the route needs; Upstash REST and Blob clients
-// implement these in server/, tests use the memory fake below.
-export interface KV {
-  get(key: string): Promise<string | null>;
-  setNxEx(key: string, value: string, exSec: number): Promise<boolean>;
-  set(key: string, value: string): Promise<void>;
-  incr(key: string): Promise<number>;
-  incrBy(key: string, by: number): Promise<number>;
-  decr(key: string): Promise<number>;
-  decrBy(key: string, by: number): Promise<number>;
-  expire(key: string, sec: number): Promise<void>;
-  releaseIfToken(key: string, token: string): Promise<boolean>;
-}
 
 export interface ImageStore {
   findUrl(path: string): Promise<string | null>;
@@ -65,13 +55,25 @@ function isRecord(json: unknown): json is Record<string, unknown> {
 export function parseImageRequest(json: unknown): ImageRequest {
   if (!isRecord(json)) throw new ImageValidationError();
   const { kind } = json;
+  // The token is single-use proof, never part of imageKey.
+  if (
+    json.turnstileToken !== undefined &&
+    (typeof json.turnstileToken !== "string" || json.turnstileToken.length > 2048)
+  ) {
+    throw new ImageValidationError();
+  }
+  const token = typeof json.turnstileToken === "string" ? json.turnstileToken : undefined;
   if (kind === "passage") {
     const keys = Object.keys(json).sort().join(",");
     if (
       keys !== "bookId,kind,n,textVersion" &&
       keys !== "bookId,kind,n,style,textVersion" &&
       keys !== "bookId,endN,kind,n,textVersion" &&
-      keys !== "bookId,endN,kind,n,style,textVersion"
+      keys !== "bookId,endN,kind,n,style,textVersion" &&
+      keys !== "bookId,kind,n,textVersion,turnstileToken" &&
+      keys !== "bookId,kind,n,style,textVersion,turnstileToken" &&
+      keys !== "bookId,endN,kind,n,textVersion,turnstileToken" &&
+      keys !== "bookId,endN,kind,n,style,textVersion,turnstileToken"
     ) {
       throw new ImageValidationError();
     }
@@ -92,11 +94,17 @@ export function parseImageRequest(json: unknown): ImageRequest {
       n: json.n,
       ...(endN === undefined ? {} : { endN }),
       ...(style === undefined ? {} : { style }),
+      ...(token === undefined ? {} : { turnstileToken: token }),
     };
   }
   if (kind === "scene") {
     const keys = Object.keys(json).sort().join(",");
-    if (keys !== "bookId,kind,sceneId,textVersion" && keys !== "bookId,kind,sceneId,style,textVersion") {
+    if (
+      keys !== "bookId,kind,sceneId,textVersion" &&
+      keys !== "bookId,kind,sceneId,style,textVersion" &&
+      keys !== "bookId,kind,sceneId,textVersion,turnstileToken" &&
+      keys !== "bookId,kind,sceneId,style,textVersion,turnstileToken"
+    ) {
       throw new ImageValidationError();
     }
     if (typeof json.bookId !== "string" || json.bookId.length === 0) throw new ImageValidationError();
@@ -111,13 +119,16 @@ export function parseImageRequest(json: unknown): ImageRequest {
       textVersion: json.textVersion,
       sceneId: json.sceneId,
       ...(style === undefined ? {} : { style }),
+      ...(token === undefined ? {} : { turnstileToken: token }),
     };
   }
   if (kind === "chapter") {
     const keys = Object.keys(json).sort().join(",");
     if (
       keys !== "bookId,ch,kind,reachedCh,textVersion" &&
-      keys !== "bookId,ch,kind,reachedCh,style,textVersion"
+      keys !== "bookId,ch,kind,reachedCh,style,textVersion" &&
+      keys !== "bookId,ch,kind,reachedCh,textVersion,turnstileToken" &&
+      keys !== "bookId,ch,kind,reachedCh,style,textVersion,turnstileToken"
     ) {
       throw new ImageValidationError();
     }
@@ -139,6 +150,7 @@ export function parseImageRequest(json: unknown): ImageRequest {
       ch: json.ch,
       reachedCh: json.reachedCh,
       ...(style === undefined ? {} : { style }),
+      ...(token === undefined ? {} : { turnstileToken: token }),
     };
   }
   throw new ImageValidationError();
@@ -210,25 +222,8 @@ export function quotaKeys(args: { day: string; ipHash: string; anonId: string })
   };
 }
 
-export function spendKey(): string {
-  return "img:spend:micro";
-}
-
-// Daily spend counter for our key. The day is the UTC day string
-// YYYY-MM-DD the caller already uses for quota keys, so the daily
-// cap resets on UTC rollover together with per-person quota.
-export const DAILY_SPEND_TTL_SEC = 48 * 3600;
-
-export function dailySpendKey(day: string): string {
-  return `img:spend:daily:${day}`;
-}
-
 export function overQuota(count: number): boolean {
   return count > DAILY_IMAGE_LIMIT;
-}
-
-export function budgetExceeded(totalAfterReserve: number, capMicro: number): boolean {
-  return totalAfterReserve > capMicro;
 }
 
 export function imageCostMicro(): number {

@@ -1,5 +1,5 @@
 import "server-only";
-import { usable } from "@/server/images/env";
+import { usable } from "@/server/guard/env";
 
 // Same names as readImageEnv minus BLOB_READ_WRITE_TOKEN, plus the
 // optional Turnstile secret: without it the route skips the human check

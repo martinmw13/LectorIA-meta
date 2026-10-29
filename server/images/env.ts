@@ -1,4 +1,5 @@
 import "server-only";
+import { usable } from "@/server/guard/env";
 
 // Reads image env once per request. Any missing key means unavailable:
 // with no quotas or budget configured, the route must never spend.
@@ -10,6 +11,7 @@ export interface ImageEnv {
   ipSalt: string;
   spendCapMicro: number;
   dailySpendCapMicro: number;
+  turnstileSecret?: string;
 }
 
 // Vercel's Upstash marketplace integration injects KV_REST_API_* names.
@@ -17,13 +19,6 @@ export interface ImageEnv {
 // The read-only token is never used (we write).
 const URL_NAMES = "UPSTASH_REDIS_REST_URL|KV_REST_API_URL";
 const TOKEN_NAMES = "UPSTASH_REDIS_REST_TOKEN|KV_REST_API_TOKEN";
-
-// `vercel env pull` writes Sensitive vars as "[SENSITIVE]".
-export function usable(raw: string | undefined): string | undefined {
-  if (raw === undefined || raw === "") return undefined;
-  if (/^\[[A-Z_]+\]$/.test(raw.trim())) return undefined;
-  return raw;
-}
 
 const REQUIRED = [
   "BLOB_READ_WRITE_TOKEN",
@@ -60,5 +55,7 @@ export function readImageEnv(from: NodeJS.ProcessEnv = process.env): ImageEnv {
     ipSalt: from.IP_HASH_SALT as string,
     spendCapMicro: Math.round(parseCapUsd(from.SPEND_CAP_USD, 10) * 1_000_000),
     dailySpendCapMicro: Math.round(parseCapUsd(from.DAILY_SPEND_CAP_USD, 2) * 1_000_000),
+    // Optional like chat: without it the route skips the human check (dev).
+    ...(from.TURNSTILE_SECRET_KEY ? { turnstileSecret: from.TURNSTILE_SECRET_KEY } : {}),
   };
 }

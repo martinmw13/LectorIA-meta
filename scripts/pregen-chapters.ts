@@ -6,19 +6,12 @@
 //   [--ch all|1,2] [--style skins|<id>] [--dry-run]
 import { loadOzBook } from "../server/books";
 import { createBlobStore } from "../server/images/blob";
-import { usable } from "../server/images/env";
-import { createRestKV } from "../server/images/kv";
+import { usable } from "../server/guard/env";
 import { createMetaClient } from "../server/images/meta";
-import { utcDay } from "../server/images/quota";
-import {
-  DAILY_SPEND_TTL_SEC,
-  budgetExceeded,
-  dailySpendKey,
-  imageCostMicro,
-  imageKey,
-  indexKeyFor,
-  spendKey,
-} from "../core/images";
+import { createRestKV } from "../server/guard/kv";
+import { utcDay } from "../server/guard/request";
+import { reserveSpend } from "../server/guard/spend";
+import { imageCostMicro, imageKey, indexKeyFor } from "../core/images";
 import { SKIN_DEFAULT_IMAGE_STYLE, parseStyleChoice } from "../core/image-style";
 import type { ImageStylePresetId } from "../core/image-style";
 import { buildChapterPrompt, chapterPanels } from "../core/panels";
@@ -107,7 +100,7 @@ async function main(): Promise<void> {
   const kv = createRestKV(url as string, rawToken as string);
   const store = createBlobStore();
   const generate = createMetaClient(process.env.META_API_KEY as string);
-  const dayKey = dailySpendKey(utcDay());
+  const day = utcDay();
   const cost = imageCostMicro();
   let cached = 0;
   let generated = 0;
@@ -150,34 +143,22 @@ async function main(): Promise<void> {
         console.log(`ch ${ch} ${styleId} planned`);
         continue;
       }
-      const total = await kv.incrBy(spendKey(), cost);
-      if (budgetExceeded(total, capMicro)) {
-        await kv.decrBy(spendKey(), cost);
-        console.log(`Stopped: spend cap reached at ch ${ch} ${styleId}, reserve refunded.`);
+      const spent = await reserveSpend(kv, {
+        amountMicro: cost,
+        day,
+        spendCapMicro: capMicro,
+        dailySpendCapMicro: dailyCapMicro,
+      });
+      if (!spent.ok) {
+        console.log(
+          spent.which === "total"
+            ? `Stopped: spend cap reached at ch ${ch} ${styleId}, reserve refunded.`
+            : `Stopped: daily spend cap reached at ch ${ch} ${styleId}, reserve refunded.`,
+        );
         process.exitCode = 1;
         return;
       }
-      const dayTotal = await kv.incrBy(dayKey, cost);
-      await kv.expire(dayKey, DAILY_SPEND_TTL_SEC);
-      if (budgetExceeded(dayTotal, dailyCapMicro)) {
-        await kv.decrBy(dayKey, cost);
-        await kv.decrBy(spendKey(), cost);
-        console.log(`Stopped: daily spend cap reached at ch ${ch} ${styleId}, reserve refunded.`);
-        process.exitCode = 1;
-        return;
-      }
-      const refund = async (): Promise<void> => {
-        try {
-          await kv.decrBy(dayKey, cost);
-        } catch {
-          // Best effort; counters stay reserved rather than crash the run.
-        }
-        try {
-          await kv.decrBy(spendKey(), cost);
-        } catch {
-          // Best effort; counters stay reserved rather than crash the run.
-        }
-      };
+      const refund = (): Promise<void> => spent.reservation.release();
       let bytes: Uint8Array;
       try {
         bytes = await generate.generate(

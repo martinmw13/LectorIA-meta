@@ -1,13 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
-  DAILY_SPEND_TTL_SEC,
   ImageStyleError,
-  budgetExceeded,
   buildCaption,
   buildPrompt,
   canRelease,
   createMemoryKV,
-  dailySpendKey,
   imageCostMicro,
   imageKey,
   indexKeyFor,
@@ -15,7 +12,6 @@ import {
   overQuota,
   parseImageRequest,
   quotaKeys,
-  spendKey,
   validateAgainstBook,
 } from "./images";
 import { IMAGE_COST_MICRO } from "./types";
@@ -61,6 +57,22 @@ describe("parseImageRequest", () => {
     for (const bad of [null, [], "x", 42]) {
       expect(() => parseImageRequest(bad)).toThrow();
     }
+  });
+
+  it("accepts a turnstile token without changing the image key", () => {
+    const plain = { kind: "passage", bookId: "oz", textVersion: "t123", n: 2 } as const;
+    const withToken = parseImageRequest({ ...plain, turnstileToken: "tok" });
+    expect(withToken).toEqual({ ...plain, turnstileToken: "tok" });
+    expect(imageKey(withToken)).toBe(imageKey(plain));
+    const scene = { kind: "scene", bookId: "oz", textVersion: "t123", sceneId: "c1s1" } as const;
+    const sceneToken = parseImageRequest({ ...scene, turnstileToken: "tok" });
+    expect(imageKey(parseImageRequest(scene))).toBe(imageKey(sceneToken));
+  });
+
+  it("rejects a bad turnstile token", () => {
+    const plain = { kind: "passage", bookId: "oz", textVersion: "t123", n: 2 };
+    expect(() => parseImageRequest({ ...plain, turnstileToken: "x".repeat(2049) })).toThrow();
+    expect(() => parseImageRequest({ ...plain, turnstileToken: 42 })).toThrow();
   });
 });
 
@@ -398,17 +410,8 @@ describe("quota and budget helpers", () => {
     expect(keys.ip).not.toBe(keys.anon);
   });
 
-  it("flags a spend total over the cap", () => {
-    expect(budgetExceeded(11_000_000, 10_000_000)).toBe(true);
-    expect(budgetExceeded(10_000_000, 10_000_000)).toBe(false);
+  it("reports the fixed image cost", () => {
     expect(imageCostMicro()).toBe(IMAGE_COST_MICRO);
-  });
-
-  it("builds day-scoped daily spend keys with a 48 h TTL", () => {
-    expect(dailySpendKey("2026-10-27")).toBe("img:spend:daily:2026-10-27");
-    expect(dailySpendKey("2026-10-28")).not.toBe(dailySpendKey("2026-10-27"));
-    expect(dailySpendKey("2026-10-28")).not.toBe(spendKey());
-    expect(DAILY_SPEND_TTL_SEC).toBe(172800);
   });
 
   it("compares lock tokens", () => {
@@ -438,7 +441,6 @@ describe("memory KV lock", () => {
   it("supports the spend reserve and refund", async () => {
     const kv = createMemoryKV();
     expect(await kv.incrBy("spend", IMAGE_COST_MICRO)).toBe(IMAGE_COST_MICRO);
-    expect(budgetExceeded(IMAGE_COST_MICRO, 10_000_000)).toBe(false);
     expect(await kv.decrBy("spend", IMAGE_COST_MICRO)).toBe(0);
   });
 });

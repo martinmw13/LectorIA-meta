@@ -16,30 +16,25 @@ import {
   usageCostMicro,
 } from "@/core/chat";
 import type { ChatErrorBody, ChatErrorCode, ChatRequest } from "@/core/chat";
-import { DAILY_SPEND_TTL_SEC, budgetExceeded, dailySpendKey, spendKey } from "@/core/images";
-import type { KV } from "@/core/images";
+import type { KV } from "@/core/types";
 import { loadOzBook } from "@/server/books";
-import { readBodyCapped } from "@/server/images/body";
 import {
   issueAnonId,
   parseAnonCookie,
   serializeAnonCookie,
   verifyAnonCookie,
-} from "@/server/images/cookies";
-import { createRestKV } from "@/server/images/kv";
-import { clientIp, hashIp, utcDay } from "@/server/images/quota";
+} from "@/server/guard/anon";
+import { readBodyCapped } from "@/server/guard/body";
+import { checkHuman } from "@/server/guard/human";
+import { createRestKV } from "@/server/guard/kv";
+import { CHAT_QUOTA_TTL_SEC, refundDualQuota, takeDualQuota } from "@/server/guard/quota";
+import { clientIp, hashIp, utcDay } from "@/server/guard/request";
+import { reserveSpend } from "@/server/guard/spend";
+import type { SpendReservation } from "@/server/guard/spend";
 import { readChatEnv } from "./env";
 import type { ChatEnv } from "./env";
-import { refundChatQuota, takeChatQuota } from "./quota";
 import { createChatStreamer } from "./stream";
 import type { ChatStreamChunk, ChatStreamer, UpstreamMessage } from "./stream";
-import {
-  issueHumanCookie,
-  parseHumanCookie,
-  verifyHumanCookie,
-  verifyTurnstile,
-  warnTurnstileSkippedOnce,
-} from "./turnstile";
 
 export interface ChatHandlerDeps {
   env?: ChatEnv;
@@ -92,22 +87,16 @@ export async function handleChatPost(req: Request, deps: ChatHandlerDeps = {}): 
   }
 
   const fetchFn = deps.fetchFn ?? fetch;
-  if (env.turnstileSecret) {
-    if (!verifyHumanCookie(parseHumanCookie(req.headers.get("cookie")), env.sessionSecret)) {
-      const ok = body.turnstileToken
-        ? await verifyTurnstile(
-            body.turnstileToken,
-            clientIp(req.headers.get("x-forwarded-for")),
-            env.turnstileSecret,
-            fetchFn,
-          )
-        : false;
-      if (!ok) return fail("human", "?", cookies);
-      cookies.push(issueHumanCookie(env.sessionSecret));
-    }
-  } else {
-    warnTurnstileSkippedOnce();
-  }
+  const human = await checkHuman({
+    cookieHeader: req.headers.get("cookie"),
+    token: body.turnstileToken,
+    ip: clientIp(req.headers.get("x-forwarded-for")),
+    turnstileSecret: env.turnstileSecret,
+    sessionSecret: env.sessionSecret,
+    fetchFn,
+  });
+  if (!human.ok) return fail("human", "?", cookies);
+  if (human.setCookie) cookies.push(human.setCookie);
 
   let anonId = verifyAnonCookie(parseAnonCookie(req.headers.get("cookie")), env.sessionSecret);
   if (!anonId) {
@@ -139,7 +128,7 @@ export async function handleChatPost(req: Request, deps: ChatHandlerDeps = {}): 
 
   let quotaTaken = false;
   try {
-    const taken = await takeChatQuota(kv, keys, limit);
+    const taken = await takeDualQuota(kv, keys, { limit, ttlSec: CHAT_QUOTA_TTL_SEC });
     if (!taken.ok) return fail("quota", "?", cookies);
     quotaTaken = true;
     const remaining = limit - Math.max(taken.ipCount, taken.anonCount);
@@ -161,49 +150,29 @@ export async function handleChatPost(req: Request, deps: ChatHandlerDeps = {}): 
     });
     const messages: UpstreamMessage[] = [{ role: "system", content: system }, ...body.messages];
 
-    let reserved = 0;
-    let spendTaken = false;
-    let dailyTaken = false;
-    const dayKey = dailySpendKey(day);
+    let reservation: SpendReservation | null = null;
     // Each reserve is refunded at most once: flags clear only after the
-    // write lands, like server/images/orchestrate.ts.
+    // write lands, like the images orchestrate path.
     const refundAll = async (): Promise<void> => {
-      try {
-        if (dailyTaken) {
-          await kv.decrBy(dayKey, reserved);
-          dailyTaken = false;
-        }
-      } catch {
-        // Redis down: nothing reserved server-side to retry against.
-      }
-      try {
-        if (spendTaken) {
-          await kv.decrBy(spendKey(), reserved);
-          spendTaken = false;
-        }
-      } catch {
-        // Redis down: nothing reserved server-side to retry against.
-      }
-      await refundChatQuota(kv, keys);
+      await reservation?.release();
+      reservation = null;
+      await refundDualQuota(kv, keys);
     };
 
     // A Redis failure between reserves must give back what was taken.
     try {
       if (!byok) {
-        reserved = estimateCostMicro(messages.reduce((sum, m) => sum + m.content.length, 0));
-        const total = await kv.incrBy(spendKey(), reserved);
-        spendTaken = true;
-        if (budgetExceeded(total, env.spendCapMicro)) {
+        const spent = await reserveSpend(kv, {
+          amountMicro: estimateCostMicro(messages.reduce((sum, m) => sum + m.content.length, 0)),
+          day,
+          spendCapMicro: env.spendCapMicro,
+          dailySpendCapMicro: env.dailySpendCapMicro,
+        });
+        if (!spent.ok) {
           await refundAll();
           return fail("byok_required", chapter.ch, cookies);
         }
-        const dailyTotal = await kv.incrBy(dayKey, reserved);
-        dailyTaken = true;
-        await kv.expire(dayKey, DAILY_SPEND_TTL_SEC);
-        if (budgetExceeded(dailyTotal, env.dailySpendCapMicro)) {
-          await refundAll();
-          return fail("byok_required", chapter.ch, cookies);
-        }
+        reservation = spent.reservation;
       }
     } catch {
       await refundAll().catch(() => undefined);
@@ -296,17 +265,10 @@ export async function handleChatPost(req: Request, deps: ChatHandlerDeps = {}): 
           close();
           return;
         }
-        if (!byok) {
-          try {
-            // No usage block: keep the whole reserve rather than refund a real answer.
-            const diff = usageState ? usageCostMicro(usageState) - reserved : 0;
-            if (diff !== 0) {
-              await kv.incrBy(spendKey(), diff);
-              await kv.incrBy(dayKey, diff);
-            }
-          } catch {
-            // Best effort: the reserve already bounds the spend.
-          }
+        if (!byok && reservation) {
+          // No usage block: keep the whole reserve rather than refund a real answer.
+          const diff = usageState ? usageCostMicro(usageState) - reservation.amountMicro : 0;
+          await reservation.adjust(diff);
         }
         send("done", byok ? {} : { remaining });
         close();
@@ -318,11 +280,7 @@ export async function handleChatPost(req: Request, deps: ChatHandlerDeps = {}): 
     return new Response(stream, { headers });
   } catch {
     if (quotaTaken) {
-      try {
-        await refundChatQuota(kv, keys);
-      } catch {
-        // Best effort: Redis is already unhealthy.
-      }
+      await refundDualQuota(kv, keys);
     }
     return fail("unavailable", "?", cookies);
   }

@@ -1,26 +1,32 @@
 import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-export const HUMAN_COOKIE = "chat_human";
+// Neutral human cookie, readable on every /api route. The old chat-only
+// name stays accepted during transition; only the new one is issued.
+export const HUMAN_COOKIE = "human_ok";
+export const LEGACY_HUMAN_COOKIE = "chat_human";
 const HUMAN_TTL_SEC = 2 * 3600;
 
-function sign(expiry: number, secret: string): string {
-  return createHmac("sha256", secret).update(`${HUMAN_COOKIE}:${expiry}`).digest("hex");
+function sign(name: string, expiry: number, secret: string): string {
+  return createHmac("sha256", secret).update(`${name}:${expiry}`).digest("hex");
 }
 
 export function issueHumanCookie(secret: string, nowSec = Math.floor(Date.now() / 1000)): string {
   const expiry = nowSec + HUMAN_TTL_SEC;
-  return `${HUMAN_COOKIE}=${expiry}.${sign(expiry, secret)}; Path=/api/chat; HttpOnly; Secure; SameSite=Lax; Max-Age=${HUMAN_TTL_SEC}`;
+  return `${HUMAN_COOKIE}=${expiry}.${sign(HUMAN_COOKIE, expiry, secret)}; Path=/api; HttpOnly; Secure; SameSite=Lax; Max-Age=${HUMAN_TTL_SEC}`;
 }
 
 export function parseHumanCookie(header: string | null | undefined): string | null {
   if (!header) return null;
+  let legacy: string | null = null;
   for (const part of header.split(";")) {
     const eq = part.indexOf("=");
     if (eq < 0) continue;
-    if (part.slice(0, eq).trim() === HUMAN_COOKIE) return part.slice(eq + 1).trim();
+    const name = part.slice(0, eq).trim();
+    if (name === HUMAN_COOKIE) return part.slice(eq + 1).trim();
+    if (name === LEGACY_HUMAN_COOKIE) legacy = part.slice(eq + 1).trim();
   }
-  return null;
+  return legacy;
 }
 
 // True only with a valid signature and an unexpired timestamp. Comparison
@@ -36,9 +42,14 @@ export function verifyHumanCookie(
   const expiry = Number(value.slice(0, dot));
   if (!Number.isSafeInteger(expiry) || expiry <= nowSec) return false;
   const sig = value.slice(dot + 1);
-  const expected = sign(expiry, secret);
-  if (sig.length !== expected.length) return false;
-  return timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
+  // Outstanding cookies signed the legacy name, so try both.
+  for (const name of [HUMAN_COOKIE, LEGACY_HUMAN_COOKIE]) {
+    const expected = sign(name, expiry, secret);
+    if (sig.length === expected.length && timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) {
+      return true;
+    }
+  }
+  return false;
 }
 
 let warnedOnce = false;
@@ -75,4 +86,32 @@ export async function verifyTurnstile(
   } catch {
     return false;
   }
+}
+
+export interface HumanCheckInput {
+  cookieHeader: string | null | undefined;
+  token?: string;
+  ip: string;
+  turnstileSecret?: string;
+  sessionSecret: string;
+  fetchFn?: typeof fetch;
+}
+
+// Shared by chat and images: skip when no secret (dev), else accept the
+// cookie or one token verification, issuing the neutral cookie on success.
+export async function checkHuman(
+  input: HumanCheckInput,
+): Promise<{ ok: true; setCookie?: string } | { ok: false }> {
+  if (!input.turnstileSecret) {
+    warnTurnstileSkippedOnce();
+    return { ok: true };
+  }
+  if (verifyHumanCookie(parseHumanCookie(input.cookieHeader), input.sessionSecret)) {
+    return { ok: true };
+  }
+  const ok = input.token
+    ? await verifyTurnstile(input.token, input.ip, input.turnstileSecret, input.fetchFn)
+    : false;
+  if (!ok) return { ok: false };
+  return { ok: true, setCookie: issueHumanCookie(input.sessionSecret) };
 }

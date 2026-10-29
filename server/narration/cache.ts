@@ -6,8 +6,10 @@ import { parseChapterNarration } from "@/core/narration";
 import type { ChapterNarration } from "@/core/narration";
 import { ensureChapterNarration } from "@/core/narration-cache";
 import type { NarrationDeps } from "@/core/narration-cache";
-import { DAILY_SPEND_TTL_SEC, budgetExceeded, dailySpendKey, spendKey } from "@/core/images";
-import type { KV } from "@/core/images";
+import type { KV } from "@/core/types";
+import { utcDay } from "@/server/guard/request";
+import { reserveSpend } from "@/server/guard/spend";
+import type { SpendReservation } from "@/server/guard/spend";
 
 export const NARRATION_LOCK_TTL_SEC = 300;
 
@@ -24,10 +26,6 @@ function lockKeyFor(key: string): string {
   return `narr:lock:${key}`;
 }
 
-function utcDay(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
 // Deps for the future upload route: the Redis index dedupes concurrent
 // readers (a second reader of the same text gets it free), the lock has
 // a 300 s TTL, and the budget reserves on both spend caps only when
@@ -38,8 +36,9 @@ export function createNarrationDeps(args: {
   synthesize: NarrationDeps["synthesize"];
 }): NarrationDeps {
   const { kv, env, synthesize } = args;
-  // Refund the day that was charged, even if the job crosses UTC midnight.
-  let reservedDay = utcDay();
+  // The reservation refunds the day that was charged, even if the job
+  // crosses UTC midnight.
+  let reservation: SpendReservation | null = null;
   return {
     sha256Hex: async (text: string) => {
       const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
@@ -104,25 +103,20 @@ export function createNarrationDeps(args: {
     },
     budget: {
       reserve: async (micro: number) => {
-        const total = await kv.incrBy(spendKey(), micro);
-        if (budgetExceeded(total, env.spendCapMicro)) {
-          await kv.decrBy(spendKey(), micro);
-          return false;
-        }
-        const day = utcDay();
-        reservedDay = day;
-        const dailyTotal = await kv.incrBy(dailySpendKey(day), micro);
-        await kv.expire(dailySpendKey(day), DAILY_SPEND_TTL_SEC);
-        if (budgetExceeded(dailyTotal, env.dailySpendCapMicro)) {
-          await kv.decrBy(dailySpendKey(day), micro);
-          await kv.decrBy(spendKey(), micro);
-          return false;
-        }
+        const spent = await reserveSpend(kv, {
+          amountMicro: micro,
+          day: utcDay(),
+          spendCapMicro: env.spendCapMicro,
+          dailySpendCapMicro: env.dailySpendCapMicro,
+        });
+        if (!spent.ok) return false;
+        reservation = spent.reservation;
         return true;
       },
-      refund: async (micro: number) => {
-        await kv.decrBy(spendKey(), micro);
-        await kv.decrBy(dailySpendKey(reservedDay), micro);
+      // Best effort: a Redis failure here must never become a client 500.
+      refund: async (_micro: number) => {
+        await reservation?.release();
+        reservation = null;
       },
     },
     synthesize,

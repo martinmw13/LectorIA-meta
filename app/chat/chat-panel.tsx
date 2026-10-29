@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { CHAT_MAX_QUESTION_CHARS } from "@/core/chat";
 import { ByokStep } from "../home/byok";
 import { CHAT_COPY } from "./copy";
-import { TurnstileWidget } from "./turnstile";
+import { TurnstileWidget } from "../turnstile";
 import type { useChat } from "./use-chat";
 import { Icon } from "../icons";
 
@@ -19,7 +19,7 @@ export function ChatPanel({
   suggestions,
   byokKey,
   onKeySubmit,
-  onHumanToken,
+  onHumanPass,
   onClose,
 }: {
   chapter: number;
@@ -28,7 +28,7 @@ export function ChatPanel({
   suggestions: string[];
   byokKey: string | null;
   onKeySubmit: (key: string) => void;
-  onHumanToken: (token: string) => void;
+  onHumanPass: (token: string) => void;
   onClose: () => void;
 }) {
   const [draft, setDraft] = useState("");
@@ -205,7 +205,7 @@ export function ChatPanel({
         {chat.needHuman && (
           <div className="chat-note">
             {CHAT_COPY.human}
-            <TurnstileWidget onToken={onHumanToken} />
+            <TurnstileWidget onToken={onHumanPass} />
           </div>
         )}
 

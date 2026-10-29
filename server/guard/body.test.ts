@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { MAX_IMAGE_BODY_BYTES, readBodyCapped } from "./body";
+import { MAX_IMAGE_BODY_BYTES } from "@/core/images";
+import { readBodyCapped } from "./body";
 
 function textPost(text: string, headers?: Record<string, string>): Request {
   return new Request("http://localhost/api/images", { method: "POST", headers, body: text });

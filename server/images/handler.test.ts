@@ -1,8 +1,11 @@
+import { createHmac } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { MSG_BAD_REQUEST } from "@/core/images";
+import { MAX_IMAGE_BODY_BYTES, MSG_BAD_REQUEST, createMemoryKV } from "@/core/images";
+import type { ImageStore } from "@/core/images";
 import { loadOzBook } from "@/server/books";
-import { MAX_IMAGE_BODY_BYTES } from "./body";
+import { issueHumanCookie } from "@/server/guard/human";
 import { handleImagesPost } from "./handler";
+import type { ImageEnv } from "./env";
 
 const REQUIRED = [
   "UPSTASH_REDIS_REST_URL",
@@ -180,5 +183,138 @@ describe("handleImagesPost", () => {
     const json = await res.json();
     expect(json).toMatchObject({ status: "error", code: "unavailable" });
     expect(JSON.stringify(json)).not.toContain("upstash-boom-marker");
+  });
+});
+
+describe("human gate", () => {
+  const secret = "test-session-secret";
+  const imgEnv: ImageEnv = {
+    upstashUrl: "https://kv.example",
+    upstashToken: "kv-token",
+    metaKey: "test-meta",
+    sessionSecret: secret,
+    ipSalt: "test-salt",
+    spendCapMicro: 10_000_000,
+    dailySpendCapMicro: 2_000_000,
+    turnstileSecret: "ts-secret",
+  };
+
+  function fakes() {
+    const kv = createMemoryKV();
+    const store: ImageStore = {
+      findUrl: async () => null,
+      save: async (path) => `https://blob.example/${path}`,
+    };
+    const generate = { generate: async () => new Uint8Array([1, 2, 3]) };
+    return { kv, store, generate };
+  }
+
+  function passagePost(body: unknown, headers: Record<string, string> = {}): Request {
+    return new Request("http://localhost/api/images", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...headers },
+      body: JSON.stringify(body),
+    });
+  }
+
+  it("blocks without a cookie or token, taking nothing", async () => {
+    const { kv, store, generate } = fakes();
+    const siteFetch = vi.fn(async () => {
+      throw new Error("siteverify must not be called");
+    });
+    const res = await handleImagesPost(post(passageBody()), {
+      env: imgEnv,
+      kv,
+      store,
+      generate,
+      fetchFn: siteFetch as unknown as typeof fetch,
+    });
+    expect(res.status).toBe(403);
+    expect(await res.json()).toMatchObject({ status: "error", code: "human" });
+    expect(siteFetch).not.toHaveBeenCalled();
+    expect(await kv.get("img:spend:micro")).toBeNull();
+  });
+
+  it("issues human_ok on a valid token, alongside the anon cookie", async () => {
+    const { kv, store, generate } = fakes();
+    const siteFetch = vi.fn(async () => Response.json({ success: true }));
+    const res = await handleImagesPost(passagePost({ ...passageBody(), turnstileToken: "tok" }), {
+      env: imgEnv,
+      kv,
+      store,
+      generate,
+      fetchFn: siteFetch as unknown as typeof fetch,
+    });
+    expect(res.status).toBe(200);
+    expect(siteFetch).toHaveBeenCalledOnce();
+    const setCookies = res.headers.getSetCookie();
+    const human = setCookies.find((c) => c.startsWith("human_ok="));
+    expect(human).toBeDefined();
+    expect(human).toContain("Path=/api");
+    expect(setCookies.find((c) => c.startsWith("img_anon="))).toBeDefined();
+  });
+
+  it("proceeds with a valid human_ok cookie and no new human cookie", async () => {
+    const { kv, store, generate } = fakes();
+    const siteFetch = vi.fn(async () => {
+      throw new Error("siteverify must not be called");
+    });
+    const cookie = issueHumanCookie(secret).split(";")[0] as string;
+    const res = await handleImagesPost(passagePost(passageBody(), { Cookie: cookie }), {
+      env: imgEnv,
+      kv,
+      store,
+      generate,
+      fetchFn: siteFetch as unknown as typeof fetch,
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ status: "ready" });
+    expect(siteFetch).not.toHaveBeenCalled();
+    expect(res.headers.getSetCookie().find((c) => c.startsWith("human_ok="))).toBeUndefined();
+  });
+
+  it("accepts the legacy chat_human cookie", async () => {
+    const { kv, store, generate } = fakes();
+    const siteFetch = vi.fn(async () => {
+      throw new Error("siteverify must not be called");
+    });
+    const expiry = Math.floor(Date.now() / 1000) + 3600;
+    const sig = createHmac("sha256", secret).update(`chat_human:${expiry}`).digest("hex");
+    const res = await handleImagesPost(passagePost(passageBody(), { Cookie: `chat_human=${expiry}.${sig}` }), {
+      env: imgEnv,
+      kv,
+      store,
+      generate,
+      fetchFn: siteFetch as unknown as typeof fetch,
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ status: "ready" });
+    expect(siteFetch).not.toHaveBeenCalled();
+  });
+
+  it("serves a cached hit with no cookie or token when a secret is set", async () => {
+    const { kv, store, generate } = fakes();
+    const siteFetch = vi.fn(async () => {
+      throw new Error("siteverify must not be called");
+    });
+    const cookie = issueHumanCookie(secret).split(";")[0] as string;
+    const first = await handleImagesPost(passagePost(passageBody(), { Cookie: cookie }), {
+      env: imgEnv,
+      kv,
+      store,
+      generate,
+      fetchFn: siteFetch as unknown as typeof fetch,
+    });
+    expect(first.status).toBe(200);
+    const hit = await handleImagesPost(passagePost(passageBody()), {
+      env: imgEnv,
+      kv,
+      store,
+      generate,
+      fetchFn: siteFetch as unknown as typeof fetch,
+    });
+    expect(hit.status).toBe(200);
+    expect(await hit.json()).toMatchObject({ status: "ready" });
+    expect(siteFetch).not.toHaveBeenCalled();
   });
 });

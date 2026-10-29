@@ -1,11 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  MSG_BAD_REQUEST,
-  createMemoryKV,
-  dailySpendKey,
-  spendKey,
-} from "@/core/images";
+import { MSG_BAD_REQUEST, createMemoryKV } from "@/core/images";
 import type { ImageGenerator, ImageRequest, ImageStore } from "@/core/images";
+import { dailySpendKey, spendKey } from "@/server/guard/spend";
 import { loadOzBook } from "@/server/books";
 import type { ImageEnv } from "./env";
 import { handleImagesPost } from "./handler";

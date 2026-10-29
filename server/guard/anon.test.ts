@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { issueAnonId, parseAnonCookie, serializeAnonCookie, verifyAnonCookie } from "./cookies";
+import { issueAnonId, parseAnonCookie, serializeAnonCookie, verifyAnonCookie } from "./anon";
 
 const SECRET = "test-secret-for-cookies";
 
