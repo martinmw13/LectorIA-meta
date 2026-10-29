@@ -7,7 +7,8 @@ import {
 import type { ChatErrorBody } from "@/core/chat";
 import { createMemoryKV } from "@/core/images";
 import { dailySpendKey, spendKey } from "@/server/guard/spend";
-import { hashIp } from "@/server/guard/request";
+import { issueAnonId } from "@/server/guard/anon";
+import { hashIp, ipBucket } from "@/server/guard/request";
 import { handleChatPost } from "./handler";
 import type { ChatHandlerDeps } from "./handler";
 import type { ChatEnv } from "./env";
@@ -231,6 +232,66 @@ describe("handleChatPost", () => {
     expect(raw).not.toContain("upstream secret xyz");
     const keys = chatQuotaKeys({ day: DAY, ipHash: hashIp("unknown", ENV.ipSalt), anonId: "x", byok: false });
     expect(keys.ip).toContain("chat:quota:");
+    expect(Number(await kv.get(spendKey()))).toBe(0);
+    expect(Number(await kv.get(dailySpendKey(DAY)))).toBe(0);
+  });
+
+  it("refunds quota and spend when createStreamer throws", async () => {
+    const kv = createMemoryKV();
+    const issued = issueAnonId(ENV.sessionSecret);
+    const keys = chatQuotaKeys({
+      day: DAY,
+      ipHash: hashIp(ipBucket("unknown", issued.id), ENV.ipSalt),
+      anonId: issued.id,
+      byok: false,
+    });
+    const res = await handleChatPost(post(validBody(), { Cookie: `img_anon=${issued.value}` }), {
+      env: ENV,
+      kv,
+      now: NOW,
+      createStreamer: () => {
+        throw new Error("create boom secret xyz");
+      },
+    });
+    expect(res.status).toBe(503);
+    const raw = await res.text();
+    const body = JSON.parse(raw) as ChatErrorBody;
+    expect(body.code).toBe("unavailable");
+    expect(body.message).toBe(CHAT_MESSAGES.unavailable);
+    expect(raw).not.toContain("create boom secret xyz");
+    expect(Number(await kv.get(keys.ip))).toBe(0);
+    expect(Number(await kv.get(keys.anon))).toBe(0);
+    expect(Number(await kv.get(spendKey()))).toBe(0);
+    expect(Number(await kv.get(dailySpendKey(DAY)))).toBe(0);
+  });
+
+  it("refunds quota and spend when streamer.stream throws before the first chunk", async () => {
+    const kv = createMemoryKV();
+    const issued = issueAnonId(ENV.sessionSecret);
+    const keys = chatQuotaKeys({
+      day: DAY,
+      ipHash: hashIp(ipBucket("unknown", issued.id), ENV.ipSalt),
+      anonId: issued.id,
+      byok: false,
+    });
+    const res = await handleChatPost(post(validBody(), { Cookie: `img_anon=${issued.value}` }), {
+      env: ENV,
+      kv,
+      now: NOW,
+      createStreamer: () => ({
+        stream() {
+          throw new Error("stream boom secret xyz");
+        },
+      }),
+    });
+    expect(res.status).toBe(503);
+    const raw = await res.text();
+    const body = JSON.parse(raw) as ChatErrorBody;
+    expect(body.code).toBe("unavailable");
+    expect(body.message).toBe(CHAT_MESSAGES.unavailable);
+    expect(raw).not.toContain("stream boom secret xyz");
+    expect(Number(await kv.get(keys.ip))).toBe(0);
+    expect(Number(await kv.get(keys.anon))).toBe(0);
     expect(Number(await kv.get(spendKey()))).toBe(0);
     expect(Number(await kv.get(dailySpendKey(DAY)))).toBe(0);
   });
