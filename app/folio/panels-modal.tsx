@@ -7,8 +7,7 @@ import { useEffect, useRef } from "react";
 import type { ImageStylePref } from "../image-style";
 import type { ChapterPanel } from "./panels";
 import { PICTURE_COPY } from "./picture-copy";
-import { PictureDraw } from "./picture-draw";
-import { DRAW_STATUS } from "./picture-draw-paths";
+import { PictureDraw, PictureWait } from "./picture-draw";
 import { usePictureSkin } from "./picture-skin";
 import { useChapterPage } from "./use-chapter-page";
 
@@ -104,11 +103,7 @@ export function PanelsModal({
                 </button>
               </div>
             )}
-            {page.phase === "loading" ? (
-              <p className="panels-wait" role="status">
-                {DRAW_STATUS[skin]}
-              </p>
-            ) : null}
+            {page.phase === "loading" ? <PictureWait skin={skin} /> : null}
             <ol className="panels-caps">
               {panels.map((p) => (
                 <li key={p.key}>{p.caption}</li>

@@ -58,7 +58,7 @@ test("a reached chapter shows the wait line, then the page and captions", async 
   const answer = pendingFetch();
   const { host, root } = mount(true);
   try {
-    expect(host.querySelector(".panels-wait")?.textContent).toBe(DRAW_STATUS.engraving);
+    expect(host.querySelector(".pic-wait-t")?.textContent).toBe(DRAW_STATUS.engraving);
     expect(host.querySelector(".panels-frame")).not.toBeNull();
     expect([...host.querySelectorAll(".panels-caps li")].map((li) => li.textContent)).toEqual([
       "The gray prairie",
@@ -66,7 +66,7 @@ test("a reached chapter shows the wait line, then the page and captions", async 
     ]);
     await answer({ status: "ready", url: "/ch1.png", caption: "Chapter 1, The Cyclone" });
     expect(host.querySelector(".panels-frame img")?.getAttribute("src")).toBe("/ch1.png");
-    expect(host.querySelector(".panels-wait")).toBeNull();
+    expect(host.querySelector(".pic-wait")).toBeNull();
     expect([...host.querySelectorAll(".panels-caps li")].map((li) => li.textContent)).toEqual([
       "The gray prairie",
       "The cyclone comes",

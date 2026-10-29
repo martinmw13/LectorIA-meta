@@ -162,9 +162,8 @@ html[data-theme="dark"] .panels-modal {
   margin: 0 0 18px;
 }
 
-/* Chapter page: one square frame, the wait line under it, then the
-   captions in reading order. The drawing's own status hides inside the
-   frame so the wait line shows once. */
+/* Chapter page: one square frame, the shared wait caption under it,
+   then the captions in reading order. */
 .panels-frame {
   position: relative;
   display: block;
@@ -193,18 +192,6 @@ button.panels-frame {
 
 html[data-theme="dark"] .panels-frame > img {
   filter: brightness(0.92);
-}
-
-.panels-frame .picdraw-status {
-  display: none;
-}
-
-.panels-wait {
-  margin: 10px 0 0;
-  text-align: center;
-  font-family: var(--font-ui);
-  font-size: 13px;
-  color: var(--color-text-muted);
 }
 
 .panels-caps {

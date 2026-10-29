@@ -81,6 +81,7 @@ async function main(): Promise<void> {
     process.exit(1);
   }
   const capMicro = Math.round(parseCapUsd(process.env.SPEND_CAP_USD, 10) * 1_000_000);
+  const dailyCapMicro = Math.round(parseCapUsd(process.env.DAILY_SPEND_CAP_USD, 2) * 1_000_000);
 
   const { book, scenes } = loadOzBook();
   const known = new Map(book.chapters.map((c) => [c.ch, c.title]));
@@ -155,8 +156,15 @@ async function main(): Promise<void> {
         process.exitCode = 1;
         return;
       }
-      await kv.incrBy(dayKey, cost);
+      const dayTotal = await kv.incrBy(dayKey, cost);
       await kv.expire(dayKey, DAILY_SPEND_TTL_SEC);
+      if (budgetExceeded(dayTotal, dailyCapMicro)) {
+        await kv.decrBy(dayKey, cost);
+        await kv.decrBy(spendKey(), cost);
+        console.log(`Stopped: daily spend cap reached at ch ${ch} ${styleId}, reserve refunded.`);
+        process.exitCode = 1;
+        return;
+      }
       const refund = async (): Promise<void> => {
         try {
           await kv.decrBy(dayKey, cost);
