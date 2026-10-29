@@ -1,0 +1,132 @@
+/* Icon-button motion for all six skins: transport (.player .skip, but not
+   the rain art button) and pager (.pager-btn). Ported verbatim from the
+   approved prototypes: .ibtn in skins-styles.css (engraving/watercolor/ink),
+   .ib in pencil-chihiro-base.css and comic-template-head.html. Only :hover,
+   :active and the one-shot press flag move. Nothing moves at rest. */
+
+/* ---------- Engraving / watercolor / ink: bare icons ---------- */
+html:is([data-skin="engraving"], [data-skin="watercolor"], [data-skin="ink"])
+  :is(.player .skip:not(.rain), .pager-btn) {
+  transition: transform var(--m-fast, 160ms) var(--ease, ease);
+}
+
+@media (hover: hover) {
+  html:is([data-skin="engraving"], [data-skin="watercolor"], [data-skin="ink"])
+    :is(.player .skip:not(.rain), .pager-btn):hover {
+    transform: translateY(-1px);
+  }
+
+  html[data-skin="ink"] :is(.player .skip:not(.rain), .pager-btn):hover {
+    animation: wiggle 420ms ease;
+  }
+}
+
+html:is([data-skin="engraving"], [data-skin="watercolor"], [data-skin="ink"])
+  :is(.player .skip:not(.rain), .pager-btn):active {
+  transform: scale(0.9);
+}
+
+/* One-shot press on click, set and cleared by pressButton. */
+html:is([data-skin="engraving"], [data-skin="watercolor"], [data-skin="ink"])
+  :is(.player .skip:not(.rain), .pager-btn)[data-press] {
+  animation: var(--press) 380ms var(--ease);
+}
+
+/* ---------- Pencil / chihiro: glyphs slide toward their direction ---------- */
+html:is([data-skin="pencil"], [data-skin="chihiro"]) .player .skip:not(.rain) svg {
+  transition: transform 0.18s var(--ease, ease);
+}
+
+html:is([data-skin="pencil"], [data-skin="chihiro"]) .pager-btn {
+  transition: transform 0.18s var(--ease, ease);
+}
+
+html:is([data-skin="pencil"], [data-skin="chihiro"]) .player > button.skip:nth-of-type(1),
+html:is([data-skin="pencil"], [data-skin="chihiro"]) .pager-row .pager-btn:first-child {
+  --nx: -2px;
+}
+
+html:is([data-skin="pencil"], [data-skin="chihiro"]) .player > button.skip:nth-of-type(3),
+html:is([data-skin="pencil"], [data-skin="chihiro"]) .pager-row .pager-btn:last-child {
+  --nx: 2px;
+}
+
+@media (hover: hover) {
+  html:is([data-skin="pencil"], [data-skin="chihiro"]) .player .skip:not(.rain):hover {
+    color: var(--color-accent);
+  }
+
+  html:is([data-skin="pencil"], [data-skin="chihiro"]) .player .skip:not(.rain):hover svg {
+    transform: translateX(var(--nx, 0));
+  }
+
+  html:is([data-skin="pencil"], [data-skin="chihiro"]) .pager-btn:hover {
+    transform: translateX(var(--nx, 0));
+  }
+}
+
+html:is([data-skin="pencil"], [data-skin="chihiro"]) .player .skip:not(.rain):active svg {
+  transform: scale(0.88);
+}
+
+/* ---------- Comic: hard snap up, squash on press ---------- */
+html[data-skin="comic"] :is(.player .skip:not(.rain) svg, .pager-btn) {
+  transition: transform 0.18s var(--ease, ease);
+}
+
+@media (hover: hover) {
+  html[data-skin="comic"] :is(.player .skip:not(.rain), .pager-btn):hover {
+    color: var(--color-accent);
+  }
+
+  html[data-skin="comic"] .player .skip:not(.rain):hover svg,
+  html[data-skin="comic"] .pager-btn:hover {
+    transform: translateY(-1px);
+  }
+}
+
+html[data-skin="comic"] .player .skip:not(.rain):active svg,
+html[data-skin="comic"] .pager-btn:active {
+  transform: scale(0.9);
+}
+
+/* ---------- Reduced motion: colour only, inside and outside the player ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html:is([data-skin="engraving"], [data-skin="watercolor"], [data-skin="ink"])
+    :is(.player .skip:not(.rain), .pager-btn),
+  html:is([data-skin="pencil"], [data-skin="chihiro"])
+    :is(.player .skip:not(.rain) svg, .pager-btn),
+  html[data-skin="comic"] :is(.player .skip:not(.rain) svg, .pager-btn) {
+    transition: color 0.2s, opacity 0.2s;
+  }
+
+  html:is(
+    [data-skin="engraving"],
+    [data-skin="watercolor"],
+    [data-skin="ink"],
+    [data-skin="pencil"],
+    [data-skin="chihiro"],
+    [data-skin="comic"]
+  ) :is(.player .skip:not(.rain), .pager-btn):is(:hover, :active) {
+    transform: none;
+    animation: none;
+  }
+
+  html:is(
+    [data-skin="engraving"],
+    [data-skin="watercolor"],
+    [data-skin="ink"],
+    [data-skin="pencil"],
+    [data-skin="chihiro"],
+    [data-skin="comic"]
+  ) :is(.player .skip:not(.rain), .pager-btn):is(:hover, :active) svg {
+    transform: none;
+  }
+}
+
+.player[data-reduced-motion="true"] :is(.skip:not(.rain), .pager-btn),
+.player[data-reduced-motion="true"] :is(.skip:not(.rain), .pager-btn) svg {
+  transition: color 0.2s, opacity 0.2s;
+  transform: none;
+  animation: none;
+}

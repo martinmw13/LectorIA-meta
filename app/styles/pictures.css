@@ -159,92 +159,9 @@ html[data-theme="dark"] .paper-grain .b3 {
   outline-offset: 2px;
 }
 
-.pic-btn:active .pic-btn-art {
-  animation: picbtn-press 300ms ease;
-}
-
-@keyframes picbtn-press {
-  35% {
-    transform: scale(0.94);
-  }
-}
-
-.pic-btn-engraving .pic-btn-glint {
-  transform: translateX(-30px);
-}
-
-.pic-btn-engraving:hover .pic-btn-glint {
-  animation: picbtn-glint 0.7s ease 1;
-}
-
-@keyframes picbtn-glint {
-  to {
-    transform: translateX(34px);
-  }
-}
-
-.pic-btn-watercolor .pic-btn-blob {
-  transform-box: fill-box;
-  transform-origin: center;
-}
-
-.pic-btn-watercolor:hover .pic-btn-blob {
-  transform: scale(1.22);
-  opacity: 0.9;
-}
-
-.pic-btn-pencil .pic-btn-paint,
-.pic-btn-chihiro .pic-btn-paint {
-  transition: filter 180ms ease;
-}
-
-.pic-btn-pencil:hover .pic-btn-art svg {
-  animation: picbtn-sketch 0.45s ease 1;
-  transform-origin: 50% 90%;
-}
-
-@keyframes picbtn-sketch {
-  30% {
-    transform: translate(-1px, -2px) rotate(-3deg);
-  }
-
-  65% {
-    transform: translate(1px, -1px) rotate(2deg);
-  }
-}
-
-.pic-btn-comic:hover .pic-btn-art svg {
-  transform: rotate(-4deg) scale(1.06);
-  transition: transform 160ms steps(2);
-}
-
-.pic-btn-chihiro:hover .pic-btn-paint {
-  filter: brightness(1.07) saturate(1.15) drop-shadow(0 0 4px rgba(255, 194, 90, 0.7));
-}
-
-.pic-btn-ink:hover .pic-btn-art svg {
-  animation: picbtn-wiggle 0.45s ease 1;
-  transform-origin: 60% 80%;
-}
-
-@keyframes picbtn-wiggle {
-  0%,
-  100% {
-    transform: rotate(0);
-  }
-
-  25% {
-    transform: rotate(-6deg);
-  }
-
-  55% {
-    transform: rotate(5deg);
-  }
-
-  80% {
-    transform: rotate(-2deg);
-  }
-}
+/* Picture-button motion (hover, press, POW, .fx particles) lives per skin
+   in motion-classic.css, motion-pencil.css and motion-comic.css. Nothing
+   moves at rest here. */
 
 /* Drawing slot: skin paper fills the frame, status sits at the foot. */
 .pane-slot {

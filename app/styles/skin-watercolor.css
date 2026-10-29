@@ -355,7 +355,7 @@ html[data-skin="watercolor"] :is(.sticker, .chopin, .player .skip.rain)::after {
   position: absolute;
   left: 50%;
   top: calc(100% + 8px);
-  transform: translateX(-50%);
+  translate: -50% 0;
   font-family: var(--font-wc-hand);
   font-size: 16px;
   line-height: 1;
@@ -403,74 +403,6 @@ html[data-skin="watercolor"] .read-aloud-label {
     background: radial-gradient(60% 70% at 50% 55%, rgba(141, 184, 255, 0.45), transparent 75%);
   }
 
-  html[data-skin="watercolor"] .read-aloud-btn:hover img {
-    transform: scale(1.05);
-  }
-
-  html[data-skin="watercolor"] :is(.sticker, .chopin):hover img {
-    animation: wc-bleed 600ms cubic-bezier(0.25, 0.8, 0.25, 1) both;
-  }
 }
 
-@keyframes wc-bleed {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.08);
-  }
-  100% {
-    transform: scale(1.04);
-  }
-}
-
-@keyframes wc-wet-in {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
-    filter: blur(5px) saturate(0.5);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-    filter: none;
-  }
-}
-
-@keyframes wc-fade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-html[data-skin="watercolor"] :is(.sticker, .chopin)[data-anim="1"] img {
-  animation: wc-wet-in 560ms cubic-bezier(0.25, 0.8, 0.25, 1);
-}
-
-/* A press dabs the wash down; it also stops the hover bleed so it shows. */
-html[data-skin="watercolor"] :is(.sticker, .chopin):active img {
-  animation: none;
-  transform: scale(0.97);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html[data-skin="watercolor"] .read-aloud-btn:hover img {
-    transform: none;
-  }
-
-  html[data-skin="watercolor"] :is(.sticker, .chopin):hover img {
-    animation: none;
-    transform: none;
-  }
-
-  html[data-skin="watercolor"] :is(.sticker, .chopin):active img {
-    transform: none;
-  }
-
-  html[data-skin="watercolor"] :is(.sticker, .chopin)[data-anim="1"] img {
-    animation: wc-fade 180ms ease;
-  }
-}
+/* Button motion (bleed, wet-in, press) lives in motion-classic.css. */

@@ -350,7 +350,7 @@ html[data-skin="engraving"] :is(.sticker, .chopin, .player .skip.rain)::after {
   position: absolute;
   left: 50%;
   top: calc(100% + 9px);
-  transform: translateX(-50%);
+  translate: -50% 0;
   font-family: var(--font-eng-label);
   font-size: 11px;
   line-height: 1;
@@ -398,91 +398,6 @@ html[data-skin="engraving"] .read-aloud-label {
     color: var(--color-accent);
     background: none;
   }
-
-  html[data-skin="engraving"] .read-aloud-btn:hover img {
-    transform: translateY(-1px);
-  }
 }
 
-/* Burin hatch: a diagonal hatch sweeps across the plate on hover. */
-html[data-skin="engraving"] :is(.stickers[data-art="hero"] .sticker, .player .sticker-wrap .chopin)::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  border-radius: 50%;
-  background: repeating-linear-gradient(-35deg, transparent 0 3px, rgba(42, 36, 28, 0.22) 3px 4px);
-  background-size: 160% 160%;
-  opacity: 0;
-  transition: opacity 160ms ease;
-  mix-blend-mode: multiply;
-}
-
-@keyframes engr-burin {
-  from {
-    background-position: 0 0;
-  }
-  to {
-    background-position: -12px 12px;
-  }
-}
-
-@keyframes engr-coin-in {
-  0% {
-    transform: perspective(240px) rotateY(-95deg);
-    opacity: 0.2;
-  }
-  55% {
-    opacity: 1;
-  }
-  100% {
-    transform: perspective(240px) rotateY(0);
-    opacity: 1;
-  }
-}
-
-@keyframes engr-fade {
-  from {
-    opacity: 0.2;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@media (hover: hover) {
-  html[data-skin="engraving"] :is(.stickers[data-art="hero"] .sticker, .player .sticker-wrap .chopin):hover::before {
-    opacity: 0.9;
-    animation: engr-burin 900ms cubic-bezier(0.2, 0.7, 0.2, 1);
-  }
-}
-
-html[data-skin="engraving"] :is(.sticker, .player .chopin)[data-anim="1"] img {
-  animation: engr-coin-in 520ms cubic-bezier(0.2, 0.7, 0.2, 1);
-}
-
-html[data-skin="engraving"] :is(.sticker, .chopin):active img {
-  transform: translateY(1.5px);
-  transition: transform 80ms ease;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html[data-skin="engraving"] :is(.sticker, .chopin, .read-aloud-btn):hover img {
-    transform: none;
-  }
-
-  html[data-skin="engraving"] :is(.stickers[data-art="hero"] .sticker, .player .sticker-wrap .chopin)::before,
-  html[data-skin="engraving"] :is(.stickers[data-art="hero"] .sticker, .player .sticker-wrap .chopin):hover::before {
-    animation: none;
-    transition: none;
-  }
-
-  html[data-skin="engraving"] :is(.sticker, .chopin):active img {
-    transform: none;
-    transition: none;
-  }
-
-  html[data-skin="engraving"] :is(.sticker, .player .chopin)[data-anim="1"] img {
-    animation: engr-fade 180ms ease;
-  }
-}
+/* Button motion (hatch shim, coin-in, press) lives in motion-classic.css. */
