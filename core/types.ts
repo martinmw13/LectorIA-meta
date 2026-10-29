@@ -80,10 +80,10 @@ export type AnalyzedScene = Scene & SceneEmotion;
 export const LOW_CONFIDENCE = 0.6;
 export const FEATURE_WEIGHTS = { intensity: 0.5, tempo: 0.5 } as const;
 
-// Image API contract. Passage names the paragraph where the selection
-// starts; scene names the scene id; chapter names the chapter number.
-// The cache key holds only the key fields plus PROMPT_VERSION, so a
-// repeat tap reuses the stored image.
+// Image API contract. Passage names the start paragraph plus optional
+// inclusive endN; scene names the scene id; chapter names the chapter
+// number. The cache key holds only the key fields plus PROMPT_VERSION, so
+// a repeat tap reuses the stored image.
 export type ImageKind = "passage" | "scene" | "chapter";
 
 export interface PassageRequest {
@@ -91,6 +91,7 @@ export interface PassageRequest {
   bookId: string;
   textVersion: string;
   n: number;
+  endN?: number;
   style?: ImageStyle;
 }
 

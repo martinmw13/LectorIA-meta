@@ -87,30 +87,41 @@ export async function handleImagesPost(req: Request): Promise<Response> {
     }
 
     const byN = new Map(book.paragraphs.map((p) => [p.n, p.text]));
+    const req0 = parsed;
     const sceneOf =
-      parsed.kind === "chapter"
+      req0.kind === "chapter"
         ? undefined
         : scenes.find((s) =>
-            parsed.kind === "passage"
-              ? parsed.n >= s.start_n && parsed.n <= s.end_n
-              : s.id === parsed.sceneId,
+            req0.kind === "passage" ? req0.n >= s.start_n && req0.n <= s.end_n : s.id === req0.sceneId,
           );
+    // A selection never leaves its starting scene; a lone paragraph
+    // keeps the bare pN key.
+    if (parsed.kind === "passage" && parsed.endN !== undefined) {
+      const end = Math.min(parsed.endN, sceneOf?.end_n ?? parsed.endN);
+      const { endN: _dropped, ...single } = parsed;
+      parsed = end <= parsed.n ? single : { ...parsed, endN: end };
+    }
+    const passageTexts: string[] = [];
+    if (parsed.kind === "passage") {
+      for (let n = parsed.n; n <= (parsed.endN ?? parsed.n); n++) passageTexts.push(byN.get(n) ?? "");
+    }
     const sceneParas = sceneOf
       ? book.paragraphs.filter((p) => p.n >= sceneOf.start_n && p.n <= sceneOf.end_n)
       : [];
     // Chapter content comes from the frozen book: the chapter title plus
     // the panel groups over that chapter's scenes. The client sends the
     // chapter number only, so no client text reaches the prompt.
+    const chapterNo = parsed.kind === "chapter" ? parsed.ch : null;
     const content: ImageContent =
-      parsed.kind === "chapter"
+      chapterNo !== null
         ? {
             passageText: "",
-            sceneTitle: book.chapters.find((c) => c.ch === parsed.ch)?.title ?? "",
+            sceneTitle: book.chapters.find((c) => c.ch === chapterNo)?.title ?? "",
             sceneClip: "",
-            chapterPanels: chapterPanels(scenes.filter((s) => s.ch === parsed.ch)),
+            chapterPanels: chapterPanels(scenes.filter((s) => s.ch === chapterNo)),
           }
         : {
-            passageText: parsed.kind === "passage" ? (byN.get(parsed.n) ?? "") : "",
+            passageText: parsed.kind === "passage" ? passageTexts.join(" ") : "",
             sceneTitle: sceneOf?.title ?? "",
             sceneClip: sceneParas.map((p) => p.text).join(" "),
           };
@@ -133,6 +144,7 @@ export async function handleImagesPost(req: Request): Promise<Response> {
       ip: clientIp(req.headers.get("x-forwarded-for")),
       anonId,
       day: utcDay(),
+      sceneId: sceneOf?.id ?? "",
     });
 
     const { json, status } = toResponse(res);

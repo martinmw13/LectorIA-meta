@@ -53,6 +53,7 @@ function deps(over: Partial<OrchestrateDeps> = {}): OrchestrateDeps {
     ip: "1.2.3.4",
     anonId: "anon-1",
     day: "2026-10-27",
+    sceneId: "",
     ...over,
   };
 }

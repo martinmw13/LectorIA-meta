@@ -67,7 +67,12 @@ export function parseImageRequest(json: unknown): ImageRequest {
   const { kind } = json;
   if (kind === "passage") {
     const keys = Object.keys(json).sort().join(",");
-    if (keys !== "bookId,kind,n,textVersion" && keys !== "bookId,kind,n,style,textVersion") {
+    if (
+      keys !== "bookId,kind,n,textVersion" &&
+      keys !== "bookId,kind,n,style,textVersion" &&
+      keys !== "bookId,endN,kind,n,textVersion" &&
+      keys !== "bookId,endN,kind,n,style,textVersion"
+    ) {
       throw new ImageValidationError();
     }
     if (typeof json.bookId !== "string" || json.bookId.length === 0) throw new ImageValidationError();
@@ -75,12 +80,17 @@ export function parseImageRequest(json: unknown): ImageRequest {
       throw new ImageValidationError();
     }
     if (typeof json.n !== "number" || !Number.isInteger(json.n)) throw new ImageValidationError();
+    const endN = json.endN;
+    if (endN !== undefined && (typeof endN !== "number" || !Number.isInteger(endN))) {
+      throw new ImageValidationError();
+    }
     const style = parseStyleChoice(json.style);
     return {
       kind: "passage",
       bookId: json.bookId,
       textVersion: json.textVersion,
       n: json.n,
+      ...(endN === undefined ? {} : { endN }),
       ...(style === undefined ? {} : { style }),
     };
   }
@@ -141,6 +151,9 @@ export function validateAgainstBook(req: ImageRequest, book: BookRef): void {
   if (req.textVersion !== book.textVersion) throw new ImageValidationError();
   if (req.kind === "passage") {
     if (!book.paragraphNs.has(req.n)) throw new ImageValidationError();
+    if (req.endN !== undefined && (req.endN < req.n || !book.paragraphNs.has(req.endN))) {
+      throw new ImageValidationError();
+    }
     return;
   }
   if (req.kind === "scene") {
@@ -151,14 +164,18 @@ export function validateAgainstBook(req: ImageRequest, book: BookRef): void {
 }
 
 // One paragraph maps to one image; one scene maps to one image; one
-// chapter maps to one comic page. A styled image keeps the same base
-// with a style segment before the file name, so an omitted style keys
-// byte-identically to today.
+// chapter maps to one comic page. A styled image keeps the same base with
+// a style segment before the file name, so an omitted style keys
+// byte-identically to today. A multi-paragraph passage keeps pN when endN
+// is absent or equals n, so old images keep hitting; a wider range gets
+// pN-M.
 export function imageKey(req: ImageRequest): string {
   const base = `images/${req.bookId}/${req.textVersion}/${PROMPT_VERSION}`;
   const file =
     req.kind === "passage"
-      ? `p${req.n}.webp`
+      ? req.endN === undefined || req.endN === req.n
+        ? `p${req.n}.webp`
+        : `p${req.n}-${req.endN}.webp`
       : req.kind === "scene"
         ? `scene-${req.sceneId}.webp`
         : `chapter-${req.ch}-${CHAPTER_PROMPT_VERSION}.webp`;
