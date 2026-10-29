@@ -6,21 +6,21 @@ A Muse commit is a non-merge commit on main that carries the trailer `Co-authore
 
 ## Commits
 
-- Muse commits: 341 of 400 non-merge commits (85%).
+- Muse commits: 342 of 401 non-merge commits (85%).
 - Date range (UTC-3): 2026-10-27 to 2026-10-29.
 
 ## Lines
 
 | Scope | Muse added | Muse removed | Other added | Other removed | Muse share of added |
 | --- | --- | --- | --- | --- | --- |
-| Source code (`app/`, `core/`, `pipeline/`, `server/`, `scripts/`) | 49,633 | 10,032 | 7,470 | 2,791 | 87% |
-| All files | 254,364 | 14,195 | 27,751 | 3,333 | 90% |
+| Source code (`app/`, `core/`, `pipeline/`, `server/`, `scripts/`) | 49,760 | 10,062 | 7,470 | 2,791 | 87% |
+| All files | 256,058 | 14,232 | 27,751 | 3,333 | 90% |
 
 All files includes the Muse Code session transcripts in `agent-logs/`, the vendored skills in `.agents/` and `package-lock.json`.
 
 ## Pull requests
 
-66 merged PRs contain Muse commits. Each carries the `Muse Code` label.
+67 merged PRs contain Muse commits. Each carries the `Muse Code` label.
 
 | PR | Title | Merged (UTC-3) | Muse commits |
 | --- | --- | --- | --- |
@@ -90,3 +90,4 @@ All files includes the Muse Code session transcripts in `agent-logs/`, the vendo
 | [#104](https://github.com/martinmw13/LectorIA-meta/pull/104) | feat(pictures): reuse a cached picture for an overlapping selection | 2026-10-29 | 1 of 2 |
 | [#105](https://github.com/martinmw13/LectorIA-meta/pull/105) | feat(panels): one comic page per chapter | 2026-10-29 | 1 of 4 |
 | [#106](https://github.com/martinmw13/LectorIA-meta/pull/106) | feat(ui): port approved button motion to every skin | 2026-10-29 | 1 of 1 |
+| [#107](https://github.com/martinmw13/LectorIA-meta/pull/107) | fix(pictures): tune reuse overlap and lock panels server-side | 2026-10-29 | 1 of 2 |
