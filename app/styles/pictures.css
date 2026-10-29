@@ -163,7 +163,8 @@ html[data-theme="dark"] .paper-grain .b3 {
    in motion-classic.css, motion-pencil.css and motion-comic.css. Nothing
    moves at rest here. */
 
-/* Drawing slot: skin paper fills the frame, status sits at the foot. */
+/* Drawing slot: skin paper fills the frame; the waiting caption sits
+   below it (picture-wait.css). */
 .pane-slot {
   position: absolute;
   inset: 0;
@@ -175,34 +176,6 @@ html[data-theme="dark"] .paper-grain .b3 {
   inset: 0;
   width: 100%;
   height: 100%;
-}
-
-.picdraw-status {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 10px 12px 12px;
-  font-family: var(--font-ui);
-  background: linear-gradient(transparent, rgba(255, 255, 255, 0.82));
-}
-
-html[data-theme="dark"] .picdraw-status {
-  background: linear-gradient(transparent, rgba(11, 21, 27, 0.82));
-}
-
-.picdraw-t {
-  font-size: 13px;
-  color: var(--color-text);
-}
-
-.picdraw-n {
-  font-size: 11.5px;
-  color: var(--color-text-muted);
 }
 
 /* Skin reveals: one-shot, each 900 ms or less. */

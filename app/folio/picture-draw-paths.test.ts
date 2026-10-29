@@ -13,7 +13,7 @@ test("every skin has strokes, a still and its own status line", () => {
     const still = stillStrokes(skin);
     expect(still.length).toBeGreaterThan(0);
     for (const s of still) expect(s.d).toMatch(/^M/);
-    expect(DRAW_STATUS[skin]).toMatch(/…$/);
+    expect(DRAW_STATUS[skin]).not.toMatch(/…$/);
     expect(DRAW_STATUS[skin]).not.toMatch(/generat/i);
     statuses.add(DRAW_STATUS[skin]);
   }

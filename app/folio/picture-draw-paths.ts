@@ -143,12 +143,12 @@ export function stillStrokes(skin: PictureSkin): DrawStroke[] {
 }
 
 export const DRAW_STATUS: Record<PictureSkin, string> = {
-  engraving: "Etching the plate…",
-  watercolor: "Letting the colours bloom…",
-  ink: "Doodling your scene…",
-  pencil: "Sketching this moment…",
-  comic: "Inking a new panel…",
-  chihiro: "Painting this moment…",
+  engraving: "Etching the plate",
+  watercolor: "Letting the colours bloom",
+  ink: "Doodling your scene",
+  pencil: "Sketching this moment",
+  comic: "Inking a new panel!",
+  chihiro: "Painting this moment",
 };
 
-export const DRAW_NOTE = "Usually about twenty seconds";
+export const DRAW_NOTE = "Ready in about twenty seconds";

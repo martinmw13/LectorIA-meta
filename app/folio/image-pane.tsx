@@ -7,6 +7,7 @@ import { PANELS_LABEL } from "./panels";
 import { PICTURE_COPY } from "./picture-copy";
 import { PictureButton } from "./picture-button";
 import { usePictureSkin } from "./picture-skin";
+import { PictureWait } from "./picture-draw";
 import { PictureSlot } from "./picture-slot";
 import type { SceneCard } from "./use-pictures";
 
@@ -129,6 +130,7 @@ export function ImagePane({
           </div>
         )}
       </div>
+      {card.phase === "loading" ? <PictureWait skin={skin} /> : null}
       {card.phase === "ready" ? (
         <div className="pane-cap">
           <span className="pane-cap-text">{card.caption}</span>

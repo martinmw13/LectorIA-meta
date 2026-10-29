@@ -1,6 +1,7 @@
 @import "./tokens.css";
 @import "./styles/folio.css";
 @import "./styles/pictures.css";
+@import "./styles/picture-wait.css";
 @import "./styles/player.css";
 @import "./styles/music-style-control.css";
 @import "./styles/ambience.css";

@@ -6,6 +6,8 @@ import { createPortal } from "react-dom";
 import { truncateCaption } from "./helpers";
 import { PICTURE_COPY, PictureIcon } from "./picture-copy";
 import { PictureSlot } from "./picture-slot";
+import { PictureWait } from "./picture-draw";
+import { usePictureSkin } from "./picture-skin";
 import type { InlineFigure } from "./use-pictures";
 
 export function SelectionPopover({
@@ -50,10 +52,12 @@ export function InlineFigureView({
   onOpen: (src: string, caption: string, opener: HTMLElement | null) => void;
   refCb: (el: HTMLElement | null) => void;
 }) {
+  const skin = usePictureSkin();
   if (figure.phase === "loading") {
     return (
       <figure className="genfig" data-fig={figure.id} ref={refCb as React.Ref<HTMLElement>}>
         <PictureSlot phase="loading" url="" alt="" className="genload" />
+        <PictureWait skin={skin} as="figcaption" />
       </figure>
     );
   }
