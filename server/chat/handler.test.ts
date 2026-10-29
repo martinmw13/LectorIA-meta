@@ -122,6 +122,28 @@ describe("handleChatPost", () => {
     expect((await errBody(badShape)).code).toBe("bad_request");
   });
 
+  it("warns on expected failures and errors only on upstream crashes", async () => {
+    const kv = createMemoryKV();
+    const bad = await handleChatPost(post("{"), { env: ENV, kv });
+    expect(bad.status).toBe(400);
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("chat bad_request"));
+    expect(errorSpy).not.toHaveBeenCalled();
+
+    warnSpy.mockClear();
+    errorSpy.mockClear();
+    const failed = await handleChatPost(post(validBody()), {
+      env: ENV,
+      kv: createMemoryKV(),
+      now: NOW,
+      createStreamer: factoryFor(new Error("upstream boom")),
+    });
+    expect(failed.status).toBe(503);
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("chat unavailable"));
+    for (const call of warnSpy.mock.calls) {
+      expect(String(call[0])).not.toContain("chat unavailable");
+    }
+  });
+
   it("rejects a short BYOK key with 400", async () => {
     const res = await handleChatPost(post(validBody(), { [BYOK_HEADER]: "abc" }), {
       env: ENV,

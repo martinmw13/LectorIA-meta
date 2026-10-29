@@ -77,6 +77,32 @@ describe("verifyTurnstile", () => {
     );
   });
 
+  it("omits remoteip when the IP is unknown", async () => {
+    let body = "";
+    const probe = vi.fn(async (_url: unknown, init: { body: string }) => {
+      body = init.body;
+      return Response.json({ success: true });
+    });
+    await expect(
+      verifyTurnstile("tok", "unknown", "secret", probe as unknown as typeof fetch),
+    ).resolves.toBe(true);
+    const params = new URLSearchParams(body);
+    expect(params.get("response")).toBe("tok");
+    expect(params.has("remoteip")).toBe(false);
+  });
+
+  it("sends remoteip for a known IP", async () => {
+    let body = "";
+    const probe = vi.fn(async (_url: unknown, init: { body: string }) => {
+      body = init.body;
+      return Response.json({ success: true });
+    });
+    await expect(
+      verifyTurnstile("tok", "1.2.3.4", "secret", probe as unknown as typeof fetch),
+    ).resolves.toBe(true);
+    expect(new URLSearchParams(body).get("remoteip")).toBe("1.2.3.4");
+  });
+
   it("fails on non-2xx, bad JSON, and network errors without throwing", async () => {
     const bad = vi.fn(async () => new Response("nope", { status: 500 }));
     await expect(verifyTurnstile("tok", "ip", "s", bad as unknown as typeof fetch)).resolves.toBe(false);

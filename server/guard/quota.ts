@@ -1,6 +1,6 @@
 import "server-only";
 import type { KV } from "@/core/types";
-import { hashIp } from "./request";
+import { hashIp, ipBucket } from "./request";
 
 // Per-person quota, counted by hashed IP and by the anonymous
 // cookie, whichever runs out first. Day keys are UTC dates.
@@ -62,7 +62,7 @@ export function bookQuotaKeys(args: { ipHash: string; anonId: string }): DualKey
 }
 
 export function bookQuotaKeysFor(args: { ip: string; salt: string; anonId: string }): DualKeys {
-  return bookQuotaKeys({ ipHash: hashIp(args.ip, args.salt), anonId: args.anonId });
+  return bookQuotaKeys({ ipHash: hashIp(ipBucket(args.ip, args.anonId), args.salt), anonId: args.anonId });
 }
 
 // Thin wrapper so the book hook shares the never-throw compensation.
