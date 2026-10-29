@@ -166,8 +166,9 @@ html[data-theme="dark"] .panels-modal {
    then the captions in reading order. */
 .panels-frame {
   position: relative;
+  flex: none;
   display: block;
-  width: min(100%, 72vh);
+  width: min(100%, 56vh);
   aspect-ratio: 1;
   margin: 0 auto;
   padding: 0;
@@ -186,12 +187,28 @@ button.panels-frame {
 .panels-frame > img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
 }
 
 html[data-theme="dark"] .panels-frame > img {
   filter: brightness(0.92);
+}
+
+/* The shared wait caption, laid out under the page like under a scene
+   picture (picture-wait.css scopes its layout to the pane and figures). */
+.panels-box > .pic-wait {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: baseline;
+  column-gap: 7px;
+  row-gap: 3px;
+  margin: 10px 0 2px;
+  text-align: center;
+  font-family: var(--font-ui);
+  line-height: 1.25;
+  color: var(--color-text);
 }
 
 .panels-caps {
