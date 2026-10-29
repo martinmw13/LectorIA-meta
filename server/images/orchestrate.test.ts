@@ -4,6 +4,7 @@ import {
   createMemoryKV,
   dailySpendKey,
   imageKey,
+  indexKeyFor,
   lockKeyFor,
   spendKey,
 } from "@/core/images";
@@ -318,6 +319,17 @@ describe("orchestrate range reuse", () => {
     expect(second).toEqual({ ...first, cached: true });
     expect(calls).toBe(1);
     expect(await d.kv.get(spendKey())).toBe("10000");
+  });
+
+  it("adds a picture cached before range reuse to the list on its next hit", async () => {
+    const d = deps();
+    await d.kv.set(indexKeyFor(imageKey(passage)), "https://blob.example/old-p3.webp");
+    let calls = 0;
+    d.generate = { generate: async () => (calls++, new Uint8Array([9])) };
+    await orchestrate(passage, d);
+    const res = await orchestrate({ ...passage, endN: 4 }, d);
+    expect(res).toMatchObject({ status: "ready", cached: true, url: "https://blob.example/old-p3.webp" });
+    expect(calls).toBe(0);
   });
 
   it("generates a new picture for a much larger selection", async () => {
