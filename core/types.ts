@@ -81,9 +81,10 @@ export const LOW_CONFIDENCE = 0.6;
 export const FEATURE_WEIGHTS = { intensity: 0.5, tempo: 0.5 } as const;
 
 // Image API contract. Passage names the start paragraph plus optional
-// inclusive endN; scene names the scene id. The cache key holds only the
-// key fields plus PROMPT_VERSION, so a repeat tap reuses the stored image.
-export type ImageKind = "passage" | "scene";
+// inclusive endN; scene names the scene id; chapter names the chapter
+// number. The cache key holds only the key fields plus PROMPT_VERSION, so
+// a repeat tap reuses the stored image.
+export type ImageKind = "passage" | "scene" | "chapter";
 
 export interface PassageRequest {
   kind: "passage";
@@ -102,7 +103,15 @@ export interface SceneRequest {
   style?: ImageStyle;
 }
 
-export type ImageRequest = PassageRequest | SceneRequest;
+export interface ChapterRequest {
+  kind: "chapter";
+  bookId: string;
+  textVersion: string;
+  ch: number;
+  style?: ImageStyle;
+}
+
+export type ImageRequest = PassageRequest | SceneRequest | ChapterRequest;
 
 export type ImageErrorCode = "quota" | "budget" | "daily_budget" | "unavailable" | "bad_request";
 
@@ -112,6 +121,10 @@ export type ImageResponse =
   | { status: "error"; code: ImageErrorCode; message: string };
 
 export const PROMPT_VERSION = "v1" as const;
+
+// Chapter pages version their prompt apart from scenes and passages, so a
+// prompt change never touches the other keys.
+export const CHAPTER_PROMPT_VERSION = "c1" as const;
 
 // shortcut: USD 0.01 per image per the spike, revisit if Meta reprices.
 export const IMAGE_COST_MICRO = 10000 as const;

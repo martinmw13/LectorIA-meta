@@ -22,7 +22,7 @@ vi.mock("../folio/image-pane", () => ({
   },
 }));
 vi.mock("../folio/use-pictures", () => ({
-  getCachedScenePicture: () => null,
+  poll: () => new Promise(() => {}),
   usePictures: () => ({
     card: { phase: "idle" },
     figures: [],
@@ -201,7 +201,7 @@ test("chapter text shows at once and the pane opens the panels on demand", async
   const host = document.createElement("div");
   document.body.appendChild(host);
   const root = mountRoot(host);
-  const panels = [{ ch: 1, panels: [{ sceneId: "c1s1", caption: "The cyclone", art: null }] }];
+  const panels = [{ ch: 1, panels: [{ key: "c1s1", caption: "The cyclone" }] }];
   await act(async () => {
     root.render(
       <NarrationProvider entries={[]} scenes={SCENES}>

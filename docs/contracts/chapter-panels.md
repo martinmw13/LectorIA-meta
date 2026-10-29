@@ -16,13 +16,14 @@ chapter jump scrolls to the chapter's first scene.
 
 ## Panels data
 
-The route passes every chapter's panels: per scene, `sceneId`, a short
-caption (`panelCaption` over the scene summary, first clause, 90 chars
-max), and bundled art url or null. Panel art resolves client-side in
-this order: the session scene-picture cache (read-only getter over
-`app/folio/use-pictures.ts`), bundled `PANEL_ART` (`c1s2`, `c1s3`),
-else a text-free placeholder.
+The route passes every chapter's panels: at most 6 groups from
+`chapterPanels` over that chapter's scenes, each a stable key plus a
+short caption (`panelCaption` over the group's first summary). Opening
+the modal fetches one comic page per chapter (`kind: "chapter"`) in
+the reader's current style, cached per chapter and style for the
+visit, and shows the captions as an ordered list under the page.
 
-Captions stay behind the spoiler gate until read or shown-anyway.
-Every route ships the whole book, so the isolation scan checks each
-route carries its own scene text rather than checking for leaks.
+Pages and captions stay behind the spoiler gate until the reader has
+reached the chapter. Every route ships the whole book, so the
+isolation scan checks each route carries its own scene text rather
+than checking for leaks.

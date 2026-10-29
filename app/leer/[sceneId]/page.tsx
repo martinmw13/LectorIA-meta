@@ -1,6 +1,6 @@
-import { buildReaderModel, panelCaption } from "@/core/reader";
+import { chapterPanels } from "@/core/panels";
+import { buildReaderModel } from "@/core/reader";
 import { loadOzBook } from "@/server/books";
-import { PANEL_ART } from "../../folio/panels";
 import { BookView } from "../book-view";
 
 // One static route per scene so deep links and prerendering keep working.
@@ -17,13 +17,11 @@ export default async function SceneRoute({ params }: { params: Promise<{ sceneId
   const { sceneId } = await params;
   const { book, scenes } = loadOzBook();
   const model = buildReaderModel(book, { scenes });
-  const summaries = new Map(scenes.map((s) => [s.id, s.summary]));
   const panelsByChapter = model.chapters.map((chapter) => ({
     ch: chapter.ch,
-    panels: chapter.scenes.map((s) => ({
-      sceneId: s.id,
-      caption: panelCaption(summaries.get(s.id) ?? ""),
-      art: PANEL_ART[s.id] ?? null,
+    panels: chapterPanels(scenes.filter((s) => s.ch === chapter.ch)).map((g, i) => ({
+      key: g.sceneIds[0] ?? `p${i + 1}`,
+      caption: g.caption,
     })),
   }));
   return <BookView model={model} initialSceneId={sceneId} panelsByChapter={panelsByChapter} />;

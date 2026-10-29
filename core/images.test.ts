@@ -25,6 +25,7 @@ const book = {
   textVersion: "t123",
   paragraphNs: new Set([1, 2, 3]),
   sceneIds: new Set(["c1s1"]),
+  chapters: new Set([1]),
 };
 
 describe("parseImageRequest", () => {

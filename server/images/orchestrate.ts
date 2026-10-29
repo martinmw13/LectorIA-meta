@@ -19,6 +19,7 @@ import {
 import type { ImageGenerator, ImageRequest, ImageResponse, ImageStore, KV } from "@/core/images";
 import { addRange, parseRanges, pickReusable, rangeListKeyFor } from "@/core/image-ranges";
 import type { ParaRange } from "@/core/image-ranges";
+import { buildChapterPrompt } from "@/core/panels";
 import type { ImageEnv } from "./env";
 import { errorTag } from "./errors";
 import { verifyHuman } from "./human";
@@ -28,6 +29,9 @@ export interface ImageContent {
   passageText: string;
   sceneTitle: string;
   sceneClip: string;
+  // Chapter pages only: the panel descriptions, built server-side from
+  // the chapter's scene summaries. sceneTitle carries the chapter title.
+  chapterPanels?: { description: string }[];
 }
 
 export interface OrchestrateDeps {
@@ -193,13 +197,19 @@ export async function orchestrate(
     let bytes: Uint8Array;
     try {
       bytes = await deps.generate.generate(
-        buildPrompt({
-          kind: req.kind,
-          passageText: deps.content.passageText,
-          sceneTitle: deps.content.sceneTitle,
-          sceneClip: deps.content.sceneClip,
-          style: req.style,
-        }),
+        req.kind === "chapter"
+          ? buildChapterPrompt({
+              chapterTitle: deps.content.sceneTitle,
+              panels: deps.content.chapterPanels ?? [],
+              style: req.style,
+            })
+          : buildPrompt({
+              kind: req.kind,
+              passageText: deps.content.passageText,
+              sceneTitle: deps.content.sceneTitle,
+              sceneClip: deps.content.sceneClip,
+              style: req.style,
+            }),
       );
     } catch (e) {
       await refundDailySpendOnce();

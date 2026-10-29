@@ -8,6 +8,7 @@ import {
   parseImageRequest,
   validateAgainstBook,
 } from "@/core/images";
+import { chapterPanels } from "@/core/panels";
 import type { ImageRequest, ImageResponse } from "@/core/images";
 import { MAX_IMAGE_BODY_BYTES, readBodyCapped } from "./body";
 import { readImageEnv } from "./env";
@@ -75,6 +76,7 @@ export async function handleImagesPost(req: Request): Promise<Response> {
           textVersion: book.textVersion,
           paragraphNs: new Set(book.paragraphs.map((p) => p.n)),
           sceneIds: new Set(scenes.map((s) => s.id)),
+          chapters: new Set(book.chapters.map((c) => c.ch)),
         },
       );
     } catch {
@@ -85,9 +87,13 @@ export async function handleImagesPost(req: Request): Promise<Response> {
     }
 
     const byN = new Map(book.paragraphs.map((p) => [p.n, p.text]));
-    const sceneOf = scenes.find((s) =>
-      parsed.kind === "passage" ? parsed.n >= s.start_n && parsed.n <= s.end_n : s.id === parsed.sceneId,
-    );
+    const req0 = parsed;
+    const sceneOf =
+      req0.kind === "chapter"
+        ? undefined
+        : scenes.find((s) =>
+            req0.kind === "passage" ? req0.n >= s.start_n && req0.n <= s.end_n : s.id === req0.sceneId,
+          );
     // A selection never leaves its starting scene; a lone paragraph
     // keeps the bare pN key.
     if (parsed.kind === "passage" && parsed.endN !== undefined) {
@@ -102,11 +108,23 @@ export async function handleImagesPost(req: Request): Promise<Response> {
     const sceneParas = sceneOf
       ? book.paragraphs.filter((p) => p.n >= sceneOf.start_n && p.n <= sceneOf.end_n)
       : [];
-    const content: ImageContent = {
-      passageText: parsed.kind === "passage" ? passageTexts.join(" ") : "",
-      sceneTitle: sceneOf?.title ?? "",
-      sceneClip: sceneParas.map((p) => p.text).join(" "),
-    };
+    // Chapter content comes from the frozen book: the chapter title plus
+    // the panel groups over that chapter's scenes. The client sends the
+    // chapter number only, so no client text reaches the prompt.
+    const chapterNo = parsed.kind === "chapter" ? parsed.ch : null;
+    const content: ImageContent =
+      chapterNo !== null
+        ? {
+            passageText: "",
+            sceneTitle: book.chapters.find((c) => c.ch === chapterNo)?.title ?? "",
+            sceneClip: "",
+            chapterPanels: chapterPanels(scenes.filter((s) => s.ch === chapterNo)),
+          }
+        : {
+            passageText: parsed.kind === "passage" ? passageTexts.join(" ") : "",
+            sceneTitle: sceneOf?.title ?? "",
+            sceneClip: sceneParas.map((p) => p.text).join(" "),
+          };
 
     const cookieValue = parseAnonCookie(req.headers.get("cookie"));
     let anonId = cookieValue ? verifyAnonCookie(cookieValue, env.sessionSecret) : null;
