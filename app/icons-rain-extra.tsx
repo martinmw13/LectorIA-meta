@@ -1,6 +1,8 @@
 import type { CSSProperties } from "react";
 import type { IconDef } from "./icons";
 import { BOLT, CLOUD, DROPS, type RainIconName, type RainState } from "./icons-rain";
+// The pencil/chihiro drop and glint particles live in app/button-fx.tsx
+// (the shared .fx overlay); painted() keeps only the painting itself.
 
 // Rain art for the pencil, comic and chihiro skins. Pencil and chihiro
 // use the prototype paintings (public/art/skins) with a few vector drops
@@ -18,51 +20,8 @@ export function burst(n: number, r1: number, r2: number, cx = 50, cy = 50): stri
   return d + "Z";
 }
 
-const FX_DROPS = [0, 4, 6, 9];
-
-function Fx({ s, drop, glint }: { s: RainState; drop: string; glint: [number, number, number][] }) {
-  if (s === 0) {
-    return (
-      <>
-        {glint.map(([x, y, r], i) => (
-          <path
-            key={i}
-            className="fx-glint"
-            style={{ "--i": i } as CSSProperties}
-            d={`M${x} ${y - r}Q${x} ${y} ${x + r} ${y}Q${x} ${y} ${x} ${y + r}Q${x} ${y} ${x - r} ${y}Q${x} ${y} ${x} ${y - r}Z`}
-            fill="#FFD45C"
-          />
-        ))}
-      </>
-    );
-  }
-  return (
-    <>
-      {Array.from({ length: FX_DROPS[s]! }, (_, i) => (
-        <path
-          key={i}
-          className="fx-drop"
-          style={{ "--i": i } as CSSProperties}
-          d={`M${28 + ((i * 23) % 46)} ${82 + ((i * 13) % 9)}l-2 6`}
-          stroke={drop}
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          fill="none"
-        />
-      ))}
-    </>
-  );
-}
-
 function painted(skin: "pencil" | "chihiro", s: RainState): IconDef["body"] {
-  const drop = skin === "pencil" ? "#55595F" : "#4E8FD6";
-  const glint: [number, number, number][] = skin === "pencil" ? [[66, 26, 5], [80, 40, 3.5]] : [[80, 22, 5], [90, 36, 3.5]];
-  return (
-    <>
-      <image className="paint" href={`/art/skins/${skin}/rain${s}.png`} width="100" height="100" />
-      <Fx s={s} drop={drop} glint={glint} />
-    </>
-  );
+  return <image className="paint" href={`/art/skins/${skin}/rain${s}.png`} width="100" height="100" />;
 }
 
 const COMIC_HALO = ["", "url(#rb-c-dots)", "url(#rb-c-dots-y)", "url(#rb-c-dots-r)"];

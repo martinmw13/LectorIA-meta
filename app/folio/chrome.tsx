@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { pressButton } from "../button-fx";
 import { Icon } from "../icons";
 import { StyleMenu } from "../style-menu";
 import { clampSplitWidth, SPLIT_MIN_PX } from "./helpers";
@@ -171,13 +172,13 @@ export function BandPager({
   return (
     <div className="band-pager">
       <div className="pager-row">
-        <button type="button" className="pager-btn" onClick={onPrev} disabled={atStart} aria-label="Previous page">
+        <button type="button" className="pager-btn" onClick={(e) => { pressButton(e); onPrev(); }} disabled={atStart} aria-label="Previous page">
           ‹
         </button>
         <span className="pager-label">
           Scene {k} of {n}
         </span>
-        <button type="button" className="pager-btn" onClick={onNext} disabled={atBookEnd} aria-label="Next page">
+        <button type="button" className="pager-btn" onClick={(e) => { pressButton(e); onNext(); }} disabled={atBookEnd} aria-label="Next page">
           ›
         </button>
       </div>

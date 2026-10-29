@@ -1,0 +1,196 @@
+/* Button motion for the comic skin, ported verbatim from the approved
+   prototype (.proto-ref/comic.css plus comic-template-head.html): quick
+   panel snap on hover, POW punch on change. Only :hover, :active and the
+   one-shot change flag move. Nothing moves at rest. */
+
+html[data-skin="comic"] {
+  --fast: 0.18s;
+  --ease: cubic-bezier(.2,.8,.2,1);
+}
+
+/* ---------- Verbatim keyframes ---------- */
+@keyframes comic-pow {
+  0% { transform: scale(0.55) rotate(-12deg); }
+  60% { transform: scale(1.16) rotate(4deg); }
+  100% { transform: none; }
+}
+
+@keyframes comic-burst-in {
+  0% { opacity: 0; transform: scale(0.3) rotate(-20deg); }
+  70% { opacity: 1; transform: scale(1.08); }
+  100% { opacity: 1; transform: none; }
+}
+
+@keyframes comic-burst-flash {
+  0% { opacity: 0; transform: scale(0.3); }
+  50% { opacity: 1; transform: scale(1.1); }
+  100% { opacity: 0; transform: scale(1.2); }
+}
+
+@keyframes comic-c-paint {
+  from { stroke-dasharray: 1; stroke-dashoffset: 1; }
+  to { stroke-dasharray: 1; stroke-dashoffset: 0; }
+}
+
+@keyframes comic-drip {
+  0% { opacity: 0; transform: translateY(-6px); }
+  35% { opacity: 1; }
+  100% { opacity: 1; transform: none; }
+}
+
+@keyframes comic-flash {
+  0%, 40%, 80% { opacity: 1; }
+  20%, 60% { opacity: 0.15; }
+  100% { opacity: 1; }
+}
+
+@keyframes comic-flash-h {
+  0%, 100% { opacity: 1; }
+  25%, 65% { opacity: 0.2; }
+}
+
+@keyframes comic-drip-h {
+  0% { opacity: 1; transform: none; }
+  30% { opacity: 0; transform: translateY(5px); }
+  31% { opacity: 0; transform: translateY(-6px); }
+  100% { opacity: 1; transform: none; }
+}
+
+/* ---------- Art buttons: two-frame snap on hover, POW on change ---------- */
+html[data-skin="comic"] :is(.sticker img, .chopin img, .read-aloud-art, .pic-btn-art svg) {
+  transform-origin: 50% 60%;
+  transition: transform 0.12s steps(2, end);
+}
+
+html[data-skin="comic"] .player .skip.rain .face {
+  transition: transform 0.12s steps(2, end);
+}
+
+/* POW burst behind read-aloud and picture art, like the sticker bursts. */
+html[data-skin="comic"] :is(.read-aloud-frame, .pic-btn-art) {
+  position: relative;
+  isolation: isolate;
+}
+
+html[data-skin="comic"] :is(.read-aloud-frame, .pic-btn-art)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: center / contain no-repeat;
+  background-image: url("/art/skins/comic/burst-yellow.svg");
+  opacity: 0;
+}
+
+@media (hover: hover) {
+  html[data-skin="comic"] :is(.sticker, .chopin, .read-aloud-btn, .pic-btn):hover :is(img, .read-aloud-art, svg) {
+    transform: rotate(-4deg) scale(1.06);
+  }
+
+  html[data-skin="comic"] :is(.stickers[data-art="hero"] .sticker, .player .sticker-wrap .chopin):hover::before,
+  html[data-skin="comic"] .read-aloud-btn:hover .read-aloud-frame::before,
+  html[data-skin="comic"] .pic-btn:hover .pic-btn-art::before {
+    animation: comic-burst-in 0.26s cubic-bezier(.3,1.6,.5,1) both;
+  }
+
+  html[data-skin="comic"] .player .skip.rain:hover .face {
+    transform: rotate(-4deg) scale(1.06);
+  }
+
+  html[data-skin="comic"] .player .skip.rain:hover .halo {
+    animation: comic-burst-in 0.3s cubic-bezier(.3,1.6,.5,1);
+  }
+
+  html[data-skin="comic"] .player .skip.rain:hover .drop {
+    animation: comic-drip-h 0.7s var(--ease) calc(var(--i) * 40ms);
+  }
+
+  html[data-skin="comic"] .player .skip.rain:hover .bolt {
+    animation: comic-flash-h 0.5s;
+  }
+
+  html[data-skin="comic"] .pic-btn:hover .paint {
+    animation: comic-c-paint 0.35s steps(4, end);
+  }
+}
+
+html[data-skin="comic"] :is(.sticker, .chopin, .read-aloud-btn, .pic-btn):active :is(img, .read-aloud-art, svg),
+html[data-skin="comic"] .player .skip.rain:active .face {
+  transform: scale(0.9);
+}
+
+html[data-skin="comic"] :is(.sticker, .player .chopin)[data-anim="1"] img,
+html[data-skin="comic"] .read-aloud-btn[data-anim="1"] .read-aloud-art,
+html[data-skin="comic"] .pic-btn[data-press] .pic-btn-art svg {
+  animation: comic-pow 0.38s cubic-bezier(.3,1.6,.5,1);
+}
+
+html[data-skin="comic"] :is(.stickers[data-art="hero"] .sticker, .player .sticker-wrap .chopin)[data-anim="1"]::before,
+html[data-skin="comic"] .read-aloud-btn[data-anim="1"] .read-aloud-frame::before,
+html[data-skin="comic"] .pic-btn[data-press] .pic-btn-art::before {
+  animation: comic-burst-flash 0.5s ease-out;
+}
+
+html[data-skin="comic"] .player .skip.rain[data-anim] .face {
+  animation: comic-pow 0.38s cubic-bezier(.3,1.6,.5,1);
+}
+
+html[data-skin="comic"] .player .skip.rain[data-anim] .halo {
+  animation: comic-burst-in 0.3s cubic-bezier(.3,1.6,.5,1);
+}
+
+/* Change replays the rain once (template "just" rules); no wave elements
+   in the app rain art, so only drops and bolt are ported. */
+html[data-skin="comic"] .player .skip.rain[data-anim] .drop {
+  animation: comic-drip 0.5s var(--ease) calc(120ms + var(--i) * 45ms) both;
+}
+
+html[data-skin="comic"] .player .skip.rain[data-anim] .bolt {
+  animation: comic-flash 0.55s 0.2s both;
+}
+
+html[data-skin="comic"] .player .skip.rain :is(.drop, .halo) {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* Caption colour eases to accent on hover. */
+html[data-skin="comic"] :is(.sticker img, .chopin img, .read-aloud-label, .pic-btn-lbl) {
+  transition: color var(--fast);
+}
+
+@media (hover: hover) {
+  html[data-skin="comic"] :is(.stickers[data-art="hero"] .sticker, .player .sticker-wrap .chopin):hover::after,
+  html[data-skin="comic"] .read-aloud-btn:hover .read-aloud-label,
+  html[data-skin="comic"] .pic-btn:hover .pic-btn-lbl {
+    color: var(--color-accent);
+  }
+}
+
+/* ---------- Reduced motion: still, burst hidden ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html[data-skin="comic"] :is(.sticker img, .chopin img, .read-aloud-art, .pic-btn-art svg),
+  html[data-skin="comic"] .player .skip.rain .face {
+    transition: opacity 0.2s;
+  }
+
+  html[data-skin="comic"] :is(.sticker, .chopin, .read-aloud-btn, .pic-btn):is(:hover, :active) :is(img, .read-aloud-art, svg),
+  html[data-skin="comic"] .player .skip.rain:is(:hover, :active) .face,
+  html[data-skin="comic"] :is(.sticker, .player .chopin, .read-aloud-btn)[data-anim="1"] :is(img, .read-aloud-art),
+  html[data-skin="comic"] .pic-btn[data-press] :is(svg, .paint),
+  html[data-skin="comic"] .player .skip.rain[data-anim] .face {
+    transform: none;
+    animation: none;
+  }
+
+  html[data-skin="comic"] :is(
+    .stickers[data-art="hero"] .sticker,
+    .player .sticker-wrap .chopin,
+    .read-aloud-frame,
+    .pic-btn-art
+  )::before,
+  html[data-skin="comic"] .player .skip.rain :is(.drop, .halo, .bolt) {
+    animation: none;
+  }
+}

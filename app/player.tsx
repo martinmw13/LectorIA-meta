@@ -7,6 +7,7 @@ import { displayTitle } from "@/core/music-credit";
 import { effectiveEnd, gainVolume } from "@/core/music-playback";
 import type { MusicMode, MusicModeId, Track } from "@/core/music";
 import { MusicStyleControl } from "./folio/music-style-control";
+import { pressButton } from "./button-fx";
 import { RainAmbience } from "./rain-button";
 import { rememberPaused, useMusicAutostart } from "./player-autostart";
 
@@ -381,13 +382,13 @@ export function Player({
     <div ref={rootRef} className="player" role="region" aria-label="Music player" data-reduced-motion={reducedMotion}>
       <audio ref={firstRef} preload="none" onTimeUpdate={(e) => handleTimeUpdate(0, e.currentTarget)} onEnded={() => handleEnded(0)} />
       <audio ref={secondRef} preload="none" onTimeUpdate={(e) => handleTimeUpdate(1, e.currentTarget)} onEnded={() => handleEnded(1)} />
-      <button type="button" className="skip" onClick={onPrev} disabled={!canPrev} aria-label="Previous track" title="Previous track">
+      <button type="button" className="skip" onClick={(e) => { pressButton(e); onPrev(); }} disabled={!canPrev} aria-label="Previous track" title="Previous track">
         <svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
           <rect x="2.5" y="3" width="2" height="10" rx="0.5" />
           <path d="M13.5 3.5v9L6 8z" />
         </svg>
       </button>
-      <button type="button" className="skip play" onClick={toggle} aria-label={playing ? "Pause" : "Play"} title={playing ? "Pause" : "Play"}>
+      <button type="button" className="skip play" onClick={(e) => { pressButton(e); toggle(); }} aria-label={playing ? "Pause" : "Play"} title={playing ? "Pause" : "Play"}>
         {playing ? (
           <svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
             <rect x="4" y="3" width="2.6" height="10" rx="0.5" />
@@ -399,7 +400,7 @@ export function Player({
           </svg>
         )}
       </button>
-      <button type="button" className="skip" onClick={onSkip} disabled={!canSkip} aria-label="Next track" title="Next track">
+      <button type="button" className="skip" onClick={(e) => { pressButton(e); onSkip(); }} disabled={!canSkip} aria-label="Next track" title="Next track">
         <svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
           <path d="M2.5 3.5v9l7.5-4.5z" />
           <rect x="11.5" y="3" width="2" height="10" rx="0.5" />
@@ -430,7 +431,7 @@ export function Player({
       <button
         type="button"
         className="skip"
-        onClick={toggleMute}
+        onClick={(e) => { pressButton(e); toggleMute(); }}
         aria-pressed={muted}
         aria-label={muted ? "Unmute" : "Mute"}
         title={muted ? "Unmute" : "Mute"}

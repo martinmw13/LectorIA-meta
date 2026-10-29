@@ -7,9 +7,10 @@ import { BASE_ICONS, ICON_SETS, Icon, iconSkin, type IconName } from "./icons";
 import { DEFAULT_SKIN, SKINS } from "./skin";
 
 // app/player.tsx keeps its inline SVGs until its open PR lands, then it
-// migrates to the registry. app/folio/picture-draw.tsx is the Picture this
-// drawing canvas, not an icon. app/folio/picture-button.tsx holds the
-// per-skin button art until it moves into the registry as a skinned icon.
+// migrates to the registry. app/button-fx.tsx holds the shared particle
+// overlay for the pencil/chihiro art buttons. app/folio/picture-draw.tsx
+// is the Picture this drawing canvas, not an icon. app/folio/picture-button.tsx
+// holds the per-skin button art until it moves into the registry as a skinned icon.
 // app/home/home-defs.tsx holds SVG filter defs, not icons.
 // app/home/spread.tsx holds decorative per-skin art (lantern, ink
 // underline, read arrows), shown per skin through page CSS.
@@ -17,6 +18,7 @@ import { DEFAULT_SKIN, SKINS } from "./skin";
 // skin by CSS classes on its paths, like picture-button.tsx.
 const ALLOWLIST = new Set([
   "app/icons.tsx",
+  "app/button-fx.tsx",
   "app/player.tsx",
   "app/folio/picture-draw.tsx",
   "app/folio/picture-button.tsx",
@@ -87,12 +89,13 @@ describe("icon registry", () => {
   it("carries the class hooks the rain CSS animates", () => {
     for (const skin of SKINS) {
       const storm = renderToStaticMarkup(createElement(Icon, { name: "rain-storm", skin }));
-      // Pencil and chihiro are paintings with vector drops on top.
+      // Pencil and chihiro are paintings; their particles live in the
+      // shared ButtonFx overlay, so the registry icon keeps only the paint.
       const painted = skin === "pencil" || skin === "chihiro";
-      for (const cls of painted ? ["paint", "fx-drop"] : ["halo", "drop", "bolt"]) {
+      for (const cls of painted ? ["paint"] : ["halo", "drop", "bolt"]) {
         expect(storm).toContain(cls);
       }
-      expect(storm).toContain("--i");
+      if (!painted) expect(storm).toContain("--i");
       const off = renderToStaticMarkup(createElement(Icon, { name: "rain-off", skin }));
       expect(off).not.toContain("bolt");
     }

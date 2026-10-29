@@ -1,0 +1,381 @@
+/* Button motion for the engraving / watercolor / ink skins, ported verbatim
+   from the approved prototypes (.proto-ref/skins-styles.css): same
+   keyframes, amplitudes, durations, delays and easings. Only :hover,
+   :active and the one-shot change flag ([data-anim]/[data-press]) move.
+   Nothing moves at rest. */
+
+/* ---------- Per-skin motion tokens (proto lines ~20-60) ---------- */
+html[data-skin="engraving"] {
+  --m-fast: 160ms;
+  --m-state: 520ms;
+  --m-draw: 560ms;
+  --m-bloom: 520ms;
+  --ease: cubic-bezier(.2,.7,.2,1);
+  --face-in: coin-in;
+  --press: engrave-press;
+}
+
+html[data-skin="watercolor"] {
+  --m-fast: 200ms;
+  --m-state: 560ms;
+  --m-draw: 500ms;
+  --m-bloom: 600ms;
+  --ease: cubic-bezier(.25,.8,.25,1);
+  --face-in: wet-in;
+  --press: wet-press;
+}
+
+html[data-skin="ink"] {
+  --m-fast: 150ms;
+  --m-state: 440ms;
+  --m-draw: 600ms;
+  --m-bloom: 400ms;
+  --ease: cubic-bezier(.34,1.5,.64,1);
+  --face-in: pop-in;
+  --press: stamp-thump;
+}
+
+/* ---------- Verbatim keyframes (proto lines ~184-244, 582-601) ---------- */
+@keyframes coin-in {
+  0% { transform: rotateY(-95deg); opacity: 0.2; }
+  55% { opacity: 1; }
+  100% { transform: rotateY(0); }
+}
+
+@keyframes engrave-press {
+  0% { transform: none; }
+  35% { transform: translateY(1.5px); }
+  100% { transform: none; }
+}
+
+@keyframes wet-in {
+  from { opacity: 0; transform: scale(0.9); filter: blur(5px) saturate(0.5); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+
+@keyframes wet-press {
+  0% { transform: none; }
+  40% { transform: scale(0.97); }
+  100% { transform: none; }
+}
+
+@keyframes bloom {
+  from { transform: scale(0.55); opacity: 0; }
+  60% { opacity: 1; }
+  to { transform: scale(1); }
+}
+
+@keyframes bleed {
+  from { transform: scale(1); }
+  50% { transform: scale(1.08); }
+  to { transform: scale(1.04); }
+}
+
+@keyframes pop-in {
+  0% { transform: scale(0.86) rotate(-7deg); opacity: 0; }
+  60% { transform: scale(1.05) rotate(1deg); opacity: 1; }
+  100% { transform: none; }
+}
+
+@keyframes stamp-thump {
+  0% { transform: rotate(-1.2deg) scale(1); }
+  30% { transform: rotate(-4deg) scale(1.13); }
+  55% { transform: rotate(-1deg) scale(0.95); }
+  100% { transform: rotate(-1.2deg) scale(1); }
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0); }
+  25% { transform: rotate(-2.4deg); }
+  55% { transform: rotate(2deg); }
+  80% { transform: rotate(-1deg); }
+}
+
+@keyframes stroke-in {
+  from { stroke-dashoffset: 1; fill-opacity: 0; }
+  70% { fill-opacity: 0.2; }
+  to { stroke-dashoffset: 0; fill-opacity: 1; }
+}
+
+@keyframes shimmer {
+  from { transform: translate(0, 0); }
+  to { transform: translate(-9px, 9px); }
+}
+
+/* Same hatch sweep as shimmer, scaled to the art box for HTML overlays
+   (-9%/9% of the art size: the SVG user units of the 100-unit viewBox). */
+@keyframes shimmer-box {
+  from { transform: translate(0, 0); }
+  to { transform: translate(-9%, 9%); }
+}
+
+@keyframes drip {
+  0% { opacity: 0; transform: translateY(-6px); }
+  35% { opacity: 1; }
+  100% { opacity: 1; transform: none; }
+}
+
+@keyframes drip-h {
+  0% { opacity: 1; transform: none; }
+  30% { opacity: 0; transform: translateY(5px); }
+  31% { opacity: 0; transform: translateY(-6px); }
+  100% { opacity: 1; transform: none; }
+}
+
+@keyframes flash {
+  0%, 40%, 80% { opacity: 1; }
+  20%, 60% { opacity: 0.15; }
+  100% { opacity: 1; }
+}
+
+@keyframes flash-h {
+  0%, 100% { opacity: 1; }
+  25%, 65% { opacity: 0.2; }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; }
+  to {}
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ---------- Engraving art buttons: hatch shim on hover, coin-in on change ---------- */
+html[data-skin="engraving"] :is(
+  .stickers[data-art="hero"] .sticker,
+  .player .sticker-wrap .chopin,
+  .read-aloud-frame,
+  .player .skip.rain
+) {
+  perspective: 220px;
+}
+
+/* Hatch overlay masked to the art (img buttons have no SVG shim). */
+html[data-skin="engraving"] :is(
+  .stickers[data-art="hero"] .sticker,
+  .player .sticker-wrap .chopin,
+  .read-aloud-frame
+)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    -35deg,
+    transparent 0 3px,
+    rgba(42, 36, 28, 0.16) 3px 4px
+  );
+  opacity: 0;
+  transition: opacity var(--m-fast);
+}
+
+@media (hover: hover) {
+  html[data-skin="engraving"] :is(.stickers[data-art="hero"] .sticker, .player .sticker-wrap .chopin):hover::before,
+  html[data-skin="engraving"] .read-aloud-btn:hover .read-aloud-frame::before {
+    opacity: 0.55;
+    animation: shimmer-box 900ms linear;
+  }
+
+  html[data-skin="engraving"] .player .skip.rain:hover .shim {
+    opacity: 0.55;
+    animation: shimmer 900ms linear;
+  }
+
+  html[data-skin="engraving"] .player .skip.rain:hover .drop {
+    animation: drip-h 0.7s var(--ease) calc(var(--i) * 40ms);
+  }
+
+  html[data-skin="engraving"] .player .skip.rain:hover .bolt {
+    animation: flash-h 0.5s;
+  }
+}
+
+html[data-skin="engraving"] :is(
+  .stickers[data-art="hero"] .sticker,
+  .player .sticker-wrap .chopin
+)[data-anim="1"] img,
+html[data-skin="engraving"] .read-aloud-btn[data-anim="1"] .read-aloud-art,
+html[data-skin="engraving"] .player .skip.rain[data-anim] .face {
+  animation: coin-in var(--m-state) var(--ease);
+}
+
+/* Caption/label face-in, like .cyc-cap .v. */
+html[data-skin="engraving"] :is(
+  .stickers[data-art="hero"] .sticker,
+  .player .sticker-wrap .chopin,
+  .player .skip.rain
+)[data-anim="1"]::after,
+html[data-skin="engraving"] .read-aloud-btn[data-anim="1"] .read-aloud-label {
+  animation: coin-in var(--m-state) var(--ease) both;
+}
+
+/* ---------- Watercolor art buttons: bleed on hover, wet-in on change ---------- */
+@media (hover: hover) {
+  html[data-skin="watercolor"] :is(
+    .stickers[data-art="hero"] .sticker,
+    .player .sticker-wrap .chopin
+  ):hover img,
+  html[data-skin="watercolor"] .read-aloud-btn:hover .read-aloud-art {
+    animation: bleed 600ms var(--ease) both;
+  }
+
+  html[data-skin="watercolor"] .player .skip.rain:hover .bloom {
+    animation: bleed 600ms var(--ease) both;
+  }
+
+  html[data-skin="watercolor"] .player .skip.rain:hover .drop {
+    animation: drip-h 0.7s var(--ease) calc(var(--i) * 40ms);
+  }
+
+  html[data-skin="watercolor"] .player .skip.rain:hover .bolt {
+    animation: flash-h 0.5s;
+  }
+}
+
+html[data-skin="watercolor"] :is(
+  .stickers[data-art="hero"] .sticker,
+  .player .sticker-wrap .chopin
+)[data-anim="1"] img,
+html[data-skin="watercolor"] .read-aloud-btn[data-anim="1"] .read-aloud-art,
+html[data-skin="watercolor"] .player .skip.rain[data-anim] .face {
+  animation: wet-in var(--m-state) var(--ease);
+}
+
+html[data-skin="watercolor"] :is(
+  .stickers[data-art="hero"] .sticker,
+  .player .sticker-wrap .chopin,
+  .player .skip.rain
+)[data-anim="1"]::after,
+html[data-skin="watercolor"] .read-aloud-btn[data-anim="1"] .read-aloud-label {
+  animation: wet-in var(--m-state) var(--ease) both;
+}
+
+/* ---------- Ink art buttons: wiggle on hover, pop-in on change ---------- */
+@media (hover: hover) {
+  html[data-skin="ink"] :is(
+    .stickers[data-art="hero"] .sticker,
+    .player .sticker-wrap .chopin,
+    .read-aloud-btn
+  ):hover :is(img, .read-aloud-art),
+  html[data-skin="ink"] .pic-btn:hover .pic-btn-art svg {
+    animation: wiggle 420ms ease;
+  }
+
+  html[data-skin="ink"] .player .skip.rain:hover .face {
+    animation: wiggle 420ms ease;
+  }
+
+  html[data-skin="ink"] .player .skip.rain:hover .drop {
+    animation: drip-h 0.7s var(--ease) calc(var(--i) * 40ms);
+  }
+
+  html[data-skin="ink"] .player .skip.rain:hover .bolt {
+    animation: flash-h 0.5s;
+  }
+}
+
+html[data-skin="ink"] :is(
+  .stickers[data-art="hero"] .sticker,
+  .player .sticker-wrap .chopin
+)[data-anim="1"] img,
+html[data-skin="ink"] .read-aloud-btn[data-anim="1"] .read-aloud-art,
+html[data-skin="ink"] .player .skip.rain[data-anim] .face {
+  animation: pop-in var(--m-state) var(--ease);
+}
+
+html[data-skin="ink"] :is(
+  .stickers[data-art="hero"] .sticker,
+  .player .sticker-wrap .chopin,
+  .player .skip.rain
+)[data-anim="1"]::after,
+html[data-skin="ink"] .read-aloud-btn[data-anim="1"] .read-aloud-label {
+  animation: pop-in var(--m-state) var(--ease) both;
+}
+
+/* ---------- Rain change (all three): etch/draw, drops, bolt ---------- */
+html[data-skin="engraving"] .player .skip.rain[data-anim] :is(.etch, .draw),
+html[data-skin="watercolor"] .player .skip.rain[data-anim] :is(.etch, .draw),
+html[data-skin="ink"] .player .skip.rain[data-anim] :is(.etch, .draw) {
+  animation: stroke-in var(--m-draw) var(--ease) both;
+}
+
+html[data-skin="engraving"] .player .skip.rain[data-anim] .drop,
+html[data-skin="watercolor"] .player .skip.rain[data-anim] .drop,
+html[data-skin="ink"] .player .skip.rain[data-anim] .drop {
+  animation: drip 0.5s var(--ease) calc(160ms + var(--i) * 45ms) both;
+}
+
+html[data-skin="engraving"] .player .skip.rain[data-anim] .bolt,
+html[data-skin="watercolor"] .player .skip.rain[data-anim] .bolt,
+html[data-skin="ink"] .player .skip.rain[data-anim] .bolt {
+  animation: flash 0.55s 0.25s both;
+}
+
+html[data-skin="watercolor"] .player .skip.rain[data-anim] .bloom {
+  animation: bloom var(--m-bloom) var(--ease) both;
+}
+
+html[data-skin="watercolor"] .player .skip.rain[data-anim] .wet {
+  animation: fade-up var(--m-state) var(--ease) both;
+  animation-delay: 120ms;
+}
+
+/* Still at rest: rain particles never loop; etched strokes rest solid. */
+html[data-skin="engraving"] .player .skip.rain :is(.etch, .draw),
+html[data-skin="watercolor"] .player .skip.rain :is(.etch, .draw),
+html[data-skin="ink"] .player .skip.rain :is(.etch, .draw) {
+  stroke-dasharray: 1;
+}
+
+html[data-skin="engraving"] .player .skip.rain :is(.drop, .bolt),
+html[data-skin="watercolor"] .player .skip.rain :is(.drop, .bolt),
+html[data-skin="ink"] .player .skip.rain :is(.drop, .bolt) {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+html[data-skin="engraving"] .player .skip.rain .shim {
+  opacity: 0;
+  transition: opacity var(--m-fast);
+}
+
+/* ---------- Picture button: the proto .btn (hover color only + press) ---------- */
+html[data-skin="engraving"] .pic-btn[data-press],
+html[data-skin="watercolor"] .pic-btn[data-press],
+html[data-skin="ink"] .pic-btn[data-press] {
+  animation: var(--press) 380ms var(--ease);
+}
+
+/* ---------- Reduced motion: short fades, no transforms/keyframes ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html[data-skin="engraving"] :is(.sticker, .chopin, .read-aloud-btn):hover img,
+  html[data-skin="watercolor"] :is(.sticker, .chopin, .read-aloud-btn):hover img,
+  html[data-skin="ink"] :is(.sticker, .chopin, .read-aloud-btn):hover img,
+  html[data-skin="engraving"] .player .skip.rain:hover .face,
+  html[data-skin="watercolor"] .player .skip.rain:hover .face,
+  html[data-skin="ink"] .player .skip.rain:hover .face,
+  html[data-skin="ink"] .pic-btn:hover .pic-btn-art svg {
+    animation: none;
+    transform: none;
+  }
+
+  html[data-skin="engraving"] :is(.sticker, .chopin, .read-aloud-btn, .skip.rain)[data-anim="1"] :is(img, .face, .read-aloud-art),
+  html[data-skin="watercolor"] :is(.sticker, .chopin, .read-aloud-btn, .skip.rain)[data-anim="1"] :is(img, .face, .read-aloud-art),
+  html[data-skin="ink"] :is(.sticker, .chopin, .read-aloud-btn, .skip.rain)[data-anim="1"] :is(img, .face, .read-aloud-art),
+  html[data-skin="engraving"] .pic-btn[data-press],
+  html[data-skin="watercolor"] .pic-btn[data-press],
+  html[data-skin="ink"] .pic-btn[data-press] {
+    animation: fade-in 200ms both;
+  }
+
+  html[data-skin="engraving"] :is(.sticker, .chopin, .read-aloud-frame)::before,
+  html[data-skin="engraving"] .player .skip.rain :is(.drop, .bolt, .shim, .etch),
+  html[data-skin="watercolor"] .player .skip.rain :is(.drop, .bolt, .bloom, .wet, .etch),
+  html[data-skin="ink"] .player .skip.rain :is(.drop, .bolt, .draw) {
+    animation: none;
+    transition: opacity 0.2s;
+  }
+}

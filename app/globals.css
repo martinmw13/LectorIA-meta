@@ -14,6 +14,10 @@
 @import "./styles/skin-pencil.css";
 @import "./styles/skin-comic.css";
 @import "./styles/skin-chihiro.css";
+@import "./styles/motion-classic.css";
+@import "./styles/motion-pencil.css";
+@import "./styles/motion-comic.css";
+@import "./styles/motion-icons.css";
 @import "./styles/warmth.css";
 
 * {

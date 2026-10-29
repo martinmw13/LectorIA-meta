@@ -26,21 +26,7 @@ html[data-skin="chihiro"] :is(.sticker, .chopin, .read-aloud-btn) {
   position: relative;
 }
 
-/* The lantern glow each painting stands on. */
-html[data-skin="chihiro"] :is(.stickers[data-art="hero"] .sticker, .sticker-wrap .chopin)::before {
-  content: "";
-  position: absolute;
-  left: 12%;
-  right: 12%;
-  bottom: -3px;
-  height: 9px;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(170, 80, 40, 0.24), transparent);
-  pointer-events: none;
-  transition:
-    transform 220ms ease,
-    opacity 220ms ease;
-}
+/* The lantern ground shadow each painting stands on lives in motion-pencil.css. */
 
 /* Captions name each painting beneath, in the lantern ink. */
 html[data-skin="chihiro"] :is(.stickers[data-art="hero"] .sticker, .sticker-wrap .chopin)::after {
@@ -71,57 +57,4 @@ html[data-skin="chihiro"] .read-aloud-art {
   display: block;
 }
 
-html[data-skin="chihiro"] :is(.sticker img, .chopin img, .read-aloud-art) {
-  transform-origin: 50% 75%;
-  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-@media (hover: hover) {
-  html[data-skin="chihiro"] :is(.sticker, .chopin, .read-aloud-btn):hover :is(img, .read-aloud-art) {
-    transform: translateY(-5px) rotate(-3deg);
-  }
-
-  html[data-skin="chihiro"] :is(.stickers[data-art="hero"] .sticker, .sticker-wrap .chopin):hover::before {
-    transform: scale(0.8);
-    opacity: 0.6;
-  }
-
-  html[data-skin="chihiro"] :is(.stickers[data-art="hero"] .sticker, .player .sticker-wrap .chopin):hover::after,
-  html[data-skin="chihiro"] .read-aloud-btn:hover .read-aloud-label {
-    color: var(--color-accent);
-  }
-}
-
-html[data-skin="chihiro"] :is(.sticker, .chopin, .read-aloud-btn):active :is(img, .read-aloud-art) {
-  transform: translateY(1px) scale(0.93);
-  transition-duration: 80ms;
-}
-
-@keyframes chihiro-settle {
-  0% {
-    transform: translateY(-10px) rotate(4deg) scale(1.06);
-  }
-  55% {
-    transform: translateY(2px) rotate(-1deg) scale(0.98);
-  }
-  100% {
-    transform: none;
-  }
-}
-
-html[data-skin="chihiro"] :is(.sticker, .player .chopin)[data-anim="1"] img {
-  animation: chihiro-settle 550ms cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html[data-skin="chihiro"] :is(.sticker img, .chopin img, .read-aloud-art),
-  html[data-skin="chihiro"] :is(.stickers[data-art="hero"] .sticker, .sticker-wrap .chopin)::before {
-    transition: none;
-  }
-
-  html[data-skin="chihiro"] :is(.sticker, .chopin, .read-aloud-btn):is(:hover, :active) :is(img, .read-aloud-art),
-  html[data-skin="chihiro"] :is(.sticker, .player .chopin)[data-anim="1"] img {
-    transform: none;
-    animation: none;
-  }
-}
+/* Button motion (lift, ground shadow, settle, .fx particles) lives in motion-pencil.css. */

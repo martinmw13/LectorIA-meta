@@ -1,0 +1,276 @@
+/* Button motion for the pencil and chihiro skins (identical base), ported
+   verbatim from the approved prototype (.proto-ref/pencil-chihiro-base.css
+   plus pencil-app-fx.js): same keyframes, amplitudes, durations, delays
+   and easings. Only :hover, :active and the one-shot change flag move.
+   Nothing moves at rest. */
+
+html:is([data-skin="pencil"], [data-skin="chihiro"]) {
+  --ease: cubic-bezier(.2,.8,.2,1);
+  --spring: cubic-bezier(.34,1.56,.64,1);
+}
+
+/* ---------- Verbatim keyframes ---------- */
+@keyframes pencil-drop {
+  0% { opacity: 0; transform: translateY(-8px); }
+  25% { opacity: 0.95; }
+  100% { opacity: 0; transform: translateY(16px); }
+}
+
+@keyframes pencil-note {
+  0% { opacity: 0; transform: translate(0, 6px) rotate(-8deg); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: translate(10px, -22px) rotate(12deg); }
+}
+
+@keyframes pencil-gust {
+  0% { opacity: 0; stroke-dashoffset: 1; }
+  30% { opacity: 0.95; }
+  100% { opacity: 0; stroke-dashoffset: -1; }
+}
+
+@keyframes pencil-glint {
+  0% { opacity: 0; transform: scale(0.3) rotate(0); }
+  40% { opacity: 1; transform: scale(1.1) rotate(45deg); }
+  100% { opacity: 0; transform: scale(0.6) rotate(90deg); }
+}
+
+@keyframes pencil-wave2 {
+  0% { opacity: 0; transform: translateX(-4px); }
+  40% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(8px); }
+}
+
+@keyframes pencil-fly {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.6); }
+  35% { opacity: 1; transform: translate(var(--dx), var(--dy)) scale(1); }
+  100% { opacity: 0; transform: translate(calc(var(--dx) * 2), calc(var(--dy) * 2)) scale(0.5); }
+}
+
+@keyframes pencil-paint {
+  0% { opacity: 1; stroke-dashoffset: 1; }
+  70% { opacity: 1; stroke-dashoffset: 0; }
+  100% { opacity: 0; stroke-dashoffset: 0; }
+}
+
+@keyframes pencil-settle {
+  0% { transform: translateY(-10px) rotate(4deg) scale(1.06); }
+  55% { transform: translateY(2px) rotate(-1deg) scale(0.98); }
+  100% { transform: none; }
+}
+
+/* ---------- Art buttons: lift and tilt on hover, settle on change ---------- */
+html:is([data-skin="pencil"], [data-skin="chihiro"])
+  :is(.sticker img, .chopin img, .read-aloud-art, .pic-btn-art svg, .player .skip.rain .face) {
+  transition: transform 0.22s var(--spring);
+  transform-origin: 50% 75%;
+}
+
+html:is([data-skin="pencil"], [data-skin="chihiro"]) .player .skip.rain {
+  position: relative;
+}
+
+html:is([data-skin="pencil"], [data-skin="chihiro"]) .player .skip.rain .paint {
+  transition: filter 0.22s;
+}
+
+html:is([data-skin="pencil"], [data-skin="chihiro"]) .read-aloud-frame {
+  position: relative;
+  display: inline-flex;
+}
+
+html:is([data-skin="pencil"], [data-skin="chihiro"]) .pic-btn-art {
+  position: relative;
+}
+
+/* Ground shadow under each drawing, exactly as the prototype. */
+html:is([data-skin="pencil"], [data-skin="chihiro"])
+  :is(.stickers[data-art="hero"] .sticker, .chopin, .player .skip.rain, .read-aloud-frame)::before {
+  content: "";
+  position: absolute;
+  left: 14%;
+  right: 14%;
+  bottom: -2%;
+  height: 12%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side,var(--ground,rgba(60,90,60,.22)),transparent);
+  pointer-events: none;
+  transition: transform 0.22s var(--ease), opacity 0.22s;
+}
+
+@media (hover: hover) {
+  html:is([data-skin="pencil"], [data-skin="chihiro"])
+    :is(.sticker, .chopin, .read-aloud-btn):hover :is(img, .read-aloud-art),
+  html:is([data-skin="pencil"], [data-skin="chihiro"]) .pic-btn:hover .pic-btn-art svg {
+    transform: translateY(-5px) rotate(-3deg);
+  }
+
+  html:is([data-skin="pencil"], [data-skin="chihiro"]) .player .skip.rain:hover .face {
+    transform: translateY(-5px) rotate(-3deg);
+  }
+
+  html:is([data-skin="pencil"], [data-skin="chihiro"])
+    :is(.stickers[data-art="hero"] .sticker, .chopin, .player .skip.rain):hover::before,
+  html:is([data-skin="pencil"], [data-skin="chihiro"]) .read-aloud-btn:hover .read-aloud-frame::before {
+    transform: scale(0.8);
+    opacity: 0.6;
+  }
+
+  html:is([data-skin="pencil"], [data-skin="chihiro"])
+    :is(.sticker, .chopin, .player .skip.rain):hover::after,
+  html:is([data-skin="pencil"], [data-skin="chihiro"]) .read-aloud-btn:hover .read-aloud-label,
+  html:is([data-skin="pencil"], [data-skin="chihiro"]) .pic-btn:hover .pic-btn-lbl {
+    color: var(--color-accent);
+  }
+}
+
+html:is([data-skin="pencil"], [data-skin="chihiro"])
+  :is(.sticker, .chopin, .read-aloud-btn, .pic-btn):active :is(img, .read-aloud-art, svg),
+html:is([data-skin="pencil"], [data-skin="chihiro"]) .player .skip.rain:active .face {
+  transform: translateY(1px) scale(0.93);
+  transition-duration: 0.08s;
+}
+
+/* Caption/label colour eases to accent on hover. */
+html:is([data-skin="pencil"], [data-skin="chihiro"])
+  :is(.read-aloud-label, .pic-btn-lbl) {
+  transition: color 0.18s;
+}
+
+/* Change: the art settles once. */
+html:is([data-skin="pencil"], [data-skin="chihiro"])
+  :is(.sticker, .chopin)[data-anim="1"] img,
+html:is([data-skin="pencil"], [data-skin="chihiro"]) .read-aloud-btn[data-anim="1"] .read-aloud-art,
+html:is([data-skin="pencil"], [data-skin="chihiro"]) .player .skip.rain[data-anim] .face,
+html:is([data-skin="pencil"], [data-skin="chihiro"]) .pic-btn[data-press] .pic-btn-art svg {
+  animation: pencil-settle 0.55s var(--spring);
+}
+
+/* ---------- The .fx particle overlay (ButtonFx): still at rest ---------- */
+html:is([data-skin="pencil"], [data-skin="chihiro"])
+  :is(.sticker, .chopin, .read-aloud-frame, .player .skip.rain, .pic-btn-art) .fx {
+  position: absolute;
+  inset: -18%;
+  width: 136%;
+  height: 136%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+html:is([data-skin="pencil"], [data-skin="chihiro"]) .fx * {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+html:is([data-skin="pencil"], [data-skin="chihiro"])
+  .fx :is(.drop, .note, .gust, .glint, .wave2, .fly, .stroke) {
+  opacity: 0;
+}
+
+/* Hover replays the particles; the one-shot change flag replays them too,
+   with or without hover (prototype `.just` rules). */
+@media (hover: hover) {
+  html:is([data-skin="pencil"], [data-skin="chihiro"])
+    :is(.sticker, .chopin, .read-aloud-btn, .player .skip.rain, .pic-btn):hover .fx .drop {
+    animation: pencil-drop 0.75s var(--ease) calc(var(--i) * 70ms);
+  }
+
+  html:is([data-skin="pencil"], [data-skin="chihiro"])
+    :is(.sticker, .chopin, .read-aloud-btn, .player .skip.rain, .pic-btn):hover .fx .note {
+    animation: pencil-note 0.9s var(--ease) calc(var(--i) * 140ms);
+  }
+
+  html:is([data-skin="pencil"], [data-skin="chihiro"])
+    :is(.sticker, .chopin, .read-aloud-btn, .player .skip.rain, .pic-btn):hover .fx .gust {
+    stroke-dasharray: 1;
+    animation: pencil-gust 0.8s var(--ease) calc(var(--i) * 90ms);
+  }
+
+  html:is([data-skin="pencil"], [data-skin="chihiro"])
+    :is(.sticker, .chopin, .read-aloud-btn, .player .skip.rain, .pic-btn):hover .fx .glint {
+    animation: pencil-glint 0.6s var(--ease) calc(var(--i) * 110ms);
+  }
+
+  html:is([data-skin="pencil"], [data-skin="chihiro"])
+    :is(.sticker, .chopin, .read-aloud-btn, .player .skip.rain, .pic-btn):hover .fx .wave2 {
+    animation: pencil-wave2 0.7s var(--ease) calc(var(--i) * 110ms);
+  }
+
+  html:is([data-skin="pencil"], [data-skin="chihiro"])
+    :is(.sticker, .chopin, .read-aloud-btn, .player .skip.rain, .pic-btn):hover .fx .fly {
+    animation: pencil-fly 1.1s var(--ease) calc(var(--i) * 120ms);
+  }
+
+  html:is([data-skin="pencil"], [data-skin="chihiro"])
+    :is(.sticker, .chopin, .read-aloud-btn, .player .skip.rain, .pic-btn):hover .fx .stroke {
+    stroke-dasharray: 1;
+    animation: pencil-paint 0.8s var(--ease);
+  }
+}
+
+html:is([data-skin="pencil"], [data-skin="chihiro"])
+  :is(.sticker, .chopin, .read-aloud-btn, .player .skip.rain)[data-anim="1"] .fx .drop,
+html:is([data-skin="pencil"], [data-skin="chihiro"]) .pic-btn[data-press] .fx .drop {
+  animation: pencil-drop 0.75s var(--ease) calc(var(--i) * 70ms);
+}
+
+html:is([data-skin="pencil"], [data-skin="chihiro"])
+  :is(.sticker, .chopin, .read-aloud-btn, .player .skip.rain)[data-anim="1"] .fx .note,
+html:is([data-skin="pencil"], [data-skin="chihiro"]) .pic-btn[data-press] .fx .note {
+  animation: pencil-note 0.9s var(--ease) calc(var(--i) * 140ms);
+}
+
+html:is([data-skin="pencil"], [data-skin="chihiro"])
+  :is(.sticker, .chopin, .read-aloud-btn, .player .skip.rain)[data-anim="1"] .fx .gust,
+html:is([data-skin="pencil"], [data-skin="chihiro"]) .pic-btn[data-press] .fx .gust {
+  stroke-dasharray: 1;
+  animation: pencil-gust 0.8s var(--ease) calc(var(--i) * 90ms);
+}
+
+html:is([data-skin="pencil"], [data-skin="chihiro"])
+  :is(.sticker, .chopin, .read-aloud-btn, .player .skip.rain)[data-anim="1"] .fx .glint,
+html:is([data-skin="pencil"], [data-skin="chihiro"]) .pic-btn[data-press] .fx .glint {
+  animation: pencil-glint 0.6s var(--ease) calc(var(--i) * 110ms);
+}
+
+html:is([data-skin="pencil"], [data-skin="chihiro"])
+  :is(.sticker, .chopin, .read-aloud-btn, .player .skip.rain)[data-anim="1"] .fx .wave2,
+html:is([data-skin="pencil"], [data-skin="chihiro"]) .pic-btn[data-press] .fx .wave2 {
+  animation: pencil-wave2 0.7s var(--ease) calc(var(--i) * 110ms);
+}
+
+html:is([data-skin="pencil"], [data-skin="chihiro"])
+  :is(.sticker, .chopin, .read-aloud-btn, .player .skip.rain)[data-anim="1"] .fx .fly,
+html:is([data-skin="pencil"], [data-skin="chihiro"]) .pic-btn[data-press] .fx .fly {
+  animation: pencil-fly 1.1s var(--ease) calc(var(--i) * 120ms);
+}
+
+html:is([data-skin="pencil"], [data-skin="chihiro"])
+  :is(.sticker, .chopin, .read-aloud-btn, .player .skip.rain)[data-anim="1"] .fx .stroke,
+html:is([data-skin="pencil"], [data-skin="chihiro"]) .pic-btn[data-press] .fx .stroke {
+  stroke-dasharray: 1;
+  animation: pencil-paint 0.8s var(--ease);
+}
+
+/* ---------- Reduced motion: short fades, overlays off ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html:is([data-skin="pencil"], [data-skin="chihiro"])
+    :is(.sticker img, .chopin img, .read-aloud-art, .pic-btn-art svg, .player .skip.rain .face),
+  html:is([data-skin="pencil"], [data-skin="chihiro"])
+    :is(.stickers[data-art="hero"] .sticker, .chopin, .player .skip.rain, .read-aloud-frame)::before {
+    transition: opacity 0.2s, color 0.2s;
+  }
+
+  html:is([data-skin="pencil"], [data-skin="chihiro"])
+    :is(.sticker, .chopin, .read-aloud-btn, .pic-btn):is(:hover, :active) :is(img, .read-aloud-art, svg),
+  html:is([data-skin="pencil"], [data-skin="chihiro"]) .player .skip.rain:is(:hover, :active) .face,
+  html:is([data-skin="pencil"], [data-skin="chihiro"])
+    :is(.sticker, .chopin, .read-aloud-btn)[data-anim="1"] :is(img, .read-aloud-art),
+  html:is([data-skin="pencil"], [data-skin="chihiro"]) .pic-btn[data-press] .pic-btn-art svg {
+    transform: none;
+    animation: none;
+  }
+
+  html:is([data-skin="pencil"], [data-skin="chihiro"]) .fx {
+    display: none;
+  }
+}

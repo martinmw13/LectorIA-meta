@@ -13,6 +13,7 @@ import { AmbienceController } from "./ambience-controller";
 import { WebAmbienceEngine } from "./ambience-engine";
 import { Icon, iconSkin } from "./icons";
 import type { RainIconName } from "./icons-rain";
+import { ButtonFx, type RainFxLevel } from "./button-fx";
 import { useSkin } from "./use-skin";
 
 const RAIN = AMBIENCES[0]!;
@@ -92,6 +93,8 @@ export function RainAmbience({ muted, duck = 1 }: { muted: boolean; duck?: numbe
   }
 
   const label = ambienceLabel(RAIN, level);
+  const fxLevel: RainFxLevel =
+    level === "storm" ? 3 : level === "moderate" ? 2 : level === "drizzle" ? 1 : 0;
   return (
     <>
       <button
@@ -108,6 +111,7 @@ export function RainAmbience({ muted, duck = 1 }: { muted: boolean; duck?: numbe
         <span className="face" key={burst}>
           <Icon name={`rain-${level}` as RainIconName} skin={artSkin} />
         </span>
+        <ButtonFx kind="rain" level={fxLevel} />
       </button>
       {level !== "off" ? (
         <input

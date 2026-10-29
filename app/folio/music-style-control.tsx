@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import type { MusicMode, MusicModeId } from "@/core/music";
 import { heroArt, type HeroArt } from "../skin-art";
 import { useSkin } from "../use-skin";
+import { ButtonFx } from "../button-fx";
 
 export type MusicStyleControlProps = {
   modes: MusicMode[];
@@ -69,7 +70,7 @@ export function MusicStyleControl({ modes, current, onAdvance }: MusicStyleContr
                 title={s.label}
               >
                 <img src={stickerFor(s.id, s.label, art)} alt="" width={40} height={40} />
-                <span className="mode-notes" aria-hidden="true"><i /><i /><i /></span>
+                <ButtonFx kind="music" />
               </button>
               <span className="sticker-dot" aria-hidden="true" />
             </span>
@@ -93,7 +94,7 @@ export function MusicStyleControl({ modes, current, onAdvance }: MusicStyleContr
               width={40}
               height={40}
             />
-            <span className="mode-notes" aria-hidden="true"><i /><i /><i /></span>
+            <ButtonFx kind="music" />
           </button>
           <span className="sticker-dot" aria-hidden="true" />
         </span>
