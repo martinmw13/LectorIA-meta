@@ -1,4 +1,5 @@
 import "server-only";
+import { usable } from "@/server/images/env";
 
 // Same names as readImageEnv minus BLOB_READ_WRITE_TOKEN, plus the
 // optional Turnstile secret: without it the route skips the human check
@@ -26,12 +27,13 @@ function parseCapUsd(raw: string | undefined, fallback: number): number {
 }
 
 export function readChatEnv(from: NodeJS.ProcessEnv = process.env): ChatEnv {
-  const upstashUrl = from.UPSTASH_REDIS_REST_URL || from.KV_REST_API_URL;
-  const upstashToken = from.UPSTASH_REDIS_REST_TOKEN || from.KV_REST_API_TOKEN;
+  const candidate = usable(from.UPSTASH_REDIS_REST_URL) ?? usable(from.KV_REST_API_URL);
+  const upstashUrl = candidate?.startsWith("https://") ? candidate : undefined;
+  const upstashToken = usable(from.UPSTASH_REDIS_REST_TOKEN) ?? usable(from.KV_REST_API_TOKEN);
   const missing = [
     upstashUrl ? null : URL_NAMES,
     upstashToken ? null : TOKEN_NAMES,
-    ...REQUIRED.filter((k) => !from[k]),
+    ...REQUIRED.filter((k) => !usable(from[k])),
   ].filter((m): m is string => m !== null);
   if (missing.length > 0) throw new Error(`missing chat env: ${missing.join(",")}`);
   return {

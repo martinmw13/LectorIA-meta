@@ -18,6 +18,7 @@ import {
 } from "@/core/images";
 import type { ImageGenerator, ImageRequest, ImageResponse, ImageStore, KV } from "@/core/images";
 import type { ImageEnv } from "./env";
+import { errorTag } from "./errors";
 import { verifyHuman } from "./human";
 import { checkQuota, hashIp, quotaKeysFor, refundQuota } from "./quota";
 
@@ -152,12 +153,12 @@ export async function orchestrate(
           style: req.style,
         }),
       );
-    } catch {
+    } catch (e) {
       await refundDailySpendOnce();
       await refundSpendOnce();
       await refundQuotaOnce();
       await release();
-      console.error("image generate failed");
+      console.error(`image generate failed: ${errorTag(e)}`);
       return { status: "error", code: "unavailable", message: MSG_FAILED };
     }
 
@@ -172,7 +173,7 @@ export async function orchestrate(
       }
       await release();
       return { status: "ready", url, cached: false, caption: captionFor(req, deps.content) };
-    } catch {
+    } catch (e) {
       // A lost save race leaves the winner's file behind; backfill from it.
       const raced = await deps.store.findUrl(key);
       if (raced) {
@@ -188,15 +189,15 @@ export async function orchestrate(
       await refundSpendOnce();
       await refundQuotaOnce();
       await release();
-      console.error("image store failed");
+      console.error(`image store failed: ${errorTag(e)}`);
       return { status: "error", code: "unavailable", message: MSG_FAILED };
     }
-  } catch {
+  } catch (e) {
     if (dailySpendTaken) await refundDailySpendOnce();
     if (spendTaken) await refundSpendOnce();
     if (quotaTaken) await refundQuotaOnce();
     await release();
-    console.error("image request failed");
+    console.error(`image request failed: ${errorTag(e)}`);
     return { status: "error", code: "unavailable", message: MSG_FAILED };
   }
 }

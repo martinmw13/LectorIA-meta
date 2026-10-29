@@ -138,4 +138,40 @@ describe("readImageEnv redis fallback", () => {
     expect(message).toContain("UPSTASH_REDIS_REST_TOKEN|KV_REST_API_TOKEN");
     expect(message).not.toContain("secret-url-value");
   });
+
+  it("treats [SENSITIVE] KV values as missing Redis env", () => {
+    process.env.KV_REST_API_URL = "[SENSITIVE]";
+    process.env.KV_REST_API_TOKEN = "[SENSITIVE]";
+    let message = "";
+    try {
+      readImageEnv();
+    } catch (e) {
+      message = (e as Error).message;
+    }
+    expect(message).toContain("UPSTASH_REDIS_REST_URL|KV_REST_API_URL");
+    expect(message).toContain("UPSTASH_REDIS_REST_TOKEN|KV_REST_API_TOKEN");
+  });
+
+  it("treats a non-https KV URL as missing", () => {
+    process.env.KV_REST_API_URL = "http://kv-url";
+    process.env.KV_REST_API_TOKEN = "kv-token";
+    expect(() => readImageEnv()).toThrow("UPSTASH_REDIS_REST_URL|KV_REST_API_URL");
+  });
+
+  it("falls back to KV when UPSTASH is a placeholder", () => {
+    process.env.UPSTASH_REDIS_REST_URL = " [SENSITIVE] ";
+    process.env.UPSTASH_REDIS_REST_TOKEN = "[SENSITIVE]";
+    process.env.KV_REST_API_URL = "https://kv-url";
+    process.env.KV_REST_API_TOKEN = "kv-token";
+    const env = readImageEnv();
+    expect(env.upstashUrl).toBe("https://kv-url");
+    expect(env.upstashToken).toBe("kv-token");
+  });
+
+  it("treats a placeholder META_API_KEY as missing", () => {
+    process.env.UPSTASH_REDIS_REST_URL = "https://upstash-url";
+    process.env.UPSTASH_REDIS_REST_TOKEN = "upstash-token";
+    process.env.META_API_KEY = "[SENSITIVE]";
+    expect(() => readImageEnv()).toThrow("META_API_KEY");
+  });
 });
