@@ -62,9 +62,10 @@ test("loading draws, ready freezes the drawing under the image until load", () =
   act(() => {
     root.render(<Harness card={{ phase: "loading" }} />);
   });
-  const slot = host.querySelector('[role="status"]');
-  expect(slot?.querySelector("svg.picdraw-art")).not.toBeNull();
-  expect(slot?.textContent).toMatch("Etching the plate");
+  expect(host.querySelector("svg.picdraw-art")).not.toBeNull();
+  expect(host.querySelector(".frame .pic-wait")).toBeNull();
+  expect(host.querySelector(".img-pane > .pic-wait")?.textContent).toMatch("Etching the plate");
+  expect(host.querySelector(".img-pane > .pic-wait")?.textContent).toMatch("about twenty seconds");
   expect(raf.mock.calls.length).toBeGreaterThan(0);
 
   // Ready: the image is present at once, over a frozen drawing.
@@ -75,6 +76,7 @@ test("loading draws, ready freezes the drawing under the image until load", () =
   const img = host.querySelector("img.pane-img") as HTMLImageElement | null;
   expect(img?.getAttribute("src")).toBe("https://img/x.jpg");
   expect(host.querySelector("svg.picdraw-art")).not.toBeNull();
+  expect(host.querySelector(".pic-wait")).toBeNull();
   // Frozen: no drawing work after the flip, and no reveal before load.
   expect(raf.mock.calls.length).toBe(callsAtReady);
   expect(img?.className).not.toMatch(/rv-/);

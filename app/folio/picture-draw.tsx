@@ -168,52 +168,57 @@ export function PictureDraw({ skin, frozen }: { skin: PictureSkin; frozen?: bool
 }, [stillMode, skin]);
 
   return (
-    <>
-      <svg
-        className="picdraw-art"
-        viewBox="0 0 300 380"
-        preserveAspectRatio="xMidYMid slice"
-        role="img"
-        aria-label="Illustration being drawn"
-      >
-        <defs>
-          <filter id={grainId} x="0" y="0" width="1" height="1">
-            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="3" />
-            <feColorMatrix values="0 0 0 0 .32 0 0 0 0 .25 0 0 0 0 .14 0 0 0 .10 0" />
-          </filter>
-          <filter id={softId} x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="1.2" />
-          </filter>
-        </defs>
-        <Paper skin={skin} grainId={grainId} />
-        <g>
-          {flat.map((s, i) => (
-            <path
-              key={i}
-              ref={still ? undefined : (el) => {
-                pathRefs.current[i] = el;
-              }}
-              d={s.d}
-              fill={s.fill ?? "none"}
-              stroke={s.stroke}
-              strokeWidth={s.width || undefined}
-              opacity={still ? s.opacity : 0}
-              pathLength={s.fill ? undefined : 1}
-              style={s.fill || still ? undefined : { strokeDasharray: "1", strokeDashoffset: "1" }}
-              filter={s.blurred ? `url(#${softId})` : undefined}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          ))}
-        </g>
-        <g ref={toolRef} className="picdraw-tool" transform="translate(254 340)">
-          <Tool skin={skin} />
-        </g>
-      </svg>
-      <div className="picdraw-status">
-        <span className="picdraw-t">{DRAW_STATUS[skin]}</span>
-        <span className="picdraw-n">{DRAW_NOTE}</span>
-      </div>
-    </>
+    <svg
+      className="picdraw-art"
+      viewBox="0 0 300 380"
+      preserveAspectRatio="xMidYMid slice"
+      role="img"
+      aria-label="Illustration being drawn"
+    >
+      <defs>
+        <filter id={grainId} x="0" y="0" width="1" height="1">
+          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="3" />
+          <feColorMatrix values="0 0 0 0 .32 0 0 0 0 .25 0 0 0 0 .14 0 0 0 .10 0" />
+        </filter>
+        <filter id={softId} x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="1.2" />
+        </filter>
+      </defs>
+      <Paper skin={skin} grainId={grainId} />
+      <g>
+        {flat.map((s, i) => (
+          <path
+            key={i}
+            ref={still ? undefined : (el) => {
+              pathRefs.current[i] = el;
+            }}
+            d={s.d}
+            fill={s.fill ?? "none"}
+            stroke={s.stroke}
+            strokeWidth={s.width || undefined}
+            opacity={still ? s.opacity : 0}
+            pathLength={s.fill ? undefined : 1}
+            style={s.fill || still ? undefined : { strokeDasharray: "1", strokeDashoffset: "1" }}
+            filter={s.blurred ? `url(#${softId})` : undefined}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        ))}
+      </g>
+      <g ref={toolRef} className="picdraw-tool" transform="translate(254 340)">
+        <Tool skin={skin} />
+      </g>
+    </svg>
+  );
+}
+
+// Waiting caption under the picture box, outside the frame.
+export function PictureWait({ skin, as: Tag = "p" }: { skin: PictureSkin; as?: "p" | "figcaption" }) {
+  return (
+    <Tag className="pic-wait" data-picture-skin={skin} role="status">
+      <span className="pic-wait-t">{DRAW_STATUS[skin]}</span>
+      <span className="pic-wait-dots" aria-hidden="true"><i /><i /><i /></span>
+      <span className="pic-wait-n">{DRAW_NOTE}</span>
+    </Tag>
   );
 }

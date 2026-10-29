@@ -1,0 +1,156 @@
+/* "Picture this" waiting caption: sits under the picture box, outside
+   the frame, lettered in the skin's own hand. Three Meta-blue dots
+   breathe softly; reduced motion holds them still. */
+
+:is(.img-pane, .genfig) > .pic-wait {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: baseline;
+  column-gap: 7px;
+  row-gap: 3px;
+  margin: 10px 0 2px;
+  padding: 0 8px;
+  overflow: visible;
+  white-space: normal;
+  text-align: center;
+  font-family: var(--font-ui);
+  font-style: normal;
+  line-height: 1.25;
+  color: var(--color-text);
+}
+
+.pic-wait-t {
+  font-size: 15px;
+}
+
+.pic-wait-n {
+  flex-basis: 100%;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.pic-wait-dots {
+  display: inline-flex;
+  gap: 4px;
+  align-self: center;
+}
+
+.pic-wait-dots i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  opacity: 0.3;
+  animation: pic-wait-breathe 1.5s ease-in-out infinite;
+}
+
+.pic-wait-dots i:nth-child(2) {
+  animation-delay: 0.25s;
+}
+
+.pic-wait-dots i:nth-child(3) {
+  animation-delay: 0.5s;
+}
+
+@keyframes pic-wait-breathe {
+  40% {
+    opacity: 1;
+  }
+}
+
+/* Engraving: small caps from the plate, an italic Garamond note. */
+.pic-wait[data-picture-skin="engraving"] .pic-wait-t {
+  font-family: var(--font-eng-label);
+  font-size: 16px;
+  letter-spacing: 0.06em;
+}
+
+.pic-wait[data-picture-skin="engraving"] .pic-wait-n {
+  font-family: var(--font-book);
+  font-style: italic;
+  font-size: 13.5px;
+}
+
+/* Watercolor: a hand-lettered line over a pale blue wash. */
+.pic-wait[data-picture-skin="watercolor"] .pic-wait-t {
+  font-family: var(--font-wc-hand);
+  font-size: 23px;
+  padding: 0 10px;
+  background: radial-gradient(ellipse at 50% 60%, rgb(8 102 255 / 14%), transparent 70%);
+}
+
+.pic-wait[data-picture-skin="watercolor"] .pic-wait-n {
+  font-style: italic;
+  font-size: 12.5px;
+}
+
+/* Ink: a doodled title with a wavy blue underline. */
+.pic-wait[data-picture-skin="ink"] .pic-wait-t {
+  font-family: var(--font-ink-title);
+  font-size: 23px;
+  text-decoration: underline wavy rgb(8 102 255 / 55%) 1px;
+  text-underline-offset: 5px;
+}
+
+.pic-wait[data-picture-skin="ink"] .pic-wait-n {
+  font-size: 12.5px;
+}
+
+/* Pencil: an italic display line over a spaced, small-caps note. */
+.pic-wait[data-picture-skin="pencil"] .pic-wait-t {
+  font-family: var(--font-pencil-title);
+  font-style: italic;
+  font-size: 19px;
+}
+
+.pic-wait[data-picture-skin="pencil"] .pic-wait-n {
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Comic: a narrator's caption box with a blue offset shadow. */
+.pic-wait[data-picture-skin="comic"] .pic-wait-t {
+  padding: 3px 10px 2px;
+  border: 2px solid var(--color-text);
+  background: var(--color-surface);
+  box-shadow: 3px 3px 0 var(--color-accent);
+  transform: rotate(-1.2deg);
+  font-weight: 800;
+  font-size: 12.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+html:not([data-theme="dark"]) .pic-wait[data-picture-skin="comic"] .pic-wait-t {
+  background: #fff6cf;
+}
+
+.pic-wait[data-picture-skin="comic"] .pic-wait-n {
+  margin-top: 5px;
+  font-weight: 700;
+  font-size: 11px;
+}
+
+/* Chihiro: warm lantern ink, softly weighted. */
+.pic-wait[data-picture-skin="chihiro"] .pic-wait-t {
+  font-weight: 600;
+  font-size: 15.5px;
+}
+
+html:not([data-theme="dark"]) .pic-wait[data-picture-skin="chihiro"] .pic-wait-t {
+  color: #9c2f1e;
+}
+
+.pic-wait[data-picture-skin="chihiro"] .pic-wait-n {
+  font-style: italic;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pic-wait-dots i {
+    animation: none;
+    opacity: 0.6;
+  }
+}
