@@ -7,14 +7,11 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { ByokStep } from "../home/byok";
 import { ReaderChat } from "./reader-chat";
-import { FALLBACK_QUESTIONS, questionsForChapter } from "./suggestions";
+import { SUGGESTED_QUESTIONS } from "./suggestions";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const STORE = "lectoria:chat:oz";
-const TABLE = {
-  chapters: [{ ch: 3, questions: ["First suggestion?", "Second suggestion?", "Third suggestion?"] }],
-};
 
 let container: HTMLDivElement;
 let root: Root | null = null;
@@ -32,7 +29,6 @@ function renderChat() {
       upToN={42}
       chapter={3}
       chapterTitle="How Dorothy Saved the Scarecrow"
-      suggestionFile={TABLE}
     />,
   );
 }
@@ -176,7 +172,7 @@ describe("launcher", () => {
 });
 
 describe("conversation", () => {
-  test("empty state shows the three suggestions for the chapter", () => {
+  test("empty state shows the three general suggestions", () => {
     click(launcher());
     expect(container.querySelector(".chat-welcome")?.textContent).toContain(
       "from the book itself",
@@ -184,7 +180,7 @@ describe("conversation", () => {
     const links = [...container.querySelectorAll(".chat-sugg .chat-link")].map((el) =>
       el.textContent?.trim(),
     );
-    expect(links).toEqual(["First suggestion?", "Second suggestion?", "Third suggestion?"]);
+    expect(links).toEqual([...SUGGESTED_QUESTIONS]);
   });
 
   test("sending posts the right body and renders the streamed answer", async () => {
@@ -377,23 +373,10 @@ describe("persistence", () => {
 });
 
 describe("suggestions", () => {
-  test("returns the chapter's three, falls back otherwise", () => {
-    expect(questionsForChapter(3, TABLE)).toEqual([
-      "First suggestion?",
-      "Second suggestion?",
-      "Third suggestion?",
-    ]);
-    expect(questionsForChapter(9, TABLE)).toEqual([...FALLBACK_QUESTIONS]);
-    expect(questionsForChapter(3, null)).toEqual([...FALLBACK_QUESTIONS]);
-    expect(questionsForChapter(3, { chapters: [{ ch: 3, questions: ["only"] }] })).toEqual([
-      ...FALLBACK_QUESTIONS,
-    ]);
-  });
-
-  test("default table wires the bundled file for a real chapter", () => {
-    const qs = questionsForChapter(1);
-    expect(qs).toHaveLength(3);
-    expect(qs.every((q) => q.trim() !== "")).toBe(true);
+  test("are three general questions that name nothing from the story", () => {
+    expect(SUGGESTED_QUESTIONS).toHaveLength(3);
+    const names = /Dorothy|Toto|Scarecrow|Tin|Lion|Oz|Witch|Kansas|Emerald/i;
+    for (const q of SUGGESTED_QUESTIONS) expect(q).not.toMatch(names);
   });
 });
 

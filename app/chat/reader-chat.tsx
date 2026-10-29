@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { ChatPanel } from "./chat-panel";
 import { CHAT_COPY, CHAT_LABEL } from "./copy";
-import { questionsForChapter, SUGGESTION_FILE, type SuggestionFile } from "./suggestions";
+import { SUGGESTED_QUESTIONS } from "./suggestions";
 import { useChat } from "./use-chat";
 import { ChatBubble } from "./chat-bubble";
 
@@ -14,13 +14,11 @@ export function ReaderChat({
   upToN,
   chapter,
   chapterTitle,
-  suggestionFile,
 }: {
   bookId: "oz";
   upToN: number;
   chapter: number;
   chapterTitle: string;
-  suggestionFile?: SuggestionFile | null;
 }) {
   const [open, setOpen] = useState(false);
   const [byokKey, setByokKey] = useState<string | null>(null);
@@ -41,8 +39,6 @@ export function ReaderChat({
     launcherRef.current?.focus();
   }
 
-  const suggestions = questionsForChapter(chapter, suggestionFile ?? SUGGESTION_FILE);
-
   return (
     <div className="reader-chat">
       {open && (
@@ -50,7 +46,7 @@ export function ReaderChat({
           chapter={chapter}
           chapterTitle={chapterTitle}
           chat={chat}
-          suggestions={suggestions}
+          suggestions={[...SUGGESTED_QUESTIONS]}
           byokKey={byokKey}
           onKeySubmit={(key) => {
             setByokKey(key);

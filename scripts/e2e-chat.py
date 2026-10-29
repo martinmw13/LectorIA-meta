@@ -34,6 +34,11 @@ SSE = (
     'event: delta\ndata: {"text":"so he joins Dorothy on the road."}\n\n'
     'event: done\ndata: {"remaining":14}\n\n'
 )
+GENERAL = [
+    "Can you summarize this chapter so far?",
+    "What should I remember from earlier chapters?",
+    "What did I need to notice before this chapter?",
+]
 QUOTA = '{"code":"quota","message":"That\'s your 15 questions for today."}'
 
 
@@ -86,6 +91,9 @@ def main():
             if tail_x <= 23:
                 fail(f"{skin}: bubble tail at x={tail_x}, expected the right half")
             launch.click()
+            sugg = page.locator(".chat-sugg .chat-link").all_inner_texts()
+            if [t.strip() for t in sugg] != GENERAL:
+                fail(f"{skin}: suggestions {sugg}, expected the general three")
             page.locator(".chat-sugg .chat-link").first.click()
             page.locator(".chat-a", has_text=ANSWER).wait_for(timeout=10_000)
             panel = page.locator(".chat-panel").bounding_box()

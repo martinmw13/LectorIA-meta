@@ -53,7 +53,7 @@ Paper and surface follow the skin: the panel background is the skin paper colour
 | State | What the reader sees |
 | --- | --- |
 | Closed | Launcher only. |
-| Open, empty | Header, switch, a short welcome ("Ask me anything about the pages you've read. I'll answer from the book itself."), and three suggested questions as boxless links: "Who has Dorothy met so far?", "Remind me what just happened", "Why does the Scarecrow want brains?". Suggestions are fixed per chapter range in data, not model output. Focus goes to the composer. |
+| Open, empty | Header, switch, a short welcome ("Ask me anything about the pages you've read. I'll answer from the book itself."), and three suggested questions as boxless links: "Can you summarize this chapter so far?", "What should I remember from earlier chapters?", "What did I need to notice before this chapter?". The same three in every chapter, general so they can't spoil anything, not model output. Focus goes to the composer. |
 | Loading | The question appears, then a muted line "Looking back through the pages…" with three static dots. Composer disabled, send becomes "Stop". |
 | Streaming | Answer text grows in place. A short caret sits at the end (static, no blink). "Stop" stays until the last token. Auto-scroll follows only if the reader was already at the bottom. |
 | Quota reached | Composer replaced by a note: "That's 15 questions for today. They come back tomorrow, and the book is always here." Earlier answers stay readable. |
@@ -130,7 +130,7 @@ Mobile layout, voice input, saving conversations between visits, sharing answers
 2. Spoilers on means the whole book as context.
 3. The conversation survives a reload in that tab: `sessionStorage`, per book, text only, never the key.
 4. Launcher label: "Ask the book", kept in one constant (`app/chat/copy.ts`).
-5. Three spoiler-safe suggested questions per chapter in `data/books/oz/chat-suggestions.json`. Each one records the paragraph that answers it; a test checks that paragraph comes before the chapter starts (chapter 1: inside its first scene).
+5. Three general suggested questions, the same in every chapter (`app/chat/suggestions.ts`); they name nothing from the story, so they cannot spoil.
 
 The shared types and limits live in `core/chat.ts`.
 
