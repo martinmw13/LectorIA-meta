@@ -4,7 +4,13 @@
 discriminated union: `{ kind: "passage", bookId, textVersion, n, endN? }`
 names the first and last paragraph of the selection (`endN` omitted for
 a one-paragraph selection), `{ kind: "scene", bookId,
-textVersion, sceneId }` names the scene. Validation is strict: known
+textVersion, sceneId }` names the scene, and `{ kind: "chapter", bookId,
+textVersion, ch, reachedCh }` asks for one chapter's comic page (Panels).
+`reachedCh` is the furthest chapter the reader has reached; the server
+refuses `ch > reachedCh` with a 400. There is no server-side reading
+position, so this is the client's claim: it keeps the shipped UI and
+casual direct calls from drawing or showing later chapters, not a
+determined client. `reachedCh` is not part of the cache key. Validation is strict: known
 book, matching `textVersion`, integer `n` inside the book, optional
 integer `endN >= n` inside the book, known `sceneId`. The server clamps
 `endN` to the end of the scene that holds `n`. Any other body is a 400 with a generic English message.
@@ -36,11 +42,16 @@ recorded in a small per-scene list in Upstash (`img:ranges:` plus the
 key base and scene id, newest 24 kept, `MAX_RANGES_PER_SCENE` in
 `core/image-ranges.ts`). On an exact-key miss the server reuses the
 cached range with the highest Jaccard similarity over paragraphs,
-`|A∩B| / |A∪B|`, if it is at least `REUSE_JACCARD` = 0.5. So one
-paragraph against itself, or a four-paragraph selection moved or grown
-by one paragraph, reuses the picture; one paragraph against three or
-more (`[5]` vs `[4,6]` is 1/3), or any disjoint range, gets its own
-picture. A reuse is a cache hit: instant, no lock, no quota, no spend.
+`|A∩B| / |A∪B|`, if it is at least `REUSE_JACCARD` = 1/3. So one
+paragraph grown by one paragraph above and below (`[5]` vs `[4,6]`,
+1/3), a selection moved or grown by a paragraph, or two paragraphs
+against four (`[16,17]` vs `[16,19]`, 1/2) reuse the picture; one
+paragraph against five or more (`[5]` vs `[3,7]`, 1/5), a whole scene
+against one of its paragraphs, or any disjoint range gets its own
+picture. Paragraph count beat a character-weighted overlap on real Oz
+selections: short lines of dialogue next to a long paragraph sank the
+character score for selections that one picture still depicts.
+A reuse is a cache hit: instant, no lock, no quota, no spend.
 A new range takes the lock on its own key, generates, and joins the
 list. The list is GET+SET, so a concurrent append can be lost; that
 only costs a future reuse.
