@@ -11,6 +11,7 @@ import {
 import type { ImageRequest, ImageResponse } from "@/core/images";
 import { MAX_IMAGE_BODY_BYTES, readBodyCapped } from "./body";
 import { readImageEnv } from "./env";
+import { errorTag } from "./errors";
 import { createRestKV } from "./kv";
 import { createBlobStore } from "./blob";
 import { createMetaClient } from "./meta";
@@ -119,8 +120,8 @@ export async function handleImagesPost(req: Request): Promise<Response> {
     const { json, status } = toResponse(res);
     const headers = setCookie ? { "Set-Cookie": setCookie } : undefined;
     return Response.json(json, { status, headers });
-  } catch {
-    console.error("image request failed");
+  } catch (e) {
+    console.error(`image request failed: ${errorTag(e)}`);
     return Response.json(
       { status: "error", code: "unavailable", message: MSG_UNAVAILABLE } satisfies ImageResponse,
       { status: 503 },

@@ -18,6 +18,13 @@ export interface ImageEnv {
 const URL_NAMES = "UPSTASH_REDIS_REST_URL|KV_REST_API_URL";
 const TOKEN_NAMES = "UPSTASH_REDIS_REST_TOKEN|KV_REST_API_TOKEN";
 
+// `vercel env pull` writes Sensitive vars as "[SENSITIVE]".
+export function usable(raw: string | undefined): string | undefined {
+  if (raw === undefined || raw === "") return undefined;
+  if (/^\[[A-Z_]+\]$/.test(raw.trim())) return undefined;
+  return raw;
+}
+
 const REQUIRED = [
   "BLOB_READ_WRITE_TOKEN",
   "META_API_KEY",
@@ -35,16 +42,18 @@ function parseCapUsd(raw: string | undefined, fallback: number): number {
 }
 
 export function readImageEnv(from: NodeJS.ProcessEnv = process.env): ImageEnv {
-  const upstashUrl = from.UPSTASH_REDIS_REST_URL || from.KV_REST_API_URL;
-  const upstashToken = from.UPSTASH_REDIS_REST_TOKEN || from.KV_REST_API_TOKEN;
+  const upstashUrl = usable(from.UPSTASH_REDIS_REST_URL) ?? usable(from.KV_REST_API_URL);
+  const upstashToken = usable(from.UPSTASH_REDIS_REST_TOKEN) ?? usable(from.KV_REST_API_TOKEN);
+  // A non-https URL is a placeholder or typo, never a real endpoint.
+  const url = upstashUrl?.startsWith("https://") ? upstashUrl : undefined;
   const missing = [
-    upstashUrl ? null : URL_NAMES,
+    url ? null : URL_NAMES,
     upstashToken ? null : TOKEN_NAMES,
-    ...REQUIRED.filter((k) => !from[k]),
+    ...REQUIRED.filter((k) => !usable(from[k])),
   ].filter((m): m is string => m !== null);
   if (missing.length > 0) throw new Error(`missing image env: ${missing.join(",")}`);
   return {
-    upstashUrl: upstashUrl as string,
+    upstashUrl: url as string,
     upstashToken: upstashToken as string,
     metaKey: from.META_API_KEY as string,
     sessionSecret: from.SESSION_SECRET as string,
