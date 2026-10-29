@@ -161,6 +161,38 @@ describe("prototype button motion values", () => {
       expect(file).toMatch(/prefers-reduced-motion/);
     }
     expect(motion).toMatch(/fade-in 200ms/);
-    expect(pencil).toMatch(/\.fx \{\s*display: none/);
+    expect(pencil).toMatch(/\.fx:not\(\.waves\) \{\s*display: none/);
+  });
+
+  it("renders the clear-day gusts in the chihiro theme extra", () => {
+    expect(fx).toMatch(/M4 44c18-10 34 4 52-2s26-12 38-4/);
+    expect(fx).toMatch(/M20 62c14-6 26 2 40 0s22-8 30-2/);
+    expect(fx).toMatch(/#7CC6BA/);
+    expect(fx).toMatch(/#A9D8F2/);
+    expect(fx).toMatch(/M118 26c3 4 8 4 10 0-4-1-7 1-10 0z/);
+    expect(fx).toMatch(/#D2452E/);
+    expect(fx).toMatch(/#FFC25A/);
+  });
+
+  it("shows still sound waves while narration is on", () => {
+    expect(fx).toMatch(/fx waves/);
+    expect(fx).toMatch(/strokeWidth="3\.2"/);
+    expect(readAloud).toMatch(/<ButtonFx kind="narrate"[^>]*on=\{on\}/);
+    expect(pencil).toMatch(/pencil-wave2in 0\.5s var\(--ease\) calc\(var\(--i\) \* 90ms\) both/);
+    expect(pencil).toMatch(/from \{\s*opacity: 0; transform: translateX\(-5px\)/);
+    expect(pencil).toMatch(/\.fx\.waves path \{\s*opacity: 1/);
+  });
+
+  it("replays clicks on a burst key with an 1800ms data-burst flag", () => {
+    for (const src of [music, readAloud, picture]) {
+      expect(src).toMatch(/BURST_MS = 1800/);
+      expect(src).toMatch(/data-burst/);
+      expect(src).toMatch(/key=\{burst\}/);
+    }
+    // The flag clears but the key never resets, so nothing remounts later.
+    for (const src of [music, readAloud, picture]) expect(src).not.toMatch(/setBurst\(0\)/);
+    // Rain was approved as it is: it keeps its own 1400ms data-anim only.
+    expect(rain).not.toMatch(/data-burst/);
+    expect(rain).toMatch(/data-anim=\{burst \? "1" : undefined\}/);
   });
 });

@@ -251,6 +251,27 @@ html:is([data-skin="pencil"], [data-skin="chihiro"]) .pic-btn[data-press] .fx .s
   animation: pencil-paint 0.8s var(--ease);
 }
 
+/* ---------- Persistent sound waves while narration is on ---------- */
+/* The second .fx.waves overlay is drawn over the book whenever narration
+   is on: visible and still while reading, hidden when off. wave2in plays
+   once on the change flag. */
+@keyframes pencil-wave2in {
+  from { opacity: 0; transform: translateX(-5px); }
+  to { opacity: 1; transform: none; }
+}
+
+html:is([data-skin="pencil"], [data-skin="chihiro"]) .read-aloud-frame .fx.waves path {
+  opacity: 1;
+  transition: opacity 0.3s, stroke 0.3s;
+}
+
+html:is([data-skin="pencil"], [data-skin="chihiro"])
+  .read-aloud-btn[data-anim="1"] .fx.waves path,
+html:is([data-skin="pencil"], [data-skin="chihiro"])
+  .read-aloud-btn[data-burst] .fx.waves path {
+  animation: pencil-wave2in 0.5s var(--ease) calc(var(--i) * 90ms) both;
+}
+
 /* ---------- Reduced motion: short fades, overlays off ---------- */
 @media (prefers-reduced-motion: reduce) {
   html:is([data-skin="pencil"], [data-skin="chihiro"])
@@ -270,7 +291,14 @@ html:is([data-skin="pencil"], [data-skin="chihiro"]) .pic-btn[data-press] .fx .s
     animation: none;
   }
 
-  html:is([data-skin="pencil"], [data-skin="chihiro"]) .fx {
+  html:is([data-skin="pencil"], [data-skin="chihiro"]) .fx:not(.waves) {
     display: none;
+  }
+
+  /* The narration waves stay visible while reading, but static. */
+  html:is([data-skin="pencil"], [data-skin="chihiro"]) .fx.waves,
+  html:is([data-skin="pencil"], [data-skin="chihiro"]) .fx.waves path {
+    animation: none !important;
+    transition: none !important;
   }
 }

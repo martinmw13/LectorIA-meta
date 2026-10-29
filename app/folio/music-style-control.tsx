@@ -9,6 +9,7 @@ import type { MusicMode, MusicModeId } from "@/core/music";
 import { heroArt, type HeroArt } from "../skin-art";
 import { useSkin } from "../use-skin";
 import { ButtonFx } from "../button-fx";
+import { ClassicMusicFx, type ClassicMusicMode } from "./classic-music-fx";
 
 export type MusicStyleControlProps = {
   modes: MusicMode[];
@@ -18,10 +19,18 @@ export type MusicStyleControlProps = {
 
 // One pop cycle: how long the newly current button replays its animation.
 const ANIM_MS = 600;
+// One burst cycle: how long the overlay signature replays. Separate from
+// data-anim so a click replays even while the pointer hovers the button.
+const BURST_MS = 1800;
 
 function stickerFor(id: string, label: string, art: HeroArt): string {
   const piano = /piano/i.test(id) || /piano/i.test(label);
   return piano ? art.piano : art.orchestra;
+}
+
+function fxModeFor(id: string, label: string): ClassicMusicMode {
+  const piano = /piano/i.test(id) || /piano/i.test(label);
+  return piano ? "piano" : "orchestra";
 }
 
 export function MusicStyleControl({ modes, current, onAdvance }: MusicStyleControlProps) {
@@ -30,8 +39,14 @@ export function MusicStyleControl({ modes, current, onAdvance }: MusicStyleContr
   const art = heroArt(useSkin());
   // The button whose mode just became current pops once, then rests still.
   const [anim, setAnim] = useState<MusicModeId | null>(null);
+  // Burst counter: remounts the overlays (React key) so the click signature
+  // restarts even when hover already plays the same element. burstFor pins
+  // data-burst to the button that just became current.
+  const [burst, setBurst] = useState(0);
+  const [burstFor, setBurstFor] = useState<MusicModeId | null>(null);
   const firstRef = useRef(true);
   const animTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const burstTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Session-driven changes (Chopin toggle-back) animate too; the first
   // render is skipped so restoring prefs on load stays still.
@@ -41,8 +56,13 @@ export function MusicStyleControl({ modes, current, onAdvance }: MusicStyleContr
       return;
     }
     setAnim(current);
+    setBurst((b) => b + 1);
+    setBurstFor(current);
     if (animTimer.current) clearTimeout(animTimer.current);
     animTimer.current = setTimeout(() => setAnim(null), ANIM_MS);
+    if (burstTimer.current) clearTimeout(burstTimer.current);
+    // Only the flag clears; the key stays so nothing remounts (replays) later.
+    burstTimer.current = setTimeout(() => setBurstFor(null), BURST_MS);
     return () => {
       if (animTimer.current) clearTimeout(animTimer.current);
     };
@@ -51,6 +71,7 @@ export function MusicStyleControl({ modes, current, onAdvance }: MusicStyleContr
   useEffect(
     () => () => {
       if (animTimer.current) clearTimeout(animTimer.current);
+      if (burstTimer.current) clearTimeout(burstTimer.current);
     },
     [],
   );
@@ -64,13 +85,15 @@ export function MusicStyleControl({ modes, current, onAdvance }: MusicStyleContr
                 type="button"
                 className="sticker"
                 data-anim={anim === s.id ? "1" : undefined}
+                data-burst={burstFor === s.id ? "1" : undefined}
                 onClick={() => onAdvance(s.id)}
                 aria-pressed={current === s.id}
                 aria-label={s.label}
                 title={s.label}
               >
                 <img src={stickerFor(s.id, s.label, art)} alt="" width={40} height={40} />
-                <ButtonFx kind="music" />
+                <ButtonFx kind="music" key={burst} />
+                <ClassicMusicFx mode={fxModeFor(s.id, s.label)} key={`m-${burst}`} />
               </button>
               <span className="sticker-dot" aria-hidden="true" />
             </span>
@@ -83,6 +106,7 @@ export function MusicStyleControl({ modes, current, onAdvance }: MusicStyleContr
             type="button"
             className="chopin"
             data-anim={anim === playlist.id ? "1" : undefined}
+            data-burst={burstFor === playlist.id ? "1" : undefined}
             onClick={() => onAdvance(playlist.id)}
             aria-pressed={current === playlist.id}
             aria-label="Just play Chopin"
@@ -94,7 +118,8 @@ export function MusicStyleControl({ modes, current, onAdvance }: MusicStyleContr
               width={40}
               height={40}
             />
-            <ButtonFx kind="music" />
+            <ButtonFx kind="music" key={burst} />
+            <ClassicMusicFx mode="chopin" key={`m-${burst}`} />
           </button>
           <span className="sticker-dot" aria-hidden="true" />
         </span>

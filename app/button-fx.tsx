@@ -164,6 +164,34 @@ function ThemeFx({ theme }: { theme: "pencil" | "chihiro" }) {
   }
   return (
     <>
+      {/* Clear-day gusts, verbatim from the approved prototype: two wind
+          strokes plus the red leaf. The lantern fireflies stay too. */}
+      <path
+        className="gust"
+        style={{ "--i": 0 } as CSSProperties}
+        pathLength="1"
+        d="M4 44c18-10 34 4 52-2s26-12 38-4"
+        fill="none"
+        stroke="#7CC6BA"
+        strokeWidth="2.6"
+        strokeLinecap="round"
+      />
+      <path
+        className="gust"
+        style={{ "--i": 1 } as CSSProperties}
+        pathLength="1"
+        d="M20 62c14-6 26 2 40 0s22-8 30-2"
+        fill="none"
+        stroke="#A9D8F2"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+      />
+      <path
+        className="glint"
+        style={{ "--i": 2 } as CSSProperties}
+        d="M118 26c3 4 8 4 10 0-4-1-7 1-10 0z"
+        fill="#D2452E"
+      />
       {FLIES.map(([x, y, dx, dy, i]) => (
         <g
           key={i}
@@ -178,17 +206,46 @@ function ThemeFx({ theme }: { theme: "pencil" | "chihiro" }) {
   );
 }
 
-export function ButtonFx({ kind, level = 0 }: { kind: ButtonFxKind; level?: RainFxLevel }) {
+export function ButtonFx({
+  kind,
+  level = 0,
+  on = false,
+}: {
+  kind: ButtonFxKind;
+  level?: RainFxLevel;
+  on?: boolean;
+}) {
   const skin = useSkin();
   if (skin !== "pencil" && skin !== "chihiro") return null;
+  // While narration is on, a second persistent waves overlay sits over the
+  // book (prototype art('narr', s)): still at rest, wave2in plays on the
+  // change flag, hidden when off. The hover .wave2 particles stay as-is.
+  const waves = kind === "narrate" && on;
   return (
-    <svg className="fx" viewBox="0 0 136 136" aria-hidden="true">
-      {kind === "rain" ? <RainFx level={level} /> : null}
-      {kind === "music" ? <MusicFx /> : null}
-      {kind === "narrate" ? <NarrateFx /> : null}
-      {kind === "picture" ? <PictureFx /> : null}
-      <ThemeFx theme={skin} />
-    </svg>
+    <>
+      <svg className="fx" viewBox="0 0 136 136" aria-hidden="true">
+        {kind === "rain" ? <RainFx level={level} /> : null}
+        {kind === "music" ? <MusicFx /> : null}
+        {kind === "narrate" ? <NarrateFx /> : null}
+        {kind === "picture" ? <PictureFx /> : null}
+        <ThemeFx theme={skin} />
+      </svg>
+      {waves ? (
+        <svg className="fx waves" viewBox="0 0 136 136" aria-hidden="true">
+          {NARR_WAVES.map((d, i) => (
+            <path
+              key={i}
+              style={{ "--i": i } as CSSProperties}
+              d={d}
+              fill="none"
+              stroke="#0866FF"
+              strokeWidth="3.2"
+              strokeLinecap="round"
+            />
+          ))}
+        </svg>
+      ) : null}
+    </>
   );
 }
 
