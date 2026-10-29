@@ -6,21 +6,21 @@ A Muse commit is a non-merge commit on main that carries the trailer `Co-authore
 
 ## Commits
 
-- Muse commits: 334 of 392 non-merge commits (85%).
-- Date range (UTC-3): 2026-10-27 to 2026-10-28.
+- Muse commits: 335 of 394 non-merge commits (85%).
+- Date range (UTC-3): 2026-10-27 to 2026-10-29.
 
 ## Lines
 
 | Scope | Muse added | Muse removed | Other added | Other removed | Muse share of added |
 | --- | --- | --- | --- | --- | --- |
-| Source code (`app/`, `core/`, `pipeline/`, `server/`, `scripts/`) | 44,859 | 8,661 | 7,446 | 2,691 | 86% |
-| All files | 243,489 | 12,807 | 27,725 | 2,913 | 90% |
+| Source code (`app/`, `core/`, `pipeline/`, `server/`, `scripts/`) | 44,956 | 8,677 | 7,470 | 2,791 | 86% |
+| All files | 243,586 | 12,823 | 27,751 | 3,333 | 90% |
 
 All files includes the Muse Code session transcripts in `agent-logs/`, the vendored skills in `.agents/` and `package-lock.json`.
 
 ## Pull requests
 
-59 merged PRs contain Muse commits. Each carries the `Muse Code` label.
+60 merged PRs contain Muse commits. Each carries the `Muse Code` label.
 
 | PR | Title | Merged (UTC-3) | Muse commits |
 | --- | --- | --- | --- |
@@ -83,3 +83,4 @@ All files includes the Muse Code session transcripts in `agent-logs/`, the vendo
 | [#95](https://github.com/martinmw13/LectorIA-meta/pull/95) | perf(music): serve re-encoded tracks from public instead of Blob | 2026-10-28 | 1 of 2 |
 | [#97](https://github.com/martinmw13/LectorIA-meta/pull/97) | fix(player): start music on first gesture anywhere in the player | 2026-10-28 | 1 of 1 |
 | [#98](https://github.com/martinmw13/LectorIA-meta/pull/98) | feat(chat): reader chat with spoiler-safe answers | 2026-10-28 | 2 of 7 |
+| [#101](https://github.com/martinmw13/LectorIA-meta/pull/101) | fix(images): treat Vercel [SENSITIVE] env placeholders as missing and log a safe failure reason | 2026-10-29 | 1 of 1 |
