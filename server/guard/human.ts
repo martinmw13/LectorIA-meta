@@ -73,11 +73,14 @@ export async function verifyTurnstile(
   secret: string,
   fetchFn: typeof fetch = fetch,
 ): Promise<boolean> {
+  // "unknown" is our own placeholder, not a client address: omit it.
+  const params = new URLSearchParams({ secret, response: token });
+  if (ip !== "unknown") params.set("remoteip", ip);
   try {
     const res = await fetchFn("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ secret, response: token, remoteip: ip }).toString(),
+      body: params.toString(),
       signal: AbortSignal.timeout(5_000),
     });
     if (!res.ok) return false;

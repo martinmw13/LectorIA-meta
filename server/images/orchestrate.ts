@@ -26,7 +26,7 @@ import { errorTag } from "./errors";
 import { checkHuman } from "@/server/guard/human";
 import type { HumanCheckInput } from "@/server/guard/human";
 import { refundDualQuota, takeDualQuota } from "@/server/guard/quota";
-import { hashIp } from "@/server/guard/request";
+import { hashIp, ipBucket } from "@/server/guard/request";
 import { reserveSpend } from "@/server/guard/spend";
 import type { SpendReservation } from "@/server/guard/spend";
 
@@ -137,7 +137,7 @@ export async function orchestrate(
 
   const keys = quotaKeys({
     day: deps.day,
-    ipHash: hashIp(deps.ip, deps.env.ipSalt),
+    ipHash: hashIp(ipBucket(deps.ip, deps.anonId), deps.env.ipSalt),
     anonId: deps.anonId,
   });
   let quotaTaken = false;

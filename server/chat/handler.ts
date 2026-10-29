@@ -28,7 +28,7 @@ import { readBodyCapped } from "@/server/guard/body";
 import { checkHuman } from "@/server/guard/human";
 import { createRestKV } from "@/server/guard/kv";
 import { CHAT_QUOTA_TTL_SEC, refundDualQuota, takeDualQuota } from "@/server/guard/quota";
-import { clientIp, hashIp, utcDay } from "@/server/guard/request";
+import { clientIp, hashIp, ipBucket, utcDay } from "@/server/guard/request";
 import { reserveSpend } from "@/server/guard/spend";
 import type { SpendReservation } from "@/server/guard/spend";
 import { readChatEnv } from "./env";
@@ -44,8 +44,12 @@ export interface ChatHandlerDeps {
   now?: Date;
 }
 
-function fail(code: ChatErrorCode, ch: number | "?", cookies: string[]): Response {
-  console.error(`chat ${code} book=oz ch=${ch}`);
+// Expected failures (bad input, over limit, missing env, spent budget)
+// warn; only a truly unexpected crash (upstream or ours) errors. Names
+// only, never request text, keys, or error values.
+function fail(code: ChatErrorCode, ch: number | "?", cookies: string[], unexpected = false): Response {
+  if (unexpected) console.error(`chat ${code} book=oz ch=${ch}`);
+  else console.warn(`chat ${code} book=oz ch=${ch}`);
   const headers = new Headers();
   for (const cookie of cookies) headers.append("Set-Cookie", cookie);
   return Response.json(
@@ -90,7 +94,7 @@ export async function handleChatPost(req: Request, deps: ChatHandlerDeps = {}): 
   const human = await checkHuman({
     cookieHeader: req.headers.get("cookie"),
     token: body.turnstileToken,
-    ip: clientIp(req.headers.get("x-forwarded-for")),
+    ip: clientIp(req.headers),
     turnstileSecret: env.turnstileSecret,
     sessionSecret: env.sessionSecret,
     fetchFn,
@@ -121,7 +125,7 @@ export async function handleChatPost(req: Request, deps: ChatHandlerDeps = {}): 
   const day = utcDay(deps.now ?? new Date());
   const keys = chatQuotaKeys({
     day,
-    ipHash: hashIp(clientIp(req.headers.get("x-forwarded-for")), env.ipSalt),
+    ipHash: hashIp(ipBucket(clientIp(req.headers), anonId), env.ipSalt),
     anonId,
     byok,
   });
@@ -176,7 +180,7 @@ export async function handleChatPost(req: Request, deps: ChatHandlerDeps = {}): 
       }
     } catch {
       await refundAll().catch(() => undefined);
-      return fail("unavailable", chapter.ch, cookies);
+      return fail("unavailable", chapter.ch, cookies, true);
     }
 
     const createStreamer = deps.createStreamer ?? createChatStreamer;
@@ -200,11 +204,11 @@ export async function handleChatPost(req: Request, deps: ChatHandlerDeps = {}): 
       }
     } catch {
       await refundAll();
-      return fail("unavailable", chapter.ch, cookies);
+      return fail("unavailable", chapter.ch, cookies, true);
     }
     if (headText === null) {
       await refundAll();
-      return fail("unavailable", chapter.ch, cookies);
+      return fail("unavailable", chapter.ch, cookies, true);
     }
     const firstText: string = headText;
 
@@ -282,6 +286,6 @@ export async function handleChatPost(req: Request, deps: ChatHandlerDeps = {}): 
     if (quotaTaken) {
       await refundDualQuota(kv, keys);
     }
-    return fail("unavailable", "?", cookies);
+    return fail("unavailable", "?", cookies, true);
   }
 }

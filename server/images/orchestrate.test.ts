@@ -153,6 +153,18 @@ describe("orchestrate", () => {
     expect(await d.kv.get(spendKey())).toBe("0");
   });
 
+  it("isolates unknown-IP clients by cookie: one exhausting its quota does not block another", async () => {
+    const d = deps({ ip: "unknown" });
+    for (let i = 0; i < 5; i++) {
+      const res = await orchestrate({ ...passage, n: 500 + i }, { ...d, anonId: "anon-a" });
+      expect(res.status).toBe("ready");
+    }
+    const blocked = await orchestrate({ ...passage, n: 505 }, { ...d, anonId: "anon-a" });
+    expect(blocked).toMatchObject({ status: "error", code: "quota" });
+    const other = await orchestrate({ ...passage, n: 506 }, { ...d, anonId: "anon-b" });
+    expect(other.status).toBe("ready");
+  });
+
   it("refuses when the cookie counter runs out while IPs stay fresh", async () => {
     const d = deps();
     for (let i = 0; i < 5; i++) {

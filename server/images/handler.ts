@@ -149,7 +149,7 @@ export async function handleImagesPost(req: Request, deps: ImagesHandlerDeps = {
       setCookie = serializeAnonCookie(issued.value);
     }
 
-    const ip = clientIp(req.headers.get("x-forwarded-for"));
+    const ip = clientIp(req.headers);
     const humanOut: { setCookie?: string } = {};
     const res = await orchestrate(parsed, {
       kv: deps.kv ?? createRestKV(env.upstashUrl, env.upstashToken),
