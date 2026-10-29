@@ -91,10 +91,11 @@ export async function handleChatPost(req: Request, deps: ChatHandlerDeps = {}): 
   }
 
   const fetchFn = deps.fetchFn ?? fetch;
+  const ip = clientIp(req.headers);
   const human = await checkHuman({
     cookieHeader: req.headers.get("cookie"),
     token: body.turnstileToken,
-    ip: clientIp(req.headers),
+    ip,
     turnstileSecret: env.turnstileSecret,
     sessionSecret: env.sessionSecret,
     fetchFn,
@@ -125,12 +126,29 @@ export async function handleChatPost(req: Request, deps: ChatHandlerDeps = {}): 
   const day = utcDay(deps.now ?? new Date());
   const keys = chatQuotaKeys({
     day,
-    ipHash: hashIp(ipBucket(clientIp(req.headers), anonId), env.ipSalt),
+    ipHash: hashIp(ipBucket(ip, anonId), env.ipSalt),
     anonId,
     byok,
   });
 
   let quotaTaken = false;
+  let reservation: SpendReservation | null = null;
+  // Each reserve is refunded at most once: flags clear only after the
+  // write lands, like the images orchestrate path.
+  const refundQuotaOnce = async (): Promise<void> => {
+    if (quotaTaken) {
+      await refundDualQuota(kv, keys);
+      quotaTaken = false;
+    }
+  };
+  const releaseSpendOnce = async (): Promise<void> => {
+    await reservation?.release();
+    reservation = null;
+  };
+  const refundAll = async (): Promise<void> => {
+    await releaseSpendOnce();
+    await refundQuotaOnce();
+  };
   try {
     const taken = await takeDualQuota(kv, keys, { limit, ttlSec: CHAT_QUOTA_TTL_SEC });
     if (!taken.ok) return fail("quota", "?", cookies);
@@ -153,15 +171,6 @@ export async function handleChatPost(req: Request, deps: ChatHandlerDeps = {}): 
       bookText: bookTextUpTo(book.paragraphs, book.chapters, body.upToN, body.spoilers),
     });
     const messages: UpstreamMessage[] = [{ role: "system", content: system }, ...body.messages];
-
-    let reservation: SpendReservation | null = null;
-    // Each reserve is refunded at most once: flags clear only after the
-    // write lands, like the images orchestrate path.
-    const refundAll = async (): Promise<void> => {
-      await reservation?.release();
-      reservation = null;
-      await refundDualQuota(kv, keys);
-    };
 
     // A Redis failure between reserves must give back what was taken.
     try {
@@ -283,9 +292,7 @@ export async function handleChatPost(req: Request, deps: ChatHandlerDeps = {}): 
     });
     return new Response(stream, { headers });
   } catch {
-    if (quotaTaken) {
-      await refundDualQuota(kv, keys);
-    }
+    await refundAll().catch(() => undefined);
     return fail("unavailable", "?", cookies, true);
   }
 }
