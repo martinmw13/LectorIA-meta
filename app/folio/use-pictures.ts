@@ -238,10 +238,17 @@ export function usePictures({
   }, [sceneId]);
 
   const requestFigure = useCallback(
-    (scene: string, id: string, startN: number) => {
+    (scene: string, id: string, startN: number, endN: number) => {
       // Callers claim inFlight; this starts the request and releases it.
       const mine = inFlight;
-      void poll({ kind: "passage", bookId, textVersion, n: startN, ...requestStyleFields(prefRef.current) })
+      void poll({
+        kind: "passage",
+        bookId,
+        textVersion,
+        n: startN,
+        ...(endN > startN ? { endN } : {}),
+        ...requestStyleFields(prefRef.current),
+      })
         .then(({ url }) => {
           storeFigures(scene, (prev) =>
             prev.map((f) => (f.id === id ? { ...f, phase: "ready", url, message: null } : f)),
@@ -290,7 +297,7 @@ export function usePictures({
       ...prev,
       { id, phase: "loading", url: null, quote, startN, endN, credit, message: null },
     ]);
-    requestFigure(scene, id, startN);
+    requestFigure(scene, id, startN, endN);
   }, [requestFigure, storeFigures, showHint]);
 
   const retryFigure = useCallback(
@@ -304,7 +311,7 @@ export function usePictures({
       inFlight = { kind: "figure", sceneId, id };
       setHintAt(null);
       storeFigures(sceneId, (prev) => prev.map((f) => (f.id === id ? { ...f, phase: "loading", message: null } : f)));
-      requestFigure(sceneId, id, found.startN);
+      requestFigure(sceneId, id, found.startN, found.endN);
     },
     [requestFigure, storeFigures, sceneId, showHint],
   );

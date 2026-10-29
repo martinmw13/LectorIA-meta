@@ -8,6 +8,7 @@ import {
   spendKey,
 } from "@/core/images";
 import type { ImageGenerator, ImageRequest, ImageStore } from "@/core/images";
+import { MAX_RANGES_PER_SCENE, parseRanges, rangeListKeyFor } from "@/core/image-ranges";
 import type { ImageEnv } from "./env";
 import { orchestrate } from "./orchestrate";
 import type { OrchestrateDeps } from "./orchestrate";
@@ -53,6 +54,7 @@ function deps(over: Partial<OrchestrateDeps> = {}): OrchestrateDeps {
     ip: "1.2.3.4",
     anonId: "anon-1",
     day: "2026-10-27",
+    sceneId: "s1",
     ...over,
   };
 }
@@ -302,5 +304,81 @@ describe("orchestrate", () => {
     };
     const res = await orchestrate(passage, d);
     expect(res).toMatchObject({ status: "ready", cached: true });
+  });
+});
+
+describe("orchestrate range reuse", () => {
+  it("reuses a cached picture for an overlapping selection", async () => {
+    const d = deps();
+    let calls = 0;
+    d.generate = { generate: async () => (calls++, new Uint8Array([9])) };
+    const first = await orchestrate(passage, d);
+    expect(first).toMatchObject({ status: "ready", cached: false });
+    const second = await orchestrate({ ...passage, endN: 4 }, d);
+    expect(second).toEqual({ ...first, cached: true });
+    expect(calls).toBe(1);
+    expect(await d.kv.get(spendKey())).toBe("10000");
+  });
+
+  it("generates a new picture for a much larger selection", async () => {
+    const d = deps();
+    const saved: string[] = [];
+    const innerSave = d.store.save.bind(d.store);
+    d.store.save = async (path, bytes) => {
+      saved.push(path);
+      return innerSave(path, bytes);
+    };
+    await orchestrate(passage, d);
+    const res = await orchestrate({ ...passage, endN: 12 }, d);
+    expect(res).toMatchObject({ status: "ready", cached: false });
+    expect(saved).toContain("images/oz/t/v1/p3-12.webp");
+  });
+
+  it("generates for a disjoint range in the same scene", async () => {
+    const d = deps();
+    await orchestrate(passage, d);
+    const res = await orchestrate({ ...passage, n: 5, endN: 6 }, d);
+    expect(res).toMatchObject({ status: "ready", cached: false });
+  });
+
+  it("does not reuse the same range from another scene", async () => {
+    const d = deps();
+    await orchestrate(passage, d);
+    const res = await orchestrate({ ...passage, endN: 4 }, { ...d, sceneId: "s2" });
+    expect(res).toMatchObject({ status: "ready", cached: false });
+  });
+
+  it("caps the stored range list", async () => {
+    const d = deps();
+    for (let i = 0; i < MAX_RANGES_PER_SCENE + 5; i++) {
+      const res = await orchestrate(
+        { ...passage, n: 100 + i },
+        { ...d, ip: `10.1.0.${i}`, anonId: `cap-${i}` },
+      );
+      expect(res.status).toBe("ready");
+    }
+    const raw = await d.kv.get(rangeListKeyFor(passage, "s1"));
+    expect(parseRanges(raw)).toHaveLength(MAX_RANGES_PER_SCENE);
+  });
+
+  it("gives pending to a concurrent identical range request", async () => {
+    const d = deps();
+    let releaseGen!: (bytes: Uint8Array) => void;
+    let genCalled!: () => void;
+    const called = new Promise<void>((resolve) => (genCalled = resolve));
+    d.generate = {
+      generate: () =>
+        new Promise<Uint8Array>((resolve) => {
+          releaseGen = resolve;
+          genCalled();
+        }),
+    };
+    const range = { ...passage, n: 7, endN: 8 };
+    const held = orchestrate(range, { ...d, token: "owner" });
+    await called;
+    const res = await orchestrate(range, { ...d, token: "other" });
+    expect(res).toEqual({ status: "pending" });
+    releaseGen(new Uint8Array([1]));
+    expect(await held).toMatchObject({ status: "ready" });
   });
 });

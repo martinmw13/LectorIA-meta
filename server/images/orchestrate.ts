@@ -17,6 +17,8 @@ import {
   spendKey,
 } from "@/core/images";
 import type { ImageGenerator, ImageRequest, ImageResponse, ImageStore, KV } from "@/core/images";
+import { addRange, parseRanges, pickReusable, rangeListKeyFor } from "@/core/image-ranges";
+import type { ParaRange } from "@/core/image-ranges";
 import type { ImageEnv } from "./env";
 import { errorTag } from "./errors";
 import { verifyHuman } from "./human";
@@ -38,6 +40,8 @@ export interface OrchestrateDeps {
   anonId: string;
   day: string;
   token?: string;
+  // Scene holding the selection start; "" or missing skips range reuse.
+  sceneId?: string;
 }
 
 // One pass, no skipped steps: hit -> lock -> human -> quota -> budget ->
@@ -57,9 +61,49 @@ export async function orchestrate(
   if (indexed) {
     return { status: "ready", url: indexed, cached: true, caption: captionFor(req, deps.content) };
   }
+
+  // Passage range reuse: an overlapping cached selection serves this one.
+  // Scene requests and unknown scenes skip all of it.
+  const sceneId = deps.sceneId ?? "";
+  let want: ParaRange | null = null;
+  let rangesAt = "";
+  let rangeList: ParaRange[] = [];
+  if (req.kind === "passage" && sceneId !== "") {
+    const self: ParaRange = { start: req.n, end: req.endN ?? req.n };
+    want = self;
+    rangesAt = rangeListKeyFor(req, sceneId);
+    rangeList = parseRanges(await deps.kv.get(rangesAt));
+    const best = pickReusable(
+      rangeList.filter((r) => r.start !== self.start || r.end !== self.end),
+      self,
+    );
+    if (best) {
+      const bestKey = imageKey({ ...req, n: best.start, endN: best.end });
+      const bestIndex = indexKeyFor(bestKey);
+      let hit = await deps.kv.get(bestIndex);
+      if (!hit) {
+        hit = await deps.store.findUrl(bestKey);
+        if (hit) await deps.kv.set(bestIndex, hit);
+      }
+      if (hit) {
+        return { status: "ready", url: hit, cached: true, caption: captionFor(req, deps.content) };
+      }
+    }
+  }
+  // shortcut: GET+SET can drop a concurrent append, which only costs a future reuse; upgrade to a Redis list if that matters.
+  const recordRange = async (): Promise<void> => {
+    if (!want) return;
+    try {
+      await deps.kv.set(rangesAt, JSON.stringify(addRange(rangeList, want)));
+    } catch {
+      console.error("image range index failed");
+    }
+  };
+
   const existing = await deps.store.findUrl(key);
   if (existing) {
     await deps.kv.set(indexKey, existing);
+    await recordRange();
     return { status: "ready", url: existing, cached: true, caption: captionFor(req, deps.content) };
   }
 
@@ -168,9 +212,11 @@ export async function orchestrate(
         await deps.kv.set(indexKey, url);
       } catch {
         console.error("image index failed");
+        await recordRange();
         await release();
         return { status: "ready", url, cached: false, caption: captionFor(req, deps.content) };
       }
+      await recordRange();
       await release();
       return { status: "ready", url, cached: false, caption: captionFor(req, deps.content) };
     } catch (e) {
@@ -182,6 +228,7 @@ export async function orchestrate(
         } catch {
           console.error("image index failed");
         }
+        await recordRange();
         await release();
         return { status: "ready", url: raced, cached: true, caption: captionFor(req, deps.content) };
       }
