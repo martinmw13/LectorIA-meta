@@ -12,10 +12,10 @@ const book = {
   textVersion: "t123",
   paragraphNs: new Set([1, 2, 3]),
   sceneIds: new Set(["c1s1"]),
-  chapters: new Set([1, 2]),
+  chapters: new Set([1, 2, 3]),
 };
 
-const chapter = { kind: "chapter", bookId: "oz", textVersion: "t123", ch: 2 } as const;
+const chapter = { kind: "chapter", bookId: "oz", textVersion: "t123", ch: 2, reachedCh: 2 } as const;
 
 describe("chapter parseImageRequest", () => {
   it("accepts a good chapter body with and without style", () => {
@@ -32,6 +32,15 @@ describe("chapter parseImageRequest", () => {
     }
   });
 
+  it("rejects a missing or non-integer reachedCh", () => {
+    expect(() =>
+      parseImageRequest({ kind: "chapter", bookId: "oz", textVersion: "t123", ch: 2 }),
+    ).toThrow();
+    for (const reachedCh of [0, -1, 1.5, Number.NaN, "2", null]) {
+      expect(() => parseImageRequest({ ...chapter, reachedCh })).toThrow();
+    }
+  });
+
   it("rejects extra keys and missing fields", () => {
     expect(() => parseImageRequest({ ...chapter, extra: 1 })).toThrow();
     expect(() => parseImageRequest({ kind: "chapter", bookId: "oz" })).toThrow();
@@ -44,33 +53,51 @@ describe("chapter parseImageRequest", () => {
 describe("chapter validateAgainstBook", () => {
   it("accepts a chapter of the book", () => {
     expect(() =>
-      validateAgainstBook({ kind: "chapter", bookId: "oz", textVersion: "t123", ch: 1 }, book),
+      validateAgainstBook({ kind: "chapter", bookId: "oz", textVersion: "t123", ch: 1, reachedCh: 1 }, book),
+    ).not.toThrow();
+    expect(() =>
+      validateAgainstBook({ kind: "chapter", bookId: "oz", textVersion: "t123", ch: 2, reachedCh: 3 }, book),
     ).not.toThrow();
   });
 
   it("rejects an unknown chapter, book, or version", () => {
     expect(() =>
-      validateAgainstBook({ kind: "chapter", bookId: "oz", textVersion: "t123", ch: 99 }, book),
+      validateAgainstBook({ kind: "chapter", bookId: "oz", textVersion: "t123", ch: 99, reachedCh: 1 }, book),
     ).toThrow();
     expect(() =>
-      validateAgainstBook({ kind: "chapter", bookId: "dorothy", textVersion: "t123", ch: 1 }, book),
+      validateAgainstBook({ kind: "chapter", bookId: "dorothy", textVersion: "t123", ch: 1, reachedCh: 1 }, book),
     ).toThrow();
     expect(() =>
-      validateAgainstBook({ kind: "chapter", bookId: "oz", textVersion: "old", ch: 1 }, book),
+      validateAgainstBook({ kind: "chapter", bookId: "oz", textVersion: "old", ch: 1, reachedCh: 1 }, book),
+    ).toThrow();
+  });
+
+  it("rejects a chapter past reachedCh and an unknown reachedCh", () => {
+    expect(() =>
+      validateAgainstBook({ kind: "chapter", bookId: "oz", textVersion: "t123", ch: 3, reachedCh: 2 }, book),
+    ).toThrow();
+    expect(() =>
+      validateAgainstBook({ kind: "chapter", bookId: "oz", textVersion: "t123", ch: 1, reachedCh: 99 }, book),
     ).toThrow();
   });
 });
 
 describe("chapter imageKey", () => {
   it("keys the chapter page apart from scenes and passages", () => {
-    expect(imageKey({ kind: "chapter", bookId: "oz", textVersion: "t123", ch: 2 })).toBe(
+    expect(imageKey({ kind: "chapter", bookId: "oz", textVersion: "t123", ch: 2, reachedCh: 2 })).toBe(
       "images/oz/t123/v1/chapter-2-c1.webp",
+    );
+  });
+
+  it("ignores reachedCh, so the cache is shared across readers", () => {
+    expect(imageKey({ kind: "chapter", bookId: "oz", textVersion: "t123", ch: 2, reachedCh: 2 })).toBe(
+      imageKey({ kind: "chapter", bookId: "oz", textVersion: "t123", ch: 2, reachedCh: 5 }),
     );
   });
 
   it("inserts the style segment and treats denslow as omitted", () => {
     expect(
-      imageKey({ kind: "chapter", bookId: "oz", textVersion: "t123", ch: 2, style: { kind: "preset", id: "pencil" } }),
+      imageKey({ kind: "chapter", bookId: "oz", textVersion: "t123", ch: 2, reachedCh: 2, style: { kind: "preset", id: "pencil" } }),
     ).toBe("images/oz/t123/v1/style-pencil/chapter-2-c1.webp");
     expect(imageKey(parseImageRequest({ ...chapter, style: { preset: "denslow" } }))).toBe(
       "images/oz/t123/v1/chapter-2-c1.webp",

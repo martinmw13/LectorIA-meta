@@ -213,12 +213,12 @@ export function PictureDraw({ skin, frozen }: { skin: PictureSkin; frozen?: bool
 }
 
 // Waiting caption under the picture box, outside the frame.
-export function PictureWait({ skin, as: Tag = "p" }: { skin: PictureSkin; as?: "p" | "figcaption" }) {
+export function PictureWait({ skin, as: Tag = "p", note = DRAW_NOTE }: { skin: PictureSkin; as?: "p" | "figcaption"; note?: string }) {
   return (
     <Tag className="pic-wait" data-picture-skin={skin} role="status">
       <span className="pic-wait-t">{DRAW_STATUS[skin]}</span>
       <span className="pic-wait-dots" aria-hidden="true"><i /><i /><i /></span>
-      <span className="pic-wait-n">{DRAW_NOTE}</span>
+      <span className="pic-wait-n">{note}</span>
     </Tag>
   );
 }

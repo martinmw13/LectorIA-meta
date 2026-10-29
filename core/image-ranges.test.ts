@@ -39,11 +39,18 @@ describe("pickReusable", () => {
       end: 13,
     });
     expect(pickReusable([{ start: 5, end: 5 }], { start: 5, end: 6 })).toEqual({ start: 5, end: 5 });
+    expect(pickReusable([{ start: 5, end: 5 }], { start: 4, end: 6 })).toEqual({ start: 5, end: 5 });
+    expect(pickReusable([{ start: 16, end: 17 }], { start: 16, end: 19 })).toEqual({
+      start: 16,
+      end: 17,
+    });
   });
 
   it("passes on a much larger selection", () => {
     expect(pickReusable([{ start: 5, end: 5 }], { start: 3, end: 9 })).toBeNull();
     expect(pickReusable([{ start: 10, end: 11 }], { start: 10, end: 20 })).toBeNull();
+    expect(pickReusable([{ start: 3, end: 4 }], { start: 3, end: 12 })).toBeNull();
+    expect(pickReusable([{ start: 5, end: 5 }], { start: 3, end: 7 })).toBeNull();
   });
 
   it("returns null for disjoint ranges", () => {

@@ -24,14 +24,15 @@ export function useChapterPage({
   textVersion,
   ch,
   pref,
-  reached,
+  reachedCh,
 }: {
   bookId: string;
   textVersion: string;
   ch: number;
   pref: ImageStylePref;
-  reached: boolean;
+  reachedCh: number;
 }): { page: ChapterPage; retry: () => void } {
+  const reached = ch <= reachedCh;
   // The style pref arrives as a fresh object each render and is read
   // through a ref, like use-pictures; the key string tracks its value.
   const prefRef = useRef(pref);
@@ -52,7 +53,7 @@ export function useChapterPage({
     }
     setPage({ phase: "loading" });
     let cancelled = false;
-    void poll({ kind: "chapter", bookId, textVersion, ch, ...requestStyleFields(prefRef.current) })
+    void poll({ kind: "chapter", bookId, textVersion, ch, reachedCh, ...requestStyleFields(prefRef.current) })
       .then(({ url, caption }) => {
         chapterCache.set(key, { url, caption });
         if (!cancelled) setPage({ phase: "ready", url, caption });
@@ -65,7 +66,7 @@ export function useChapterPage({
     return () => {
       cancelled = true;
     };
-  }, [bookId, textVersion, ch, key, reached, attempt]);
+  }, [bookId, textVersion, ch, key, reachedCh, attempt]);
 
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
   return { page, retry };

@@ -124,6 +124,7 @@ async function main(): Promise<void> {
         bookId: book.id,
         textVersion: book.textVersion,
         ch,
+        reachedCh: ch,
         ...(style === undefined ? {} : { style }),
       });
       const indexKey = indexKeyFor(key);

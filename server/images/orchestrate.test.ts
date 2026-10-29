@@ -332,6 +332,19 @@ describe("orchestrate range reuse", () => {
     expect(calls).toBe(0);
   });
 
+  it("reuses at exactly one third overlap, free with the cached url", async () => {
+    const d = deps();
+    let calls = 0;
+    d.generate = { generate: async () => (calls++, new Uint8Array([9])) };
+    const first = await orchestrate({ ...passage, n: 9 }, d);
+    expect(first).toMatchObject({ status: "ready", cached: false });
+    const second = await orchestrate({ ...passage, n: 8, endN: 10 }, d);
+    expect(second).toEqual({ ...first, cached: true });
+    expect(calls).toBe(1);
+    expect(await d.kv.get(spendKey())).toBe("10000");
+    expect(await d.kv.get(lockKeyFor(imageKey({ ...passage, n: 8, endN: 10 })))).toBeNull();
+  });
+
   it("generates a new picture for a much larger selection", async () => {
     const d = deps();
     const saved: string[] = [];

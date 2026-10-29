@@ -29,7 +29,7 @@ const content = {
   chapterPanels: [{ description: "Dorothy runs to the cellar." }, { description: "The house lifts away." }],
 };
 
-const chapter = (ch: number): ImageRequest => ({ kind: "chapter", bookId: "oz", textVersion: "t", ch });
+const chapter = (ch: number): ImageRequest => ({ kind: "chapter", bookId: "oz", textVersion: "t", ch, reachedCh: ch });
 
 function deps(over: Partial<OrchestrateDeps> = {}): OrchestrateDeps {
   const files = new Map<string, Uint8Array>();
@@ -149,7 +149,29 @@ describe("handleImagesPost chapter pages", () => {
       new Request("http://localhost/api/images", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kind: "chapter", bookId: book.id, textVersion: book.textVersion, ch: 999 }),
+        body: JSON.stringify({ kind: "chapter", bookId: book.id, textVersion: book.textVersion, ch: 999, reachedCh: 1 }),
+      }),
+    );
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({
+      status: "error",
+      code: "bad_request",
+      message: MSG_BAD_REQUEST,
+    });
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("rejects a chapter past reachedCh with 400 and never generates", async () => {
+    for (const k of REQUIRED) process.env[k] = `test-${k}`;
+    process.env.UPSTASH_REDIS_REST_URL = "https://test.example";
+    const fetchSpy = vi.fn().mockRejectedValue(new Error("must not be called"));
+    vi.stubGlobal("fetch", fetchSpy);
+    const { book } = loadOzBook();
+    const res = await handleImagesPost(
+      new Request("http://localhost/api/images", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: "chapter", bookId: book.id, textVersion: book.textVersion, ch: 2, reachedCh: 1 }),
       }),
     );
     expect(res.status).toBe(400);
