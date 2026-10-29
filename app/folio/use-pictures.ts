@@ -71,13 +71,6 @@ function sceneFigures(sceneId: string): InlineFigure[] {
 type HintAt = { where: "scene" } | { where: "popover" } | { where: "figure"; id: string } | null;
 
 const sceneCache = new Map<string, { url: string; caption: string }>();
-
-// Read-only view of the session cache for the panels grid. Never
-// writes, so it cannot change picture behaviour.
-export function getCachedScenePicture(sceneId: string): { url: string; caption: string } | null {
-  const hit = sceneCache.get(sceneId);
-  return hit ? { url: hit.url, caption: hit.caption } : null;
-}
 const figureCache = new Map<string, InlineFigure[]>();
 let figureSeq = 1;
 
@@ -106,7 +99,8 @@ async function postImage(body: unknown): Promise<ImageResponse> {
   return (await res.json()) as ImageResponse;
 }
 
-async function poll(body: unknown): Promise<{ url: string; caption: string }> {
+// Shared by the chapter page hook: one poll loop for every picture kind.
+export async function poll(body: unknown): Promise<{ url: string; caption: string }> {
   let left = POLL_MAX;
   for (;;) {
     let res: ImageResponse;

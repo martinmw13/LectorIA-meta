@@ -44,7 +44,8 @@
 .pane-chapter:focus-visible,
 .pic-btn:focus-visible,
 .panels-x:focus-visible,
-.panel:focus-visible {
+.panel:focus-visible,
+.panels-frame:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
@@ -129,6 +130,7 @@ html[data-theme="dark"] .panels-modal {
   max-height: calc(100vh - 64px);
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
 }
 
 .panels-x {
@@ -160,6 +162,91 @@ html[data-theme="dark"] .panels-modal {
   margin: 0 0 18px;
 }
 
+/* Chapter page: one square frame, the wait line under it, then the
+   captions in reading order. The drawing's own status hides inside the
+   frame so the wait line shows once. */
+.panels-frame {
+  position: relative;
+  display: block;
+  width: min(100%, 72vh);
+  aspect-ratio: 1;
+  margin: 0 auto;
+  padding: 0;
+  border: 2px solid var(--color-text);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--color-surface-soft);
+  color: inherit;
+  font: inherit;
+}
+
+button.panels-frame {
+  cursor: zoom-in;
+}
+
+.panels-frame > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+html[data-theme="dark"] .panels-frame > img {
+  filter: brightness(0.92);
+}
+
+.panels-frame .picdraw-status {
+  display: none;
+}
+
+.panels-wait {
+  margin: 10px 0 0;
+  text-align: center;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.panels-caps {
+  margin: 14px auto 0;
+  padding-left: 1.4em;
+  max-width: 60ch;
+  font-family: var(--font-book);
+  font-style: italic;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.panels-caps li + li {
+  margin-top: 4px;
+}
+
+.panels-gate {
+  margin: 24px 0;
+  text-align: center;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.panels-miss {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  text-align: center;
+}
+
+.panels-miss p {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 14px;
+}
+
+/* Kept though the modal no longer uses them: skin files still target
+   .panel, so removing these would orphan those selectors. */
 .panel-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

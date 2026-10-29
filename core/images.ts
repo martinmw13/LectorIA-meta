@@ -8,7 +8,7 @@ import {
   styleSegment,
 } from "./image-style";
 import type { ImageStyle } from "./image-style";
-import { IMAGE_COST_MICRO, PROMPT_VERSION } from "./types";
+import { CHAPTER_PROMPT_VERSION, IMAGE_COST_MICRO, PROMPT_VERSION } from "./types";
 import type { ImageKind, ImageRequest } from "./types";
 
 export type { ImageErrorCode, ImageKind, ImageRequest, ImageResponse } from "./types";
@@ -103,6 +103,27 @@ export function parseImageRequest(json: unknown): ImageRequest {
       ...(style === undefined ? {} : { style }),
     };
   }
+  if (kind === "chapter") {
+    const keys = Object.keys(json).sort().join(",");
+    if (keys !== "bookId,ch,kind,textVersion" && keys !== "bookId,ch,kind,style,textVersion") {
+      throw new ImageValidationError();
+    }
+    if (typeof json.bookId !== "string" || json.bookId.length === 0) throw new ImageValidationError();
+    if (typeof json.textVersion !== "string" || json.textVersion.length === 0) {
+      throw new ImageValidationError();
+    }
+    if (typeof json.ch !== "number" || !Number.isInteger(json.ch) || json.ch < 1) {
+      throw new ImageValidationError();
+    }
+    const style = parseStyleChoice(json.style);
+    return {
+      kind: "chapter",
+      bookId: json.bookId,
+      textVersion: json.textVersion,
+      ch: json.ch,
+      ...(style === undefined ? {} : { style }),
+    };
+  }
   throw new ImageValidationError();
 }
 
@@ -111,6 +132,7 @@ export interface BookRef {
   textVersion: string;
   paragraphNs: Set<number>;
   sceneIds: Set<string>;
+  chapters: Set<number>;
 }
 
 // Checks the parsed request against the frozen book text.
@@ -121,15 +143,25 @@ export function validateAgainstBook(req: ImageRequest, book: BookRef): void {
     if (!book.paragraphNs.has(req.n)) throw new ImageValidationError();
     return;
   }
-  if (!book.sceneIds.has(req.sceneId)) throw new ImageValidationError();
+  if (req.kind === "scene") {
+    if (!book.sceneIds.has(req.sceneId)) throw new ImageValidationError();
+    return;
+  }
+  if (!book.chapters.has(req.ch)) throw new ImageValidationError();
 }
 
-// One paragraph maps to one image; one scene maps to one image. A styled
-// image keeps the same base with a style segment before the file name, so
-// an omitted style keys byte-identically to today.
+// One paragraph maps to one image; one scene maps to one image; one
+// chapter maps to one comic page. A styled image keeps the same base
+// with a style segment before the file name, so an omitted style keys
+// byte-identically to today.
 export function imageKey(req: ImageRequest): string {
   const base = `images/${req.bookId}/${req.textVersion}/${PROMPT_VERSION}`;
-  const file = req.kind === "passage" ? `p${req.n}.webp` : `scene-${req.sceneId}.webp`;
+  const file =
+    req.kind === "passage"
+      ? `p${req.n}.webp`
+      : req.kind === "scene"
+        ? `scene-${req.sceneId}.webp`
+        : `chapter-${req.ch}-${CHAPTER_PROMPT_VERSION}.webp`;
   return req.style === undefined ? `${base}/${file}` : `${base}/${styleSegment(req.style)}/${file}`;
 }
 
@@ -181,37 +213,44 @@ export function canRelease(expected: string, actual: string | null): boolean {
   return actual !== null && actual === expected;
 }
 
-function clip(text: string, max: number): string {
+export function clipText(text: string, max: number): string {
   const clean = text.replace(/\s+/g, " ").trim();
   if (clean.length <= max) return clean;
   return clean.slice(0, max).trimEnd();
+}
+
+// The illustration style line, shared by scene and chapter prompts: the
+// Denslow sentence by default, the parsed style's descriptor otherwise.
+export function styleLine(style: ImageStyle | undefined): string {
+  if (style !== undefined) return styleDescriptorLine(style);
+  return (
+    "Illustration in the style of W. W. Denslow's 1900 first-edition " +
+    "illustrations for The Wonderful Wizard of Oz: flat color, bold black " +
+    "ink outlines, limited palette. Dorothy wears silver shoes. Nothing " +
+    "from the 1939 MGM film, no ruby slippers, no film look. No text, " +
+    "no captions, no lettering in the image."
+  );
 }
 
 // Prompt from trusted server-side book text only. The client sends
 // ordinals and ids, never free text, so there is no injection path. Only
 // the optional parsed style reaches the prompt, never raw client text.
 export function buildPrompt(args: {
-  kind: ImageKind;
+  kind: Exclude<ImageKind, "chapter">;
   passageText: string;
   sceneTitle: string;
   sceneClip: string;
   style?: ImageStyle;
 }): string {
-  const denslow =
-    "Illustration in the style of W. W. Denslow's 1900 first-edition " +
-    "illustrations for The Wonderful Wizard of Oz: flat color, bold black " +
-    "ink outlines, limited palette. Dorothy wears silver shoes. Nothing " +
-    "from the 1939 MGM film, no ruby slippers, no film look. No text, " +
-    "no captions, no lettering in the image.";
-  const style = args.style === undefined ? denslow : styleDescriptorLine(args.style);
+  const style = styleLine(args.style);
   if (args.kind === "scene") {
     return (
-      `Scene "${args.sceneTitle}". ${clip(args.sceneClip, MAX_SCENE_CLIP_CHARS)}. ${style}`
+      `Scene "${args.sceneTitle}". ${clipText(args.sceneClip, MAX_SCENE_CLIP_CHARS)}. ${style}`
     );
   }
   return (
-    `Scene "${args.sceneTitle}". Passage: ${clip(args.passageText, MAX_PASSAGE_CHARS)}. ` +
-    `Context: ${clip(args.sceneClip, MAX_SCENE_CLIP_CHARS)}. ${style}`
+    `Scene "${args.sceneTitle}". Passage: ${clipText(args.passageText, MAX_PASSAGE_CHARS)}. ` +
+    `Context: ${clipText(args.sceneClip, MAX_SCENE_CLIP_CHARS)}. ${style}`
   );
 }
 
@@ -220,7 +259,7 @@ export function buildCaption(args: {
   sceneTitle: string;
   passageText: string;
 }): string {
-  if (args.kind === "scene") return args.sceneTitle;
+  if (args.kind === "scene" || args.kind === "chapter") return args.sceneTitle;
   const words = args.passageText.replace(/\s+/g, " ").trim().split(" ").slice(0, 10);
   const head = words.join(" ");
   return words.length >= 10 ? `${head}…` : head;

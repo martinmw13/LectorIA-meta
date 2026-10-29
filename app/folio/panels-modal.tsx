@@ -1,35 +1,43 @@
-// Chapter panels: the comic-page modal, opened on demand from the pane. Port of the .proto/v3 panels look, not its code.
+// Chapter panels: one comic page per chapter, captions below it in
+// reading order. The page generates on demand in the reader's style;
+// chapters past the reader's reach stay gated.
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Icon } from "../icons";
+import { useEffect, useRef } from "react";
+import type { ImageStylePref } from "../image-style";
 import type { ChapterPanel } from "./panels";
-import { getCachedScenePicture } from "./use-pictures";
-
-interface ResolvedPanel extends ChapterPanel {
-  url: string | null;
-}
+import { PICTURE_COPY } from "./picture-copy";
+import { PictureDraw } from "./picture-draw";
+import { DRAW_STATUS } from "./picture-draw-paths";
+import { usePictureSkin } from "./picture-skin";
+import { useChapterPage } from "./use-chapter-page";
 
 export function PanelsModal({
   ch,
   chapterTitle,
   panels,
+  bookId,
+  textVersion,
+  pref,
+  reached,
   onClose,
   onOpenArt,
 }: {
   ch: number;
   chapterTitle: string;
   panels: ChapterPanel[];
+  bookId: string;
+  textVersion: string;
+  pref: ImageStylePref;
+  reached: boolean;
   onClose: () => void;
   onOpenArt: (src: string, caption: string, opener: HTMLElement | null) => void;
 }) {
   const chapterLabel = `Chapter ${ch}, ${chapterTitle}`;
+  const skin = usePictureSkin();
+  const { page, retry } = useChapterPage({ bookId, textVersion, ch, pref, reached });
   const closeRef = useRef<HTMLButtonElement | null>(null);
   const boxRef = useRef<HTMLDivElement | null>(null);
-  // Session cache first, bundled art next, placeholder last.
-  const [resolved] = useState<ResolvedPanel[]>(() =>
-    panels.map((p) => ({ ...p, url: getCachedScenePicture(p.sceneId)?.url ?? p.art })),
-  );
 
   useEffect(() => {
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -73,35 +81,43 @@ export function PanelsModal({
         <p className="panels-head">
           Chapter {ch} · {chapterTitle}
         </p>
-        <div className={resolved.length <= 4 ? "panel-grid two" : "panel-grid"}>
-          {resolved.map((p, i) =>
-            p.url ? (
+        {reached ? (
+          <>
+            {page.phase === "ready" ? (
               <button
-                key={p.sceneId}
                 type="button"
-                className="panel"
-                onClick={(e) => onOpenArt(p.url as string, p.caption, e.currentTarget)}
-                aria-label={`Panel ${i + 1}: ${p.caption}`}
+                className="panels-frame"
+                onClick={(e) => onOpenArt(page.url, chapterLabel, e.currentTarget)}
+                aria-label={`Open art: ${chapterLabel}`}
               >
-                <span className="panel-num" aria-hidden="true">
-                  {i + 1}
-                </span>
-                <img src={p.url} alt="" loading="lazy" decoding="async" />
-                <span className="panel-cap">{p.caption}</span>
+                <img src={page.url} alt="" />
               </button>
-            ) : (
-              <div key={p.sceneId} className="panel bare" aria-label={`Panel ${i + 1}: ${p.caption}`}>
-                <span className="panel-num" aria-hidden="true">
-                  {i + 1}
-                </span>
-                <span className="panel-hatch" aria-hidden="true">
-                  <Icon name="pencil" />
-                </span>
-                <span className="panel-cap">{p.caption}</span>
+            ) : page.phase === "loading" ? (
+              <div className="panels-frame">
+                <PictureDraw skin={skin} />
               </div>
-            ),
-          )}
-        </div>
+            ) : (
+              <div className="panels-frame panels-miss" role="alert">
+                <p>{page.message}</p>
+                <button type="button" className="retry-text" onClick={retry}>
+                  {PICTURE_COPY.retry}
+                </button>
+              </div>
+            )}
+            {page.phase === "loading" ? (
+              <p className="panels-wait" role="status">
+                {DRAW_STATUS[skin]}
+              </p>
+            ) : null}
+            <ol className="panels-caps">
+              {panels.map((p) => (
+                <li key={p.key}>{p.caption}</li>
+              ))}
+            </ol>
+          </>
+        ) : (
+          <p className="panels-gate">Read up to this chapter first.</p>
+        )}
       </div>
     </div>
   );

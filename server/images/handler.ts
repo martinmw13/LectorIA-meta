@@ -8,6 +8,7 @@ import {
   parseImageRequest,
   validateAgainstBook,
 } from "@/core/images";
+import { chapterPanels } from "@/core/panels";
 import type { ImageRequest, ImageResponse } from "@/core/images";
 import { MAX_IMAGE_BODY_BYTES, readBodyCapped } from "./body";
 import { readImageEnv } from "./env";
@@ -75,6 +76,7 @@ export async function handleImagesPost(req: Request): Promise<Response> {
           textVersion: book.textVersion,
           paragraphNs: new Set(book.paragraphs.map((p) => p.n)),
           sceneIds: new Set(scenes.map((s) => s.id)),
+          chapters: new Set(book.chapters.map((c) => c.ch)),
         },
       );
     } catch {
@@ -85,17 +87,33 @@ export async function handleImagesPost(req: Request): Promise<Response> {
     }
 
     const byN = new Map(book.paragraphs.map((p) => [p.n, p.text]));
-    const sceneOf = scenes.find((s) =>
-      parsed.kind === "passage" ? parsed.n >= s.start_n && parsed.n <= s.end_n : s.id === parsed.sceneId,
-    );
+    const sceneOf =
+      parsed.kind === "chapter"
+        ? undefined
+        : scenes.find((s) =>
+            parsed.kind === "passage"
+              ? parsed.n >= s.start_n && parsed.n <= s.end_n
+              : s.id === parsed.sceneId,
+          );
     const sceneParas = sceneOf
       ? book.paragraphs.filter((p) => p.n >= sceneOf.start_n && p.n <= sceneOf.end_n)
       : [];
-    const content: ImageContent = {
-      passageText: parsed.kind === "passage" ? (byN.get(parsed.n) ?? "") : "",
-      sceneTitle: sceneOf?.title ?? "",
-      sceneClip: sceneParas.map((p) => p.text).join(" "),
-    };
+    // Chapter content comes from the frozen book: the chapter title plus
+    // the panel groups over that chapter's scenes. The client sends the
+    // chapter number only, so no client text reaches the prompt.
+    const content: ImageContent =
+      parsed.kind === "chapter"
+        ? {
+            passageText: "",
+            sceneTitle: book.chapters.find((c) => c.ch === parsed.ch)?.title ?? "",
+            sceneClip: "",
+            chapterPanels: chapterPanels(scenes.filter((s) => s.ch === parsed.ch)),
+          }
+        : {
+            passageText: parsed.kind === "passage" ? (byN.get(parsed.n) ?? "") : "",
+            sceneTitle: sceneOf?.title ?? "",
+            sceneClip: sceneParas.map((p) => p.text).join(" "),
+          };
 
     const cookieValue = parseAnonCookie(req.headers.get("cookie"));
     let anonId = cookieValue ? verifyAnonCookie(cookieValue, env.sessionSecret) : null;

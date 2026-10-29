@@ -64,6 +64,13 @@ export function BookView({
   const panelsOf = useMemo(() => new Map(panelsByChapter.map((e) => [e.ch, e.panels])), [panelsByChapter]);
   const titles = useMemo(() => new Map(model.chapters.map((c) => [c.ch, c.title])), [model]);
   const info = sceneOf.get(currentId);
+  // Spoiler reach: the highest chapter in view this visit. A chapter's
+  // page and captions load only once the reader has reached it.
+  const [maxReached, setMaxReached] = useState(() => sceneOf.get(initialSceneId)?.ch ?? 1);
+  const infoCh = info?.ch;
+  useEffect(() => {
+    if (infoCh !== undefined) setMaxReached((prev) => Math.max(prev, infoCh));
+  }, [infoCh]);
   const bookIndex = order.indexOf(currentId);
   const lastChapter = model.chapters[model.chapters.length - 1]?.ch ?? 0;
 
@@ -279,6 +286,10 @@ export function BookView({
           ch={panelsCh}
           chapterTitle={titles.get(panelsCh) ?? ""}
           panels={panelsOf.get(panelsCh) ?? []}
+          bookId={model.bookId}
+          textVersion={model.textVersion}
+          pref={pref}
+          reached={panelsCh <= maxReached}
           onClose={closePanels}
           onOpenArt={pic.lightbox.open}
         />
