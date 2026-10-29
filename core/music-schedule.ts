@@ -13,6 +13,7 @@ import type {
   MusicConfig,
   MusicManifest,
   MusicSelection,
+  Rng,
   SceneSignal,
   SelectEnv,
 } from "./music";
@@ -74,6 +75,7 @@ function evaluateSwitch(
     nowSec,
     rng: env.rng,
     override: config,
+    excludeId: env.excludeTrackId ?? null,
   });
   if (!pick || pick.id === state.currentId) return noChange(state);
   return {
@@ -246,20 +248,32 @@ function playlistById(manifest: MusicManifest, id: string) {
   return manifest.playlists.find((p) => p.id === id) ?? null;
 }
 
-// Enter playlist mode: switch at once to the first track, with no dwell
-// and no min-track rule. Scene changes stay tracked but never switch.
+// Enter playlist mode: switch at once to a random playlist track, with
+// no dwell and no min-track rule. Scene changes stay tracked but never
+// switch. The draw skips the excluded id when others exist; the index
+// stored is into trackIds, so Next keeps order and wraps as before.
 export function enterPlaylist(
   state: SchedulerState,
   manifest: MusicManifest,
   playlistId: string,
   nowSec: number,
   override?: Partial<MusicConfig>,
+  rng: Rng = () => 0,
+  excludeId?: string | null,
 ): ScheduleDecision {
   const config = resolveConfig(override ?? MUSIC_CONFIG);
   const playlist = playlistById(manifest, playlistId);
-  const firstId = playlist?.trackIds[0];
-  const first = firstId ? (manifest.tracks.find((t) => t.id === firstId) ?? null) : null;
-  if (!playlist || !first) return noChange(state);
+  if (!playlist || playlist.trackIds.length === 0) return noChange(state);
+  const ids =
+    excludeId !== null &&
+    excludeId !== undefined &&
+    playlist.trackIds.length > 1
+      ? (playlist.trackIds.filter((id) => id !== excludeId) as string[])
+      : playlist.trackIds;
+  const list = ids.length > 0 ? ids : playlist.trackIds;
+  const pickedId = list[Math.floor(rng() * list.length) % list.length] as string;
+  const first = manifest.tracks.find((t) => t.id === pickedId) ?? null;
+  if (!first) return noChange(state);
   return {
     state: {
       ...state,
@@ -267,7 +281,7 @@ export function enterPlaylist(
       currentStartedSec: nowSec,
       overrideId: null,
       overrideSceneId: null,
-      playlist: { id: playlist.id, index: 0 },
+      playlist: { id: playlist.id, index: playlist.trackIds.indexOf(first.id) },
     },
     switchToId: first.id,
     crossfadeSec: state.currentId === null ? 0 : config.crossfadeSec,

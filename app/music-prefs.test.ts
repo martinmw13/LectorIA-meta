@@ -171,3 +171,56 @@ describe("music prefs store", () => {
     expect(DEFAULT_VOLUME).toBe(0.8);
   });
 });
+
+describe("lastTrackId", () => {
+  it("round-trips the last played track", () => {
+    const { storage } = fakeStorage();
+    const prefs = createMusicPrefsStore(storage);
+    prefs.load();
+    expect(prefs.update({ lastTrackId: "c2" })).toEqual({
+      style: null,
+      volume: DEFAULT_VOLUME,
+      muted: false,
+      playlist: false,
+      lastTrackId: "c2",
+    });
+    const fresh = createMusicPrefsStore(storage);
+    expect(fresh.load()?.lastTrackId).toBe("c2");
+  });
+
+  it("loads old values without the key and keeps them absent on merge", () => {
+    const { storage } = fakeStorage({
+      [MUSIC_PREFS_KEY]: JSON.stringify({ style: "piano", volume: 0.5, muted: false }),
+    });
+    const prefs = createMusicPrefsStore(storage);
+    expect(prefs.load()).toEqual({ style: "piano", volume: 0.5, muted: false, playlist: false });
+    expect(prefs.update({ volume: 0.3 })).toEqual({
+      style: "piano",
+      volume: 0.3,
+      muted: false,
+      playlist: false,
+    });
+  });
+
+  it("falls back to null for a non-string id", () => {
+    const { storage } = fakeStorage({
+      [MUSIC_PREFS_KEY]: JSON.stringify({ style: null, lastTrackId: 42 }),
+    });
+    expect(createMusicPrefsStore(storage).load()?.lastTrackId).toBeNull();
+  });
+
+  it("a later track change never clobbers style or Chopin mode", () => {
+    const { storage } = fakeStorage({
+      [MUSIC_PREFS_KEY]: JSON.stringify({ style: "piano", playlist: true, lastTrackId: "a" }),
+    });
+    const prefs = createMusicPrefsStore(storage);
+    prefs.load();
+    expect(prefs.update({ lastTrackId: "b" })).toEqual({
+      style: "piano",
+      volume: null,
+      muted: false,
+      playlist: true,
+      lastTrackId: "b",
+    });
+  });
+});

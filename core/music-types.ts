@@ -71,6 +71,9 @@ export type Rng = () => number;
 export interface SelectEnv {
   selection: MusicSelection;
   rng: Rng;
+  // The last track that started playing, kept out of the first-track
+  // draw when other candidates exist. Absent means no exclusion.
+  excludeTrackId?: string | null;
 }
 
 export interface PersistedMusicPrefs {
@@ -78,6 +81,9 @@ export interface PersistedMusicPrefs {
   volume: number | null;
   muted: boolean;
   playlist: boolean;
+  // Id of the last track that started playing. Optional so values
+  // stored before it existed still load; a bad type falls back to null.
+  lastTrackId?: string | null;
 }
 
 export interface SceneSignal {

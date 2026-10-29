@@ -53,6 +53,9 @@ export interface SessionContext {
   routeSceneId: string | null;
   nowSec: number;
   rng: Rng;
+  // The last track that started playing, kept out of the first-track
+  // draw when other candidates exist. Absent means no exclusion.
+  excludeTrackId?: string | null;
 }
 
 export type MusicIntent =
@@ -71,6 +74,7 @@ const ENTRY_DWELL = { dwellSec: MUSIC_CONFIG.sceneEntryDwellSec };
 export function startSession(
   manifest: MusicManifest,
   prefs: PersistedMusicPrefs | null,
+  rng: Rng = () => 0,
 ): MusicSession {
   const fields = {
     scheduler: initScheduler(),
@@ -80,11 +84,20 @@ export function startSession(
     replayNonce: 0,
   };
   // A stored Chopin mode starts in the playlist at once (fade 0, like the
-  // first scene entry); without the playlist the stored style stands.
+  // first scene entry), at a random index; without the playlist the
+  // stored style stands.
   if (prefs?.playlist === true) {
     const playlist = findChopinPlaylist(manifest);
     if (playlist) {
-      const decision = enterPlaylist(fields.scheduler, manifest, playlist.id, 0);
+      const decision = enterPlaylist(
+        fields.scheduler,
+        manifest,
+        playlist.id,
+        0,
+        undefined,
+        rng,
+        prefs.lastTrackId ?? null,
+      );
       const entered = foldSwitch(fields, decision, false);
       return { ...entered, view: buildView(entered, manifest, null, entered.selection) };
     }
@@ -205,7 +218,11 @@ function baseOf(session: MusicSession): Omit<MusicSession, "view"> {
 }
 
 function selectEnv(session: MusicSession, ctx: SessionContext) {
-  return { selection: session.selection, rng: ctx.rng };
+  return {
+    selection: session.selection,
+    rng: ctx.rng,
+    excludeTrackId: ctx.excludeTrackId ?? null,
+  };
 }
 
 // One transition path for every music mode intent. The target says where
@@ -223,7 +240,15 @@ type ModeTarget =
 function transition(session: MusicSession, ctx: SessionContext, to: ModeTarget): MusicSession {
   const signal = ctx.routeSceneId !== null ? ctx.signalOf(ctx.routeSceneId) : null;
   if (to.kind === "enterPlaylist") {
-    const decision = enterPlaylist(session.scheduler, ctx.manifest, to.playlistId, ctx.nowSec);
+    const decision = enterPlaylist(
+      session.scheduler,
+      ctx.manifest,
+      to.playlistId,
+      ctx.nowSec,
+      undefined,
+      ctx.rng,
+      ctx.excludeTrackId ?? null,
+    );
     return settle(session, foldSwitch(baseOf(session), decision, true), ctx);
   }
   if (to.kind === "exitPlaylist") {

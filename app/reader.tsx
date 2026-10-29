@@ -175,16 +175,23 @@ export function Reader({
     const session = sessionRef.current;
     const fetched = manifestRef.current;
     if (!session || !fetched) return;
+    const prevView = session.view;
     const next = dispatch(session, intent, {
       manifest: fetched,
       signalOf: (sceneId) => byIdRef.current.get(sceneId) ?? null,
       routeSceneId: routeRef.current,
       nowSec: Date.now() / 1000,
       rng: Math.random,
+      excludeTrackId: prefsStoreRef.current.load()?.lastTrackId ?? null,
     });
     sessionRef.current = next;
-    if (next.view !== session.view) setView(next.view);
-    if (next.selection !== session.selection || next.view.playlistOn !== session.view.playlistOn) {
+    if (next.view !== prevView) setView(next.view);
+    // Remember the last track that started playing so the next session
+    // opens on something else. Merge-updates never clobber other fields.
+    if (next.view.currentId !== prevView.currentId && next.view.currentId !== null) {
+      prefsStoreRef.current.update({ lastTrackId: next.view.currentId });
+    }
+    if (next.selection !== session.selection || next.view.playlistOn !== prevView.playlistOn) {
       prefsStoreRef.current.update({
         style: next.selection.style,
         playlist: next.view.playlistOn,
@@ -221,7 +228,7 @@ export function Reader({
         if (cancelled) return;
         const parsed = choosePlayableSources(parseManifest(json), canPlayAudio);
         setManifest(parsed);
-        const session = startSession(parsed, prefsStoreRef.current.load());
+        const session = startSession(parsed, prefsStoreRef.current.load(), Math.random);
         sessionRef.current = session;
         setView(session.view);
       })
