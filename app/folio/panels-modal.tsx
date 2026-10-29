@@ -8,6 +8,7 @@ import type { ImageStylePref } from "../image-style";
 import type { ChapterPanel } from "./panels";
 import { PICTURE_COPY } from "./picture-copy";
 import { PictureDraw, PictureWait } from "./picture-draw";
+import { PANELS_NOTE } from "./picture-draw-paths";
 import { usePictureSkin } from "./picture-skin";
 import { useChapterPage } from "./use-chapter-page";
 
@@ -18,7 +19,7 @@ export function PanelsModal({
   bookId,
   textVersion,
   pref,
-  reached,
+  reachedCh,
   onClose,
   onOpenArt,
 }: {
@@ -28,13 +29,14 @@ export function PanelsModal({
   bookId: string;
   textVersion: string;
   pref: ImageStylePref;
-  reached: boolean;
+  reachedCh: number;
   onClose: () => void;
   onOpenArt: (src: string, caption: string, opener: HTMLElement | null) => void;
 }) {
   const chapterLabel = `Chapter ${ch}, ${chapterTitle}`;
+  const reached = ch <= reachedCh;
   const skin = usePictureSkin();
-  const { page, retry } = useChapterPage({ bookId, textVersion, ch, pref, reached });
+  const { page, retry } = useChapterPage({ bookId, textVersion, ch, pref, reachedCh });
   const closeRef = useRef<HTMLButtonElement | null>(null);
   const boxRef = useRef<HTMLDivElement | null>(null);
 
@@ -103,7 +105,7 @@ export function PanelsModal({
                 </button>
               </div>
             )}
-            {page.phase === "loading" ? <PictureWait skin={skin} /> : null}
+            {page.phase === "loading" ? <PictureWait skin={skin} note={PANELS_NOTE} /> : null}
             <ol className="panels-caps">
               {panels.map((p) => (
                 <li key={p.key}>{p.caption}</li>

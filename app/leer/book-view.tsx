@@ -289,7 +289,7 @@ export function BookView({
           bookId={model.bookId}
           textVersion={model.textVersion}
           pref={pref}
-          reached={panelsCh <= maxReached}
+          reachedCh={maxReached}
           onClose={closePanels}
           onOpenArt={pic.lightbox.open}
         />

@@ -152,3 +152,4 @@ export const DRAW_STATUS: Record<PictureSkin, string> = {
 };
 
 export const DRAW_NOTE = "Ready in about twenty seconds";
+export const PANELS_NOTE = "Ready in about half a minute";

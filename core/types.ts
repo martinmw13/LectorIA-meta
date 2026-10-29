@@ -108,6 +108,10 @@ export interface ChapterRequest {
   bookId: string;
   textVersion: string;
   ch: number;
+  // Furthest chapter the reader has reached. Client-claimed, so it stops
+  // casual spoilers and direct pre-generation of later chapters, not a
+  // determined client.
+  reachedCh: number;
   style?: ImageStyle;
 }
 

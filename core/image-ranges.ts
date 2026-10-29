@@ -9,9 +9,10 @@ export interface ParaRange {
 }
 
 // Reuse a cached picture when |A∩B|/|A∪B| over paragraphs is at least
-// this; a much larger or smaller selection falls below and gets its own
-// picture.
-export const REUSE_JACCARD = 0.5;
+// this: a selection extended by a paragraph above and below ([5] vs
+// [4,6]) shares a picture, one covering three times the text or more
+// gets its own.
+export const REUSE_JACCARD = 1 / 3;
 
 // Bounds the per-scene lookup.
 export const MAX_RANGES_PER_SCENE = 24;

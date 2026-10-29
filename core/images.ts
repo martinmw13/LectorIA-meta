@@ -115,7 +115,10 @@ export function parseImageRequest(json: unknown): ImageRequest {
   }
   if (kind === "chapter") {
     const keys = Object.keys(json).sort().join(",");
-    if (keys !== "bookId,ch,kind,textVersion" && keys !== "bookId,ch,kind,style,textVersion") {
+    if (
+      keys !== "bookId,ch,kind,reachedCh,textVersion" &&
+      keys !== "bookId,ch,kind,reachedCh,style,textVersion"
+    ) {
       throw new ImageValidationError();
     }
     if (typeof json.bookId !== "string" || json.bookId.length === 0) throw new ImageValidationError();
@@ -125,12 +128,16 @@ export function parseImageRequest(json: unknown): ImageRequest {
     if (typeof json.ch !== "number" || !Number.isInteger(json.ch) || json.ch < 1) {
       throw new ImageValidationError();
     }
+    if (typeof json.reachedCh !== "number" || !Number.isInteger(json.reachedCh) || json.reachedCh < 1) {
+      throw new ImageValidationError();
+    }
     const style = parseStyleChoice(json.style);
     return {
       kind: "chapter",
       bookId: json.bookId,
       textVersion: json.textVersion,
       ch: json.ch,
+      reachedCh: json.reachedCh,
       ...(style === undefined ? {} : { style }),
     };
   }
@@ -161,6 +168,9 @@ export function validateAgainstBook(req: ImageRequest, book: BookRef): void {
     return;
   }
   if (!book.chapters.has(req.ch)) throw new ImageValidationError();
+  if (!book.chapters.has(req.reachedCh) || req.ch > req.reachedCh) {
+    throw new ImageValidationError();
+  }
 }
 
 // One paragraph maps to one image; one scene maps to one image; one
