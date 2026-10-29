@@ -10,6 +10,10 @@ import type { PictureSkin } from "./picture-skin";
 
 const COMIC_POW = burst(12, 36, 48);
 
+// One burst cycle: how long the overlay signature replays. Separate from
+// data-press so a click replays even while the pointer hovers the button.
+const BURST_MS = 1800;
+
 function ButtonArt({ skin }: { skin: PictureSkin }) {
   if (skin === "pencil" || skin === "chihiro") {
     return (
@@ -91,11 +95,17 @@ export function PictureButton({
   // The click replays the one-shot press (classic skins) or POW (comic)
   // once, then rests still.
   const [press, setPress] = useState(false);
+  // Burst counter: remounts the overlay (React key) so the click signature
+  // restarts even when hover already plays the same element.
+  const [burst, setBurst] = useState(0);
+  const [burstOn, setBurstOn] = useState(false);
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const burstTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(
     () => () => {
       if (pressTimer.current) clearTimeout(pressTimer.current);
+      if (burstTimer.current) clearTimeout(burstTimer.current);
     },
     [],
   );
@@ -103,8 +113,13 @@ export function PictureButton({
   function handleClick(e: React.MouseEvent<HTMLButtonElement>) {
     pressButton(e);
     setPress(true);
+    setBurst((b) => b + 1);
+    setBurstOn(true);
     if (pressTimer.current) clearTimeout(pressTimer.current);
     pressTimer.current = setTimeout(() => setPress(false), 400);
+    if (burstTimer.current) clearTimeout(burstTimer.current);
+    // Only the flag clears; the key stays so nothing remounts (replays) later.
+    burstTimer.current = setTimeout(() => setBurstOn(false), BURST_MS);
     onClick(e);
   }
 
@@ -114,11 +129,12 @@ export function PictureButton({
       className={`pic-btn pic-btn-${skin}`}
       data-picture-skin={skin}
       data-press={press ? "1" : undefined}
+      data-burst={burstOn ? "1" : undefined}
       onClick={handleClick}
     >
       <span className="pic-btn-art" aria-hidden="true">
         <ButtonArt skin={skin} />
-        <ButtonFx kind="picture" />
+        <ButtonFx kind="picture" key={burst} />
       </span>
       <span className="pic-btn-lbl">{label}</span>
     </button>

@@ -16,9 +16,12 @@ import { DEFAULT_SKIN, SKINS } from "./skin";
 // underline, read arrows), shown per skin through page CSS.
 // app/chat/chat-bubble.tsx holds the chat launcher bubble, restyled per
 // skin by CSS classes on its paths, like picture-button.tsx.
+// app/folio/classic-music-fx.tsx holds the classic-skin music motion
+// overlay, rendered beside ButtonFx instead of an icon.
 const ALLOWLIST = new Set([
   "app/icons.tsx",
   "app/button-fx.tsx",
+  "app/folio/classic-music-fx.tsx",
   "app/player.tsx",
   "app/folio/picture-draw.tsx",
   "app/folio/picture-button.tsx",

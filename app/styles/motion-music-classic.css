@@ -1,0 +1,316 @@
+/* Classic-skin music motion (engraving / watercolor / ink), ported verbatim
+   from the approved prototype (.muse-ref/music-fx.inject.html): same
+   keyframes, durations, delays and easings, only re-targeted from the
+   prototype `.cyc` hook onto the app `.sticker` / `.chopin` buttons and from
+   the prototype svg `[data-burst]` onto the button `[data-burst]` flag. Only
+   :hover and the one-shot burst flag move. Nothing moves at rest. */
+
+html:is([data-skin="engraving"], [data-skin="watercolor"], [data-skin="ink"])
+  :is(.stickers, .sticker-wrap, .sticker, .chopin) {
+  overflow: visible;
+}
+
+html:is([data-skin="engraving"], [data-skin="watercolor"], [data-skin="ink"])
+  :is(.sticker, .chopin) {
+  position: relative;
+}
+
+html:is([data-skin="engraving"], [data-skin="watercolor"], [data-skin="ink"])
+  :is(.sticker, .chopin) .mfx {
+  position: absolute;
+  left: -40%;
+  top: -50%;
+  width: 180%;
+  height: 160%;
+  max-width: none;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 2;
+}
+
+html:is([data-skin="engraving"], [data-skin="watercolor"], [data-skin="ink"]) .mfx {
+  --b: #0866FF;
+  --b2: #0A3F9E;
+  --b3: #8DB8FF;
+}
+
+html:is([data-skin="engraving"], [data-skin="watercolor"], [data-skin="ink"]) .mfx * {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+html:is([data-skin="engraving"], [data-skin="watercolor"], [data-skin="ink"]) .mfx .h > *,
+html:is([data-skin="engraving"], [data-skin="watercolor"], [data-skin="ink"]) .mfx .c > * {
+  opacity: 0;
+}
+
+html:is([data-skin="engraving"], [data-skin="watercolor"], [data-skin="ink"]) .mfx .draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+
+html:is([data-skin="engraving"], [data-skin="watercolor"], [data-skin="ink"]) .mfx .keep {
+  opacity: 0;
+}
+
+/* engraving: hatched, double-ruled line notes */
+html[data-skin="engraving"] .mfx .nh {
+  fill: var(--mfx-hatch);
+  stroke: var(--b2);
+  stroke-width: 1.1;
+}
+
+html[data-skin="engraving"] .mfx .ns {
+  fill: none;
+  stroke: var(--b2);
+  stroke-width: 1.3;
+  stroke-linecap: round;
+}
+
+html[data-skin="engraving"] .mfx .ln {
+  fill: none;
+  stroke: var(--b2);
+  stroke-width: 1;
+  stroke-linecap: round;
+}
+
+html[data-skin="engraving"] .mfx .ln2 {
+  fill: none;
+  stroke: var(--b);
+  stroke-width: 0.6;
+  stroke-linecap: round;
+}
+
+html[data-skin="engraving"] .mfx .key {
+  fill: var(--mfx-hatch);
+  stroke: var(--b2);
+  stroke-width: 0.9;
+}
+
+/* watercolor: soft wash notes that bleed */
+html[data-skin="watercolor"] .mfx .nh {
+  fill: var(--b);
+  fill-opacity: 0.62;
+  filter: var(--mfx-wash);
+}
+
+html[data-skin="watercolor"] .mfx .ns {
+  fill: none;
+  stroke: var(--b);
+  stroke-opacity: 0.6;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  filter: var(--mfx-wash);
+}
+
+html[data-skin="watercolor"] .mfx .halo {
+  fill: var(--b3);
+  fill-opacity: 0.45;
+  filter: var(--mfx-blur);
+}
+
+html[data-skin="watercolor"] .mfx .ln {
+  fill: none;
+  stroke: var(--b3);
+  stroke-opacity: 0.7;
+  stroke-width: 8;
+  stroke-linecap: round;
+  filter: var(--mfx-blur);
+}
+
+html[data-skin="watercolor"] .mfx .ln2 {
+  fill: none;
+  stroke: var(--b);
+  stroke-opacity: 0.45;
+  stroke-width: 3;
+  stroke-linecap: round;
+  filter: var(--mfx-wash);
+}
+
+html[data-skin="watercolor"] .mfx .key {
+  fill: var(--b);
+  fill-opacity: 0.35;
+  filter: var(--mfx-wash);
+}
+
+/* ink: wobbly hand-drawn strokes */
+html[data-skin="ink"] .mfx .nh {
+  fill: var(--b);
+  filter: var(--mfx-wob);
+}
+
+html[data-skin="ink"] .mfx .ns {
+  fill: none;
+  stroke: var(--b);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: var(--mfx-wob);
+}
+
+html[data-skin="ink"] .mfx .ln,
+html[data-skin="ink"] .mfx .ln2 {
+  fill: none;
+  stroke: var(--b);
+  stroke-width: 2;
+  stroke-linecap: round;
+  filter: var(--mfx-wob);
+}
+
+html[data-skin="ink"] .mfx .ln2 {
+  stroke-width: 1.4;
+}
+
+html[data-skin="ink"] .mfx .key {
+  fill: #fff;
+  stroke: var(--b);
+  stroke-width: 1.8;
+  filter: var(--mfx-wob);
+}
+
+html:is([data-skin="engraving"], [data-skin="watercolor"], [data-skin="ink"]) .mfx .halo {
+  display: none;
+}
+
+html[data-skin="watercolor"] .mfx .halo {
+  display: inline;
+}
+
+/* ---------- Hover: notes float up once (restarts on every new hover) ---------- */
+@media (hover: hover) {
+  html:is([data-skin="engraving"], [data-skin="watercolor"], [data-skin="ink"])
+    :is(.sticker, .chopin):hover .mfx .h > .rise {
+    animation: mfx-rise 0.95s cubic-bezier(0.2, 0.7, 0.2, 1) calc(var(--i) * 140ms) both;
+  }
+
+  html:is([data-skin="engraving"], [data-skin="watercolor"], [data-skin="ink"])
+    :is(.sticker, .chopin):hover .mfx .h > .step {
+    animation: mfx-step 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) calc(var(--i) * 110ms) both;
+  }
+
+  html:is([data-skin="engraving"], [data-skin="watercolor"], [data-skin="ink"])
+    :is(.sticker, .chopin):hover .mfx .h > .pair {
+    animation: mfx-pair 1.05s cubic-bezier(0.2, 0.7, 0.2, 1) calc(var(--i) * 160ms) both;
+  }
+
+  html[data-skin="watercolor"] :is(.sticker, .chopin):hover .mfx .h > * {
+    animation-duration: 1.25s;
+  }
+}
+
+@keyframes mfx-rise {
+  0% { opacity: 0; transform: translate(0, 8px) rotate(-10deg) scale(0.85); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: translate(12px, -26px) rotate(12deg) scale(1); }
+}
+
+@keyframes mfx-step {
+  0% { opacity: 0; transform: translateY(6px) scale(0.7); }
+  30% { opacity: 1; transform: translateY(-3px) scale(1.05); }
+  60% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-10px); }
+}
+
+@keyframes mfx-pair {
+  0% { opacity: 0; transform: translate(0, 6px) rotate(-6deg); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-6px, -24px) rotate(8deg); }
+}
+
+/* ---------- Click (mode change): each mode's signature, once ---------- */
+/* orchestra: string swirl sweeps across, notes carried along */
+html:is([data-skin="engraving"], [data-skin="watercolor"], [data-skin="ink"])
+  :is(.sticker, .chopin)[data-burst] .mfx .c > .sw {
+  animation: mfx-draw 1.1s cubic-bezier(0.3, 0.6, 0.2, 1) calc(var(--i) * 90ms) both;
+}
+
+html:is([data-skin="engraving"], [data-skin="watercolor"], [data-skin="ink"])
+  :is(.sticker, .chopin)[data-burst] .mfx .c > .ride {
+  animation: mfx-ride 1.1s cubic-bezier(0.3, 0.6, 0.2, 1) calc(120ms + var(--i) * 120ms) both;
+}
+
+@keyframes mfx-draw {
+  0% { opacity: 1; stroke-dashoffset: 1; }
+  55% { opacity: 1; stroke-dashoffset: 0; }
+  100% { opacity: 0; stroke-dashoffset: -0.35; }
+}
+
+@keyframes mfx-ride {
+  0% { opacity: 0; transform: translate(-30px, 14px) rotate(-14deg); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: translate(34px, -18px) rotate(10deg); }
+}
+
+/* piano: a row of keys presses in sequence, notes pop off the keys */
+html:is([data-skin="engraving"], [data-skin="watercolor"], [data-skin="ink"])
+  :is(.sticker, .chopin)[data-burst] .mfx .c > .key {
+  animation: mfx-key 0.9s ease calc(var(--i) * 65ms) both;
+}
+
+html:is([data-skin="engraving"], [data-skin="watercolor"], [data-skin="ink"])
+  :is(.sticker, .chopin)[data-burst] .mfx .c > .pop {
+  animation: mfx-step 0.85s cubic-bezier(0.2, 0.7, 0.2, 1) calc(200ms + var(--i) * 130ms) both;
+}
+
+@keyframes mfx-key {
+  0% { opacity: 0; transform: translateY(-3px); }
+  20% { opacity: 1; transform: none; }
+  38% { transform: translateY(3px); }
+  56% { transform: none; }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* just chopin: a ring draws around the portrait, notes burst out of it */
+html:is([data-skin="engraving"], [data-skin="watercolor"], [data-skin="ink"])
+  :is(.sticker, .chopin)[data-burst] .mfx .c > .ring {
+  animation: mfx-ring 1.3s ease calc(var(--i) * 120ms) both;
+}
+
+html:is([data-skin="engraving"], [data-skin="watercolor"], [data-skin="ink"])
+  :is(.sticker, .chopin)[data-burst] .mfx .c > .burst {
+  animation: mfx-burst 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) calc(700ms + var(--i) * 90ms) both;
+}
+
+@keyframes mfx-ring {
+  0% { opacity: 1; stroke-dashoffset: 1; }
+  65% { opacity: 1; stroke-dashoffset: 0; }
+  100% { opacity: 0; stroke-dashoffset: 0; }
+}
+
+@keyframes mfx-burst {
+  0% { opacity: 0; transform: scale(0.6); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--r)) scale(1); }
+}
+
+/* ink keeps the circle drawn while Just Chopin is on */
+html[data-skin="ink"] .chopin[aria-pressed="true"] .mfx .keep {
+  opacity: 1;
+  stroke-dashoffset: 0;
+}
+
+html[data-skin="ink"] .chopin[data-burst] .mfx .keep {
+  animation: mfx-keep 0.9s ease 0.05s both;
+}
+
+@keyframes mfx-keep {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+
+/* ---------- Reduced motion: overlays off, nothing animates ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html:is([data-skin="engraving"], [data-skin="watercolor"], [data-skin="ink"])
+    :is(.sticker, .chopin) .mfx .h,
+  html:is([data-skin="engraving"], [data-skin="watercolor"], [data-skin="ink"])
+    :is(.sticker, .chopin) .mfx .c {
+    display: none;
+  }
+
+  html:is([data-skin="engraving"], [data-skin="watercolor"], [data-skin="ink"])
+    :is(.sticker, .chopin) .mfx * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

@@ -59,7 +59,8 @@ describe("music style control still and frameless", () => {
   });
 
   it("renders the shared fx overlay instead of inline notes", () => {
-    expect(control).toMatch(/<ButtonFx kind="music" \/>/);
+    expect(control).toMatch(/<ButtonFx kind="music" key=\{burst\} \/>/);
+    expect(control).toMatch(/<ClassicMusicFx mode=/);
     expect(control).not.toContain("mode-notes");
     expect(css).not.toContain(".mode-notes");
   });
