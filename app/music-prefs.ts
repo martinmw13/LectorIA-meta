@@ -23,13 +23,18 @@ function readStored(storage: PrefsStorage | undefined): PersistedMusicPrefs | nu
     if (!raw) return null;
     const json: unknown = JSON.parse(raw);
     if (typeof json !== "object" || json === null) return null;
-    const { style, volume, muted, playlist } = json as Record<string, unknown>;
-    return {
+    const { style, volume, muted, playlist, lastTrackId } = json as Record<string, unknown>;
+    const prefs: PersistedMusicPrefs = {
       style: typeof style === "string" ? style : null,
       volume: validVolume(volume),
       muted: typeof muted === "boolean" ? muted : false,
       playlist: typeof playlist === "boolean" ? playlist : false,
     };
+    // Old values without the key load unchanged; a bad type falls back
+    // to null so a corrupt id never blocks the next session.
+    if (typeof lastTrackId === "string") prefs.lastTrackId = lastTrackId;
+    else if (lastTrackId !== undefined) prefs.lastTrackId = null;
+    return prefs;
   } catch {
     return null;
   }

@@ -79,6 +79,24 @@ export interface ScheduledDraw {
   nowSec: number;
   rng: Rng;
   override?: Partial<MusicConfig>;
+  // Only the first track of a session (currentId null) reads this: the
+  // draw then skips that id when other candidates exist.
+  excludeId?: string | null;
+}
+
+// First track of a session: a uniform rng draw over the whole pool,
+// skipping the excluded id when other candidates exist. No tolerance
+// filter and no min-track hold, so the opener varies every session.
+function drawFirst(pool: RankedTrack[], rng: Rng, excludeId?: string | null): Track | null {
+  if (pool.length === 0) return null;
+  const eligible =
+    excludeId !== null &&
+    excludeId !== undefined &&
+    pool.length > 1
+      ? pool.filter((entry) => entry.track.id !== excludeId)
+      : pool;
+  const list = eligible.length > 0 ? eligible : pool;
+  return (list[Math.floor(rng() * list.length)] as RankedTrack | undefined)?.track ?? null;
 }
 
 // The one scheduled draw: same-style tracks with the scene's dominant
@@ -86,6 +104,8 @@ export interface ScheduledDraw {
 // randomTolerance of the best. The current track stays when eligible
 // with no rng call; otherwise the draw runs first (one rng call, its
 // pick discarded under the min-track hold), matching evaluateRandom.
+// The first track of a session (currentId null) instead draws uniformly
+// with rng from the whole pool, so sessions never open on one song.
 export function selectScheduled(draw: ScheduledDraw): Track | null {
   const { cands, scene, currentId, rng } = draw;
   if (cands.length === 0 || scene === null) return null;
@@ -94,6 +114,7 @@ export function selectScheduled(draw: ScheduledDraw): Track | null {
   const dom = dominantEmotion(scene);
   const pool = ranked.filter((entry) => entry.track.emotion === dom);
   const kept = pool.length > 0 ? pool : ranked;
+  if (currentId === null) return drawFirst(kept, rng, draw.excludeId);
   const best = kept[0]?.score ?? 0;
   const eligible = kept.filter((entry) => entry.score >= best - config.randomTolerance);
   const current = currentId !== null ? eligible.find((entry) => entry.track.id === currentId) : undefined;
