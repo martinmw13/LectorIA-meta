@@ -6,21 +6,21 @@ A Muse commit is a non-merge commit on main that carries the trailer `Co-authore
 
 ## Commits
 
-- Muse commits: 343 of 402 non-merge commits (85%).
+- Muse commits: 344 of 403 non-merge commits (85%).
 - Date range (UTC-3): 2026-10-27 to 2026-10-29.
 
 ## Lines
 
 | Scope | Muse added | Muse removed | Other added | Other removed | Muse share of added |
 | --- | --- | --- | --- | --- | --- |
-| Source code (`app/`, `core/`, `pipeline/`, `server/`, `scripts/`) | 51,180 | 10,609 | 7,470 | 2,791 | 87% |
-| All files | 257,478 | 14,779 | 27,751 | 3,333 | 90% |
+| Source code (`app/`, `core/`, `pipeline/`, `server/`, `scripts/`) | 51,325 | 10,632 | 7,470 | 2,791 | 87% |
+| All files | 257,623 | 14,802 | 27,751 | 3,333 | 90% |
 
 All files includes the Muse Code session transcripts in `agent-logs/`, the vendored skills in `.agents/` and `package-lock.json`.
 
 ## Pull requests
 
-68 merged PRs contain Muse commits. Each carries the `Muse Code` label.
+69 merged PRs contain Muse commits. Each carries the `Muse Code` label.
 
 | PR | Title | Merged (UTC-3) | Muse commits |
 | --- | --- | --- | --- |
@@ -92,3 +92,4 @@ All files includes the Muse Code session transcripts in `agent-logs/`, the vendo
 | [#106](https://github.com/martinmw13/LectorIA-meta/pull/106) | feat(ui): port approved button motion to every skin | 2026-10-29 | 1 of 1 |
 | [#107](https://github.com/martinmw13/LectorIA-meta/pull/107) | fix(pictures): tune reuse overlap and lock panels server-side | 2026-10-29 | 1 of 2 |
 | [#108](https://github.com/martinmw13/LectorIA-meta/pull/108) | refactor(guard): shared abuse and spend guards; Turnstile for images | 2026-10-29 | 1 of 1 |
+| [#109](https://github.com/martinmw13/LectorIA-meta/pull/109) | fix(guard): platform client IP, per-cookie unknown bucket, warn-level chat failures | 2026-10-29 | 1 of 1 |
