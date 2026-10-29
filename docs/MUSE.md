@@ -6,21 +6,21 @@ A Muse commit is a non-merge commit on main that carries the trailer `Co-authore
 
 ## Commits
 
-- Muse commits: 339 of 398 non-merge commits (85%).
+- Muse commits: 340 of 399 non-merge commits (85%).
 - Date range (UTC-3): 2026-10-27 to 2026-10-29.
 
 ## Lines
 
 | Scope | Muse added | Muse removed | Other added | Other removed | Muse share of added |
 | --- | --- | --- | --- | --- | --- |
-| Source code (`app/`, `core/`, `pipeline/`, `server/`, `scripts/`) | 47,559 | 9,916 | 7,470 | 2,791 | 86% |
-| All files | 248,324 | 14,070 | 27,751 | 3,333 | 90% |
+| Source code (`app/`, `core/`, `pipeline/`, `server/`, `scripts/`) | 48,658 | 10,017 | 7,470 | 2,791 | 87% |
+| All files | 251,473 | 14,180 | 27,751 | 3,333 | 90% |
 
 All files includes the Muse Code session transcripts in `agent-logs/`, the vendored skills in `.agents/` and `package-lock.json`.
 
 ## Pull requests
 
-64 merged PRs contain Muse commits. Each carries the `Muse Code` label.
+65 merged PRs contain Muse commits. Each carries the `Muse Code` label.
 
 | PR | Title | Merged (UTC-3) | Muse commits |
 | --- | --- | --- | --- |
@@ -88,3 +88,4 @@ All files includes the Muse Code session transcripts in `agent-logs/`, the vendo
 | [#102](https://github.com/martinmw13/LectorIA-meta/pull/102) | fix(ui): port the approved prototype button motion 1:1 in all six skins | 2026-10-29 | 1 of 1 |
 | [#103](https://github.com/martinmw13/LectorIA-meta/pull/103) | fix(pictures): move the waiting caption under the picture box | 2026-10-29 | 1 of 1 |
 | [#104](https://github.com/martinmw13/LectorIA-meta/pull/104) | feat(pictures): reuse a cached picture for an overlapping selection | 2026-10-29 | 1 of 2 |
+| [#105](https://github.com/martinmw13/LectorIA-meta/pull/105) | feat(panels): one comic page per chapter | 2026-10-29 | 1 of 4 |
