@@ -88,11 +88,22 @@ export async function handleImagesPost(req: Request): Promise<Response> {
     const sceneOf = scenes.find((s) =>
       parsed.kind === "passage" ? parsed.n >= s.start_n && parsed.n <= s.end_n : s.id === parsed.sceneId,
     );
+    // A selection never leaves its starting scene; a lone paragraph
+    // keeps the bare pN key.
+    if (parsed.kind === "passage" && parsed.endN !== undefined) {
+      const end = Math.min(parsed.endN, sceneOf?.end_n ?? parsed.endN);
+      const { endN: _dropped, ...single } = parsed;
+      parsed = end <= parsed.n ? single : { ...parsed, endN: end };
+    }
+    const passageTexts: string[] = [];
+    if (parsed.kind === "passage") {
+      for (let n = parsed.n; n <= (parsed.endN ?? parsed.n); n++) passageTexts.push(byN.get(n) ?? "");
+    }
     const sceneParas = sceneOf
       ? book.paragraphs.filter((p) => p.n >= sceneOf.start_n && p.n <= sceneOf.end_n)
       : [];
     const content: ImageContent = {
-      passageText: parsed.kind === "passage" ? (byN.get(parsed.n) ?? "") : "",
+      passageText: parsed.kind === "passage" ? passageTexts.join(" ") : "",
       sceneTitle: sceneOf?.title ?? "",
       sceneClip: sceneParas.map((p) => p.text).join(" "),
     };
@@ -115,6 +126,7 @@ export async function handleImagesPost(req: Request): Promise<Response> {
       ip: clientIp(req.headers.get("x-forwarded-for")),
       anonId,
       day: utcDay(),
+      sceneId: sceneOf?.id ?? "",
     });
 
     const { json, status } = toResponse(res);

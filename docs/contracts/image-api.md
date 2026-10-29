@@ -1,11 +1,13 @@
 ## Image api
 
 `POST /api/images` (Node runtime, `maxDuration` 120). Request is a
-discriminated union: `{ kind: "passage", bookId, textVersion, n }` names
-the paragraph where the selection starts, `{ kind: "scene", bookId,
+discriminated union: `{ kind: "passage", bookId, textVersion, n, endN? }`
+names the first and last paragraph of the selection (`endN` omitted for
+a one-paragraph selection), `{ kind: "scene", bookId,
 textVersion, sceneId }` names the scene. Validation is strict: known
-book, matching `textVersion`, integer `n` inside the book, known
-`sceneId`. Any other body is a 400 with a generic English message.
+book, matching `textVersion`, integer `n` inside the book, optional
+integer `endN >= n` inside the book, known `sceneId`. The server clamps
+`endN` to the end of the scene that holds `n`. Any other body is a 400 with a generic English message.
 The client sends ordinals and ids only, never text. "Illustrate
 scene" uses the scene id from the route. Requests may carry an
 optional `style` field, see [Image style](image-style.md); styled keys
@@ -24,9 +26,26 @@ tomorrow". The UI links the Oz sentence via `CREDITS_OUT_LIBRARY_HREF`
 (`"/"`). Caption is the scene title, or the paragraph's first words,
 built server-side.
 
-The passage cache key is book plus start paragraph plus `textVersion`
-plus `PROMPT_VERSION` (`v1`); the scene key swaps in the scene id.
-Both map to a deterministic Blob path (`addRandomSuffix: false`,
+The passage cache key is book plus the selection's paragraph range
+plus `textVersion` plus `PROMPT_VERSION` (`v1`): `p{n}.webp` for one
+paragraph (the key every older picture already has), `p{n}-{endN}.webp`
+for a range. The scene key swaps in the scene id and never changes.
+
+Overlapping selections share a picture. Each cached passage range is
+recorded in a small per-scene list in Upstash (`img:ranges:` plus the
+key base and scene id, newest 24 kept, `MAX_RANGES_PER_SCENE` in
+`core/image-ranges.ts`). On an exact-key miss the server reuses the
+cached range with the highest Jaccard similarity over paragraphs,
+`|A∩B| / |A∪B|`, if it is at least `REUSE_JACCARD` = 0.5. So one
+paragraph against itself, or a four-paragraph selection moved or grown
+by one paragraph, reuses the picture; one paragraph against three or
+more (`[5]` vs `[4,6]` is 1/3), or any disjoint range, gets its own
+picture. A reuse is a cache hit: instant, no lock, no quota, no spend.
+A new range takes the lock on its own key, generates, and joins the
+list. The list is GET+SET, so a concurrent append can be lost; that
+only costs a future reuse.
+
+Both kinds map to a deterministic Blob path (`addRandomSuffix: false`,
 `allowOverwrite: false`). An Upstash Redis index maps key to Blob URL,
 so hits are one GET; on an index miss the server lists by path prefix
 before generating and backfills the index.

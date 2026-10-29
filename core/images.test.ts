@@ -222,6 +222,68 @@ describe("styled buildPrompt", () => {
   });
 });
 
+describe("passage endN", () => {
+  it("parses an optional integer endN alongside the style", () => {
+    expect(
+      parseImageRequest({ kind: "passage", bookId: "oz", textVersion: "t123", n: 3, endN: 5 }),
+    ).toEqual({ kind: "passage", bookId: "oz", textVersion: "t123", n: 3, endN: 5 });
+    expect(
+      parseImageRequest({
+        kind: "passage",
+        bookId: "oz",
+        textVersion: "t123",
+        n: 3,
+        endN: 5,
+        style: { preset: "pencil" },
+      }),
+    ).toEqual({
+      kind: "passage",
+      bookId: "oz",
+      textVersion: "t123",
+      n: 3,
+      endN: 5,
+      style: { kind: "preset", id: "pencil" },
+    });
+  });
+
+  it("rejects a non-integer endN and unknown keys", () => {
+    expect(() =>
+      parseImageRequest({ kind: "passage", bookId: "oz", textVersion: "t123", n: 3, endN: 4.5 }),
+    ).toThrow();
+    expect(() =>
+      parseImageRequest({
+        kind: "passage",
+        bookId: "oz",
+        textVersion: "t123",
+        n: 3,
+        endN: 5,
+        extra: 1,
+      }),
+    ).toThrow();
+  });
+
+  it("rejects endN below n or outside the book", () => {
+    expect(() =>
+      validateAgainstBook({ kind: "passage", bookId: "oz", textVersion: "t123", n: 2, endN: 1 }, book),
+    ).toThrow();
+    expect(() =>
+      validateAgainstBook({ kind: "passage", bookId: "oz", textVersion: "t123", n: 1, endN: 99 }, book),
+    ).toThrow();
+  });
+
+  it("keys ranges without breaking the bare pN key", () => {
+    expect(imageKey({ kind: "passage", bookId: "oz", textVersion: "t123", n: 3 })).toBe(
+      "images/oz/t123/v1/p3.webp",
+    );
+    expect(imageKey({ kind: "passage", bookId: "oz", textVersion: "t123", n: 3, endN: 3 })).toBe(
+      "images/oz/t123/v1/p3.webp",
+    );
+    expect(imageKey({ kind: "passage", bookId: "oz", textVersion: "t123", n: 3, endN: 5 })).toBe(
+      "images/oz/t123/v1/p3-5.webp",
+    );
+  });
+});
+
 describe("validateAgainstBook", () => {
   it("accepts matching passage and scene", () => {
     expect(() =>
