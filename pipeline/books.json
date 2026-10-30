@@ -3,5 +3,64 @@
     "gutenberg": 55,
     "title": "The Wonderful Wizard of Oz",
     "author": "L. Frank Baum"
+  },
+  "alice": {
+    "gutenberg": 11,
+    "title": "Alice's Adventures in Wonderland",
+    "author": "Lewis Carroll",
+    "format": "epub"
+  },
+  "frankenstein": {
+    "gutenberg": 84,
+    "title": "Frankenstein",
+    "author": "Mary Shelley",
+    "format": "epub"
+  },
+  "pride": {
+    "gutenberg": 1342,
+    "title": "Pride and Prejudice",
+    "author": "Jane Austen",
+    "format": "epub",
+    "epubUrl": "https://standardebooks.org/ebooks/jane-austen/pride-and-prejudice/downloads/jane-austen_pride-and-prejudice.epub?source=download"
+  },
+  "sherlock": {
+    "gutenberg": 1661,
+    "title": "The Adventures of Sherlock Holmes",
+    "author": "Arthur Conan Doyle",
+    "format": "epub"
+  },
+  "dracula": {
+    "gutenberg": 345,
+    "title": "Dracula",
+    "author": "Bram Stoker",
+    "format": "epub",
+    "epubUrl": "https://standardebooks.org/ebooks/bram-stoker/dracula/downloads/bram-stoker_dracula.epub?source=download"
+  },
+  "peterpan": {
+    "gutenberg": 16,
+    "title": "Peter Pan",
+    "author": "J. M. Barrie",
+    "format": "epub"
+  },
+  "treasure": {
+    "gutenberg": 120,
+    "title": "Treasure Island",
+    "author": "Robert Louis Stevenson",
+    "format": "epub",
+    "epubUrl": "https://standardebooks.org/ebooks/robert-louis-stevenson/treasure-island/downloads/robert-louis-stevenson_treasure-island.epub?source=download"
+  },
+  "jungle": {
+    "gutenberg": 236,
+    "title": "The Jungle Book",
+    "author": "Rudyard Kipling",
+    "format": "epub",
+    "epubUrl": "https://standardebooks.org/ebooks/rudyard-kipling/the-jungle-book/downloads/rudyard-kipling_the-jungle-book.epub?source=download"
+  },
+  "carol": {
+    "gutenberg": 46,
+    "title": "A Christmas Carol",
+    "author": "Charles Dickens",
+    "format": "epub",
+    "epubUrl": "https://standardebooks.org/ebooks/charles-dickens/a-christmas-carol/downloads/charles-dickens_a-christmas-carol.epub?source=download"
   }
 }

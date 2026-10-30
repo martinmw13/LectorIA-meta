@@ -114,7 +114,7 @@ export async function runClassify(ctx: StepCtx, deps: { jev: JevClient; meta: Me
     }
     return { ...scene, ...emotion };
   });
-  metaUsage.costUsd = metaCostUsd({ prompt: metaUsage.promptTokens, cached: metaUsage.cachedTokens, completion: metaUsage.completionTokens });
+  metaUsage.costUsd = metaCostUsd({ prompt: metaUsage.promptTokens, cached: metaUsage.cachedTokens, completion: metaUsage.completionTokens }, metaUsage.model);
   const jevCost = jevCostUsd(jevInputTokens);
   const segment = scenesFile.provenance.meta;
   const metaTotal = {

@@ -23,6 +23,9 @@ export interface BookConfig {
   title: string;
   author: string;
   format?: string;
+  // Optional EPUB source (e.g. Standard Ebooks, CC0) when the Gutenberg
+  // EPUB packs several chapters per file or carries ads the rules can't settle.
+  epubUrl?: string;
 }
 
 export function bookConfig(bookKey: string): BookConfig {
@@ -48,10 +51,11 @@ async function loadEpub(
   bookKey: string,
   gutenberg: number,
   fetchFn: typeof fetch,
+  epubUrl?: string,
 ): Promise<Uint8Array> {
   const local = join("data", "raw", bookKey, `pg${gutenberg}.epub`);
   if (existsSync(local)) return new Uint8Array(readFileSync(local));
-  const url = `https://www.gutenberg.org/cache/epub/${gutenberg}/pg${gutenberg}-images-3.epub`;
+  const url = epubUrl ?? `https://www.gutenberg.org/cache/epub/${gutenberg}/pg${gutenberg}-images-3.epub`;
   const response = await fetchFn(url);
   if (!response.ok) throw new Error(`download failed with status ${response.status}`);
   return new Uint8Array(await response.arrayBuffer());
@@ -63,7 +67,7 @@ export async function runIngest(
 ): Promise<Book> {
   const config = deps?.config ?? bookConfig(ctx.bookKey);
   if (config.format === "epub") {
-    const bytes = await loadEpub(ctx.bookKey, config.gutenberg, deps?.fetchFn ?? fetch);
+    const bytes = await loadEpub(ctx.bookKey, config.gutenberg, deps?.fetchFn ?? fetch, config.epubUrl);
     const { title, sections } = readEpubSections(bytes, (text, type) => {
       if (type === "text/html") return new JSDOM(text).window.document;
       return new JSDOM(text, { contentType: type }).window.document;
