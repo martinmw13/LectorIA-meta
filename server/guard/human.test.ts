@@ -120,33 +120,48 @@ describe("checkHuman", () => {
   const keys = { turnstileSecret: "ts-secret", turnstileSiteKey: "ts-site" };
 
   it("skips with a one-time warning when no secret is configured", async () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
     await expect(checkHuman(base)).resolves.toEqual({ ok: true });
     await expect(checkHuman(base)).resolves.toEqual({ ok: true });
-    expect(warn).toHaveBeenCalledTimes(1);
-    expect(warn.mock.calls[0]?.[0]).toContain("turnstile");
+    expect(err).toHaveBeenCalledTimes(1);
+    const msg = String(err.mock.calls[0]?.[0]);
+    expect(msg).toContain("turnstile");
+    expect(msg).toContain("TURNSTILE_SECRET_KEY");
+    expect(msg).toContain("NEXT_PUBLIC_TURNSTILE_SITE_KEY");
   });
 
   it("skips with a one-time warning when only the secret is set", async () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
     await expect(checkHuman({ ...base, turnstileSecret: "ts-secret" })).resolves.toEqual({ ok: true });
     await expect(checkHuman({ ...base, turnstileSecret: "ts-secret" })).resolves.toEqual({ ok: true });
-    expect(warn).toHaveBeenCalledTimes(1);
-    expect(warn.mock.calls[0]?.[0]).toContain("turnstile");
-    expect(String(warn.mock.calls[0]?.[0])).not.toContain("ts-secret");
+    expect(err).toHaveBeenCalledTimes(1);
+    const msg = String(err.mock.calls[0]?.[0]);
+    expect(msg).toContain("NEXT_PUBLIC_TURNSTILE_SITE_KEY");
+    expect(msg).not.toContain("TURNSTILE_SECRET_KEY");
+    expect(msg).not.toContain("ts-secret");
   });
 
   it("skips when only the site key is set", async () => {
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
     await expect(checkHuman({ ...base, turnstileSiteKey: "ts-site" })).resolves.toEqual({ ok: true });
+    const msg = String(err.mock.calls[0]?.[0]);
+    expect(msg).toContain("TURNSTILE_SECRET_KEY");
+    expect(msg).not.toContain("NEXT_PUBLIC_TURNSTILE_SITE_KEY");
+    expect(msg).not.toContain("ts-site");
   });
 
   it("skips placeholder values for either key", async () => {
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
     await expect(
       checkHuman({ ...base, turnstileSecret: "[SENSITIVE]", turnstileSiteKey: "[SENSITIVE]" }),
     ).resolves.toEqual({ ok: true });
     await expect(
       checkHuman({ ...base, turnstileSecret: "ts-secret", turnstileSiteKey: "[SENSITIVE]" }),
     ).resolves.toEqual({ ok: true });
+    expect(err).toHaveBeenCalledTimes(1);
+    const msg = String(err.mock.calls[0]?.[0]);
+    expect(msg).toContain("TURNSTILE_SECRET_KEY");
+    expect(msg).toContain("NEXT_PUBLIC_TURNSTILE_SITE_KEY");
   });
 
   it("honors the neutral cookie without calling siteverify", async () => {

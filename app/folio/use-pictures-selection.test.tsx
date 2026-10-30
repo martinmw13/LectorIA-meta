@@ -97,6 +97,40 @@ test("a debounced selectionchange covers keyboard selections", async () => {
   expect(popover()).not.toBeNull();
 });
 
+test("hidePopover clears the dedupe so the same selection reshows the popover", async () => {
+  const { view } = await mount();
+  selectText(0, 10);
+  await act(async () => {
+    view.dispatchEvent(new Event("pointerup", { bubbles: true }));
+  });
+  expect(popover()).not.toBeNull();
+  await act(async () => {
+    seen[seen.length - 1]?.hidePopover();
+  });
+  expect(popover()).toBeNull();
+  await act(async () => {
+    view.dispatchEvent(new Event("pointerup", { bubbles: true }));
+  });
+  expect(popover()).not.toBeNull();
+});
+
+test("Escape clears the dedupe so the same selection reshows the popover", async () => {
+  const { view } = await mount();
+  selectText(0, 10);
+  await act(async () => {
+    view.dispatchEvent(new Event("pointerup", { bubbles: true }));
+  });
+  expect(popover()).not.toBeNull();
+  await act(async () => {
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+  });
+  expect(popover()).toBeNull();
+  await act(async () => {
+    view.dispatchEvent(new Event("pointerup", { bubbles: true }));
+  });
+  expect(popover()).not.toBeNull();
+});
+
 test("unmount removes every selection listener", async () => {
   const { host, view } = await mount();
   const viewRemove = vi.spyOn(view, "removeEventListener");

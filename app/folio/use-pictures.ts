@@ -138,7 +138,20 @@ export function usePictures({
   const sceneRef = useRef(sceneId);
   sceneRef.current = sceneId;
 
-  const hidePopover = useCallback(() => setPopover(null), []);
+  // The last selection rescan painted, so repeat events for an unchanged
+  // selection (pointerup plus mouseup, selectionchange bursts) paint once.
+  const lastSelRef = useRef<{
+    text: string;
+    anchor: Node | null;
+    anchorOffset: number;
+    focus: Node | null;
+    focusOffset: number;
+  } | null>(null);
+
+  const hidePopover = useCallback(() => {
+    lastSelRef.current = null;
+    setPopover(null);
+  }, []);
 
   // The card and figures follow the scene in view through the session
   // caches; in-flight requests keep filling the cache they started.
@@ -335,16 +348,6 @@ export function usePictures({
     [storeFigures, sceneId],
   );
 
-  // The last selection rescan painted, so repeat events for an unchanged
-  // selection (pointerup plus mouseup, selectionchange bursts) paint once.
-  const lastSelRef = useRef<{
-    text: string;
-    anchor: Node | null;
-    anchorOffset: number;
-    focus: Node | null;
-    focusOffset: number;
-  } | null>(null);
-
   // Re-read the live selection against the current text view. The
   // continuous reader calls it after switching scenes under a selection
   // that started elsewhere, so the popover follows without a second tap.
@@ -418,7 +421,10 @@ export function usePictures({
 
   useEffect(() => {
     if (!popover) return;
-    const hide = () => setPopover(null);
+    const hide = () => {
+      lastSelRef.current = null;
+      setPopover(null);
+    };
     let frame = 0;
     // Capture phase sees scrolls from inner containers too (they do not
     // bubble), so the pill tracks the text in any reader layout.

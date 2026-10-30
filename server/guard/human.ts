@@ -56,10 +56,10 @@ export function verifyHumanCookie(
 let warnedOnce = false;
 
 // Without both keys the check is skipped so dev works without keys.
-export function warnTurnstileSkippedOnce(): void {
+export function warnTurnstileSkippedOnce(missing: string[]): void {
   if (warnedOnce) return;
   warnedOnce = true;
-  console.warn("turnstile not configured, skipping");
+  console.error(`turnstile not configured, skipping (missing: ${missing.join(", ")})`);
 }
 
 export function resetTurnstileWarnForTests(): void {
@@ -108,8 +108,12 @@ export async function checkHuman(
   input: HumanCheckInput,
 ): Promise<{ ok: true; setCookie?: string } | { ok: false }> {
   const secret = usable(input.turnstileSecret);
-  if (!secret || !usable(input.turnstileSiteKey)) {
-    warnTurnstileSkippedOnce();
+  const siteKey = usable(input.turnstileSiteKey);
+  if (!secret || !siteKey) {
+    const missing: string[] = [];
+    if (!secret) missing.push("TURNSTILE_SECRET_KEY");
+    if (!siteKey) missing.push("NEXT_PUBLIC_TURNSTILE_SITE_KEY");
+    warnTurnstileSkippedOnce(missing);
     return { ok: true };
   }
   if (verifyHumanCookie(parseHumanCookie(input.cookieHeader), input.sessionSecret)) {
