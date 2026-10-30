@@ -269,9 +269,10 @@ export function styleLine(style: ImageStyle | undefined, book?: StyleBook): stri
   );
 }
 
-// Prompt from trusted server-side book text only. The client sends
+// Base prompt from trusted server-side book text only. The client sends
 // ordinals and ids, never free text, so there is no injection path. Only
 // the optional parsed style reaches the prompt, never raw client text.
+// The route appends validated, clipped model-derived bookmap details after this base.
 export function buildPrompt(args: {
   kind: Exclude<ImageKind, "chapter">;
   passageText: string;

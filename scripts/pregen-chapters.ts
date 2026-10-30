@@ -14,7 +14,7 @@ import { reserveSpend } from "../server/guard/spend";
 import { imageCostMicro, imageKey, indexKeyFor } from "../core/images";
 import { SKIN_DEFAULT_IMAGE_STYLE, parseStyleChoice } from "../core/image-style";
 import type { ImageStylePresetId } from "../core/image-style";
-import { buildChapterPrompt, chapterPanels } from "../core/panels";
+import { buildPregenChapterPrompt } from "../server/images/final-prompt";
 
 const SKIN_STYLE_IDS = [
   ...new Set(
@@ -108,8 +108,6 @@ async function main(): Promise<void> {
   let planned = 0;
 
   for (const ch of wantCh) {
-    const chapterTitle = known.get(ch) as string;
-    const groups = chapterPanels(scenes.filter((s) => s.ch === ch));
     for (const styleId of wantStyles) {
       const style = parseStyleChoice({ preset: styleId });
       const key = imageKey({
@@ -161,9 +159,7 @@ async function main(): Promise<void> {
       const refund = (): Promise<void> => spent.reservation.release();
       let bytes: Uint8Array;
       try {
-        bytes = await generate.generate(
-          buildChapterPrompt({ chapterTitle, panels: groups, style }),
-        );
+        bytes = await generate.generate(buildPregenChapterPrompt({ book, scenes, ch, style }));
       } catch {
         await refund();
         failed++;

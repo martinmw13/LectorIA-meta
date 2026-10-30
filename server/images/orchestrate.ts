@@ -9,7 +9,6 @@ import {
   QUOTA_TTL_SEC,
   LOCK_TTL_SEC,
   buildCaption,
-  buildPrompt,
   imageCostMicro,
   imageKey,
   indexKeyFor,
@@ -20,9 +19,9 @@ import type { ImageGenerator, ImageRequest, ImageResponse, ImageStore, StyleBook
 import type { KV } from "@/core/types";
 import { addRange, parseRanges, pickReusable, rangeListKeyFor } from "@/core/image-ranges";
 import type { ParaRange } from "@/core/image-ranges";
-import { buildChapterPrompt } from "@/core/panels";
 import type { ImageEnv } from "./env";
 import { errorTag } from "./errors";
+import { buildFinalPrompt } from "./final-prompt";
 import { checkHuman } from "@/server/guard/human";
 import type { HumanCheckInput } from "@/server/guard/human";
 import { refundDualQuota, takeDualQuota } from "@/server/guard/quota";
@@ -222,24 +221,18 @@ export async function orchestrate(
 
     let bytes: Uint8Array;
     try {
-      const base =
-        req.kind === "chapter"
-          ? buildChapterPrompt({
-              chapterTitle: deps.content.sceneTitle,
-              panels: deps.content.chapterPanels ?? [],
-              style: req.style,
-              book: deps.content.book,
-            })
-          : buildPrompt({
-              kind: req.kind,
-              passageText: deps.content.passageText,
-              sceneTitle: deps.content.sceneTitle,
-              sceneClip: deps.content.sceneClip,
-              style: req.style,
-              book: deps.content.book,
-            });
-      const reference = deps.content.reference ?? "";
-      bytes = await deps.generate.generate(reference ? `${base} ${reference}` : base);
+      bytes = await deps.generate.generate(
+        buildFinalPrompt({
+          kind: req.kind,
+          passageText: deps.content.passageText,
+          sceneTitle: deps.content.sceneTitle,
+          sceneClip: deps.content.sceneClip,
+          chapterPanels: deps.content.chapterPanels,
+          style: req.style,
+          book: deps.content.book,
+          reference: deps.content.reference,
+        }),
+      );
     } catch (e) {
       await releaseSpendOnce();
       await refundQuotaOnce();
