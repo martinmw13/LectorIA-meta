@@ -1,0 +1,37 @@
+/* "Pick your style": a boxless row of six swatches above the featured
+ * book. The live skin wears a Meta-blue ring; hover lifts a swatch a
+ * hair. Reduced motion keeps only the ring. */
+.ob-right { flex-direction: column; }
+.ob-right .ob-plate { --art-h: clamp(180px, calc(100vh - 500px), 430px); }
+
+.sp { flex: none; margin: 0 auto 10px; text-align: center; }
+.sp-t {
+  margin: 0 0 6px; color: var(--muted); font-family: var(--note); font-style: var(--note-style);
+  font-size: 14px; line-height: 1.2;
+}
+.sp-row { display: flex; justify-content: center; gap: 10px; }
+.sp-item {
+  display: flex; flex-direction: column; align-items: center; gap: 5px; width: 70px;
+  padding: 0; border: 0; background: none; cursor: pointer; color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+}
+.sp-sw {
+  display: block; width: 64px; height: 40px; object-fit: cover; border-radius: 6px;
+  box-shadow: 0 0 0 1px rgba(27, 31, 42, .18), 0 3px 8px -4px rgba(27, 31, 42, .35);
+  transition: transform var(--m-fast) var(--ease), box-shadow var(--m-fast) var(--ease);
+}
+.sp-name {
+  font-family: var(--font-ui, var(--font-instrument)), system-ui, sans-serif;
+  font-size: 11.5px; line-height: 1.1; white-space: nowrap; color: var(--muted);
+}
+.sp-item:hover .sp-sw { transform: translateY(-2px); box-shadow: 0 0 0 1px rgba(27, 31, 42, .3), 0 6px 12px -6px rgba(27, 31, 42, .45); }
+.sp-item:hover .sp-name { color: var(--text); }
+.sp-item[aria-checked="true"] .sp-sw { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px #0866FF; }
+.sp-item[aria-checked="true"] .sp-name { color: var(--text); font-weight: 600; }
+.ob-desk .sp-item:focus-visible { outline: none; }
+.ob-desk .sp-item:focus-visible .sp-sw { outline: 2px dashed #0866FF; outline-offset: 6px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sp-sw { transition: none; }
+  .sp-item:hover .sp-sw { transform: none; }
+}

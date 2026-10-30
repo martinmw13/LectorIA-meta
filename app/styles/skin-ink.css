@@ -51,9 +51,9 @@ html[data-skin="ink"] .top-center {
 }
 
 html[data-skin="ink"] .wordmark {
-  font-family: var(--font-ink-title);
-  font-weight: 700;
-  font-size: 30px;
+  font-family: var(--font-copperplate), "Petit Formal Script", cursive;
+  font-weight: 400;
+  font-size: 24px;
   letter-spacing: 0;
   text-transform: none;
   color: var(--color-text);
