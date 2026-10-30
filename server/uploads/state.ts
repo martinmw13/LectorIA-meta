@@ -248,7 +248,9 @@ export async function settleSpendOnce(kv: KV, job: UploadJob, actualMicro: numbe
 // Marks the job failed, keeps what was really spent, and refunds the book
 // quota only when nothing ran at all. Exactly once via the settle guard,
 // best effort throughout: when the tally itself fails the reserve is kept,
-// which is the conservative side. A job already done is never touched.
+// which is the conservative side. Settles before saving, so a kill between
+// the two leaves at most an unsettled working job the cron still picks up.
+// A job already done is never touched.
 export async function failUploadJob(kv: KV, store: UploadStore, job: UploadJob, extra?: UploadUsage): Promise<void> {
   if (job.status === "done") return;
   let usage: UploadUsage | null = null;
@@ -257,15 +259,15 @@ export async function failUploadJob(kv: KV, store: UploadStore, job: UploadJob, 
   } catch {
     usage = null;
   }
+  const first = await settleSpendOnce(kv, job, usage ? usageCostMicro(usage) : job.reservedMicro);
+  if (first && usage && isUsageZero(usage) && job.quotaIp && job.quotaAnon) {
+    await refundDualQuota(kv, { ip: job.quotaIp, anon: job.quotaAnon });
+  }
   job.status = "failed";
   if (usage) job.usage = usage;
   try {
     await saveUploadJob(kv, job);
   } catch {
-    // The settle guard below still bounds us to one money write.
-  }
-  const first = await settleSpendOnce(kv, job, usage ? usageCostMicro(usage) : job.reservedMicro);
-  if (first && usage && isUsageZero(usage) && job.quotaIp && job.quotaAnon) {
-    await refundDualQuota(kv, { ip: job.quotaIp, anon: job.quotaAnon });
+    // Spend already settled above; a later fail or the cron re-saves this.
   }
 }

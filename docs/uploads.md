@@ -53,10 +53,13 @@ word, floored at 50k and capped at 250k micro (a 3,955-word book measured
 USD 0.0027). The hold reconciles to the real Meta+Jev cost at finalize;
 each part result carries its own usage so parallel steps lose nothing,
 and one settle guard keeps the adjustment exactly once. Failed jobs keep
-what they spent and refund the book quota only when nothing ran. Jobs
-still working after 6 hours are settled the same way by the daily
-cleanup. BYOK spends the reader's key but still takes a per-person quota
-of 10 creates a day; exhaustion answers `daily_books_reached`.
+what they spent and refund the book quota only when nothing ran; the fail
+path settles before it saves the failed status, so a crash between the two
+cannot leak the hold. Jobs still working after 6 hours are settled the same
+way by the daily cleanup, which also settles any failed job still missing
+its refund marker. BYOK spends the reader's key but still takes a
+per-person quota of 10 creates a day; exhaustion answers
+`daily_books_reached`.
 
 ## Reading and cleanup
 
