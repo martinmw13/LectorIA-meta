@@ -163,20 +163,3 @@
   text-align: center;
 }
 
-/* Phones: transport buttons reach 44px; the sticker art keeps its size
-   but the hit area grows around it. Desktop is untouched. */
-@media (max-width: 1023px) {
-  .player .skip {
-    width: 44px;
-    height: 44px;
-  }
-
-  .sticker {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 44px;
-    min-height: 44px;
-  }
-}
-

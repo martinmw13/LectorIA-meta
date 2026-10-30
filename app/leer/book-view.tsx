@@ -15,11 +15,10 @@ import { figuresAfter, groupFiguresByEndN } from "../folio/figure-placement";
 import { ImagePane } from "../folio/image-pane";
 import { InlineFigureView, SelectionPopover } from "../folio/inline-figures";
 import { Lightbox } from "../folio/lightbox";
-import { PICTURE_COPY } from "../folio/picture-copy";
 import { usePictures } from "../folio/use-pictures";
 import type { InlineFigure } from "../folio/use-pictures";
-import { PictureVault, StylePicker } from "../folio/vault";
-import { PANELS_LABEL, coverTitleLong } from "../folio/panels";
+import { PictureVault } from "../folio/vault";
+import { coverTitleLong } from "../folio/panels";
 import type { ChapterPanel } from "../folio/panels";
 import { PanelsModal } from "../folio/panels-modal";
 import { GOTO_SCENE_EVENT, setCurrentSceneId } from "./current-scene";
@@ -166,24 +165,6 @@ export function BookView({
 
   const closePanels = useCallback(() => setPanelsCh(null), []);
 
-  // Phone entry: the image pane hides below 1024px, so the reading
-  // column carries its own Picture this button and style picker. The
-  // bar sticks to the column top; the finished scene picture opens in
-  // the lightbox, loading and error show as a status line below.
-  // Hidden on desktop by CSS.
-  const sceneCard = visualsOn ? pic.card : null;
-  const prevCardPhase = useRef(pic.card.phase);
-  useEffect(() => {
-    const prev = prevCardPhase.current;
-    prevCardPhase.current = pic.card.phase;
-    // Only a picture drawn on this view (loading first) pops open:
-    // a cached ready card on scene entry stays quiet.
-    if (!visualsOn || pic.card.phase !== "ready" || prev !== "loading") return;
-    if (typeof window.matchMedia !== "function") return;
-    if (!window.matchMedia("(max-width: 1023px)").matches) return;
-    pic.lightbox.open(pic.card.url, pic.card.caption, null);
-  }, [visualsOn, pic.card, pic.lightbox]);
-
   const figsByN = useMemo(() => groupFiguresByEndN(pic.figures), [pic.figures]);
 
   function gotoFigure(fig: InlineFigure) {
@@ -241,37 +222,6 @@ export function BookView({
       <main id="story" className="read-col" ref={readColRef} tabIndex={-1} aria-label="Reading column" onMouseUp={onReadMouseUp}>
         <h1 className="sr-only">{model.title}</h1>
         <ReadAlong columnRef={readColRef} />
-        {visualsOn ? (
-          <div className="read-pictools">
-            <div className="read-picbar" role="group" aria-label="Picture choices">
-              <button type="button" className="read-picbtn" onClick={() => pic.illustrateScene()}>
-                Picture this scene
-              </button>
-              {info ? (
-                <button type="button" className="read-picbtn" onClick={() => setPanelsCh(info.ch)}>
-                  {PANELS_LABEL}
-                </button>
-              ) : null}
-            </div>
-            <StylePicker pref={pref} onChange={changePref} />
-            {sceneCard?.phase === "loading" ? (
-              <p className="read-picstatus" aria-live="polite">
-                Painting your scene — ready in about twenty seconds.
-              </p>
-            ) : sceneCard?.phase === "error" ? (
-              <p className="read-picstatus" aria-live="polite">
-                {sceneCard.message}{" "}
-                {sceneCard.quota ? (
-                  PICTURE_COPY.quotaByok
-                ) : (
-                  <button type="button" className="retry-text" onClick={() => pic.illustrateScene()}>
-                    {PICTURE_COPY.retry}
-                  </button>
-                )}
-              </p>
-            ) : null}
-          </div>
-        ) : null}
         {model.chapters.map((chapter) => {
           const coverLong = coverTitleLong(chapter.title);
           return (

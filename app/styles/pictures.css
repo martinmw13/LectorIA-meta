@@ -734,38 +734,3 @@ html[data-theme="dark"] .expand-img {
   border: 4px solid #14161c;
   pointer-events: none;
 }
-
-/* Phones: the selection popover fits 360px, inline remove buttons and
-   the lightbox close reach 44px, the lightbox leaves room for the art. */
-@media (max-width: 1023px) {
-  .picture-float {
-    max-width: calc(100vw - 24px);
-    min-height: 44px;
-  }
-
-  .picture-float-lbl {
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .genfig .grm {
-    width: 44px;
-    height: 44px;
-  }
-
-  .retry-text {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-  }
-
-  .lightbox {
-    padding: 16px;
-    padding-bottom: calc(16px + env(safe-area-inset-bottom));
-  }
-
-  .lightbox-x {
-    width: 44px;
-    height: 44px;
-  }
-}

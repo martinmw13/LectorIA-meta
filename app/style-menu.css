@@ -258,22 +258,6 @@ html:not([data-theme="dark"]) .style-menu-item:hover .style-name[data-face="chih
   visibility: visible;
 }
 
-@media (max-width: 1023px) {
-  /* Phones: the skin button and its items reach 44px, and the open
-     menu stays inside a 360px viewport. Desktop is untouched. */
-  .style-menu-btn {
-    min-height: 44px;
-  }
-
-  .style-menu-list {
-    max-width: calc(100vw - 32px);
-  }
-
-  .style-menu-item {
-    min-height: 44px;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .style-menu-chev,
   .style-name {
