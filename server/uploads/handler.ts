@@ -97,8 +97,8 @@ async function ensureAnon(cookieHeader: string | null, secret: string, cookies: 
 }
 
 // Order: same-origin, body cap, strict parse, env, Turnstile, anon cookie,
-// BYOK header, then quota/spend inside create (free only). User errors
-// never take quota; server failures refund.
+// BYOK header, then quota (both paths) and spend (free only) inside
+// create. User errors never take quota; server failures refund.
 export async function handleUploadsCreate(req: Request, deps: UploadHandlerDeps = {}): Promise<Response> {
   const cookies: string[] = [];
   if (rejectsCrossSite(req.headers, req.url)) return fail("bad_request", cookies);
@@ -148,7 +148,7 @@ export async function handleUploadsCreate(req: Request, deps: UploadHandlerDeps 
       path: byokKey ? "byok" : "free",
       anonId,
       day,
-      quotaKeys: byokKey ? null : bookQuotaKeysFor({ day, ip, salt: env.ipSalt, anonId }),
+      quotaKeys: bookQuotaKeysFor({ day, ip, salt: env.ipSalt, anonId, ...(byokKey ? { prefix: "upload:byok" } : {}) }),
       spendCapMicro: env.spendCapMicro,
     });
     return Response.json(

@@ -46,6 +46,18 @@ existing track selection scores them unchanged.
 (503), `human_required` (403), `bad_request` (400), `unavailable` (503,
 refunded), `not_found` (404), `expired` (30 days, 410).
 
+## Money and quota
+
+Free creates hold a sized reserve: 5k micro per part plus 1 micro per
+word, floored at 50k and capped at 250k micro (a 3,955-word book measured
+USD 0.0027). The hold reconciles to the real Meta+Jev cost at finalize;
+each part result carries its own usage so parallel steps lose nothing,
+and one settle guard keeps the adjustment exactly once. Failed jobs keep
+what they spent and refund the book quota only when nothing ran. Jobs
+still working after 6 hours are settled the same way by the daily
+cleanup. BYOK spends the reader's key but still takes a per-person quota
+of 10 creates a day; exhaustion answers `daily_books_reached`.
+
 ## Reading and cleanup
 
 `loadUploadedBook(id)` in `server/uploads/loader.ts` returns the

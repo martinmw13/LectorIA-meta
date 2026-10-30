@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { AnalyzedScene } from "@/core/types";
 import { uploadDailySpendKey } from "@/core/uploads";
+import { bookQuotaKeysFor } from "@/server/guard/quota";
 import { spendKey } from "@/server/guard/spend";
 import { handleUploadStep, handleUploadsCreate } from "./handler";
-import { saveUploadJob, parseUploadJob } from "./state";
+import { saveUploadJob, parseUploadJob, uploadFinalizeKey, UPLOAD_FINALIZE_LEASE_SEC } from "./state";
 import {
   cookiesFrom,
   createMemoryKV,
@@ -55,6 +56,15 @@ async function drive(flow: Flow, body: unknown = {}, deps: Record<string, unknow
     now: new Date(`${DAY}T00:00:00Z`),
     ...deps,
   });
+}
+
+function anonIdOf(cookies: string): string {
+  const m = /img_anon=([^;]+)/.exec(cookies);
+  return (m?.[1] ?? "").split(".")[0] ?? "";
+}
+
+function quotaOf(flow: Flow): { ip: string; anon: string } {
+  return bookQuotaKeysFor({ day: DAY, ip: "1.2.3.4", salt: "ip-salt-for-tests", anonId: anonIdOf(flow.cookies) });
 }
 
 describe("step guards", () => {
@@ -167,7 +177,7 @@ describe("step happy path", () => {
 });
 
 describe("step failures", () => {
-  it("refunds exactly once when segments stay invalid", async () => {
+  it("keeps what was spent when segments stay invalid, exactly once", async () => {
     const meta = scriptedMeta((call) => {
       if (call.schemaName === "clean_judge") return { sections: [], headCut: 0, tailCut: 0 };
       return { scenes: [{ start_n: 999, end_n: 1000, title: "x", summary: "y", characters: [] }] };
@@ -176,15 +186,18 @@ describe("step failures", () => {
     const res = await drive(flow);
     expect(res.status).toBe(503);
     expect(await res.json()).toEqual(expect.objectContaining({ code: "unavailable" }));
-    expect(await flow.kv.get(spendKey())).toBe("0");
-    expect(await flow.kv.get(uploadDailySpendKey(DAY))).toBe("0");
-    // A second drive sees the failed job and refunds nothing more.
+    // Judge plus two failed segment attempts stay on both counters...
+    expect(await flow.kv.get(spendKey())).toBe("331");
+    expect(await flow.kv.get(uploadDailySpendKey(DAY))).toBe("331");
+    // ...and the book quota stays taken, so failures cannot farm quota.
+    expect(await flow.kv.get(quotaOf(flow).ip)).toBe("1");
+    // A second drive sees the failed job and adjusts nothing more.
     const retry = await drive(flow);
     expect(retry.status).toBe(503);
-    expect(await flow.kv.get(spendKey())).toBe("0");
+    expect(await flow.kv.get(spendKey())).toBe("331");
   });
 
-  it("refunds when Meta itself fails", async () => {
+  it("keeps the judge cost when Meta itself fails", async () => {
     const meta = scriptedMeta((call) => {
       if (call.schemaName === "clean_judge") return { sections: [], headCut: 0, tailCut: 0 };
       throw new Error("meta down");
@@ -192,8 +205,28 @@ describe("step failures", () => {
     const flow = await createFlow({ meta: meta as ReturnType<typeof helpfulMeta> });
     const res = await drive(flow);
     expect(res.status).toBe(503);
+    expect(await flow.kv.get(spendKey())).toBe("110");
+    expect(await flow.kv.get(uploadDailySpendKey(DAY))).toBe("110");
+    expect(await flow.kv.get(quotaOf(flow).ip)).toBe("1");
+  });
+
+  it("refunds quota when the failure spent nothing", async () => {
+    const meta = scriptedMeta(() => {
+      throw new Error("meta down");
+    });
+    const flow = await createFlow({ meta: meta as ReturnType<typeof helpfulMeta> });
+    // Fail the book read so the step dies before any model call.
+    const real = flow.store.readText.bind(flow.store);
+    flow.store.readText = async (path: string) => {
+      if (path.endsWith("book.json")) throw new Error("blob down");
+      return real(path);
+    };
+    const res = await drive(flow);
+    expect(res.status).toBe(503);
     expect(await flow.kv.get(spendKey())).toBe("0");
     expect(await flow.kv.get(uploadDailySpendKey(DAY))).toBe("0");
+    expect(await flow.kv.get(quotaOf(flow).ip)).toBe("0");
+    expect(await flow.kv.get(quotaOf(flow).anon)).toBe("0");
   });
 
   it("accepts a fresh human proof on the step", async () => {
@@ -294,5 +327,62 @@ describe("step emotion paths", () => {
     const flow = await createFlow({ key: "byok-step-key-888" });
     const res = await drive(flow);
     expect(res.status).toBe(400);
+  });
+});
+
+describe("step concurrency", () => {
+  it("loses no usage when two parts step in parallel", async () => {
+    const flow = await createFlow();
+    await Promise.all([drive(flow, { chapter: 1 }), drive(flow, { chapter: 2 })]);
+    // The doneParts write may have raced; re-driving converges via the blobs.
+    let status = "";
+    for (let i = 0; i < 3 && status !== "done"; i++) {
+      status = ((await (await drive(flow)).json()) as { status: string }).status;
+    }
+    expect(status).toBe("done");
+    const job = parseUploadJob(await flow.kv.get(`upload:job:${flow.id}`));
+    expect(job?.status).toBe("done");
+    // Judge plus segment and classify per part, nothing lost to the race.
+    expect(job?.usage.metaRequests).toBe(flow.meta.calls.length);
+    expect(job?.usage.metaPrompt).toBe(flow.meta.calls.length * 1000);
+    expect(job?.usage.metaCached).toBe(flow.meta.calls.length * 100);
+    expect(job?.usage.metaCompletion).toBe(flow.meta.calls.length * 100);
+    expect(Number(await flow.kv.get(spendKey()))).toBe(job?.costMicro);
+  });
+
+  it("retakes a stale finalize lease", async () => {
+    expect(UPLOAD_FINALIZE_LEASE_SEC).toBe(90);
+    const flow = await createFlow();
+    await drive(flow);
+    // A finalize killed at the route limit leaves its lease behind; once
+    // the lease lapses the next driver finalizes instead of wedging the job.
+    await flow.kv.setNxEx(uploadFinalizeKey(flow.id), "1", UPLOAD_FINALIZE_LEASE_SEC);
+    await flow.kv.expire(uploadFinalizeKey(flow.id), 0);
+    const done = await drive(flow);
+    expect((await done.json()).status).toBe("done");
+    const job = parseUploadJob(await flow.kv.get(`upload:job:${flow.id}`));
+    expect(job?.status).toBe("done");
+    expect(Number(await flow.kv.get(spendKey()))).toBe(job?.costMicro);
+  });
+
+  it("repairs spend when finalize died after the blob write", async () => {
+    const flow = await createFlow();
+    await drive(flow);
+    // The winner wrote the analysis and died holding the lease while the
+    // job was still working, so the next driver repairs from the blob.
+    await flow.store.saveJson(
+      `uploads/${flow.id}/analysis.json`,
+      JSON.stringify({ bookId: flow.id, textVersion: "repair", scenes: [] }),
+    );
+    await flow.kv.setNxEx(uploadFinalizeKey(flow.id), "dead-winner", 90);
+    const done = await drive(flow);
+    const json = (await done.json()) as { status: string; costUsd: number };
+    expect(json.status).toBe("done");
+    const total = Number(await flow.kv.get(spendKey()));
+    expect(total).toBe(Math.round(json.costUsd * 1_000_000));
+    expect(await flow.kv.get(uploadDailySpendKey(DAY))).toBe(String(total));
+    // Idempotent: a re-drive settles nothing more.
+    await drive(flow);
+    expect(Number(await flow.kv.get(spendKey()))).toBe(total);
   });
 });

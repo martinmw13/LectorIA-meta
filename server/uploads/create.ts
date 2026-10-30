@@ -9,17 +9,18 @@ import {
   BYOK_BOOK_MAX_WORDS,
   FREE_BOOK_MAX_WORDS,
   UPLOAD_MAX_CHAPTERS,
-  UPLOAD_RESERVE_MICRO,
   UPLOAD_DAILY_SPEND_CAP_MICRO,
   countChapterWords,
   newUploadId,
   splitChapterParts,
   uploadBookPath,
   uploadDailySpendKey,
+  uploadReserveMicro,
   type UploadCreateBody,
 } from "@/core/uploads";
 import {
   BOOK_QUOTA_TTL_SEC,
+  BYOK_UPLOADS_PER_PERSON,
   FREE_BOOKS_PER_PERSON,
   refundDualQuota,
   takeDualQuota,
@@ -97,36 +98,54 @@ function judgeWithBudget(judge: Judge, ms: number): Judge {
   };
 }
 
+// Parts estimate for sizing the hold: the judge runs after the reserve,
+// so count from the deterministic preview with the same splitter.
+function estimatePartCount(chapters: { paragraphs: string[] }[]): number {
+  let n = 0;
+  const pseudo = chapters.map((chapter, index) => {
+    const start = n + 1;
+    n += chapter.paragraphs.length;
+    return { ch: index + 1, start_n: start, end_n: n };
+  });
+  return splitChapterParts(pseudo).length;
+}
+
 // Validate on the cleaned text first so user errors never take quota;
 // the judge runs after the spend reserve, and its failure just keeps the
-// deterministic chapters. Any throw after the reserve refunds everything.
+// deterministic chapters. Any throw after the quota or reserve refunds
+// everything. Spend is free-only, but both paths take a per-person quota.
 export async function createUpload(args: CreateArgs): Promise<{ id: string; chapters: number; parts: number }> {
   const preview = cleanDeterministic(args.body.title, args.body.sections);
   if (preview.chapters.length === 0 || preview.chapters.length > UPLOAD_MAX_CHAPTERS) {
     throw new UploadFailure("bad_request");
   }
   const limit = args.path === "free" ? FREE_BOOK_MAX_WORDS : BYOK_BOOK_MAX_WORDS;
-  if (countChapterWords(preview.chapters) > limit) throw new UploadFailure("too_long");
+  const previewWords = countChapterWords(preview.chapters);
+  if (previewWords > limit) throw new UploadFailure("too_long");
 
   let quotaTaken = false;
   let reservation: SpendReservation | null = null;
+  let reservedMicro = 0;
   try {
-    if (args.path === "free" && args.quotaKeys) {
+    if (args.quotaKeys) {
       const taken = await takeDualQuota(args.kv, args.quotaKeys, {
-        limit: FREE_BOOKS_PER_PERSON,
+        limit: args.path === "free" ? FREE_BOOKS_PER_PERSON : BYOK_UPLOADS_PER_PERSON,
         ttlSec: BOOK_QUOTA_TTL_SEC,
       });
       if (!taken.ok) throw new UploadFailure("daily_books_reached");
       quotaTaken = true;
-      const spent = await reserveSpend(args.kv, {
-        amountMicro: UPLOAD_RESERVE_MICRO,
-        day: args.day,
-        spendCapMicro: args.spendCapMicro,
-        dailySpendCapMicro: UPLOAD_DAILY_SPEND_CAP_MICRO,
-        dailyKey: uploadDailySpendKey(args.day),
-      });
-      if (!spent.ok) throw new UploadFailure("daily_budget_reached");
-      reservation = spent.reservation;
+      if (args.path === "free") {
+        reservedMicro = uploadReserveMicro(estimatePartCount(preview.chapters), previewWords);
+        const spent = await reserveSpend(args.kv, {
+          amountMicro: reservedMicro,
+          day: args.day,
+          spendCapMicro: args.spendCapMicro,
+          dailySpendCapMicro: UPLOAD_DAILY_SPEND_CAP_MICRO,
+          dailyKey: uploadDailySpendKey(args.day),
+        });
+        if (!spent.ok) throw new UploadFailure("daily_budget_reached");
+        reservation = spent.reservation;
+      }
     }
 
     const usage = emptyUsage();
@@ -159,9 +178,9 @@ export async function createUpload(args: CreateArgs): Promise<{ id: string; chap
       doneParts: [],
       status: "working",
       usage,
-      reservedMicro: args.path === "free" ? UPLOAD_RESERVE_MICRO : 0,
-      quotaIp: args.path === "free" && args.quotaKeys ? args.quotaKeys.ip : null,
-      quotaAnon: args.path === "free" && args.quotaKeys ? args.quotaKeys.anon : null,
+      reservedMicro,
+      quotaIp: args.quotaKeys ? args.quotaKeys.ip : null,
+      quotaAnon: args.quotaKeys ? args.quotaKeys.anon : null,
       costMicro: null,
     };
     await args.store.saveJson(uploadBookPath(id), JSON.stringify(book));

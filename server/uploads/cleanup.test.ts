@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
+import { uploadDailySpendKey } from "@/core/uploads";
+import { spendKey } from "@/server/guard/spend";
 import { cleanupUploads, handleCleanup } from "./cleanup";
-import { memoryStore } from "./test-support";
+import { createUpload } from "./create";
+import { parseUploadJob, saveUploadJob, usageCostMicro } from "./state";
+import { stepUpload } from "./step";
+import { createMemoryKV, helpfulMeta, memoryStore, tinyBook } from "./test-support";
 
 const DAY_MS = 24 * 3600 * 1000;
+const DAY = "2026-10-30";
 
 describe("cleanupUploads", () => {
   it("deletes only blobs past the TTL", async () => {
@@ -41,6 +47,61 @@ describe("cleanupUploads", () => {
     };
     const out = await cleanupUploads(store, now);
     expect(out.deleted).toBe(1);
+  });
+});
+
+describe("cleanupUploads stale jobs", () => {
+  async function workingFlow() {
+    const kv = createMemoryKV();
+    const store = memoryStore();
+    const out = await createUpload({
+      kv,
+      store,
+      meta: helpfulMeta(),
+      body: { ...tinyBook(), author: null },
+      path: "free",
+      anonId: "anon-1",
+      day: DAY,
+      quotaKeys: { ip: "q-ip", anon: "q-anon" },
+      spendCapMicro: 10_000_000,
+    });
+    await stepUpload({ kv, store, meta: helpfulMeta(), jev: null, id: out.id, chapter: 1 });
+    return { kv, store, id: out.id };
+  }
+
+  it("settles jobs still working past six hours, exactly once", async () => {
+    const flow = await workingFlow();
+    const job = parseUploadJob(await flow.kv.get(`upload:job:${flow.id}`));
+    expect(job?.status).toBe("working");
+    await saveUploadJob(flow.kv, { ...job!, createdAt: Date.now() - 7 * 3600 * 1000 });
+    const out = await cleanupUploads(flow.store, Date.now(), { kv: flow.kv });
+    expect(out.reconciled).toBe(1);
+    const failed = parseUploadJob(await flow.kv.get(`upload:job:${flow.id}`));
+    expect(failed?.status).toBe("failed");
+    // Judge plus the finished part stay on both counters.
+    const kept = usageCostMicro(failed!.usage);
+    expect(kept).toBeGreaterThan(0);
+    expect(kept).toBeLessThan(50_000);
+    expect(await flow.kv.get(spendKey())).toBe(String(kept));
+    expect(await flow.kv.get(uploadDailySpendKey(DAY))).toBe(String(kept));
+    // A second run finds nothing to settle.
+    const again = await cleanupUploads(flow.store, Date.now(), { kv: flow.kv });
+    expect(again.reconciled).toBe(0);
+    expect(await flow.kv.get(spendKey())).toBe(String(kept));
+  });
+
+  it("leaves fresh working jobs alone", async () => {
+    const flow = await workingFlow();
+    const out = await cleanupUploads(flow.store, Date.now(), { kv: flow.kv });
+    expect(out.reconciled).toBe(0);
+    expect(parseUploadJob(await flow.kv.get(`upload:job:${flow.id}`))?.status).toBe("working");
+    expect(await flow.kv.get(spendKey())).toBe("50000");
+  });
+
+  it("skips the reconcile without Redis", async () => {
+    const flow = await workingFlow();
+    const out = await cleanupUploads(flow.store, Date.now());
+    expect(out.reconciled).toBe(0);
   });
 });
 

@@ -9,8 +9,9 @@ import type { ClassifyMetaUsage } from "../../pipeline/classify";
 import { SCENE_SCHEMA, chapterPrompt, parseScenes } from "../../pipeline/segment";
 import type { JevClient } from "../../pipeline/jev";
 import type { MetaClient } from "../../pipeline/meta";
-import { jevCostUsd, metaCostUsd } from "../../pipeline/prices";
 import type { UploadUsage } from "./state";
+
+export { usageCostMicro, usageCostUsd } from "./state";
 
 // Per-call ceilings inside the 60 s step budget. The pipeline's own retry
 // policy still applies beneath each timeout; a storm that outlasts the
@@ -175,13 +176,3 @@ export async function classifyPart(
   return out;
 }
 
-export function usageCostMicro(usage: UploadUsage): number {
-  const usd =
-    metaCostUsd({ prompt: usage.metaPrompt, cached: usage.metaCached, completion: usage.metaCompletion }) +
-    jevCostUsd(usage.jevInput);
-  return Math.round(usd * 1_000_000);
-}
-
-export function usageCostUsd(usage: UploadUsage): number {
-  return Math.round((usageCostMicro(usage) / 1_000_000) * 1_000_000) / 1_000_000;
-}

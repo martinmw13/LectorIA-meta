@@ -18,6 +18,7 @@ import {
   uploadBookPath,
   uploadDailySpendKey,
   uploadPartPath,
+  uploadReserveMicro,
   UploadValidationError,
 } from "./uploads";
 import type { RawSection } from "./clean-types";
@@ -143,5 +144,23 @@ describe("keys and codes", () => {
     expect(UPLOAD_HTTP_STATUS.too_long).toBe(413);
     expect(UPLOAD_HTTP_STATUS.daily_books_reached).toBe(429);
     expect(UPLOAD_HTTP_STATUS.expired).toBe(410);
+  });
+});
+
+describe("uploadReserveMicro", () => {
+  it("floors tiny books", () => {
+    expect(uploadReserveMicro(2, 60)).toBe(50_000);
+  });
+
+  it("scales with parts and words", () => {
+    expect(uploadReserveMicro(12, 50_000)).toBe(110_000);
+  });
+
+  it("caps huge books at the ceiling", () => {
+    expect(uploadReserveMicro(500, 400_000)).toBe(250_000);
+  });
+
+  it("covers the measured cost many times over", () => {
+    expect(uploadReserveMicro(4, 3955)).toBeGreaterThan(2700);
   });
 });
