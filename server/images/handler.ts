@@ -20,6 +20,7 @@ import { readImageEnv } from "./env";
 import type { ImageEnv } from "./env";
 import { errorTag } from "./errors";
 import { createBlobStore } from "./blob";
+import { chapterReference, getBookmap, passageReference } from "./bookmap-prompt";
 import { createMetaClient } from "./meta";
 import { orchestrate } from "./orchestrate";
 import type { ImageContent } from "./orchestrate";
@@ -156,6 +157,34 @@ export async function handleImagesPost(req: Request, deps: ImagesHandlerDeps = {
             sceneClip: sceneParas.map((p) => p.text).join(" "),
           };
 
+    // Bookmap reference details for the prompt (delimited block).
+    // A missing bookmap yields "" and the prompt stays as it was.
+    const bookmap = getBookmap(book.id, book.textVersion);
+    let reference = "";
+    if (parsed.kind === "passage") {
+      const start = parsed.n;
+      const end = parsed.endN ?? parsed.n;
+      reference = passageReference({
+        bookmap,
+        sceneIds: scenes.filter((s) => s.start_n <= end && s.end_n >= start).map((s) => s.id),
+        selectedText: passageTexts.join(" "),
+        ch: sceneOf?.ch ?? 0,
+      });
+    } else if (parsed.kind === "scene" && sceneOf) {
+      reference = passageReference({
+        bookmap,
+        sceneIds: [sceneOf.id],
+        selectedText: content.sceneClip,
+        ch: sceneOf.ch,
+      });
+    } else if (parsed.kind === "chapter" && chapterNo !== null) {
+      reference = chapterReference({
+        bookmap,
+        sceneIds: scenes.filter((s) => s.ch === chapterNo).map((s) => s.id),
+        ch: chapterNo,
+      });
+    }
+
     const cookieValue = parseAnonCookie(req.headers.get("cookie"));
     let anonId = cookieValue ? verifyAnonCookie(cookieValue, env.sessionSecret) : null;
     let setCookie: string | null = null;
@@ -172,7 +201,7 @@ export async function handleImagesPost(req: Request, deps: ImagesHandlerDeps = {
       store: deps.store ?? createBlobStore(),
       generate: deps.generate ?? createMetaClient(env.metaKey),
       env,
-      content,
+      content: { ...content, reference },
       ip,
       anonId,
       day: utcDay(),

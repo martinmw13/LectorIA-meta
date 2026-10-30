@@ -33,7 +33,7 @@ tomorrow". The UI links the Oz sentence via `CREDITS_OUT_LIBRARY_HREF`
 built server-side.
 
 The passage cache key is book plus the selection's paragraph range
-plus `textVersion` plus `PROMPT_VERSION` (`v1`): `p{n}.webp` for one
+plus `textVersion` plus `PROMPT_VERSION` (`v2`): `p{n}.webp` for one
 paragraph (the key every older picture already has), `p{n}-{endN}.webp`
 for a range. The scene key swaps in the scene id and never changes.
 

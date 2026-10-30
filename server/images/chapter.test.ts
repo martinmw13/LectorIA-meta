@@ -75,6 +75,22 @@ describe("orchestrate chapter pages", () => {
     expect(prompt).toContain("speech balloons");
   });
 
+  it("appends the bookmap reference after the chapter prompt", async () => {
+    let prompt = "";
+    const d = deps({
+      content: { ...content, reference: "Reference details: Dorothy: a girl." },
+      generate: {
+        generate: async (p: string) => {
+          prompt = p;
+          return new Uint8Array([9]);
+        },
+      },
+    });
+    expect((await orchestrate(chapter(1), d)).status).toBe("ready");
+    expect(prompt).toContain("speech balloons");
+    expect(prompt.endsWith("Reference details: Dorothy: a girl.")).toBe(true);
+  });
+
   it("serves a cached hit without quota, spend, or generate", async () => {
     let calls = 0;
     const d = deps({

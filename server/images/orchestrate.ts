@@ -37,6 +37,9 @@ export interface ImageContent {
   // Chapter pages only: the panel descriptions, built server-side from
   // the chapter's scene summaries. sceneTitle carries the chapter title.
   chapterPanels?: { description: string }[];
+  // Optional bookmap reference block, appended after the prompt. Empty
+  // or absent leaves the prompt byte-identical to the no-bookmap build.
+  reference?: string;
 }
 
 export interface OrchestrateDeps {
@@ -216,7 +219,7 @@ export async function orchestrate(
 
     let bytes: Uint8Array;
     try {
-      bytes = await deps.generate.generate(
+      const base =
         req.kind === "chapter"
           ? buildChapterPrompt({
               chapterTitle: deps.content.sceneTitle,
@@ -229,8 +232,9 @@ export async function orchestrate(
               sceneTitle: deps.content.sceneTitle,
               sceneClip: deps.content.sceneClip,
               style: req.style,
-            }),
-      );
+            });
+      const reference = deps.content.reference ?? "";
+      bytes = await deps.generate.generate(reference ? `${base} ${reference}` : base);
     } catch (e) {
       await releaseSpendOnce();
       await refundQuotaOnce();

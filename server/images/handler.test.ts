@@ -318,6 +318,31 @@ describe("human gate", () => {
     expect(res.headers.getSetCookie().find((c) => c.startsWith("human_ok="))).toBeUndefined();
   });
 
+  it("adds bookmap reference details to the passage prompt", async () => {
+    const { kv, store } = fakes();
+    let prompt = "";
+    const generate = {
+      generate: async (p: string) => {
+        prompt = p;
+        return new Uint8Array([1, 2, 3]);
+      },
+    };
+    const siteFetch = vi.fn(async () => {
+      throw new Error("siteverify must not be called");
+    });
+    const cookie = issueHumanCookie(secret).split(";")[0] as string;
+    const res = await handleImagesPost(passagePost(passageBody(), { Cookie: cookie }), {
+      env: imgEnv,
+      kv,
+      store,
+      generate,
+      fetchFn: siteFetch as unknown as typeof fetch,
+    });
+    expect(res.status).toBe(200);
+    expect(prompt).toContain("Reference details:");
+    expect(prompt).toContain("Dorothy:");
+  });
+
   it("accepts the legacy chat_human cookie", async () => {
     const { kv, store, generate } = fakes();
     const siteFetch = vi.fn(async () => {
