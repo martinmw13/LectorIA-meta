@@ -1,7 +1,7 @@
 // The home backdrop is one full-bleed layer pinned to the viewport, so
 // the skin painting never steps where the 1280px desk starts. jsdom does
 // no layout, so the rules are pinned against the CSS source.
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const strip = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, "");
@@ -40,7 +40,16 @@ describe("home backdrop", () => {
     expect(rule?.[1]).toContain(`/art/skins/${skin}/home.jpg`);
     expect(rule?.[1]).toMatch(/center \/ cover no-repeat/);
     expect(rule?.[1]).not.toMatch(/gradient/);
-    expect(existsSync(new URL(`../../public/art/skins/${skin}/home.jpg`, import.meta.url))).toBe(true);
+    const file = new URL(`../../public/art/skins/${skin}/home.jpg`, import.meta.url);
+    expect(existsSync(file)).toBe(true);
+    expect(statSync(file).size).toBeLessThan(400_000);
+  });
+
+  it.each(["engraving", "ink"])("gives the %s Style label ink and a paper halo over the hatching", (skin) => {
+    const btn = rules(backdrop).find(([sel]) => sel === `html[data-skin="${skin}"] .style-menu-home .style-menu-btn`);
+    expect(btn?.[1]).toMatch(/text-shadow:/);
+    const key = rules(backdrop).find(([sel]) => sel.includes(`html[data-skin="${skin}"] .style-menu-home .style-menu-key`));
+    expect(key?.[1]).toMatch(/color:\s*var\(--color-text\)/);
   });
 
   it("keeps the pages a touch more opaque over every painted backdrop", () => {

@@ -23,8 +23,9 @@ html[data-skin="chihiro"] .ob-desk::before {
   background: url("/art/skins/chihiro/sky-lantern.jpg") center / cover no-repeat, #f6be78;
 }
 
-/* Comic, engraving, watercolor and ink: one painted storybook scene per
-   skin, detail at the edges and a calm middle, under the skin's paper. */
+/* Comic, engraving, watercolor and ink: one painted scene per skin
+   (ink is a blue Victorian etching), detail at the edges and a calm
+   middle, under the skin's paper. */
 html[data-skin="comic"] .ob-desk::before {
   background: url("/art/skins/comic/home.jpg") center / cover no-repeat, #fffdf4;
 }
@@ -35,13 +36,15 @@ html[data-skin="watercolor"] .ob-desk::before {
   background: url("/art/skins/watercolor/home.jpg") center / cover no-repeat, #fbf8f1;
 }
 html[data-skin="ink"] .ob-desk::before {
-  background: url("/art/skins/ink/home.jpg") center / cover no-repeat, #fffef9;
+  background: url("/art/skins/ink/home.jpg") center / cover no-repeat, #eae6dc;
 }
 
-/* Engraving: the Style label sits on hatching, so give it ink and a
-   soft paper halo. */
+/* Engraving and ink: the Style label sits on hatching, so give it ink
+   and a soft paper halo. */
 html[data-skin="engraving"] .style-menu-home .style-menu-btn { text-shadow: 0 0 6px #f7f1de, 0 0 2px #f7f1de; }
-html[data-skin="engraving"] .style-menu-home .style-menu-key { color: var(--color-text); }
+html[data-skin="ink"] .style-menu-home .style-menu-btn { text-shadow: 0 0 6px #f4f1ea, 0 0 2px #f4f1ea; }
+html[data-skin="engraving"] .style-menu-home .style-menu-key,
+html[data-skin="ink"] .style-menu-home .style-menu-key { color: var(--color-text); }
 
 /* Pages stay readable: a touch more paper where the backdrop is busiest. */
 html[data-skin="pencil"] .ob-desk,
