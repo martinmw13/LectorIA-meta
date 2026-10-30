@@ -58,9 +58,10 @@ export interface OrchestrateDeps {
   humanOut?: { setCookie?: string };
 }
 
-// One pass, no skipped steps: hit -> lock -> human -> quota -> budget ->
-// generate -> store -> index -> release. Every failure after the reserve
-// refunds quota, budget, and the daily counter and releases the lock.
+// One pass, no skipped steps: KV hit -> lock -> human -> Blob backfill ->
+// quota -> budget -> generate -> store -> index -> release. Every failure
+// after the reserve refunds quota, budget, and the daily counter and
+// releases the lock.
 export async function orchestrate(
   req: ImageRequest,
   deps: OrchestrateDeps,
@@ -97,6 +98,10 @@ export async function orchestrate(
     return { status: "ready", url: indexed, cached: true, caption: captionFor(req, deps.content) };
   }
 
+  // Reusable range resolved now for the free KV hit; its Blob fallback
+  // runs after the human check so probes cannot burn Blob list().
+  let bestPath = "";
+  let bestIndex = "";
   if (req.kind === "passage" && want) {
     const self = want;
     const best = pickReusable(
@@ -104,23 +109,13 @@ export async function orchestrate(
       self,
     );
     if (best) {
-      const bestKey = imageKey({ ...req, n: best.start, endN: best.end });
-      const bestIndex = indexKeyFor(bestKey);
-      let hit = await deps.kv.get(bestIndex);
-      if (!hit) {
-        hit = await deps.store.findUrl(bestKey);
-        if (hit) await deps.kv.set(bestIndex, hit);
-      }
+      bestPath = imageKey({ ...req, n: best.start, endN: best.end });
+      bestIndex = indexKeyFor(bestPath);
+      const hit = await deps.kv.get(bestIndex);
       if (hit) {
         return { status: "ready", url: hit, cached: true, caption: captionFor(req, deps.content) };
       }
     }
-  }
-  const existing = await deps.store.findUrl(key);
-  if (existing) {
-    await deps.kv.set(indexKey, existing);
-    await recordRange();
-    return { status: "ready", url: existing, cached: true, caption: captionFor(req, deps.content) };
   }
 
   const token = deps.token ?? randomUUID();
@@ -163,6 +158,32 @@ export async function orchestrate(
         return { status: "error", code: "human", message: MSG_HUMAN };
       }
       if (human.setCookie && deps.humanOut) deps.humanOut.setCookie = human.setCookie;
+    }
+
+    // Blob backfill after the human gate, before quota: a hit here takes
+    // nothing and releases the lock.
+    if (bestPath !== "") {
+      const hit = await deps.store.findUrl(bestPath);
+      if (hit) {
+        try {
+          await deps.kv.set(bestIndex, hit);
+        } catch {
+          console.error("image index failed");
+        }
+        await release();
+        return { status: "ready", url: hit, cached: true, caption: captionFor(req, deps.content) };
+      }
+    }
+    const existing = await deps.store.findUrl(key);
+    if (existing) {
+      try {
+        await deps.kv.set(indexKey, existing);
+      } catch {
+        console.error("image index failed");
+      }
+      await recordRange();
+      await release();
+      return { status: "ready", url: existing, cached: true, caption: captionFor(req, deps.content) };
     }
 
     const quota = await takeDualQuota(deps.kv, keys, {
