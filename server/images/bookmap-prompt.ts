@@ -24,12 +24,25 @@ export function getBookmap(bookId: string, textVersion: string, expectedInput: s
   return cache.get(key) ?? null;
 }
 
-// Clip at a word boundary so a value never ends mid-word.
+// Clip at the last sentence boundary, else the last clause boundary,
+// else a word boundary, so a value never ends mid-phrase or mid-word.
 export function clipWords(text: string, max: number): string {
   if (text.length <= max) return text;
   const cut = text.slice(0, max);
+  const sentence = cut.lastIndexOf(". ");
+  if (sentence !== -1) return cut.slice(0, sentence + 1);
+  const clause = Math.max(cut.lastIndexOf(", "), cut.lastIndexOf("; "));
+  if (clause !== -1) return dropDangling(cut.slice(0, clause));
   const space = cut.lastIndexOf(" ");
-  return (space > max / 2 ? cut.slice(0, space) : cut).replace(/[\s,;:]+$/, "");
+  return dropDangling(space === -1 ? cut : cut.slice(0, space));
+}
+
+// Strip trailing punctuation plus a dangling and/or left by the cut.
+function dropDangling(text: string): string {
+  return text
+    .replace(/[\s,;:]+$/, "")
+    .replace(/\s(and|or)$/i, "")
+    .replace(/[\s,;:]+$/, "");
 }
 
 function escapeRegExp(text: string): string {

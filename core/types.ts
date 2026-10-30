@@ -144,11 +144,11 @@ export type ImageResponse =
   | { status: "pending" }
   | { status: "error"; code: ImageErrorCode; message: string };
 
-export const PROMPT_VERSION = "v3" as const;
+export const PROMPT_VERSION = "v4" as const;
 
 // Chapter pages version their prompt apart from scenes and passages, so a
 // prompt change never touches the other keys.
-export const CHAPTER_PROMPT_VERSION = "c3" as const;
+export const CHAPTER_PROMPT_VERSION = "c4" as const;
 
 // shortcut: USD 0.01 per image per the spike, revisit if Meta reprices.
 export const IMAGE_COST_MICRO = 10000 as const;

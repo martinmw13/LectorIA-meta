@@ -239,4 +239,29 @@ describe("clipWords", () => {
     expect(clipWords("old worn leather shoes", 15)).toBe("old worn");
     expect(clipWords("short", 15)).toBe("short");
   });
+
+  it("prefers the last sentence boundary within the limit", async () => {
+    const { clipWords } = await import("./bookmap-prompt");
+    expect(clipWords("A girl with a merry voice. She wears a gingham dress and a sunbonnet.", 60)).toBe(
+      "A girl with a merry voice.",
+    );
+  });
+
+  it("falls back to the last clause boundary", async () => {
+    const { clipWords } = await import("./bookmap-prompt");
+    expect(clipWords("Girl in a gingham dress, a pink sunbonnet, and old worn leather shoes", 60)).toBe(
+      "Girl in a gingham dress, a pink sunbonnet",
+    );
+  });
+
+  it("drops a dangling trailing and/or", async () => {
+    const { clipWords } = await import("./bookmap-prompt");
+    expect(clipWords("wears a red coat and shiny boots", 21)).toBe("wears a red coat");
+    expect(clipWords("tall or short people gather here daily", 13)).toBe("tall");
+  });
+
+  it("never ends mid-word", async () => {
+    const { clipWords } = await import("./bookmap-prompt");
+    expect(clipWords("short words here", 11)).toBe("short");
+  });
 });

@@ -46,7 +46,7 @@ describe("orchestrate", () => {
 
   it("backfills the index from Blob when Redis missed", async () => {
     const d = deps();
-    await d.store.save("images/oz/t/v3/p3.webp", new Uint8Array([1]));
+    await d.store.save("images/oz/t/v4/p3.webp", new Uint8Array([1]));
     let calls = 0;
     d.generate = { generate: async () => (calls++, new Uint8Array([9])) };
     const res = await orchestrate(passage, d);
@@ -234,7 +234,7 @@ describe("orchestrate range reuse", () => {
     await orchestrate(passage, d);
     const res = await orchestrate({ ...passage, endN: 12 }, d);
     expect(res).toMatchObject({ status: "ready", cached: false });
-    expect(saved).toContain("images/oz/t/v3/p3-12.webp");
+    expect(saved).toContain("images/oz/t/v4/p3-12.webp");
   });
 
   it("generates for a disjoint range in the same scene", async () => {
