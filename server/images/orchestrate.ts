@@ -36,11 +36,10 @@ export interface ImageContent {
   // Chapter pages only: the panel descriptions, built server-side from
   // the chapter's scene summaries. sceneTitle carries the chapter title.
   chapterPanels?: { description: string }[];
-  // Optional bookmap reference block, appended after the prompt. Empty
-  // or absent leaves the prompt byte-identical to the no-bookmap build.
+  // Optional bookmap reference block, placed by the prompt builders.
+  // Empty or absent leaves the prompt byte-identical to the no-bookmap build.
   reference?: string;
-  // Trusted book identity for the style line. Absent means Oz, so old
-  // callers keep the Denslow prompt byte-identical.
+  // Trusted book identity for the style line. Absent means Oz.
   book?: StyleBook;
 }
 

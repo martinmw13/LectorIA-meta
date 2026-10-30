@@ -1,8 +1,9 @@
 // Chapter panels: the one grouping rule for captions and the chapter
 // page prompt. Pure: no env reads, no network. The client sends only the
 // chapter number; descriptions come from trusted server-side summaries.
-import { clipText, styleLine } from "./images";
+import { clipText, referencePart, styleLine } from "./images";
 import type { ImageStyle, StyleBook } from "./image-style";
+import { guardLine, sentence, stylePromptFor } from "./style-prompts";
 import { panelCaption } from "./reader";
 
 export interface ChapterPanelGroup {
@@ -57,18 +58,35 @@ export function buildChapterPrompt(args: {
   panels: { description: string }[];
   style?: ImageStyle;
   book?: StyleBook;
+  reference?: string;
 }): string {
   const rows = panelRows(args.panels.length);
   const panelsWord = args.panels.length === 1 ? "panel" : "panels";
   const rowsWord = rows.length === 1 ? "row" : "rows";
   const layout = rows.map((count, i) => `row ${i + 1} has ${count}`).join(", ");
-  return (
+  const prompt = stylePromptFor(args.style, args.book);
+  if (prompt !== undefined) {
+    return [
+      `STYLE: ${prompt.lead}`,
+      prompt.composition,
+      `CONTENT: Chapter "${args.chapterTitle}" as one square comic page with ${args.panels.length} ${panelsWord} ` +
+        `in ${rows.length} ${rowsWord} (${layout}), read left to right, top to bottom.`,
+      prompt.page,
+      ...args.panels.map((p, i) => `Panel ${i + 1}: ${sentence(clipText(p.description, PANEL_DESC_CHARS))}`),
+      referencePart(args.reference, prompt.monochrome),
+      `STYLE REMINDER: the whole page, every panel, is drawn in this one style. ${prompt.reminder}`,
+      guardLine(args.book),
+    ]
+      .filter((p) => p !== "")
+      .join(" ");
+  }
+  const base =
     `Chapter "${args.chapterTitle}". A square comic page with ${args.panels.length} ${panelsWord} ` +
     `in ${rows.length} ${rowsWord} (${layout}), read left to right, top to bottom. ` +
     args.panels
-      .map((p, i) => `Panel ${i + 1}: ${clipText(p.description, PANEL_DESC_CHARS)}.`)
+      .map((p, i) => `Panel ${i + 1}: ${sentence(clipText(p.description, PANEL_DESC_CHARS))}`)
       .join(" ") +
     ` ${styleLine(args.style, args.book)} No text, letters, numbers, captions, sound effects or speech ` +
-    `balloons anywhere in the image.`
-  );
+    `balloons anywhere in the image.`;
+  return args.reference ? `${base} ${args.reference}` : base;
 }

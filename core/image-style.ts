@@ -86,7 +86,8 @@ export class ImageStyleError extends ImageValidationError {
 
 // Whole words and phrases rejected on the normalized custom text: prompt
 // override, nsfw, and people/brand guards. Entries stay literal lowercase
-// words and spaces, matched with word boundaries only.
+// words and spaces, matched with word boundaries only. The server-owned
+// preset prompts may name references; user custom text may not.
 const DENY_WORDS = [
   "ignore", "disregard", "forget", "instead", "instruction", "instructions",
   "prompt", "system", "override", "previous", "assistant", "text", "caption",

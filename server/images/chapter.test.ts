@@ -75,7 +75,7 @@ describe("orchestrate chapter pages", () => {
     expect(prompt).toContain("speech balloons");
   });
 
-  it("appends the bookmap reference after the chapter prompt", async () => {
+  it("places the bookmap reference before the style reminder", async () => {
     let prompt = "";
     const d = deps({
       content: { ...content, reference: "Reference details: Dorothy: a girl." },
@@ -88,7 +88,7 @@ describe("orchestrate chapter pages", () => {
     });
     expect((await orchestrate(chapter(1), d)).status).toBe("ready");
     expect(prompt).toContain("speech balloons");
-    expect(prompt.endsWith("Reference details: Dorothy: a girl.")).toBe(true);
+    expect(prompt.indexOf("Reference details:")).toBeLessThan(prompt.indexOf("STYLE REMINDER:"));
   });
 
   it("serves a cached hit without quota, spend, or generate", async () => {

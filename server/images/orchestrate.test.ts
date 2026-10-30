@@ -33,20 +33,24 @@ describe("orchestrate", () => {
     expect(await d.kv.get(spendKey())).toBe("10000");
   });
 
-  it("appends the bookmap reference only when present", async () => {
-    const base = buildPrompt({ kind: "passage", ...content });
+  it("places the bookmap reference before the reminder only when present", async () => {
     for (const reference of ["Reference details: Dorothy: a girl.", undefined]) {
       let prompt = "";
       const generate = async (p: string) => ((prompt = p), new Uint8Array([9]));
       const d = deps({ content: { ...content, reference }, generate: { generate } });
       expect((await orchestrate(passage, d)).status).toBe("ready");
-      expect(prompt).toBe(reference ? `${base} ${reference}` : base);
+      expect(prompt).toBe(buildPrompt({ kind: "passage", ...content, reference }));
+      if (reference === undefined) {
+        expect(prompt).not.toContain("Reference details:");
+      } else {
+        expect(prompt.indexOf("Reference details:")).toBeLessThan(prompt.indexOf("STYLE REMINDER:"));
+      }
     }
   });
 
   it("backfills the index from Blob when Redis missed", async () => {
     const d = deps();
-    await d.store.save("images/oz/t/v4/p3.webp", new Uint8Array([1]));
+    await d.store.save("images/oz/t/v5/p3.webp", new Uint8Array([1]));
     let calls = 0;
     d.generate = { generate: async () => (calls++, new Uint8Array([9])) };
     const res = await orchestrate(passage, d);
@@ -234,7 +238,7 @@ describe("orchestrate range reuse", () => {
     await orchestrate(passage, d);
     const res = await orchestrate({ ...passage, endN: 12 }, d);
     expect(res).toMatchObject({ status: "ready", cached: false });
-    expect(saved).toContain("images/oz/t/v4/p3-12.webp");
+    expect(saved).toContain("images/oz/t/v5/p3-12.webp");
   });
 
   it("generates for a disjoint range in the same scene", async () => {

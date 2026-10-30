@@ -75,16 +75,15 @@ describe("buildChapterPrompt", () => {
   it("adds the style line and the no-text rule", () => {
     const prompt = buildChapterPrompt({ chapterTitle: "The Cyclone", panels: groups });
     expect(prompt).toContain("Denslow");
-    expect(prompt).toContain(
-      "No text, letters, numbers, captions, sound effects or speech balloons anywhere",
-    );
+    expect(prompt).toContain("No text of any kind anywhere in the image");
+    expect(prompt).toContain("no letters, digits, captions, sound effects, speech balloons");
     const styled = buildChapterPrompt({
       chapterTitle: "The Cyclone",
       panels: groups,
       style: { kind: "preset", id: "watercolor" },
     });
     expect(styled).not.toContain("Denslow");
-    expect(styled).toContain("Art style: soft storybook watercolor painting,");
+    expect(styled).toContain("Beatrix Potter");
   });
 
   it("uses the generic line for a non-Oz book", () => {
