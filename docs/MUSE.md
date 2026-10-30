@@ -6,21 +6,21 @@ A Muse commit is a non-merge commit on main that carries the trailer `Co-authore
 
 ## Commits
 
-- Muse commits: 350 of 423 non-merge commits (83%).
+- Muse commits: 351 of 424 non-merge commits (83%).
 - Date range (UTC-3): 2026-10-27 to 2026-10-30.
 
 ## Lines
 
 | Scope | Muse added | Muse removed | Other added | Other removed | Muse share of added |
 | --- | --- | --- | --- | --- | --- |
-| Source code (`app/`, `core/`, `pipeline/`, `server/`, `scripts/`) | 53,678 | 10,793 | 13,345 | 3,477 | 80% |
-| All files | 259,988 | 14,970 | 44,217 | 4,466 | 85% |
+| Source code (`app/`, `core/`, `pipeline/`, `server/`, `scripts/`) | 53,840 | 10,820 | 13,345 | 3,477 | 80% |
+| All files | 260,156 | 15,002 | 44,217 | 4,466 | 85% |
 
 All files includes the Muse Code session transcripts in `agent-logs/`, the vendored skills in `.agents/` and `package-lock.json`.
 
 ## Pull requests
 
-75 merged PRs contain Muse commits. Each carries the `Muse Code` label.
+76 merged PRs contain Muse commits. Each carries the `Muse Code` label.
 
 | PR | Title | Merged (UTC-3) | Muse commits |
 | --- | --- | --- | --- |
@@ -99,3 +99,4 @@ All files includes the Muse Code session transcripts in `agent-logs/`, the vendo
 | [#126](https://github.com/martinmw13/LectorIA-meta/pull/126) | feat(reader): show bookmap scene attributes in the Developer View | 2026-10-30 | 1 of 1 |
 | [#128](https://github.com/martinmw13/LectorIA-meta/pull/128) | feat(images): pictures and chapter panels for every ready book | 2026-10-30 | 1 of 1 |
 | [#129](https://github.com/martinmw13/LectorIA-meta/pull/129) | fix(bookmap): treat a map with a stale scene fingerprint as missing | 2026-10-30 | 1 of 1 |
+| [#130](https://github.com/martinmw13/LectorIA-meta/pull/130) | fix(images): share final prompt assembly between the route and pregen | 2026-10-30 | 1 of 1 |
