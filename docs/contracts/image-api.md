@@ -32,11 +32,12 @@ ready to read, with its soundtrack and illustrations. It never says
 (`"/"`). Caption is the scene title, or the paragraph's first words,
 built server-side.
 
-The passage cache key is book plus the selection's paragraph range
-plus `textVersion` plus `PROMPT_VERSION` (`v3`): `p{n}.webp` for one
-paragraph, `p{n}-{endN}.webp` for a range. The scene key swaps in the
-scene id. Chapter pages carry `CHAPTER_PROMPT_VERSION` (`c3`) in the
-file name instead.
+The cache key is the Blob path
+`images/{bookId}/{textVersion}/v3/{file}`, where `{file}` is
+`p{n}.webp` for one paragraph, `p{n}-{endN}.webp` for a range,
+`scene-{sceneId}.webp` for a scene, and `chapter-{ch}-c3.webp`
+for a chapter page. The `v3` directory is `PROMPT_VERSION`; the
+chapter file name also carries `CHAPTER_PROMPT_VERSION` (`c3`).
 
 Overlapping selections share a picture. Each cached passage range is
 recorded in a small per-scene list in Upstash (`img:ranges:` plus the
