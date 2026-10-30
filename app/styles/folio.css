@@ -251,6 +251,13 @@ scrolls at desktop size; the reading column scrolls inside itself. */
   outline: none;
 }
 
+/* Phone-only picture entry: the image pane hides below 1024px, so the
+   reading column carries its own Picture this button, style picker and
+   scene result. Hidden on desktop; the narrow block shows it. */
+.read-pictools {
+  display: none;
+}
+
 /* Non-interactive heading (tabindex -1), focused only for screen-reader orientation. */
 #scene-heading:focus,
 #scene-heading:focus-visible {
@@ -849,5 +856,82 @@ h2.chapter-title:focus-visible {
 
   .top-line .warmth input {
     width: 44px;
+  }
+
+  /* Header wraps instead of clipping: the title drops to its own row. */
+  .top-line {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+
+  .top-center {
+    order: 10;
+    flex: 1 1 100%;
+  }
+
+  /* Reader type steps down so a 360px column reads well. The html:is()
+     prefix outranks the skin files, which load later. */
+  html:is([data-skin], :not([data-skin])) .read-col .body-text {
+    font-size: 18px;
+  }
+
+  html:is([data-skin], :not([data-skin])) h2.chapter-title {
+    font-size: 32px;
+  }
+
+  /* Controls wrap onto two rows instead of sliding under each other. */
+  .band-play {
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 8px;
+  }
+
+  /* Phone picture entry: boxless buttons, 44px targets, then the style
+     picker and the scene result in one column. */
+  .read-pictools {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 4px 0 12px;
+  }
+
+  .read-picbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 18px;
+  }
+
+  .read-picbtn {
+    background: none;
+    border: 0;
+    padding: 0;
+    min-height: 44px;
+    color: var(--color-accent);
+    font-family: var(--font-ui);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+
+  .read-picbtn:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  .read-pictools .style-picker select {
+    min-height: 44px;
+  }
+
+  /* 44px targets for the controls that stay in the narrow header. */
+  .pager-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .theme-btn {
+    width: 44px;
+    height: 44px;
   }
 }

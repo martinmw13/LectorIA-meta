@@ -83,3 +83,8 @@ html[data-skin="engraving"] .ob-wait, html[data-skin="pencil"] .ob-wait { font-s
 html[data-skin="comic"] .ob-wait { font-weight: 400; letter-spacing: .03em; }
 .ob-wait:hover { color: var(--color-accent-hover); }
 
+@media (max-width: 1023px) {
+  /* Phones: the plate art stays compact so title and CTA fit on screen. */
+  .ob-plate { --art-h: clamp(160px, calc(100vw - 60px), 300px); }
+}
+

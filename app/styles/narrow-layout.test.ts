@@ -6,6 +6,14 @@ import { describe, expect, it } from "vitest";
 
 const folio = readFileSync(new URL("./folio.css", import.meta.url), "utf8");
 const chat = readFileSync(new URL("./chat.css", import.meta.url), "utf8");
+const home = readFileSync(new URL("../home/home.css", import.meta.url), "utf8");
+const homeBring = readFileSync(new URL("../home/home-bring.css", import.meta.url), "utf8");
+const homePlate = readFileSync(new URL("../home/home-plate.css", import.meta.url), "utf8");
+const pictures = readFileSync(new URL("./pictures.css", import.meta.url), "utf8");
+const chapters = readFileSync(new URL("./chapters.css", import.meta.url), "utf8");
+const player = readFileSync(new URL("./player.css", import.meta.url), "utf8");
+const narration = readFileSync(new URL("./narration.css", import.meta.url), "utf8");
+const styleMenu = readFileSync(new URL("../style-menu.css", import.meta.url), "utf8");
 
 // The @media (max-width: 1023px) block, brace-matched.
 function narrow(css: string): string {
@@ -72,6 +80,112 @@ describe("narrow chat sheet", () => {
 
   it("keeps the desktop panel size", () => {
     expect(chat).toContain("width: 380px");
+  });
+});
+
+describe("phone reader controls", () => {
+  it("wraps the header instead of clipping it", () => {
+    const css = narrow(folio);
+    expect(css).toMatch(/\.top-line\s*\{[^}]*flex-wrap:\s*wrap/);
+    expect(css).toMatch(/\.top-center\s*\{[^}]*flex:\s*1 1 100%/);
+  });
+
+  it("steps the type down for a 360px column", () => {
+    const css = narrow(folio);
+    expect(css).toMatch(/\.body-text\s*\{[^}]*font-size:\s*18px/);
+    expect(css).toMatch(/chapter-title\s*\{[^}]*font-size:\s*32px/);
+  });
+
+  it("wraps the audio band and keeps 44px header targets", () => {
+    const css = narrow(folio);
+    expect(css).toMatch(/\.band-play\s*\{[^}]*flex-wrap:\s*wrap/);
+    expect(css).toMatch(/\.pager-btn\s*\{[^}]*min-height:\s*44px/);
+    expect(css).toMatch(/\.theme-btn\s*\{[^}]*width:\s*44px/);
+  });
+
+  it("carries a phone-only picture entry, hidden on desktop", () => {
+    expect(folio).toMatch(/\.read-pictools\s*\{\s*display:\s*none/);
+    const css = narrow(folio);
+    expect(css).toMatch(/\.read-pictools\s*\{[^}]*display:\s*flex/);
+    expect(css).toMatch(/\.read-picbtn\s*\{[^}]*min-height:\s*44px/);
+  });
+
+  it("keeps 44px transport and sticker targets", () => {
+    const css = narrow(player);
+    expect(css).toMatch(/\.player \.skip\s*\{[^}]*width:\s*44px/);
+    expect(css).toMatch(/\.sticker\s*\{[^}]*min-height:\s*44px/);
+  });
+
+  it("keeps a 44px read-aloud toggle", () => {
+    expect(narrow(narration)).toMatch(/\.read-aloud-btn\s*\{[^}]*min-height:\s*44px/);
+  });
+
+  it("keeps 44px skin menu targets inside 360px", () => {
+    const css = narrow(styleMenu);
+    expect(css).toMatch(/\.style-menu-btn\s*\{[^}]*min-height:\s*44px/);
+    expect(css).toMatch(/\.style-menu-list\s*\{[^}]*max-width:\s*calc\(100vw - 32px\)/);
+    expect(css).toMatch(/\.style-menu-item\s*\{[^}]*min-height:\s*44px/);
+  });
+});
+
+describe("phone pictures and panels", () => {
+  it("fits the selection popover and inline controls in 360px", () => {
+    const css = narrow(pictures);
+    expect(css).toMatch(/\.picture-float\s*\{[^}]*max-width:\s*calc\(100vw - 24px\)/);
+    expect(css).toMatch(/\.genfig \.grm\s*\{[^}]*width:\s*44px/);
+  });
+
+  it("fits the lightbox with a 44px close", () => {
+    const css = narrow(pictures);
+    expect(css).toMatch(/\.lightbox\s*\{[^}]*padding:\s*16px/);
+    expect(css).toMatch(/\.lightbox-x\s*\{[^}]*width:\s*44px/);
+  });
+
+  it("stacks panels in one column with safe-area room", () => {
+    const css = narrow(chapters);
+    expect(css).toMatch(/\.panels-modal\s*\{[^}]*padding:\s*12px/);
+    expect(css).toMatch(/\.panels-box\s*\{[^}]*max-height:\s*calc\(100dvh - 24px\)/);
+    expect(css).toMatch(/\.panel-grid,\s*\.panel-grid\.two\s*\{[^}]*grid-template-columns:\s*1fr/);
+    expect(css).toMatch(/\.panels-frame\s*\{[^}]*width:\s*100%/);
+    expect(css).toMatch(/\.cover-num\s*\{[^}]*font-size:\s*4\.5rem/);
+  });
+});
+
+describe("phone chat sheet", () => {
+  it("keeps 44px send and close targets", () => {
+    const css = narrow(chat);
+    expect(css).toMatch(/\.chat-send\s*\{[^}]*width:\s*44px/);
+    expect(css).toMatch(/\.chat-x\s*\{[^}]*width:\s*44px/);
+  });
+
+  it("sets the composer to 16px so phones do not auto-zoom", () => {
+    expect(narrow(chat)).toMatch(/\.chat-ta\s*\{[^}]*font-size:\s*16px/);
+  });
+});
+
+describe("phone home", () => {
+  it("stacks the spread and scrolls the desk", () => {
+    const css = narrow(home);
+    expect(css).toMatch(/\.ob-book\s*\{[^}]*grid-template-columns:\s*1fr/);
+    expect(css).toMatch(/\.ob-gutter\s*\{[^}]*display:\s*none/);
+    expect(css).toMatch(/\.ob-desk\s*\{[^}]*overflow-y:\s*auto/);
+  });
+
+  it("fits the wordmark and covers in 360px", () => {
+    const css = narrow(home);
+    expect(css).toMatch(/\.ob-wordmark\s*\{[^}]*font-size:\s*40px/);
+    expect(css).toMatch(/\.lb-grid\s*\{[^}]*grid-template-columns:\s*repeat\(3, 1fr\)/);
+  });
+
+  it("keeps 44px actions, 16px inputs and a wrapping footer", () => {
+    const css = narrow(homeBring);
+    expect(css).toMatch(/\.ob-action,[\s\S]*?min-height:\s*44px/);
+    expect(css).toMatch(/\.ob-foot\s*\{[^}]*white-space:\s*normal/);
+    expect(css).toMatch(/font-size:\s*16px/);
+  });
+
+  it("compacts the plate art", () => {
+    expect(narrow(homePlate)).toMatch(/\.ob-plate\s*\{[^}]*--art-h:/);
   });
 });
 
