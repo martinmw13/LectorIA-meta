@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { UPLOAD_RESERVE_MICRO, uploadDailySpendKey } from "@/core/uploads";
+import { uploadDailySpendKey } from "@/core/uploads";
 import { bookQuotaKeysFor } from "@/server/guard/quota";
 import { spendKey } from "@/server/guard/spend";
 import { handleUploadsCreate } from "./handler";
@@ -96,8 +96,9 @@ describe("create happy path", () => {
     expect(json.chapters).toBe(2);
     expect(json.parts).toBe(2);
     expect(json.id).toMatch(/^u-/);
-    expect(await kv.get(spendKey())).toBe(String(UPLOAD_RESERVE_MICRO));
-    expect(await kv.get(uploadDailySpendKey(DAY))).toBe(String(UPLOAD_RESERVE_MICRO));
+    // Tiny book: 2 parts, 60 words, so the sized hold hits the 50k floor.
+    expect(await kv.get(spendKey())).toBe("50000");
+    expect(await kv.get(uploadDailySpendKey(DAY))).toBe("50000");
     const keys = bookQuotaKeysFor({ day: DAY, ip: "1.2.3.4", salt: "ip-salt-for-tests", anonId: anonIdOf(cookiesFrom(res)) });
     expect(await kv.get(keys.ip)).toBe("1");
     expect(await kv.get(keys.anon)).toBe("1");
@@ -229,7 +230,7 @@ describe("create refunds and BYOK", () => {
     expect(await kv.get(keys.anon)).toBe("0");
   });
 
-  it("skips quota and spend for BYOK and never stores the key", async () => {
+  it("takes BYOK quota but no spend, and never stores the key", async () => {
     const kv = createMemoryKV();
     const store = memoryStore();
     const key = "byok-secret-never-stored-001";
@@ -243,10 +244,40 @@ describe("create refunds and BYOK", () => {
     }
     expect(await kv.get(spendKey())).toBeNull();
     expect(await kv.get(uploadDailySpendKey(DAY))).toBeNull();
+    const keys = bookQuotaKeysFor({ day: DAY, ip: "7.7.7.7", salt: "ip-salt-for-tests", anonId: "nope", prefix: "upload:byok" });
+    expect(await kv.get(keys.ip)).toBe("3");
     for (const write of store.writes) {
       expect(write.json).not.toContain(key);
       expect(write.path).not.toContain(key);
     }
+  });
+
+  it("caps BYOK creates at ten per IP per day", async () => {
+    const kv = createMemoryKV();
+    const deps = { env: testEnv(), kv, store: memoryStore(), meta: helpfulMeta(), now: new Date(`${DAY}T00:00:00Z`) };
+    const headers = { "x-byok-key": "byok-key-ten-a-day-1", "x-real-ip": "8.8.8.8" };
+    for (let i = 0; i < 10; i++) {
+      expect((await handleUploadsCreate(postRequest(URL, tinyBook(), headers), deps)).status).toBe(200);
+    }
+    const over = await handleUploadsCreate(postRequest(URL, tinyBook(), headers), deps);
+    expect(over.status).toBe(429);
+    expect(await over.json()).toEqual(expect.objectContaining({ code: "daily_books_reached" }));
+  });
+
+  it("refunds BYOK quota when Blob fails", async () => {
+    const kv = createMemoryKV();
+    const store = memoryStore();
+    store.saveJson = async () => {
+      throw new Error("blob down");
+    };
+    const res = await handleUploadsCreate(
+      postRequest(URL, tinyBook(), { "x-byok-key": "test byok refund", "x-real-ip": "3.4.5.7" }),
+      { env: testEnv(), kv, store, meta: helpfulMeta(), now: new Date(`${DAY}T00:00:00Z`) },
+    );
+    expect(res.status).toBe(503);
+    const keys = bookQuotaKeysFor({ day: DAY, ip: "3.4.5.7", salt: "ip-salt-for-tests", anonId: anonIdOf(cookiesFrom(res)), prefix: "upload:byok" });
+    expect(await kv.get(keys.ip)).toBe("0");
+    expect(await kv.get(keys.anon)).toBe("0");
   });
 });
 

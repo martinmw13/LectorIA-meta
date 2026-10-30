@@ -75,20 +75,31 @@ export async function refundDualQuota(kv: KV, keys: DualKeys): Promise<void> {
 // Free uploaded-book processing: two books per person per UTC day,
 // counted on hashed IP and the anon cookie, whichever hits first.
 export const FREE_BOOKS_PER_PERSON = 2;
+// BYOK uploads spend the reader's key, but creates still need a per-person
+// cap so a bot cannot farm infinite jobs; same dual counting, own prefix.
+export const BYOK_UPLOADS_PER_PERSON = 10;
 export const BOOK_QUOTA_TTL_SEC = 48 * 3600;
 
-export function bookQuotaKeys(args: { day: string; ipHash: string; anonId: string }): DualKeys {
+export function bookQuotaKeys(args: { day: string; ipHash: string; anonId: string; prefix?: string }): DualKeys {
+  const prefix = args.prefix ?? "books:quota";
   return {
-    ip: `books:quota:ip:${args.day}:${args.ipHash}`,
-    anon: `books:quota:anon:${args.day}:${args.anonId}`,
+    ip: `${prefix}:ip:${args.day}:${args.ipHash}`,
+    anon: `${prefix}:anon:${args.day}:${args.anonId}`,
   };
 }
 
-export function bookQuotaKeysFor(args: { day: string; ip: string; salt: string; anonId: string }): DualKeys {
+export function bookQuotaKeysFor(args: {
+  day: string;
+  ip: string;
+  salt: string;
+  anonId: string;
+  prefix?: string;
+}): DualKeys {
   return bookQuotaKeys({
     day: args.day,
     ipHash: hashIp(ipBucket(args.ip, args.anonId), args.salt),
     anonId: args.anonId,
+    prefix: args.prefix,
   });
 }
 

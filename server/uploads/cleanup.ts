@@ -1,12 +1,48 @@
 import "server-only";
 import { timingSafeEqual } from "node:crypto";
-import { UPLOAD_TTL_DAYS } from "@/core/uploads";
+import type { KV } from "@/core/types";
+import { UPLOAD_TTL_DAYS, isUploadId } from "@/core/uploads";
 import { usable } from "@/server/guard/env";
+import { createRestKV } from "@/server/guard/kv";
 import { createUploadStore, type UploadStore } from "./blob";
+import { failUploadJob, loadUploadJob } from "./state";
 
-// Deletes upload blobs older than the TTL. Job state in Redis expires on
-// its own; only Blob needs sweeping. One failure never stops the rest.
-export async function cleanupUploads(store: UploadStore, nowMs: number = Date.now()): Promise<{ deleted: number }> {
+// Jobs still working past this hold a reserve for work that will never
+// land; the daily cron settles them to their recorded usage and fails them.
+export const UPLOAD_STALE_MS = 6 * 3600 * 1000;
+
+// Settles stale working jobs discovered through their blobs. Exactly once
+// per job via the settle guard, so a retry never double-adjusts.
+async function reconcileStaleJobs(kv: KV, store: UploadStore, paths: string[], nowMs: number): Promise<number> {
+  const ids = new Set<string>();
+  for (const path of paths) {
+    const id = path.split("/")[1];
+    if (id && isUploadId(id)) ids.add(id);
+  }
+  let reconciled = 0;
+  for (const id of ids) {
+    let job;
+    try {
+      job = await loadUploadJob(kv, id);
+    } catch {
+      continue;
+    }
+    if (!job || job.status !== "working" || job.reservedMicro <= 0) continue;
+    if (nowMs - job.createdAt <= UPLOAD_STALE_MS) continue;
+    await failUploadJob(kv, store, job);
+    reconciled += 1;
+  }
+  return reconciled;
+}
+
+// Deletes upload blobs older than the TTL and settles stale working jobs
+// to their recorded usage. Job state in Redis expires on its own; only
+// Blob needs sweeping. One failure never stops the rest.
+export async function cleanupUploads(
+  store: UploadStore,
+  nowMs: number = Date.now(),
+  deps: { kv?: KV } = {},
+): Promise<{ deleted: number; reconciled: number }> {
   const cutoff = nowMs - UPLOAD_TTL_DAYS * 24 * 3600 * 1000;
   const blobs = await store.listAll("uploads/");
   let deleted = 0;
@@ -19,7 +55,8 @@ export async function cleanupUploads(store: UploadStore, nowMs: number = Date.no
       // The next daily run retries.
     }
   }
-  return { deleted };
+  const reconciled = deps.kv ? await reconcileStaleJobs(deps.kv, store, blobs.map((b) => b.pathname), nowMs) : 0;
+  return { deleted, reconciled };
 }
 
 function matchesBearer(auth: string, secret: string): boolean {
@@ -28,11 +65,11 @@ function matchesBearer(auth: string, secret: string): boolean {
   return timingSafeEqual(Buffer.from(auth), Buffer.from(expected));
 }
 
-// Vercel cron calls this daily with CRON_SECRET as the bearer token. Any
+// Vercel cron calls this daily with CRON_SECRET as the Bearer [REDACTED] Any
 // auth failure answers 404 so the route stays hidden.
 export async function handleCleanup(
   req: Request,
-  deps: { store?: UploadStore; secret?: string; token?: string } = {},
+  deps: { store?: UploadStore; secret?: string; token?: string; kv?: KV } = {},
 ): Promise<Response> {
   const secret = deps.secret ?? usable(process.env.CRON_SECRET);
   if (!secret || !matchesBearer(req.headers.get("authorization") ?? "", secret)) {
@@ -44,8 +81,15 @@ export async function handleCleanup(
     console.warn("upload cleanup unavailable");
     return Response.json({ status: "error", code: "unavailable" }, { status: 503 });
   }
+  let kv = deps.kv;
+  if (!kv) {
+    const url = usable(process.env.UPSTASH_REDIS_REST_URL) ?? usable(process.env.KV_REST_API_URL);
+    const kvToken = usable(process.env.UPSTASH_REDIS_REST_TOKEN) ?? usable(process.env.KV_REST_API_TOKEN);
+    if (url?.startsWith("https://") && kvToken) kv = createRestKV(url, kvToken);
+    // Without Redis the cron still sweeps blobs and skips the reconcile.
+  }
   try {
-    const out = await cleanupUploads(deps.store ?? createUploadStore(token as string));
+    const out = await cleanupUploads(deps.store ?? createUploadStore(token as string), Date.now(), kv ? { kv } : {});
     return Response.json({ status: "ok", deleted: out.deleted });
   } catch {
     console.error("upload cleanup failed");

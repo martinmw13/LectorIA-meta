@@ -3,6 +3,7 @@ import { createMemoryKV } from "@/core/images";
 import type { KV } from "@/core/types";
 import {
   BOOK_QUOTA_TTL_SEC,
+  BYOK_UPLOADS_PER_PERSON,
   FREE_BOOKS_PER_PERSON,
   bookQuotaKeysFor,
   checkBookQuota,
@@ -155,6 +156,13 @@ describe("free book quota", () => {
 
   it("caps two free books per person per day", () => {
     expect(FREE_BOOKS_PER_PERSON).toBe(2);
+    expect(BYOK_UPLOADS_PER_PERSON).toBe(10);
     expect(BOOK_QUOTA_TTL_SEC).toBe(48 * 3600);
+  });
+
+  it("keeps a separate bucket under a distinct prefix", () => {
+    const keys = bookQuotaKeysFor({ day: DAY, ip: "1.2.3.4", salt: SALT, anonId: "anon-1", prefix: "upload:byok" });
+    expect(keys.ip.startsWith("upload:byok:ip:")).toBe(true);
+    expect(keys.anon.startsWith("upload:byok:anon:")).toBe(true);
   });
 });
