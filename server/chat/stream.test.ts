@@ -42,7 +42,7 @@ describe("createChatStreamer", () => {
       messages: MESSAGES,
       stream: true,
       stream_options: { include_usage: true },
-      max_tokens: 400,
+      max_tokens: 2000,
       reasoning_effort: "low",
     });
     expect(chunks).toEqual([
