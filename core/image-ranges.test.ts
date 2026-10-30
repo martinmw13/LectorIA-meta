@@ -108,13 +108,13 @@ describe("rangeListKeyFor", () => {
   const req = { kind: "passage", bookId: "oz", textVersion: "t", n: 3 } as const;
 
   it("lives next to the image key and differs by scene", () => {
-    expect(rangeListKeyFor(req, "s1")).toBe("img:ranges:images/oz/t/v1/s1");
-    expect(rangeListKeyFor(req, "s2")).toBe("img:ranges:images/oz/t/v1/s2");
+    expect(rangeListKeyFor(req, "s1")).toBe("img:ranges:images/oz/t/v2/s1");
+    expect(rangeListKeyFor(req, "s2")).toBe("img:ranges:images/oz/t/v2/s2");
   });
 
   it("differs by style like imageKey does", () => {
     expect(rangeListKeyFor({ ...req, style: { kind: "preset", id: "pencil" } }, "s1")).toBe(
-      "img:ranges:images/oz/t/v1/style-pencil/s1",
+      "img:ranges:images/oz/t/v2/style-pencil/s1",
     );
   });
 });

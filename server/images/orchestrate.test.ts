@@ -3,6 +3,7 @@ import { createHmac } from "node:crypto";
 import {
   MSG_CREDITS_OUT,
   MSG_HUMAN,
+  buildPrompt,
   imageKey,
   indexKeyFor,
   lockKeyFor,
@@ -14,7 +15,7 @@ import { hashIp } from "@/server/guard/request";
 import { issueHumanCookie } from "@/server/guard/human";
 import { orchestrate } from "./orchestrate";
 import type { OrchestrateDeps } from "./orchestrate";
-import { deps, env, passage } from "./orchestrate-fixtures";
+import { content, deps, env, passage } from "./orchestrate-fixtures";
 
 describe("orchestrate", () => {
   it("returns a cached hit without touching Meta, quota, or budget", async () => {
@@ -32,9 +33,20 @@ describe("orchestrate", () => {
     expect(await d.kv.get(spendKey())).toBe("10000");
   });
 
+  it("appends the bookmap reference only when present", async () => {
+    const base = buildPrompt({ kind: "passage", ...content });
+    for (const reference of ["Reference details: Dorothy: a girl.", undefined]) {
+      let prompt = "";
+      const generate = async (p: string) => ((prompt = p), new Uint8Array([9]));
+      const d = deps({ content: { ...content, reference }, generate: { generate } });
+      expect((await orchestrate(passage, d)).status).toBe("ready");
+      expect(prompt).toBe(reference ? `${base} ${reference}` : base);
+    }
+  });
+
   it("backfills the index from Blob when Redis missed", async () => {
     const d = deps();
-    await d.store.save("images/oz/t/v1/p3.webp", new Uint8Array([1]));
+    await d.store.save("images/oz/t/v2/p3.webp", new Uint8Array([1]));
     let calls = 0;
     d.generate = { generate: async () => (calls++, new Uint8Array([9])) };
     const res = await orchestrate(passage, d);
@@ -222,7 +234,7 @@ describe("orchestrate range reuse", () => {
     await orchestrate(passage, d);
     const res = await orchestrate({ ...passage, endN: 12 }, d);
     expect(res).toMatchObject({ status: "ready", cached: false });
-    expect(saved).toContain("images/oz/t/v1/p3-12.webp");
+    expect(saved).toContain("images/oz/t/v2/p3-12.webp");
   });
 
   it("generates for a disjoint range in the same scene", async () => {
