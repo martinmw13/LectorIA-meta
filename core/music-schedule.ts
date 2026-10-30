@@ -8,6 +8,7 @@ import {
   requestStyleChange,
   resolveConfig,
   selectScheduled,
+  shuffleSameEmotion,
 } from "./music";
 import type {
   MusicConfig,
@@ -212,8 +213,9 @@ export function requestManualTrack(
   };
 }
 
-// A non-looping track ended: fade into the best remaining track,
-// excluding the one that just ended. Never crosses styles.
+// A non-looping track ended: fade into a random other track with the
+// scene's emotion, or, when there is none, the best remaining track;
+// never the one that just ended. Never crosses styles.
 export function noteTrackEnded(
   state: SchedulerState,
   signal: SceneSignal | null,
@@ -227,7 +229,9 @@ export function noteTrackEnded(
   if (state.playlist !== null) return advancePlaylist(state, manifest, nowSec, config);
   const styleTracks = candidatesFor(env.selection, manifest);
   if (styleTracks.length === 0) return noChange(state);
-  const best = bestRanked(signal, styleTracks, endedId, config);
+  const best =
+    shuffleSameEmotion(signal, styleTracks, env.rng, endedId) ??
+    bestRanked(signal, styleTracks, endedId, config);
   if (!best) return noChange(state);
   return {
     state: {

@@ -119,14 +119,15 @@ describe("observeScene and tickScheduler", () => {
   });
 
   it("switches on either side of the draw tolerance boundary", () => {
-    // Two tracks apart in intensity only: the dominant emotion never
-    // changes, only the current track's standing in the draw.
+    // Two tracks apart in intensity only, neither with the scene's
+    // emotion, so the tolerance fallback decides (a same-emotion pool
+    // shuffles instead). Only the current track's standing changes.
     const two: MusicManifest = {
       version: 3,
       styles: [{ id: "orchestral", name: "Orquesta" }],
       soundtracks: [{ id: "snd", name: "Snd", style: "orchestral" }],
       playlists: [],
-      tracks: [track("t0", "tristeza", 0.5, 0.5), track("t1", "tristeza", 0.9, 0.5)],
+      tracks: [track("t0", "calma", 0.5, 0.5), track("t1", "calma", 0.9, 0.5)],
     };
     const at = (intensity: number): SceneSignal => ({ vector: vec("tristeza"), intensity, tempo: 0.5 });
     const gapOf = (intensity: number) => {

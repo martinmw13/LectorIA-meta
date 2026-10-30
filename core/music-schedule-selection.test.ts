@@ -117,14 +117,19 @@ describe("scheduled select", () => {
     expect(d.switchToId).toBeNull();
   });
 
-  it("draws another eligible track once min-track time has passed", () => {
+  it("keeps a same-emotion current track however far its score", () => {
     const d = tickScheduler(playing("a-far", 0), signal("calma"), manifest, 100, orchSeeded());
+    expect(d.switchToId).toBeNull();
+  });
+
+  it("draws another eligible track once min-track time has passed", () => {
+    const d = tickScheduler(playing("a-triste", 0), signal("calma"), manifest, 100, orchSeeded());
     expect(d.switchToId).toBe("a-calma");
     expect(d.crossfadeSec).toBe(3);
   });
 
   it("holds the current pick until min-track time passes", () => {
-    const d = tickScheduler(playing("a-far", 0), signal("calma"), manifest, 10, orchSeeded());
+    const d = tickScheduler(playing("a-triste", 0), signal("calma"), manifest, 10, orchSeeded());
     expect(d.switchToId).toBeNull();
   });
 
@@ -134,11 +139,11 @@ describe("scheduled select", () => {
       return { rng: () => (calls++, 0), calls: () => calls };
     };
     const draw = counting();
-    const d = tickScheduler(playing("a-far", 0), signal("calma"), manifest, 100, orchSeeded(draw.rng));
+    const d = tickScheduler(playing("a-triste", 0), signal("calma"), manifest, 100, orchSeeded(draw.rng));
     expect(d.switchToId).toBe("a-calma");
     expect(draw.calls()).toBe(1);
     const held = counting();
-    const h = tickScheduler(playing("a-far", 0), signal("calma"), manifest, 10, orchSeeded(held.rng));
+    const h = tickScheduler(playing("a-triste", 0), signal("calma"), manifest, 10, orchSeeded(held.rng));
     expect(h.switchToId).toBeNull();
     expect(held.calls()).toBe(1);
     const kept = counting();
