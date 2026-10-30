@@ -71,6 +71,25 @@ export function nextTrack(
   return ranked.find((t) => t.id !== currentTrackId) ?? null;
 }
 
+// Shuffle after a track ends: a uniform rng draw over the same-style
+// tracks with the scene's dominant emotion, never the one that just
+// played. Null when no other track has that emotion (or no scene), so
+// the caller keeps its best-match fallback.
+export function shuffleSameEmotion(
+  scene: SceneSignal | null,
+  tracks: Track[],
+  rng: Rng,
+  justPlayedId: string | null,
+): Track | null {
+  if (scene === null) return null;
+  const dom = dominantEmotion(scene);
+  const pool = tracks
+    .filter((t) => t.emotion === dom && t.id !== justPlayedId)
+    .sort(compareTrackId);
+  if (pool.length === 0) return null;
+  return pool[Math.floor(rng() * pool.length) % pool.length] ?? null;
+}
+
 export interface ScheduledDraw {
   cands: Track[];
   scene: SceneSignal | null;
@@ -99,10 +118,22 @@ function drawFirst(pool: RankedTrack[], rng: Rng, excludeId?: string | null): Tr
   return (list[Math.floor(rng() * list.length)] as RankedTrack | undefined)?.track ?? null;
 }
 
-// The one scheduled draw: same-style tracks with the scene's dominant
-// emotion (or the whole style set when none matches), kept within
-// randomTolerance of the best. The current track stays when eligible
-// with no rng call; otherwise the draw runs first (one rng call, its
+// Scheduled shuffle among same-emotion tracks: a current track with the
+// scene's emotion stays (no rng call), so a scene never churns. Otherwise
+// one uniform draw over the pool, which never holds the track that just
+// played, discarded under the min-track hold like the tolerance draw.
+function shuffleScheduled(pool: RankedTrack[], draw: ScheduledDraw, minTrackSec: number): Track | null {
+  const current = pool.find((entry) => entry.track.id === draw.currentId);
+  if (current) return current.track;
+  const picked = (pool[Math.floor(draw.rng() * pool.length) % pool.length] as RankedTrack).track;
+  if (draw.nowSec - draw.currentStartedSec < minTrackSec) return null;
+  return picked;
+}
+
+// The one scheduled draw. When tracks share the scene's dominant emotion
+// it shuffles among them (shuffleScheduled). With no such track, the
+// whole style set kept within randomTolerance of the best is eligible:
+// the current track stays when eligible with no rng call; otherwise the draw runs first (one rng call, its
 // pick discarded under the min-track hold), matching evaluateRandom.
 // The first track of a session (currentId null) instead draws uniformly
 // with rng from the whole pool, so sessions never open on one song.
@@ -115,6 +146,7 @@ export function selectScheduled(draw: ScheduledDraw): Track | null {
   const pool = ranked.filter((entry) => entry.track.emotion === dom);
   const kept = pool.length > 0 ? pool : ranked;
   if (currentId === null) return drawFirst(kept, rng, draw.excludeId);
+  if (pool.length > 0) return shuffleScheduled(pool, draw, config.minTrackSec);
   const best = kept[0]?.score ?? 0;
   const eligible = kept.filter((entry) => entry.score >= best - config.randomTolerance);
   const current = currentId !== null ? eligible.find((entry) => entry.track.id === currentId) : undefined;
