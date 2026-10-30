@@ -18,6 +18,9 @@ html[data-skin="chihiro"] .ob-badge { font-family: var(--label); font-size: 14px
 .ob-badge svg { width: 14px; height: 14px; }
 
 .ob-plate .ob-art { display: block; margin: 0 auto; height: var(--art-h); width: auto; max-width: 100%; object-fit: contain; aspect-ratio: 3/4; }
+/* Same frame as the plate art, so a missing cover never shifts the page. */
+.ob-plate .ob-cover-fallback.ob-art { height: var(--art-h); aspect-ratio: 3/4; margin: 0 auto; }
+.ob-plate .ob-cover-title { font-size: 17px; padding: 0 20px; }
 .ob-plate .ob-art.oz-art { aspect-ratio: 1/1; }
 html[data-skin="watercolor"] .ob-plate .ob-art { border-radius: 6px; box-shadow: 0 18px 30px -18px rgba(31, 42, 68, .5); }
 html[data-skin="engraving"] .ob-plate .ob-art { border: 1px solid var(--rule); }

@@ -13,6 +13,7 @@
     "build:music": "tsx pipeline/labels-to-manifest.ts",
     "clean:epub": "tsx pipeline/clean-epub.ts",
     "narrate": "tsx pipeline/narrate-cli.ts",
+    "pregen:covers": "tsx --conditions=react-server scripts/pregen-covers.ts",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
