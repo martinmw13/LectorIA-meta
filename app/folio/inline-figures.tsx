@@ -66,9 +66,13 @@ export function InlineFigureView({
       <figure className="genfig" data-fig={figure.id} ref={refCb as React.Ref<HTMLElement>}>
         <p className="gen-error" role="alert">
           {figure.message}{" "}
-          <button type="button" className="retry-text" onClick={onRetry}>
-            {PICTURE_COPY.retry}
-          </button>
+          {figure.quota ? (
+            PICTURE_COPY.quotaByok
+          ) : (
+            <button type="button" className="retry-text" onClick={onRetry}>
+              {PICTURE_COPY.retry}
+            </button>
+          )}
         </p>
       </figure>
     );

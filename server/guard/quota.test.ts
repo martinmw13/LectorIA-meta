@@ -70,6 +70,20 @@ describe("takeDualQuota", () => {
       ok: false,
     });
   });
+
+  it("gives back the ip increment when the anon increment times out", async () => {
+    const kv = createMemoryKV();
+    const failing: KV = {
+      ...kv,
+      incr: async (key: string) => {
+        if (key === KEYS.anon) throw new DOMException("signal timed out", "TimeoutError");
+        return kv.incr(key);
+      },
+    };
+    await expect(takeDualQuota(failing, KEYS, { limit: 5, ttlSec: 60 })).rejects.toThrow();
+    expect(await kv.get(KEYS.ip)).toBe("0");
+    expect(await kv.get(KEYS.anon)).toBeNull();
+  });
 });
 
 describe("refundDualQuota", () => {

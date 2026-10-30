@@ -64,18 +64,63 @@ function errorCodeOf(value: unknown): string {
   return "unavailable";
 }
 
+// First byte and idle budgets: the server answers with headers quickly
+// and streams at once, so a quiet line means it is stuck, not thinking.
+// Never a total budget: a long healthy answer must never trip it.
+export const CHAT_FIRST_BYTE_MS = 30_000;
+export const CHAT_IDLE_MS = 30_000;
+
+const IDLE_TIMEOUT = Symbol("chat-idle-timeout");
+
+// One read with an idle budget. Handlers stay attached, so a won read
+// settling late after the timeout never rejects unhandled.
+function readWithIdle(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  ms: number,
+): Promise<ReadableStreamReadResult<Uint8Array>> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(IDLE_TIMEOUT), ms);
+    reader.read().then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err: unknown) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
+
 // Minimal SSE reader: splits on blank lines, reads event:/data: pairs.
-async function runStream(
+// Each read gets the idle budget; a stall throws the retryable code.
+export async function runStream(
   res: Response,
   signal: AbortSignal,
   onBlock: (event: string, data: string) => void,
+  idleMs: number = CHAT_IDLE_MS,
 ): Promise<void> {
   const reader = res.body?.getReader();
   if (!reader) throw { code: "unavailable" };
   const decoder = new TextDecoder();
   let buf = "";
   for (;;) {
-    const { done, value } = await reader.read();
+    let read: ReadableStreamReadResult<Uint8Array>;
+    try {
+      read = await readWithIdle(reader, idleMs);
+    } catch (err) {
+      if (err === IDLE_TIMEOUT) {
+        try {
+          await reader.cancel();
+        } catch {
+          // Already closed; the timeout itself is the outcome.
+        }
+        throw { code: "unavailable" };
+      }
+      throw err;
+    }
+    const { done, value } = read;
     if (signal.aborted) {
       try {
         await reader.cancel();
@@ -191,58 +236,72 @@ export function useChat(opts: UseChatOptions) {
         ...(token ? { turnstileToken: token } : {}),
       };
       o.onTokenUsed?.();
-      let res: Response;
       try {
-        res = await fetch("/api/chat", {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-            ...(key ? { [BYOK_HEADER]: key } : {}),
-          },
-          body: JSON.stringify(payload),
-          signal: ctrl.signal,
+        // First-byte budget only: once headers land the timer clears, so a
+        // long healthy stream never trips it; idleness is runStream's job.
+        const firstByte = new AbortController();
+        const firstTimer = setTimeout(() => firstByte.abort(), CHAT_FIRST_BYTE_MS);
+        let res: Response;
+        try {
+          res = await fetch("/api/chat", {
+            method: "POST",
+            headers: {
+              "content-type": "application/json",
+              ...(key ? { [BYOK_HEADER]: key } : {}),
+            },
+            body: JSON.stringify(payload),
+            signal: AbortSignal.any([ctrl.signal, firstByte.signal]),
+          });
+        } finally {
+          clearTimeout(firstTimer);
+        }
+        const contentType = res.headers.get("content-type") ?? "";
+        if (!res.ok || !contentType.includes("text/event-stream")) {
+          let code = "unavailable";
+          try {
+            code = errorCodeOf(await res.json());
+          } catch {
+            // No JSON error body: keep the generic code.
+          }
+          throw { code };
+        }
+        let streamed = false;
+        let finished = false;
+        const role: ChatRole = "assistant";
+        await runStream(res, ctrl.signal, (event, data) => {
+          if (event === "delta") {
+            const text = (safeJson(data) as { text?: unknown } | null)?.text;
+            if (typeof text !== "string" || text === "") return;
+            streamed = true;
+            setStatus("streaming");
+            const next = [...msgsRef.current];
+            const last = next[next.length - 1];
+            if (last && last.role === role) {
+              next[next.length - 1] = { role, content: last.content + text };
+            } else {
+              next.push({ role, content: text });
+            }
+            msgsRef.current = next;
+            setMessages(next);
+          } else if (event === "done") {
+            const left = (safeJson(data) as { remaining?: unknown } | null)?.remaining;
+            if (typeof left === "number") setRemaining(left);
+            finished = true;
+            setStatus("idle");
+            abortRef.current = null;
+          } else if (event === "error") {
+            throw { code: errorCodeOf(safeJson(data)) };
+          }
         });
+        // A cut stream (server kill, dropped line) ends without done: show
+        // the retry state instead of streaming forever.
+        if ((!streamed || !finished) && !ctrl.signal.aborted) throw { code: "unavailable" };
       } catch (err) {
+        // Stop stays silent; anything else (first-byte or idle timeout,
+        // network, server error) lands here unaborted and shows its state.
         if (ctrl.signal.aborted) return;
         throw err;
       }
-      const contentType = res.headers.get("content-type") ?? "";
-      if (!res.ok || !contentType.includes("text/event-stream")) {
-        let code = "unavailable";
-        try {
-          code = errorCodeOf(await res.json());
-        } catch {
-          // No JSON error body: keep the generic code.
-        }
-        throw { code };
-      }
-      let streamed = false;
-      const role: ChatRole = "assistant";
-      await runStream(res, ctrl.signal, (event, data) => {
-        if (event === "delta") {
-          const text = (safeJson(data) as { text?: unknown } | null)?.text;
-          if (typeof text !== "string" || text === "") return;
-          streamed = true;
-          setStatus("streaming");
-          const next = [...msgsRef.current];
-          const last = next[next.length - 1];
-          if (last && last.role === role) {
-            next[next.length - 1] = { role, content: last.content + text };
-          } else {
-            next.push({ role, content: text });
-          }
-          msgsRef.current = next;
-          setMessages(next);
-        } else if (event === "done") {
-          const left = (safeJson(data) as { remaining?: unknown } | null)?.remaining;
-          if (typeof left === "number") setRemaining(left);
-          setStatus("idle");
-          abortRef.current = null;
-        } else if (event === "error") {
-          throw { code: errorCodeOf(safeJson(data)) };
-        }
-      });
-      if (!streamed && !ctrl.signal.aborted) throw { code: "unavailable" };
     },
     [],
   );
@@ -250,7 +309,6 @@ export function useChat(opts: UseChatOptions) {
   const submit = useCallback(
     (history: ChatMessage[], key: string | null, token: string | null) => {
       void sendHistory(history, key, token).catch((err: unknown) => {
-        if ((err as { name?: string })?.name === "AbortError") return;
         fail(typeof err === "string" ? err : errorCodeOf(err));
       });
     },

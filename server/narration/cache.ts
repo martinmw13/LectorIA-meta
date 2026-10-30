@@ -13,6 +13,10 @@ import type { SpendReservation } from "@/server/guard/spend";
 
 export const NARRATION_LOCK_TTL_SEC = 300;
 
+// Blob and manifest reads fail fast, so a slow store still leaves time
+// for the budget refund and the lock release.
+const NARRATION_TIMEOUT_MS = 8_000;
+
 export interface NarrationEnv {
   spendCapMicro: number;
   dailySpendCapMicro: number;
@@ -61,11 +65,11 @@ export function createNarrationDeps(args: {
     store: {
       getManifest: async (key: string) => {
         const path = `${key}.json`;
-        const page = await list({ prefix: path, limit: 10 });
+        const page = await list({ prefix: path, limit: 10, abortSignal: AbortSignal.timeout(NARRATION_TIMEOUT_MS) });
         const url = page.blobs.find((b) => b.pathname === path)?.url ?? null;
         if (!url) return null;
         try {
-          const response = await fetch(url);
+          const response = await fetch(url, { signal: AbortSignal.timeout(NARRATION_TIMEOUT_MS) });
           if (!response.ok) return null;
           return parseChapterNarration((await response.json()) as unknown);
         } catch {
@@ -79,6 +83,7 @@ export function createNarrationDeps(args: {
           allowOverwrite: false,
           contentType: "audio/mpeg",
           cacheControlMaxAge: 31536000,
+          abortSignal: AbortSignal.timeout(NARRATION_TIMEOUT_MS),
         });
         return blob.url;
       },
@@ -89,6 +94,7 @@ export function createNarrationDeps(args: {
           allowOverwrite: false,
           contentType: "application/json",
           cacheControlMaxAge: 31536000,
+          abortSignal: AbortSignal.timeout(NARRATION_TIMEOUT_MS),
         });
       },
     },

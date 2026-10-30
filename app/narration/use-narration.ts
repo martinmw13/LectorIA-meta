@@ -122,7 +122,7 @@ export function useNarrationController(opts: {
       }
       return;
     }
-    fetch(entry.manifest)
+    fetch(entry.manifest, { signal: AbortSignal.timeout(15_000) })
       .then((res) => {
         if (!res.ok) throw new Error(`narration ${res.status}`);
         return res.json();
@@ -155,7 +155,7 @@ export function useNarrationController(opts: {
     const ch = next.ch;
     if (!entry || prefetching.current.has(ch)) return;
     prefetching.current.add(ch);
-    fetch(entry.manifest)
+    fetch(entry.manifest, { signal: AbortSignal.timeout(15_000) })
       .then((res) => {
         if (!res.ok) throw new Error(`narration ${res.status}`);
         return res.json();

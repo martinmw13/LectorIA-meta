@@ -219,7 +219,7 @@ export function Reader({
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/music/manifest.json")
+    fetch("/music/manifest.json", { signal: AbortSignal.timeout(15_000) })
       .then((res) => {
         if (!res.ok) throw new Error(`manifest ${res.status}`);
         return res.json();

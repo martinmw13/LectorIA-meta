@@ -84,6 +84,47 @@ test("a reached chapter shows the wait line, then the page and captions", async 
   }
 });
 
+test("quota, budget, and daily_budget hide retry and point to the key option", async () => {
+  // Fresh chapters: errors never cache, but the ready test above cached ch 1.
+  const cases = [
+    ["quota", 3],
+    ["budget", 4],
+    ["daily_budget", 5],
+  ] as const;
+  for (const [code, ch] of cases) {
+    const answer = pendingFetch();
+    const { host, root } = mount(ch, 9);
+    try {
+      await answer({ status: "error", code, message: `limit hit (${code})` });
+      const miss = host.querySelector(".panels-miss");
+      expect(miss?.textContent).toContain(`limit hit (${code})`);
+      expect(miss?.textContent).toContain("Bring your own key!");
+      expect(miss?.querySelector(".retry-text")).toBeNull();
+    } finally {
+      act(() => root.unmount());
+    }
+  }
+});
+
+test("a failed fetch keeps the retry button", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => {
+      throw new DOMException("aborted", "AbortError");
+    }),
+  );
+  const { host, root } = mount(6, 9);
+  try {
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 30));
+    });
+    expect(host.querySelector(".panels-miss")?.textContent).toContain("That picture didn't come out");
+    expect(host.querySelector(".panels-miss .retry-text")?.textContent).toBe("Try again");
+  } finally {
+    act(() => root.unmount());
+  }
+});
+
 test("an unreached chapter requests nothing and hides the captions", () => {
   const fetchSpy = vi.fn().mockRejectedValue(new Error("must not be called"));
   vi.stubGlobal("fetch", fetchSpy);
