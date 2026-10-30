@@ -38,3 +38,48 @@ function clean(raw: string | null | undefined): string | null {
   if (ip === "" || ip.length > 64 || /[\s,]/.test(ip)) return null;
   return ip;
 }
+
+// Reject cross-site simple-request CSRF: a third-party page can make a
+// visitor's browser send a `mode:"no-cors"` `text/plain` POST (a CORS
+// simple request, no preflight), spending owner budget and draining the
+// shared daily spend cap from many IPs. Our own clients always send
+// `Content-Type: application/json` from the same origin, so anything
+// else is not ours. Pure: reads headers and the request URL only, and
+// never logs header values.
+export function rejectsCrossSite(headers: Headers, requestUrl: string): boolean {
+  const mediaType = headers
+    .get("content-type")
+    ?.split(";")[0]
+    ?.trim()
+    .toLowerCase();
+  if (mediaType !== "application/json") return true;
+
+  const fetchSite = headers.get("sec-fetch-site")?.trim().toLowerCase();
+  if (fetchSite !== null && fetchSite !== undefined && fetchSite !== "") {
+    if (fetchSite !== "same-origin" && fetchSite !== "none") return true;
+  }
+
+  const origin = headers.get("origin")?.trim();
+  if (origin !== null && origin !== undefined && origin !== "") {
+    if (origin === "null") return true;
+    let originHost: string;
+    try {
+      originHost = new URL(origin).host.toLowerCase();
+    } catch {
+      return true;
+    }
+    const forwarded = headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+    const hostHeader = headers.get("host")?.trim();
+    let requestHost = (forwarded || hostHeader || "").toLowerCase();
+    if (!requestHost) {
+      try {
+        requestHost = new URL(requestUrl).host.toLowerCase();
+      } catch {
+        return true;
+      }
+    }
+    if (originHost !== requestHost) return true;
+  }
+
+  return false;
+}

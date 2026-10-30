@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clientIp, hashIp, ipBucket, utcDay } from "./request";
+import { clientIp, hashIp, ipBucket, rejectsCrossSite, utcDay } from "./request";
 
 function headers(entries: [string, string][]): Headers {
   const out = new Headers();
@@ -36,6 +36,33 @@ describe("request helpers", () => {
   it("takes the first forwarded entry and trims it", () => {
     expect(clientIp(headers([["x-forwarded-for", "1.2.3.4, 5.6.7.8"]]))).toBe("1.2.3.4");
     expect(clientIp(headers([["x-forwarded-for", "  1.2.3.4  "]]))).toBe("1.2.3.4");
+  });
+
+  it("accepts json and json with charset, rejects text/plain and missing content-type", () => {
+    const url = "http://localhost/api/chat";
+    expect(rejectsCrossSite(headers([["Content-Type", "application/json"]]), url)).toBe(false);
+    expect(rejectsCrossSite(headers([["Content-Type", "application/json; charset=utf-8"]]), url)).toBe(false);
+    expect(rejectsCrossSite(headers([["Content-Type", "Application/JSON; Charset=UTF-8"]]), url)).toBe(false);
+    expect(rejectsCrossSite(headers([["Content-Type", "text/plain"]]), url)).toBe(true);
+    expect(rejectsCrossSite(headers([]), url)).toBe(true);
+  });
+
+  it("rejects cross-site and same-site fetch metadata, accepts same-origin and none", () => {
+    const url = "http://localhost/api/chat";
+    const json: [string, string][] = [["Content-Type", "application/json"]];
+    expect(rejectsCrossSite(headers([...json, ["Sec-Fetch-Site", "cross-site"]]), url)).toBe(true);
+    expect(rejectsCrossSite(headers([...json, ["Sec-Fetch-Site", "same-site"]]), url)).toBe(true);
+    expect(rejectsCrossSite(headers([...json, ["Sec-Fetch-Site", "same-origin"]]), url)).toBe(false);
+    expect(rejectsCrossSite(headers([...json, ["Sec-Fetch-Site", "none"]]), url)).toBe(false);
+  });
+
+  it("rejects a mismatched or null Origin and accepts a matching host", () => {
+    const url = "http://localhost/api/chat";
+    const json: [string, string][] = [["Content-Type", "application/json"]];
+    expect(rejectsCrossSite(headers([...json, ["Origin", "https://evil.example"]]), url)).toBe(true);
+    expect(rejectsCrossSite(headers([...json, ["Origin", "null"]]), url)).toBe(true);
+    expect(rejectsCrossSite(headers([...json, ["Origin", "http://localhost"]]), url)).toBe(false);
+    expect(rejectsCrossSite(headers(json), url)).toBe(false);
   });
 
   it("falls through invalid values to unknown", () => {

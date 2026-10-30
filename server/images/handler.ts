@@ -15,7 +15,7 @@ import type { KV } from "@/core/types";
 import { issueAnonId, parseAnonCookie, serializeAnonCookie, verifyAnonCookie } from "@/server/guard/anon";
 import { readBodyCapped } from "@/server/guard/body";
 import { createRestKV } from "@/server/guard/kv";
-import { clientIp, utcDay } from "@/server/guard/request";
+import { clientIp, rejectsCrossSite, utcDay } from "@/server/guard/request";
 import { readImageEnv } from "./env";
 import type { ImageEnv } from "./env";
 import { errorTag } from "./errors";
@@ -40,6 +40,13 @@ export interface ImagesHandlerDeps {
 }
 
 export async function handleImagesPost(req: Request, deps: ImagesHandlerDeps = {}): Promise<Response> {
+  if (rejectsCrossSite(req.headers, req.url)) {
+    return Response.json(
+      { status: "error", code: "bad_request", message: MSG_BAD_REQUEST } satisfies ImageResponse,
+      { status: 400 },
+    );
+  }
+
   const capped = await readBodyCapped(req, MAX_IMAGE_BODY_BYTES);
   if (!capped.ok) {
     return Response.json(

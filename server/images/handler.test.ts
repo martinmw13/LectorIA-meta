@@ -96,7 +96,7 @@ describe("handleImagesPost", () => {
     const res = await handleImagesPost(
       new Request("http://localhost/api/images", {
         method: "POST",
-        headers: { "content-length": String(MAX_IMAGE_BODY_BYTES + 1) },
+        headers: { "Content-Type": "application/json", "content-length": String(MAX_IMAGE_BODY_BYTES + 1) },
         body: JSON.stringify({ kind: "passage", marker }),
       }),
     );
@@ -112,7 +112,7 @@ describe("handleImagesPost", () => {
     const res = await handleImagesPost(
       new Request("http://localhost/api/images", {
         method: "POST",
-        headers: { "content-length": "10" },
+        headers: { "Content-Type": "application/json", "content-length": "10" },
         body: "a".repeat(MAX_IMAGE_BODY_BYTES + 100),
       }),
     );
@@ -129,6 +129,7 @@ describe("handleImagesPost", () => {
     const res = await handleImagesPost(
       new Request("http://localhost/api/images", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: new ReadableStream({
           start(c) {
             c.enqueue(enc.encode("raw-secret-marker-stream".padEnd(MAX_IMAGE_BODY_BYTES + 100, "x")));
@@ -148,6 +149,7 @@ describe("handleImagesPost", () => {
     const res = await handleImagesPost(
       new Request("http://localhost/api/images", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: new ReadableStream({
           start(c) {
             c.error(new Error("raw-secret-marker-abort"));
@@ -166,10 +168,33 @@ describe("handleImagesPost", () => {
     const invalid = await handleImagesPost(post({ kind: "nope" }));
     expect(invalid.status).toBe(400);
     const malformed = await handleImagesPost(
-      new Request("http://localhost/api/images", { method: "POST", body: "not json{" }),
+      new Request("http://localhost/api/images", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "not json{",
+      }),
     );
     expect(malformed.status).toBe(400);
     expect(await malformed.json()).toMatchObject({ status: "error", code: "bad_request" });
+  });
+
+  it("rejects a text/plain cross-site POST with 400 without calling generate", async () => {
+    const generate = { generate: vi.fn(async () => new Uint8Array([1, 2, 3])) };
+    const res = await handleImagesPost(
+      new Request("http://localhost/api/images", {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain",
+          Origin: "https://evil.example",
+          "Sec-Fetch-Site": "cross-site",
+        },
+        body: JSON.stringify(passageBody()),
+      }),
+      { generate },
+    );
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ status: "error", code: "bad_request" });
+    expect(generate.generate).not.toHaveBeenCalled();
   });
 
   it("returns generic text when KV throws", async () => {
