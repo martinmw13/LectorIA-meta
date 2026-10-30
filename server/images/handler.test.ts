@@ -341,7 +341,7 @@ describe("human gate", () => {
     expect(prompt).toContain("Dorothy:");
   });
 
-  it("serves a ready non-Oz book with its own style line and no reference block", async () => {
+  it("serves a ready non-Oz book with its own style line and its own bookmap reference", async () => {
     const { book: alice } = await loadBookData("alice");
     const first = alice.paragraphs[0];
     if (!first) throw new Error("test book has no paragraphs");
@@ -369,7 +369,7 @@ describe("human gate", () => {
     expect(prompt).toContain("Alice's Adventures in Wonderland");
     expect(prompt).not.toContain("Dorothy");
     expect(prompt).not.toContain("silver shoes");
-    expect(prompt).not.toContain("Reference details:");
+    expect(prompt).toContain("Reference details:");
   });
 
   it("accepts the legacy chat_human cookie", async () => {
