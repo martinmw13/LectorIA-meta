@@ -35,7 +35,7 @@ describe("home backdrop", () => {
     expect(chihiro?.[1]).not.toMatch(/gradient/);
   });
 
-  it.each(["comic", "engraving", "watercolor", "ink"])("paints %s with its own home painting", (skin) => {
+  it.each(["comic", "engraving", "watercolor", "ink", "pencil"])("paints %s with its own home painting", (skin) => {
     const rule = rules(backdrop).find(([sel]) => sel.includes(`"${skin}"`) && sel.endsWith("::before"));
     expect(rule?.[1]).toContain(`/art/skins/${skin}/home.jpg`);
     expect(rule?.[1]).toMatch(/center \/ cover no-repeat/);
