@@ -28,6 +28,7 @@ vi.mock("next/font/google", () => {
     Cormorant_Garamond: face("Cormorant_Garamond"),
     Crimson_Pro: face("Crimson_Pro"),
     EB_Garamond: face("EB_Garamond"),
+    Fraunces: face("Fraunces"),
     IM_Fell_English: face("IM_Fell_English"),
     IM_Fell_English_SC: face("IM_Fell_English_SC"),
     Instrument_Sans: face("Instrument_Sans"),
@@ -36,6 +37,7 @@ vi.mock("next/font/google", () => {
     Klee_One: face("Klee_One"),
     Lora: face("Lora"),
     Newsreader: face("Newsreader"),
+    Petit_Formal_Script: face("Petit_Formal_Script"),
   };
 });
 
@@ -58,6 +60,8 @@ const EXPECTED: Record<string, { weight?: unknown; style?: unknown }> = {
   Bangers: { weight: "400" },
   Comic_Neue: { weight: ["400", "700"], style: ["normal", "italic"] },
   Klee_One: { weight: "600" },
+  Petit_Formal_Script: { weight: "400" },
+  Fraunces: { style: "italic" },
 };
 
 describe("font faces", () => {
@@ -90,6 +94,8 @@ describe("font faces", () => {
       "--font-jost",
       "--font-crimson",
       "--font-cormorant",
+      "--font-copperplate",
+      "--font-fraunces",
     ]) {
       expect(rootFontClass).toContain(variable);
     }

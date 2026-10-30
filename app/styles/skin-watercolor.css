@@ -50,10 +50,12 @@ html[data-skin="watercolor"] .top-center {
 }
 
 html[data-skin="watercolor"] .wordmark {
-  font-family: var(--font-wc-hand);
-  font-weight: 700;
-  font-size: 30px;
-  letter-spacing: 0;
+  font-family: var(--font-fraunces), "Fraunces", georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 26px;
+  font-variation-settings: "SOFT" 100, "opsz" 36;
+  letter-spacing: -0.01em;
   text-transform: none;
   color: var(--color-text);
 }

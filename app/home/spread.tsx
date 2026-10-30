@@ -8,6 +8,7 @@ import { shelf, shelfById } from "./shelf";
 import { coverFor } from "./covers";
 import { CoverImage } from "./cover";
 import { StyleMenu } from "../style-menu";
+import { StylePicker } from "./style-picker";
 import { UploadSection } from "./upload";
 import { YourBooks } from "./your-books";
 import { HomeIcon } from "./home-icons";
@@ -109,6 +110,7 @@ export function HomeSpread() {
         </section>
         <div className="ob-gutter" aria-hidden="true" />
         <section className="ob-page ob-right" aria-labelledby="obPlateTitle">
+          <StylePicker />
           <figure
             className="ob-plate"
             ref={plateRef}

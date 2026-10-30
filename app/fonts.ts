@@ -9,6 +9,7 @@ import {
   Cormorant_Garamond,
   Crimson_Pro,
   EB_Garamond,
+  Fraunces,
   IM_Fell_English,
   IM_Fell_English_SC,
   Instrument_Sans,
@@ -16,6 +17,7 @@ import {
   Kalam,
   Lora,
   Newsreader,
+  Petit_Formal_Script,
 } from "next/font/google";
 
 const newsreader = Newsreader({
@@ -114,6 +116,26 @@ const cormorant = Cormorant_Garamond({
   preload: false,
 });
 
+// Wordmark faces. Ink signs "LectorIA" in a copperplate pen script, to
+// sit with its etching; watercolor in Fraunces' soft italic. Both are
+// only the brand line, so one weight each.
+const copperplate = Petit_Formal_Script({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-copperplate",
+  display: "swap",
+  preload: false,
+});
+
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  style: "italic",
+  axes: ["SOFT", "opsz"],
+  variable: "--font-fraunces",
+  display: "swap",
+  preload: false,
+});
+
 export const rootFontClass =
-  `${newsreader.variable} ${instrumentSans.variable} ${fell.variable} ${fellSC.variable} ${garamond.variable} ${caveat.variable} ${lora.variable} ${kalam.variable} ${jost.variable} ${crimson.variable} ${cormorant.variable}`;
+  `${newsreader.variable} ${instrumentSans.variable} ${fell.variable} ${fellSC.variable} ${garamond.variable} ${caveat.variable} ${lora.variable} ${kalam.variable} ${jost.variable} ${crimson.variable} ${cormorant.variable} ${copperplate.variable} ${fraunces.variable}`;
 
