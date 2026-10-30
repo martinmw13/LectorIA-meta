@@ -6,21 +6,21 @@ A Muse commit is a non-merge commit on main that carries the trailer `Co-authore
 
 ## Commits
 
-- Muse commits: 353 of 427 non-merge commits (83%).
+- Muse commits: 354 of 429 non-merge commits (83%).
 - Date range (UTC-3): 2026-10-27 to 2026-10-30.
 
 ## Lines
 
 | Scope | Muse added | Muse removed | Other added | Other removed | Muse share of added |
 | --- | --- | --- | --- | --- | --- |
-| Source code (`app/`, `core/`, `pipeline/`, `server/`, `scripts/`) | 53,849 | 10,824 | 13,859 | 3,602 | 80% |
-| All files | 260,174 | 15,006 | 46,841 | 4,598 | 85% |
+| Source code (`app/`, `core/`, `pipeline/`, `server/`, `scripts/`) | 53,917 | 10,854 | 13,981 | 3,649 | 79% |
+| All files | 260,254 | 15,048 | 46,963 | 4,645 | 85% |
 
 All files includes the Muse Code session transcripts in `agent-logs/`, the vendored skills in `.agents/` and `package-lock.json`.
 
 ## Pull requests
 
-78 merged PRs contain Muse commits. Each carries the `Muse Code` label.
+80 merged PRs contain Muse commits. Each carries the `Muse Code` label.
 
 | PR | Title | Merged (UTC-3) | Muse commits |
 | --- | --- | --- | --- |
@@ -102,3 +102,5 @@ All files includes the Muse Code session transcripts in `agent-logs/`, the vendo
 | [#130](https://github.com/martinmw13/LectorIA-meta/pull/130) | fix(images): share final prompt assembly between the route and pregen | 2026-10-30 | 1 of 1 |
 | [#131](https://github.com/martinmw13/LectorIA-meta/pull/131) | feat(data): add bookmaps for the nine shelf books | 2026-10-30 | 1 of 1 |
 | [#132](https://github.com/martinmw13/LectorIA-meta/pull/132) | fix(scripts): load Oz data directly in pregen-chapters | 2026-10-30 | 1 of 1 |
+| [#134](https://github.com/martinmw13/LectorIA-meta/pull/134) | fix(reader): center non-Oz books like Oz on wide screens | 2026-10-30 | 1 of 2 |
+| [#135](https://github.com/martinmw13/LectorIA-meta/pull/135) | fix(images): clip bookmap descriptions at boundaries and drop later-story looks | 2026-10-30 | 1 of 1 |
