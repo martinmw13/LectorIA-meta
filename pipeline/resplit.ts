@@ -362,7 +362,7 @@ export async function runResplit(ctx: StepCtx, deps: { jev: JevClient; meta: Met
   const problems = validateBookCoverage(book, scenes);
   if (problems.length > 0) throw new Error(`resplit breaks coverage: ${problems.map((p) => p.message).join("; ")}`);
 
-  usage.meta.costUsd = metaCostUsd({ prompt: usage.meta.promptTokens, cached: usage.meta.cachedTokens, completion: usage.meta.completionTokens });
+  usage.meta.costUsd = metaCostUsd({ prompt: usage.meta.promptTokens, cached: usage.meta.cachedTokens, completion: usage.meta.completionTokens }, usage.meta.model);
   const jevCost = jevCostUsd(usage.jevInputTokens);
   const prevJev = analysisFile.provenance.jev;
   const prevMeta = analysisFile.provenance.meta;
