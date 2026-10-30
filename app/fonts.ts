@@ -1,6 +1,9 @@
 // The shared next/font faces, set on <html> by the root layout. The home
 // adds only its own faces (app/home/fonts.ts). Self-hosted: the CSP
-// allows font-src 'self'.
+// allows font-src 'self'. No face preloads: the skin is chosen
+// client-side, so preloaded fonts would compete with the LCP hero image
+// for skins the visitor may never use. display: swap keeps text visible
+// in the fallback until each used face arrives.
 import {
   Caveat,
   Cormorant_Garamond,
@@ -20,22 +23,26 @@ const newsreader = Newsreader({
   style: ["normal", "italic"],
   variable: "--font-newsreader",
   display: "swap",
+  preload: false,
 });
 
 const instrumentSans = Instrument_Sans({
   subsets: ["latin"],
   variable: "--font-instrument",
   display: "swap",
+  preload: false,
 });
 
-// Engraving skin faces. Engraving is the default skin, so they preload;
-// the skin's tokens fall back to Georgia until they arrive.
+// Engraving skin faces. Engraving is the default skin, but it still does
+// not preload: the visitor may use another skin, and the hero image wins.
+// The skin's tokens fall back to Georgia until they arrive.
 const fell = IM_Fell_English({
   subsets: ["latin"],
   weight: "400",
   style: ["normal", "italic"],
   variable: "--font-fell",
   display: "swap",
+  preload: false,
 });
 
 const fellSC = IM_Fell_English_SC({
@@ -43,6 +50,7 @@ const fellSC = IM_Fell_English_SC({
   weight: "400",
   variable: "--font-fell-sc",
   display: "swap",
+  preload: false,
 });
 
 const garamond = EB_Garamond({
@@ -50,9 +58,10 @@ const garamond = EB_Garamond({
   style: ["normal", "italic"],
   variable: "--font-garamond",
   display: "swap",
+  preload: false,
 });
 
-// Watercolor skin faces. Not the default skin, so they load only when a
+// Watercolor skin faces. Like every face here, they load only when a
 // page uses them.
 const caveat = Caveat({
   subsets: ["latin"],
