@@ -29,11 +29,10 @@ describe("book registry", () => {
 
   it.each(["dracula", "pride", "sherlock"])("loads processed data for %s", async (id) => {
     expect(isKnownBookId(id)).toBe(true);
-    expect(isReadyBookId(id)).toBe(false);
-    const { book, scenes } = await loadBookData(id);
+    expect(isReadyBookId(id)).toBe(true);
+    const { book, scenes } = await loadBook(id);
     expect(book.id).toBe(id);
     expect(scenes.length).toBeGreaterThan(0);
-    expect(notFoundDigest(() => loadBook(id))).toContain("404");
   });
 
   it("404s on unknown ids", () => {

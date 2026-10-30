@@ -50,9 +50,9 @@ describe("/read/[bookId]", () => {
     expect(digest).toContain("/read/oz/");
   });
 
-  it("404s a known book missing from the shelf", async () => {
+  it("redirects a shelf book to its first scene", async () => {
     const digest = await thrownDigest(() => ReadBook({ params: Promise.resolve({ bookId: "carol" }) }));
-    expect(digest).toContain("404");
+    expect(digest).toContain("/read/carol/c1s");
   });
 
   it("404s unknown and traversal-ish ids", async () => {

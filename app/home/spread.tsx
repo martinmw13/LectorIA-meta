@@ -65,7 +65,7 @@ export function HomeSpread() {
           <p className="ob-intro">Books with pictures, and music that follows every scene.</p>
 
           <h2 className="ob-sec-t">On the shelf</h2>
-          <p className="ob-sec-sub">Oz is ready now, music and all. The rest are on their way.</p>
+          <p className="ob-sec-sub">Ten classics are ready to read, each with music that follows the story.</p>
           <div className="lb lb-grid" role="group" aria-label="Books on the shelf">
             {shelf.map((entry) => (
               <button
@@ -136,7 +136,9 @@ export function HomeSpread() {
                 {book.hook}
                 <span className="ob-ready">
                   {book.ready
-                    ? "Pictures and music are ready, scene by scene."
+                    ? book.id === "oz"
+                      ? "Pictures and music are ready, scene by scene."
+                      : "Music is ready, scene by scene."
                     : "Coming soon. We're still setting this one to music."}
                 </span>
               </p>
