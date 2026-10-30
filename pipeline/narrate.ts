@@ -14,9 +14,11 @@ import {
   NARRATION_VOICE,
   actualNarrationMicro,
   chapterChunks,
+  isNarrationVoiceId,
   parseChapterNarration,
 } from "../core/narration";
 import type { ChapterNarration } from "../core/narration";
+import { parseBookNarration } from "../core/narration-book";
 import type { Book } from "../core/types";
 import { decide, narrateKeys } from "./freshness";
 import type { StepCtx } from "./ingest";
@@ -112,26 +114,29 @@ export async function runNarrate(
     synthesize: NarrationDeps["synthesize"];
     store?: NarrationDeps["store"];
     capUsd?: number;
+    voice?: string;
   },
 ): Promise<NarrateStats> {
+  const voice = deps.voice ?? NARRATION_VOICE;
+  if (!isNarrationVoiceId(voice)) throw new Error(`unknown voice "${voice}"`);
   const book = JSON.parse(readFileSync(join(ctx.dir, "book.json"), "utf8")) as Book;
-  const keys = narrateKeys(ctx.dir);
+  const keys = narrateKeys(ctx.dir, voice);
   if (decide(ctx.force, keys.recorded, keys.current).reuse) {
-    console.log("narrate: reuse (inputs unchanged)");
+    console.log(`narrate ${voice}: reuse (inputs unchanged)`);
     return { generated: 0, cached: book.chapters.length, gpuSec: 0, estimatedMicro: 0, actualMicro: 0, stopped: false };
   }
   const outPath = join(ctx.dir, "narration.json");
   const previous = (() => {
     try {
-      return JSON.parse(readFileSync(outPath, "utf8")) as {
-        chapters?: Record<string, ChapterNarration>;
-      };
+      return parseBookNarration(JSON.parse(readFileSync(outPath, "utf8")) as unknown);
     } catch {
       return null;
     }
   })();
   const byKey = new Map<string, ChapterNarration>();
-  for (const manifest of Object.values(previous?.chapters ?? {})) byKey.set(manifest.key, manifest);
+  for (const chapters of Object.values(previous?.chaptersByVoice ?? {})) {
+    for (const manifest of Object.values(chapters)) byKey.set(manifest.key, manifest);
+  }
   const store = deps.store ?? (process.env.BLOB_READ_WRITE_TOKEN ? createBlobNarrationStore() : createLocalNarrationStore("public"));
   const capMicro = Math.round((deps.capUsd ?? parseCapUsd(process.env.NARRATION_CAP_USD)) * 1_000_000);
   let spent = 0;
@@ -160,7 +165,7 @@ export async function runNarrate(
     const { chunks, gaps } = chapterChunks(paras);
     let gpuSec = 0;
     const result = await ensureChapterNarration(
-      { chunks, gaps },
+      { chunks, gaps, voice },
       {
         sha256Hex,
         index: {
@@ -209,15 +214,19 @@ export async function runNarrate(
   });
   await Promise.all(workers);
   const complete = !stats.stopped && failed.length === 0 && Object.keys(chapters).length === book.chapters.length;
+  // Other voices keep their chapters and inputs, so one voice never
+  // wipes another; an incomplete run records no input for this voice.
+  const inputs = { ...(previous?.inputs ?? {}), [voice]: complete ? keys.current : null };
+  const voices = [...new Set([...Object.keys(previous?.chaptersByVoice ?? {}), ...(complete || Object.keys(chapters).length > 0 ? [voice] : [])])].sort();
   writeFileSync(
     outPath,
     `${JSON.stringify({
       textVersion: book.textVersion,
       provenance: {
-        // An incomplete run records no input, so the next run redoes
-        // instead of reusing a partial chapters map.
         input: complete ? keys.current : null,
-        voice: NARRATION_VOICE,
+        inputs,
+        voice,
+        voices,
         model: NARRATION_MODEL,
         speed: NARRATION_SPEED,
         format: NARRATION_FORMAT,
@@ -227,7 +236,7 @@ export async function runNarrate(
         cost_usd_estimated: Math.round((stats.estimatedMicro / 1_000_000) * 1e6) / 1e6,
         cost_usd_actual: Math.round((stats.actualMicro / 1_000_000) * 1e6) / 1e6,
       },
-      chapters,
+      chapters: { ...(previous?.chaptersByVoice ?? {}), ...(Object.keys(chapters).length > 0 || complete ? { [voice]: chapters } : {}) },
     })}\n`,
   );
   console.log(

@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { classifyInputOf, fingerprint } from "../core/fingerprint";
 import { NARRATION_FORMAT, NARRATION_MODEL, NARRATION_SPEED, NARRATION_VOICE } from "../core/narration";
+import { parseBookNarration } from "../core/narration-book";
 
 export { classifyInputOf, fingerprint };
 
@@ -81,12 +82,19 @@ export function clusterKeys(dir: string): StepKeys {
   return { recorded: asString(asRecord(clusters.provenance).input), current: list === undefined ? "" : clusterInputOf(list) };
 }
 
-export function narrateKeys(dir: string): StepKeys {
+export function narrateKeys(dir: string, voice: string = NARRATION_VOICE): StepKeys {
   const book = asRecord(readJson(join(dir, "book.json")));
-  const narration = asRecord(readJson(join(dir, "narration.json")));
+  let recorded: string | undefined;
+  try {
+    const file = parseBookNarration(readJson(join(dir, "narration.json")));
+    const input = file.inputs[voice];
+    recorded = typeof input === "string" ? input : undefined;
+  } catch {
+    recorded = undefined;
+  }
   return {
-    recorded: asString(asRecord(narration.provenance).input),
-    current: narrateInputOf(asString(book.textVersion) ?? "", NARRATION_VOICE, NARRATION_MODEL, NARRATION_SPEED, NARRATION_FORMAT),
+    recorded,
+    current: narrateInputOf(asString(book.textVersion) ?? "", voice, NARRATION_MODEL, NARRATION_SPEED, NARRATION_FORMAT),
   };
 }
 

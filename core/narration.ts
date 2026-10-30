@@ -1,7 +1,8 @@
 // Pure narration logic: sentence split, chunking, cache keys, manifest
 // validation, playback helpers, and cost math. No env, no network,
 // no crypto, no node: imports; callers inject hashing.
-export const NARRATION_VOICE = "af_heart";
+export { NARRATION_VOICE } from "./narration-constants";
+export * from "./narration-voices";
 export const NARRATION_MODEL = "kokoro-82m/0.9.4";
 export const NARRATION_SPEED = 0.95;
 export const NARRATION_FORMAT = 2;

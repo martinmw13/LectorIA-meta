@@ -13,26 +13,31 @@ function mem(initial?: Record<string, string>) {
 }
 
 describe("narration prefs", () => {
-  it("defaults to off with the default volume", () => {
-    expect(loadNarrationPrefs(mem())).toEqual({ on: false, volume: DEFAULT_NARRATION_VOLUME });
+  it("defaults to off with the default volume and voice", () => {
+    expect(loadNarrationPrefs(mem())).toEqual({ on: false, volume: DEFAULT_NARRATION_VOLUME, voice: "af_heart" });
   });
 
-  it("round-trips on and volume through the documented key", () => {
+  it("round-trips on, volume, and voice through the documented key", () => {
     const storage = mem();
-    saveNarrationPrefs(storage, { on: true, volume: 0.3 });
+    saveNarrationPrefs(storage, { on: true, volume: 0.3, voice: "bf_emma" });
     expect(storage.raw.get(NARRATION_PREFS_KEY)).toContain("0.3");
-    expect(loadNarrationPrefs(storage)).toEqual({ on: true, volume: 0.3 });
+    expect(loadNarrationPrefs(storage)).toEqual({ on: true, volume: 0.3, voice: "bf_emma" });
   });
 
-  it("ignores bad shapes and out-of-range volumes", () => {
+  it("ignores bad shapes, out-of-range volumes, and unknown voices", () => {
     expect(loadNarrationPrefs(mem({ [NARRATION_PREFS_KEY]: "oops" }))).toEqual({
       on: false,
       volume: DEFAULT_NARRATION_VOLUME,
+      voice: "af_heart",
     });
     expect(loadNarrationPrefs(mem({ [NARRATION_PREFS_KEY]: JSON.stringify({ on: true, volume: 9 }) }))).toEqual({
       on: true,
       volume: DEFAULT_NARRATION_VOLUME,
+      voice: "af_heart",
     });
+    expect(
+      loadNarrationPrefs(mem({ [NARRATION_PREFS_KEY]: JSON.stringify({ on: true, volume: 0.5, voice: "af_bella" }) })),
+    ).toEqual({ on: true, volume: 0.5, voice: "af_heart" });
   });
 
   it("survives a throwing store", () => {
@@ -44,7 +49,7 @@ describe("narration prefs", () => {
         throw new Error("denied");
       },
     };
-    expect(loadNarrationPrefs(broken)).toEqual({ on: false, volume: DEFAULT_NARRATION_VOLUME });
-    expect(() => saveNarrationPrefs(broken, { on: true, volume: 0.5 })).not.toThrow();
+    expect(loadNarrationPrefs(broken)).toEqual({ on: false, volume: DEFAULT_NARRATION_VOLUME, voice: "af_heart" });
+    expect(() => saveNarrationPrefs(broken, { on: true, volume: 0.5, voice: "af_heart" })).not.toThrow();
   });
 });

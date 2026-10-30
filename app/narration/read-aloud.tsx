@@ -7,6 +7,7 @@ import { heroArt } from "../skin-art";
 import { useSkin } from "../use-skin";
 import { ButtonFx } from "../button-fx";
 import { useNarration } from "./context";
+import { VoiceSelector } from "./voice-selector";
 
 // One face-in cycle: how long the button replays its change animation
 // after a toggle, matching the longest per-skin face-in.
@@ -16,7 +17,7 @@ const ANIM_MS = 600;
 const BURST_MS = 1800;
 
 export function ReadAloud() {
-  const { on, status, playing, volume, toggle, setVolume } = useNarration();
+  const { on, status, playing, volume, voice, voices, toggle, setVolume, setVoice } = useNarration();
   const busy = on && status !== "ready" && status !== "error";
   const label = !on ? "Read aloud" : playing ? "Pause" : "Read aloud";
   const art = heroArt(useSkin());
@@ -67,6 +68,7 @@ export function ReadAloud() {
         </span>
         <span className="read-aloud-label">{label}</span>
       </button>
+      <VoiceSelector voices={voices} voice={voice} onChange={setVoice} />
       <label className="read-aloud-volume">
         <span className="sr-only">Narration volume</span>
         <input
