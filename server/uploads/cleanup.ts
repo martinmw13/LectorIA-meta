@@ -5,14 +5,16 @@ import { UPLOAD_TTL_DAYS, isUploadId } from "@/core/uploads";
 import { usable } from "@/server/guard/env";
 import { createRestKV } from "@/server/guard/kv";
 import { createUploadStore, type UploadStore } from "./blob";
-import { failUploadJob, loadUploadJob } from "./state";
+import { failUploadJob, loadUploadJob, uploadRefundKey } from "./state";
 
 // Jobs still working past this hold a reserve for work that will never
 // land; the daily cron settles them to their recorded usage and fails them.
 export const UPLOAD_STALE_MS = 6 * 3600 * 1000;
 
-// Settles stale working jobs discovered through their blobs. Exactly once
-// per job via the settle guard, so a retry never double-adjusts.
+// Settles stale working jobs discovered through their blobs, plus failed
+// jobs still missing the refund marker (a fail that died mid-save under
+// the old order). Exactly once per job via the settle guard, so a retry
+// never double-adjusts. Done jobs are never touched.
 async function reconcileStaleJobs(kv: KV, store: UploadStore, paths: string[], nowMs: number): Promise<number> {
   const ids = new Set<string>();
   for (const path of paths) {
@@ -27,8 +29,19 @@ async function reconcileStaleJobs(kv: KV, store: UploadStore, paths: string[], n
     } catch {
       continue;
     }
-    if (!job || job.status !== "working" || job.reservedMicro <= 0) continue;
-    if (nowMs - job.createdAt <= UPLOAD_STALE_MS) continue;
+    if (!job || job.status === "done") continue;
+    if (job.status === "working") {
+      if (job.reservedMicro <= 0) continue;
+      if (nowMs - job.createdAt <= UPLOAD_STALE_MS) continue;
+    } else {
+      let settled: string | null;
+      try {
+        settled = await kv.get(uploadRefundKey(id));
+      } catch {
+        continue;
+      }
+      if (settled) continue;
+    }
     await failUploadJob(kv, store, job);
     reconciled += 1;
   }
@@ -36,8 +49,9 @@ async function reconcileStaleJobs(kv: KV, store: UploadStore, paths: string[], n
 }
 
 // Deletes upload blobs older than the TTL and settles stale working jobs
-// to their recorded usage. Job state in Redis expires on its own; only
-// Blob needs sweeping. One failure never stops the rest.
+// plus unmarked failed jobs to their recorded usage. Job state in Redis
+// expires on its own; only Blob needs sweeping. One failure never stops
+// the rest.
 export async function cleanupUploads(
   store: UploadStore,
   nowMs: number = Date.now(),

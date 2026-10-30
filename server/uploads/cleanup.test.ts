@@ -90,6 +90,38 @@ describe("cleanupUploads stale jobs", () => {
     expect(await flow.kv.get(spendKey())).toBe(String(kept));
   });
 
+  it("settles failed jobs missing the refund marker, exactly once", async () => {
+    const flow = await workingFlow();
+    // A fail that saved the status but died before the settle.
+    const job = parseUploadJob(await flow.kv.get(`upload:job:${flow.id}`));
+    await saveUploadJob(flow.kv, { ...job!, status: "failed" });
+    expect(await flow.kv.get(`upload:refunded:${flow.id}`)).toBeNull();
+    expect(await flow.kv.get(spendKey())).toBe("50000");
+    const out = await cleanupUploads(flow.store, Date.now(), { kv: flow.kv });
+    expect(out.reconciled).toBe(1);
+    const settled = parseUploadJob(await flow.kv.get(`upload:job:${flow.id}`));
+    expect(settled?.status).toBe("failed");
+    const kept = usageCostMicro(settled!.usage);
+    expect(await flow.kv.get(spendKey())).toBe(String(kept));
+    expect(await flow.kv.get(uploadDailySpendKey(DAY))).toBe(String(kept));
+    const again = await cleanupUploads(flow.store, Date.now(), { kv: flow.kv });
+    expect(again.reconciled).toBe(0);
+    expect(await flow.kv.get(spendKey())).toBe(String(kept));
+  });
+
+  it("never touches done jobs", async () => {
+    const flow = await workingFlow();
+    const job = parseUploadJob(await flow.kv.get(`upload:job:${flow.id}`));
+    await saveUploadJob(flow.kv, { ...job!, status: "done", usage: job!.usage, costMicro: 123 });
+    const out = await cleanupUploads(flow.store, Date.now(), { kv: flow.kv });
+    expect(out.reconciled).toBe(0);
+    const kept = parseUploadJob(await flow.kv.get(`upload:job:${flow.id}`));
+    expect(kept?.status).toBe("done");
+    expect(kept?.costMicro).toBe(123);
+    expect(await flow.kv.get(`upload:refunded:${flow.id}`)).toBeNull();
+    expect(await flow.kv.get(spendKey())).toBe("50000");
+  });
+
   it("leaves fresh working jobs alone", async () => {
     const flow = await workingFlow();
     const out = await cleanupUploads(flow.store, Date.now(), { kv: flow.kv });
