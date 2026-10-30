@@ -106,6 +106,24 @@ describe("reserveSpend", () => {
     expect(await kv.get(dailySpendKey("2026-10-27"))).toBe("25");
   });
 
+  it("charges a custom daily key while sharing the total", async () => {
+    const kv = createMemoryKV();
+    const spent = await reserveSpend(kv, {
+      amountMicro: 100,
+      day: "2026-10-27",
+      dailyKey: "upload:spend:daily:2026-10-27",
+      ...CAPS,
+    });
+    expect(spent.ok).toBe(true);
+    if (!spent.ok) return;
+    expect(await kv.get(spendKey())).toBe("100");
+    expect(await kv.get("upload:spend:daily:2026-10-27")).toBe("100");
+    expect(await kv.get(dailySpendKey("2026-10-27"))).toBeNull();
+    await spent.reservation.release();
+    expect(await kv.get(spendKey())).toBe("0");
+    expect(await kv.get("upload:spend:daily:2026-10-27")).toBe("0");
+  });
+
   it("adjust never throws when Redis fails", async () => {
     const kv = createMemoryKV();
     const spent = await reserveSpend(kv, { amountMicro: 100, day: "2026-10-27", ...CAPS });

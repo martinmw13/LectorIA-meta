@@ -34,6 +34,9 @@ export interface ReserveSpendArgs {
   day: string;
   spendCapMicro: number;
   dailySpendCapMicro: number;
+  // Overrides the daily counter key (uploads keep their own daily cap);
+  // the total key is always shared. Absent means the image/chat key.
+  dailyKey?: string;
 }
 
 // One reserve for both caps: total first with an expiry refresh on the
@@ -45,7 +48,7 @@ export async function reserveSpend(
   args: ReserveSpendArgs,
 ): Promise<{ ok: true; reservation: SpendReservation } | { ok: false; which: "total" | "daily" }> {
   const totalKey = spendKey();
-  const dayKey = dailySpendKey(args.day);
+  const dayKey = args.dailyKey ?? dailySpendKey(args.day);
   let totalLeft = false;
   let dailyLeft = false;
   const releaseTotal = async (): Promise<void> => {

@@ -72,21 +72,24 @@ export async function refundDualQuota(kv: KV, keys: DualKeys): Promise<void> {
   }
 }
 
-// Free uploaded-book processing: one book per person for the whole
-// hackathon. Keys carry no day so the limit never resets; the TTL (~10
-// days) only bounds Redis growth. No route or wiring yet, just the hook.
-export const FREE_BOOKS_PER_PERSON = 1;
-export const BOOK_QUOTA_TTL_SEC = 10 * 24 * 3600;
+// Free uploaded-book processing: two books per person per UTC day,
+// counted on hashed IP and the anon cookie, whichever hits first.
+export const FREE_BOOKS_PER_PERSON = 2;
+export const BOOK_QUOTA_TTL_SEC = 48 * 3600;
 
-export function bookQuotaKeys(args: { ipHash: string; anonId: string }): DualKeys {
+export function bookQuotaKeys(args: { day: string; ipHash: string; anonId: string }): DualKeys {
   return {
-    ip: `books:quota:ip:${args.ipHash}`,
-    anon: `books:quota:anon:${args.anonId}`,
+    ip: `books:quota:ip:${args.day}:${args.ipHash}`,
+    anon: `books:quota:anon:${args.day}:${args.anonId}`,
   };
 }
 
-export function bookQuotaKeysFor(args: { ip: string; salt: string; anonId: string }): DualKeys {
-  return bookQuotaKeys({ ipHash: hashIp(ipBucket(args.ip, args.anonId), args.salt), anonId: args.anonId });
+export function bookQuotaKeysFor(args: { day: string; ip: string; salt: string; anonId: string }): DualKeys {
+  return bookQuotaKeys({
+    day: args.day,
+    ipHash: hashIp(ipBucket(args.ip, args.anonId), args.salt),
+    anonId: args.anonId,
+  });
 }
 
 // Thin wrapper so the book hook shares the never-throw compensation.
