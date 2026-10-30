@@ -1,0 +1,42 @@
+// The home backdrop is one full-bleed layer pinned to the viewport, so
+// the skin painting never steps where the 1280px desk starts. jsdom does
+// no layout, so the rules are pinned against the CSS source.
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+
+const strip = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, "");
+const home = strip(readFileSync(new URL("./home.css", import.meta.url), "utf8"));
+const backdrop = strip(readFileSync(new URL("./home-backdrop.css", import.meta.url), "utf8"));
+
+function rules(css: string): Array<[string, string]> {
+  return [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => [m[1]!.trim(), m[2]!]);
+}
+
+describe("home backdrop", () => {
+  it("pins one layer to the whole viewport", () => {
+    const base = rules(backdrop).find(([sel]) => sel === ".ob-desk::before");
+    expect(base?.[1]).toMatch(/position:\s*fixed/);
+    expect(base?.[1]).toMatch(/inset:\s*0/);
+    expect(base?.[1]).toMatch(/pointer-events:\s*none/);
+  });
+
+  it("keeps the desk capped at 1280px but transparent in every skin", () => {
+    const desk = rules(home).find(([sel]) => sel === ".ob-desk");
+    expect(desk?.[1]).toMatch(/min\(1280px/);
+    expect(desk?.[1]).toMatch(/background:\s*transparent/);
+    for (const [sel, body] of rules(home)) {
+      if (sel !== ".ob-desk" && /\.ob-desk$/.test(sel)) expect(body).not.toMatch(/background(-image)?\s*:/);
+    }
+  });
+
+  it("paints chihiro with the sky-lantern alone", () => {
+    const chihiro = rules(backdrop).find(([sel]) => sel.includes('"chihiro"') && sel.endsWith("::before"));
+    expect(chihiro?.[1]).toContain("sky-lantern.jpg");
+    expect(chihiro?.[1]).not.toMatch(/gradient/);
+  });
+
+  it("lets the backdrop show softly through the pages", () => {
+    const page = rules(home).find(([sel]) => sel === ".ob-page");
+    expect(page?.[1]).toMatch(/color-mix\(in srgb, var\(--paper\) var\(--page-alpha, 9\d%\), transparent\)/);
+  });
+});

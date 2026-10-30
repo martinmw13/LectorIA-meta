@@ -1,0 +1,35 @@
+/* Home backdrop: one full-bleed layer per skin, pinned to the viewport,
+   so the painting runs edge to edge with no step where the 1280px desk
+   starts. The desk itself is transparent and the pages are slightly
+   translucent, so the backdrop also shows softly through the middle. */
+
+.ob-desk::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: var(--bg);
+  background-image: var(--texture);
+}
+
+html[data-skin="comic"] .ob-desk::before { background-size: 11px 11px; }
+
+/* Pencil: the same graphite study on Bristol the reader uses. */
+html[data-skin="pencil"] .ob-desk::before {
+  background:
+    linear-gradient(rgba(250, 250, 248, 0.45), rgba(250, 250, 248, 0.45)),
+    radial-gradient(circle at 0 0, rgba(60, 63, 68, 0.16), transparent 30%),
+    radial-gradient(circle at 100% 100%, rgba(60, 63, 68, 0.14), transparent 32%),
+    url("/art/skins/pencil/paper.jpg") center / cover no-repeat,
+    #e4e5e3;
+}
+
+/* Chihiro: the lantern-dusk painting is the whole backdrop. */
+html[data-skin="chihiro"] .ob-desk::before {
+  background: url("/art/skins/chihiro/sky-lantern.jpg") center / cover no-repeat, #f6be78;
+}
+
+/* Pages stay readable: a touch more paper where the backdrop is busiest. */
+html[data-skin="pencil"] .ob-desk,
+html[data-skin="chihiro"] .ob-desk { --page-alpha: 88%; }

@@ -34,7 +34,16 @@ export function TopLine({
   return (
     <header className="top-line">
       <Link href="/" className="wordmark wordmark-home" aria-label="Back to the shelf">
-        Lector<em>IA</em>
+        {/* Both faces share one grid cell, so the link keeps the wider
+            width and the header never shifts when they swap. */}
+        <span className="wm-swap">
+          <span className="wm-brand">
+            Lector<em>IA</em>
+          </span>
+          <span className="wm-back" aria-hidden="true">
+            Back to shelf
+          </span>
+        </span>
       </Link>
       <div className="top-center">
         {bookTitle} · {author} ·{" "}

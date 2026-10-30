@@ -267,3 +267,71 @@ html[data-theme="dark"] :is(.narr-sen, .narr-on)[data-treatment="watercolor"] {
     transition: none;
   }
 }
+
+/* Read aloud on a book without narration: same place, greyed out, with a
+   small "Coming soon" note on hover, focus or click. */
+.read-aloud-soon {
+  position: relative;
+}
+
+.read-aloud-soon .read-aloud-btn,
+.read-aloud-soon .read-aloud-btn:hover,
+.read-aloud-soon .read-aloud-btn:focus-visible {
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
+.read-aloud-soon .read-aloud-frame {
+  filter: grayscale(1);
+  opacity: 0.5;
+}
+
+/* html:is() outranks the per-skin label colours, which load later. */
+html:is([data-skin], :not([data-skin])) .read-aloud-soon .read-aloud-label {
+  color: var(--color-text-muted);
+  opacity: 0.8;
+}
+
+/* No skin hover flourish on a control that does nothing yet. */
+.read-aloud-soon .read-aloud-btn :is(img, .read-aloud-art, .read-aloud-frame),
+.read-aloud-soon .read-aloud-btn .read-aloud-frame::before {
+  animation: none !important;
+  transform: none !important;
+}
+
+.read-aloud-tip {
+  position: absolute;
+  left: 8px;
+  bottom: calc(100% + 6px);
+  padding: 4px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 160ms ease, visibility 0s linear 160ms;
+  z-index: 5;
+}
+
+.read-aloud-soon:hover .read-aloud-tip,
+.read-aloud-soon:focus-within .read-aloud-tip,
+.read-aloud-soon[data-open="1"] .read-aloud-tip {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 160ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .read-aloud-tip,
+  .read-aloud-soon:hover .read-aloud-tip,
+  .read-aloud-soon:focus-within .read-aloud-tip,
+  .read-aloud-soon[data-open="1"] .read-aloud-tip {
+    transition: none;
+  }
+}

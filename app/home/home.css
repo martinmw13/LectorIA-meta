@@ -51,14 +51,8 @@ html[data-theme="dark"] .ob-desk { --color-accent: #0866FF; --color-accent-hover
   --m-fast: 160ms; --ease: cubic-bezier(.2, .7, .2, 1);
   position: relative; width: min(1280px, calc(100vw - 24px)); height: 100vh; height: 100dvh;
   margin: 0 auto; padding: 58px 18px 10px; display: flex; flex-direction: column; justify-content: center;
-  box-sizing: border-box; background: var(--bg); background-image: var(--texture);
+  box-sizing: border-box; background: transparent;
   color: var(--text); font-family: var(--font-book); color-scheme: light; overflow: hidden;
-}
-html[data-skin="comic"] .ob-desk { background-size: 11px 11px; }
-html[data-skin="chihiro"] .ob-desk {
-  background:
-    radial-gradient(70% 34% at 50% 0, rgba(255, 214, 140, .75), transparent 70%),
-    linear-gradient(180deg, #F6BE78 0, #EE9A5F 16%, #E9DCC8 34%, #FFF7EC 46%, #DCE7E2 62%, #9CC4BF 80%, #6FA8A3 100%);
 }
 .ob-desk button { font: inherit; color: inherit; }
 .ob-desk :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
@@ -66,7 +60,7 @@ html[data-skin="ink"] .ob-desk :focus-visible { outline-style: dashed; outline-o
 html[data-skin="comic"] .ob-desk :focus-visible { outline-width: 3px; }
 
 .ob-book { display: grid; grid-template-columns: 7fr 40px 6fr; align-items: stretch; min-height: 0; flex: 1; max-height: 100%; }
-.ob-page { position: relative; background: var(--paper); padding: 20px 30px 14px; min-height: 0; }
+.ob-page { position: relative; background: color-mix(in srgb, var(--paper) var(--page-alpha, 90%), transparent); padding: 20px 30px 14px; min-height: 0; }
 .ob-left { border-radius: 14px 3px 3px 14px; display: flex; flex-direction: column; overflow-y: auto; }
 /* Tall states (key step, progress) scroll inside the page at natural height instead of shrinking the shelf over its own labels. */
 .ob-left > * { flex-shrink: 0; }
