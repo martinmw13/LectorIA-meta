@@ -388,12 +388,9 @@ export function Reader({
     : [];
 
 
-  // Pictures and panels run for every book the reader opens; music
-  // follows any book's scene emotions, so it stays on everywhere.
-  const picturesOn = true;
   return (
     <NarrationProvider entries={narration} scenes={scenes}>
-      <div className="folio" data-pictures={picturesOn ? "on" : "off"}>
+      <div className="folio">
         <a href="#story" className="skip-link">
           Skip to the story
         </a>

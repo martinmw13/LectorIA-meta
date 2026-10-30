@@ -75,8 +75,6 @@ export function BookView({
   }, [infoCh]);
   const bookIndex = order.indexOf(currentId);
   const lastChapter = model.chapters[model.chapters.length - 1]?.ch ?? 0;
-  // Pictures and panels run for every book the reader opens.
-  const picturesOn = true;
 
   // One commit path for every scene change: state, the live store the
   // music container reads, and the deep-link URL. No router pushes, so
@@ -198,21 +196,17 @@ export function BookView({
 
   return (
     <>
-      {picturesOn ? (
-        <>
-          <ImagePane
-            card={pic.card}
-            needHuman={pic.needHuman}
-            onHumanPass={pic.submitHumanToken}
-            onPicture={() => pic.illustrateScene()}
-            onRetry={() => pic.illustrateScene()}
-            onClear={pic.clearScene}
-            onOpen={pic.lightbox.open}
-            onPictureChapter={info ? () => setPanelsCh(info.ch) : null}
-          />
-          <Divider />
-        </>
-      ) : null}
+      <ImagePane
+        card={pic.card}
+        needHuman={pic.needHuman}
+        onHumanPass={pic.submitHumanToken}
+        onPicture={() => pic.illustrateScene()}
+        onRetry={() => pic.illustrateScene()}
+        onClear={pic.clearScene}
+        onOpen={pic.lightbox.open}
+        onPictureChapter={info ? () => setPanelsCh(info.ch) : null}
+      />
+      <Divider />
       <main id="story" className="read-col" ref={readColRef} tabIndex={-1} aria-label="Reading column" onMouseUp={onReadMouseUp}>
         <h1 className="sr-only">{model.title}</h1>
         <ReadAlong columnRef={readColRef} />
@@ -266,7 +260,7 @@ export function BookView({
                         ))}
                       </Fragment>
                     ))}
-                    {s.id === currentId && pic.popover !== null && picturesOn ? (
+                    {s.id === currentId && pic.popover !== null ? (
                       <SelectionPopover pos={pic.popover} popRef={pic.popRef} onPick={() => pic.illustratePassage()} />
                     ) : null}
                   </div>
@@ -274,7 +268,7 @@ export function BookView({
               ))}
               {chapter.ch === lastChapter ? (
                 <p className="the-end">The end.</p>
-              ) : picturesOn ? (
+              ) : (
                 <div className="chapter-relive">
                   <button
                     type="button"
@@ -285,22 +279,20 @@ export function BookView({
                     Relive this chapter in panels
                   </button>
                 </div>
-              ) : null}
+              )}
             </div>
           );
         })}
       </main>
-      {picturesOn ? (
-        <PictureVault
-          scene={pic.card.phase === "ready" ? { url: pic.card.url, caption: pic.card.caption } : null}
-          figures={pic.figures}
-          onGotoScene={gotoScenePicture}
-          onGotoFigure={gotoFigure}
-          onOpen={pic.lightbox.open}
-          pref={pref}
-          onPrefChange={changePref}
-        />
-      ) : null}
+      <PictureVault
+        scene={pic.card.phase === "ready" ? { url: pic.card.url, caption: pic.card.caption } : null}
+        figures={pic.figures}
+        onGotoScene={gotoScenePicture}
+        onGotoFigure={gotoFigure}
+        onOpen={pic.lightbox.open}
+        pref={pref}
+        onPrefChange={changePref}
+      />
       <BandPager
         k={info?.k ?? 1}
         n={info?.n ?? 1}
@@ -312,7 +304,7 @@ export function BookView({
         atBookEnd={bookIndex >= order.length - 1}
       />
       <Lightbox item={pic.lightbox.item} onClose={pic.lightbox.close} />
-      {picturesOn && panelsCh !== null ? (
+      {panelsCh !== null ? (
         <PanelsModal
           ch={panelsCh}
           chapterTitle={titles.get(panelsCh) ?? ""}
