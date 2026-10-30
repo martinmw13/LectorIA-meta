@@ -282,6 +282,61 @@ function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((v) => typeof v === "string");
 }
 
+// Client-safe per-scene slice for the Developer View: setting, cast
+// display names, and key objects only. No physical descriptions, no
+// chapter summaries, no provenance ever leave the server.
+export interface SceneAttr {
+  location: string;
+  timeOfDay: string;
+  weather: string;
+  cast: string[];
+  keyObjects: string[];
+}
+
+// Shape check for the scene-attrs response: a bad payload hides the
+// Developer View section instead of crashing it.
+export function isSceneAttr(value: unknown): value is SceneAttr {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.location === "string" &&
+    typeof v.timeOfDay === "string" &&
+    typeof v.weather === "string" &&
+    Array.isArray(v.cast) &&
+    v.cast.every((c) => typeof c === "string") &&
+    Array.isArray(v.keyObjects) &&
+    v.keyObjects.every((o) => typeof o === "string")
+  );
+}
+
+// Builds attrs for exactly the scenes asked for (the page already being
+// rendered). Null bookmap yields nothing; scenes without an entry are
+// skipped so the panel hides the section. Cast keeps only characters
+// introduced at or before the scene's chapter, by display name.
+export function sceneAttributes(bookmap: BookMap | null, scenes: { id: string; ch: number }[]): Record<string, SceneAttr> {
+  const out: Record<string, SceneAttr> = {};
+  if (!bookmap) return out;
+  const byId = new Map(bookmap.characters.map((c) => [c.id, c]));
+  for (const scene of scenes) {
+    const entry = bookmap.scenes[scene.id];
+    if (!entry) continue;
+    const cast: string[] = [];
+    for (const id of entry.characters_present) {
+      const char = byId.get(id);
+      if (!char || char.first_ch === null || char.first_ch > scene.ch) continue;
+      if (!cast.includes(char.name)) cast.push(char.name);
+    }
+    out[scene.id] = {
+      location: entry.setting.location,
+      timeOfDay: entry.setting.time_of_day,
+      weather: entry.setting.weather,
+      cast,
+      keyObjects: [...entry.key_objects],
+    };
+  }
+  return out;
+}
+
 // Strict shape check for bookmap.json on load. Anything off returns null;
 // the caller treats the book as not enriched.
 export function validateBookmap(data: unknown): BookMap | null {
