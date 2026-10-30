@@ -20,11 +20,11 @@ let saved: Record<string, string | undefined>;
 
 beforeEach(() => {
   saved = {};
-  for (const k of [...Object.keys(BASE), ...REDIS_KEYS, "SPEND_CAP_USD", "DAILY_SPEND_CAP_USD", "TURNSTILE_SECRET_KEY"]) {
+  for (const k of [...Object.keys(BASE), ...REDIS_KEYS, "SPEND_CAP_USD", "DAILY_SPEND_CAP_USD", "TURNSTILE_SECRET_KEY", "NEXT_PUBLIC_TURNSTILE_SITE_KEY"]) {
     saved[k] = process.env[k];
   }
   Object.assign(process.env, BASE);
-  for (const k of [...REDIS_KEYS, "SPEND_CAP_USD", "DAILY_SPEND_CAP_USD", "TURNSTILE_SECRET_KEY"]) delete process.env[k];
+  for (const k of [...REDIS_KEYS, "SPEND_CAP_USD", "DAILY_SPEND_CAP_USD", "TURNSTILE_SECRET_KEY", "NEXT_PUBLIC_TURNSTILE_SITE_KEY"]) delete process.env[k];
 });
 
 afterEach(() => {
@@ -79,12 +79,26 @@ describe("readImageEnv redis fallback", () => {
     );
   });
 
-  it("reads an optional TURNSTILE_SECRET_KEY", () => {
+  it("reads the optional Turnstile secret and site key", () => {
     process.env.UPSTASH_REDIS_REST_URL = "https://upstash-url";
     process.env.UPSTASH_REDIS_REST_TOKEN = "upstash-token";
     expect(readImageEnv().turnstileSecret).toBeUndefined();
+    expect(readImageEnv().turnstileSiteKey).toBeUndefined();
     process.env.TURNSTILE_SECRET_KEY = "ts-secret";
-    expect(readImageEnv().turnstileSecret).toBe("ts-secret");
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = "ts-site";
+    const env = readImageEnv();
+    expect(env.turnstileSecret).toBe("ts-secret");
+    expect(env.turnstileSiteKey).toBe("ts-site");
+  });
+
+  it("ignores placeholder Turnstile keys", () => {
+    process.env.UPSTASH_REDIS_REST_URL = "https://upstash-url";
+    process.env.UPSTASH_REDIS_REST_TOKEN = "upstash-token";
+    process.env.TURNSTILE_SECRET_KEY = "[SENSITIVE]";
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = "[SENSITIVE]";
+    const env = readImageEnv();
+    expect(env.turnstileSecret).toBeUndefined();
+    expect(env.turnstileSiteKey).toBeUndefined();
   });
 
   it("defaults the daily spend cap to 2 USD", () => {

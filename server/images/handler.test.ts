@@ -222,6 +222,7 @@ describe("human gate", () => {
     spendCapMicro: 10_000_000,
     dailySpendCapMicro: 2_000_000,
     turnstileSecret: "ts-secret",
+    turnstileSiteKey: "ts-site",
   };
 
   function fakes() {

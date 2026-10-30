@@ -1,5 +1,6 @@
 import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { usable } from "./env";
 
 // Neutral human cookie, readable on every /api route. The old chat-only
 // name stays accepted during transition; only the new one is issued.
@@ -54,7 +55,7 @@ export function verifyHumanCookie(
 
 let warnedOnce = false;
 
-// Without a secret the check is skipped so dev works without keys.
+// Without both keys the check is skipped so dev works without keys.
 export function warnTurnstileSkippedOnce(): void {
   if (warnedOnce) return;
   warnedOnce = true;
@@ -96,25 +97,25 @@ export interface HumanCheckInput {
   token?: string;
   ip: string;
   turnstileSecret?: string;
+  turnstileSiteKey?: string;
   sessionSecret: string;
   fetchFn?: typeof fetch;
 }
 
-// Shared by chat and images: skip when no secret (dev), else accept the
-// cookie or one token verification, issuing the neutral cookie on success.
+// Shared by chat and images: enforce only with both keys, since the widget
+// renders nothing without the site key; otherwise skip so dev works.
 export async function checkHuman(
   input: HumanCheckInput,
 ): Promise<{ ok: true; setCookie?: string } | { ok: false }> {
-  if (!input.turnstileSecret) {
+  const secret = usable(input.turnstileSecret);
+  if (!secret || !usable(input.turnstileSiteKey)) {
     warnTurnstileSkippedOnce();
     return { ok: true };
   }
   if (verifyHumanCookie(parseHumanCookie(input.cookieHeader), input.sessionSecret)) {
     return { ok: true };
   }
-  const ok = input.token
-    ? await verifyTurnstile(input.token, input.ip, input.turnstileSecret, input.fetchFn)
-    : false;
+  const ok = input.token ? await verifyTurnstile(input.token, input.ip, secret, input.fetchFn) : false;
   if (!ok) return { ok: false };
   return { ok: true, setCookie: issueHumanCookie(input.sessionSecret) };
 }

@@ -99,6 +99,7 @@ export async function handleChatPost(req: Request, deps: ChatHandlerDeps = {}): 
     token: body.turnstileToken,
     ip,
     turnstileSecret: env.turnstileSecret,
+    turnstileSiteKey: env.turnstileSiteKey,
     sessionSecret: env.sessionSecret,
     fetchFn,
   });

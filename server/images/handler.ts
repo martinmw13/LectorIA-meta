@@ -174,6 +174,7 @@ export async function handleImagesPost(req: Request, deps: ImagesHandlerDeps = {
         token: parsed.turnstileToken,
         ip,
         turnstileSecret: env.turnstileSecret,
+        turnstileSiteKey: env.turnstileSiteKey,
         sessionSecret: env.sessionSecret,
         fetchFn: deps.fetchFn,
       },

@@ -1,10 +1,11 @@
 import "server-only";
-import { usable } from "@/server/guard/env";
+import { turnstilePair, usable } from "@/server/guard/env";
+import type { TurnstilePair } from "@/server/guard/env";
 
 // Same names as readImageEnv minus BLOB_READ_WRITE_TOKEN, plus the
-// optional Turnstile secret: without it the route skips the human check
+// optional Turnstile keys: without both the route skips the human check
 // (dev) instead of failing. Missing required env means 503 unavailable.
-export interface ChatEnv {
+export interface ChatEnv extends TurnstilePair {
   upstashUrl: string;
   upstashToken: string;
   metaKey: string;
@@ -12,7 +13,6 @@ export interface ChatEnv {
   ipSalt: string;
   spendCapMicro: number;
   dailySpendCapMicro: number;
-  turnstileSecret?: string;
 }
 
 const URL_NAMES = "UPSTASH_REDIS_REST_URL|KV_REST_API_URL";
@@ -44,6 +44,6 @@ export function readChatEnv(from: NodeJS.ProcessEnv = process.env): ChatEnv {
     ipSalt: from.IP_HASH_SALT as string,
     spendCapMicro: Math.round(parseCapUsd(from.SPEND_CAP_USD, 10) * 1_000_000),
     dailySpendCapMicro: Math.round(parseCapUsd(from.DAILY_SPEND_CAP_USD, 2) * 1_000_000),
-    ...(from.TURNSTILE_SECRET_KEY ? { turnstileSecret: from.TURNSTILE_SECRET_KEY } : {}),
+    ...turnstilePair(from),
   };
 }
