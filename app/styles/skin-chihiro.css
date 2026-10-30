@@ -57,4 +57,9 @@ html[data-skin="chihiro"] .read-aloud-art {
   display: block;
 }
 
+/* Dark mode: the lantern captions glow pale instead of dark red. */
+html[data-skin="chihiro"][data-theme="dark"] :is(.stickers[data-art="hero"] .sticker, .sticker-wrap .chopin)::after {
+  color: #f0b39a;
+}
+
 /* Button motion (lift, ground shadow, settle, .fx particles) lives in motion-pencil.css. */

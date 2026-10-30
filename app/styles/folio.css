@@ -18,6 +18,29 @@ scrolls at desktop size; the reading column scrolls inside itself. */
     "play play play play";
 }
 
+/* First tab stop: jumps to the reading column. Offscreen until focused;
+   no transition, so it appears at once. Absolute, so the folio grid ignores it. */
+.skip-link {
+  position: absolute;
+  left: 12px;
+  top: -48px;
+  z-index: 100;
+  padding: 8px 14px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 2px solid var(--color-accent);
+  border-radius: 6px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.skip-link:focus-visible {
+  top: 12px;
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
 .top-line {
   grid-area: top;
   display: flex;
@@ -191,7 +214,7 @@ scrolls at desktop size; the reading column scrolls inside itself. */
   text-transform: uppercase;
 }
 
-h1.chapter-title {
+h2.chapter-title {
   font-family: var(--font-book);
   font-weight: 300;
   font-size: 44px;
@@ -200,11 +223,11 @@ h1.chapter-title {
   margin: 8px 0 4px;
 }
 
-h1.chapter-title:focus:not(:focus-visible) {
+h2.chapter-title:focus:not(:focus-visible) {
   outline: none;
 }
 
-h1.chapter-title:focus-visible {
+h2.chapter-title:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }

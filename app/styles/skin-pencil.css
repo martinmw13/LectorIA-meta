@@ -65,7 +65,7 @@ html[data-skin="pencil"] .body-text {
   line-height: 1.62;
 }
 
-html[data-skin="pencil"] h1.chapter-title {
+html[data-skin="pencil"] h2.chapter-title {
   font-family: var(--font-pencil-title);
   font-weight: 600;
   font-style: italic;
@@ -435,3 +435,42 @@ html[data-skin="pencil"] .read-aloud-label {
 }
 
 /* Button motion (lift, ground shadow, settle, .fx particles) lives in motion-pencil.css. */
+
+/* Dark mode: light graphite ink on the shared dark paper. The light rules
+   above are untouched. Every colour here passes WCAG AA against #0b1215. */
+html[data-skin="pencil"][data-theme="dark"] h2.chapter-title {
+  color: #d9d4c7;
+}
+
+html[data-skin="pencil"][data-theme="dark"] .cover-num {
+  color: #c9c3b4;
+}
+
+html[data-skin="pencil"][data-theme="dark"] :is(.kicker, .mlabel) {
+  color: #b6b0a2;
+}
+
+html[data-skin="pencil"][data-theme="dark"] .book-section + .book-section::before {
+  color: #b6b0a2;
+}
+
+html[data-skin="pencil"][data-theme="dark"] .book-section .body-text > p:first-of-type:not([data-cont])::first-letter {
+  color: #d9d4c7;
+}
+
+html[data-skin="pencil"][data-theme="dark"] .mtool-icon {
+  color: #b6b0a2;
+}
+
+html[data-skin="pencil"][data-theme="dark"] .player .skip:not(.rain) {
+  color: #c9c3b4;
+}
+
+html[data-skin="pencil"][data-theme="dark"] :is(.sticker, .chopin, .player .skip.rain)::after {
+  color: #b6b0a2;
+}
+
+html[data-skin="pencil"][data-theme="dark"] .vault-item {
+  background: var(--color-surface-soft);
+  box-shadow: 0 0 0 1px rgba(228, 230, 235, 0.18);
+}

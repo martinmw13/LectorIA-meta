@@ -80,7 +80,7 @@ html[data-skin="watercolor"] .body-text > p + p:not([data-cont]) {
   margin-top: 1.05em;
 }
 
-html[data-skin="watercolor"] h1.chapter-title {
+html[data-skin="watercolor"] h2.chapter-title {
   font-family: var(--font-wc-hand);
   font-weight: 700;
   font-style: normal;
@@ -212,6 +212,11 @@ html[data-skin="watercolor"] .vault-item {
   border-radius: 14px 9px 16px 8px;
   padding: 4px;
   box-shadow: 0 1px 6px rgba(31, 42, 68, 0.12);
+}
+
+/* Dark mode: the white card would blind light text. */
+html[data-skin="watercolor"][data-theme="dark"] .vault-item {
+  background: var(--color-surface-soft);
 }
 
 html[data-skin="watercolor"] :is(.vault-thumb, .panel) {
