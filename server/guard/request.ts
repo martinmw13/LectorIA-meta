@@ -1,5 +1,6 @@
 import "server-only";
 import { createHmac } from "node:crypto";
+import { isIPv4, isIPv6 } from "node:net";
 
 // Per-person quota: 5 new images per day, counted by hashed IP and by
 // anonymous cookie, whichever runs out first. Day keys are UTC dates.
@@ -14,8 +15,35 @@ export function hashIp(ip: string, salt: string): string {
 // Quota input for the IP-side key: a real IP is shared across cookies,
 // while "unknown" falls back to per-cookie separation so one client
 // cannot exhaust the bucket for all the others.
+// Bucket IPv6 by /64 prefix so one client rotating interface IDs shares one quota bucket.
 export function ipBucket(ip: string, anonId: string): string {
-  return ip === "unknown" ? `unknown:${anonId}` : ip;
+  if (ip === "unknown") return `unknown:${anonId}`;
+  return canonicalIpBucket(ip);
+}
+
+// Canonical bucket form for IPv6 is zero-padded lowercase "xxxx:xxxx:xxxx:xxxx::/64" (first 4 hextets).
+function canonicalIpBucket(ip: string): string {
+  let v = ip;
+  if (v.startsWith("[") && v.endsWith("]")) v = v.slice(1, -1);
+  const pct = v.indexOf("%");
+  if (pct !== -1) v = v.slice(0, pct);
+  if (isIPv4(v)) return v;
+  if (!isIPv6(v)) return ip;
+  if (v.includes(".")) {
+    const i = v.lastIndexOf(":");
+    const o = v.slice(i + 1).split(".").map(Number);
+    v = `${v.slice(0, i + 1)}${((o[0] ?? 0) * 256 + (o[1] ?? 0)).toString(16)}:${((o[2] ?? 0) * 256 + (o[3] ?? 0)).toString(16)}`;
+  }
+  const [l = "", r] = v.split("::");
+  const a = l ? l.split(":") : [];
+  const b = r === undefined ? [] : r ? r.split(":") : [];
+  const full =
+    r === undefined ? v.split(":") : [...a, ...Array<string>(8 - a.length - b.length).fill("0"), ...b];
+  const g = full.map((p) => parseInt(p, 16));
+  if (g.slice(0, 5).every((n) => n === 0) && g[5] === 0xffff)
+    return `${(g[6] ?? 0) >> 8}.${(g[6] ?? 0) & 255}.${(g[7] ?? 0) >> 8}.${(g[7] ?? 0) & 255}`;
+  const h = (n: number | undefined) => (n ?? 0).toString(16).padStart(4, "0");
+  return `${h(g[0])}:${h(g[1])}:${h(g[2])}:${h(g[3])}::/64`;
 }
 
 // First live platform header wins: the Vercel forwarding header, then
