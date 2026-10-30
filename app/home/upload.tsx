@@ -66,6 +66,7 @@ export function UploadSection() {
   const abortRef = useRef<AbortController | null>(null);
   const freePages = approxPages(FREE_BOOK_MAX_WORDS);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-only free-book count from localStorage after hydration
   useEffect(() => setFreeCount(getFreeBooksToday()), []);
   useEffect(() => () => abortRef.current?.abort(), []);
 
@@ -87,6 +88,7 @@ export function UploadSection() {
   const book = parsed?.book ?? null;
   useEffect(() => {
     if (!book?.cover) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- cover blob URL follows the parsed book
       setCoverUrl(null);
       return;
     }

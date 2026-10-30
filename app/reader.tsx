@@ -164,15 +164,20 @@ export function Reader({
   const prefsStoreRef = useRef(createMusicPrefsStore());
   // Ref mirrors so send and persist handlers always read fresh values.
   const volumeRef = useRef(volume);
+  // eslint-disable-next-line react-hooks/refs -- latest-value mirror so music handlers read fresh state
   volumeRef.current = volume;
   const mutedRef = useRef(muted);
+  // eslint-disable-next-line react-hooks/refs -- latest-value mirror so music handlers read fresh state
   mutedRef.current = muted;
   const byId = useMemo(() => new Map(scenes.map((s) => [s.id, s.emotion])), [scenes]);
   const byIdRef = useRef(byId);
+  // eslint-disable-next-line react-hooks/refs -- latest-value mirror so music handlers read fresh state
   byIdRef.current = byId;
   const manifestRef = useRef(manifest);
+  // eslint-disable-next-line react-hooks/refs -- latest-value mirror so music handlers read fresh state
   manifestRef.current = manifest;
   const routeRef = useRef(routeSceneId);
+  // eslint-disable-next-line react-hooks/refs -- latest-value mirror so music handlers read fresh state
   routeRef.current = routeSceneId;
   const sessionRef = useRef<MusicSession | null>(null);
   const observedRef = useRef<string | null>(null);
@@ -273,6 +278,7 @@ export function Reader({
   // scene change; any failure hides the section.
   useEffect(() => {
     if (!devOpen || !routeSceneId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- dev panel clears the scene slice when closed
       setSceneAttr(null);
       return;
     }

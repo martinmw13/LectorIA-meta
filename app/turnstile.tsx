@@ -42,6 +42,7 @@ export function TurnstileWidget({ onToken }: { onToken: (token: string) => void 
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
   const boxRef = useRef<HTMLDivElement | null>(null);
   const cbRef = useRef(onToken);
+  // eslint-disable-next-line react-hooks/refs -- latest-callback mirror for the turnstile widget
   cbRef.current = onToken;
 
   useEffect(() => {

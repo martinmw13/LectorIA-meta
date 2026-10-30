@@ -14,6 +14,7 @@ function useReducedMotion(): boolean {
   useEffect(() => {
     if (typeof window.matchMedia !== "function") return;
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-only media query read; initial true keeps SSR HTML matching
     setReduced(mq.matches);
     const onChange = () => setReduced(mq.matches);
     mq.addEventListener("change", onChange);
@@ -73,9 +74,11 @@ export function PictureDraw({ skin, frozen }: { skin: PictureSkin; frozen?: bool
   const nextLayer = useRef(4);
   useEffect(() => {
     nextLayer.current = 4;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- skin change resets the animated strokes
     setStrokes([0, 1, 2, 3].flatMap((l) => strokesForSkin(skin, l)));
   }, [skin]);
   const strokesRef = useRef(strokes);
+  // eslint-disable-next-line react-hooks/refs -- latest-strokes mirror for the rAF loop
   strokesRef.current = strokes;
   const stillAll = useMemo(() => stillStrokes(skin), [skin]);
   const still = stillMode ? stillAll : null;

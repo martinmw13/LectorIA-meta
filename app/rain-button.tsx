@@ -41,6 +41,7 @@ export function RainAmbience({ muted, duck = 1 }: { muted: boolean; duck?: numbe
     const prefs = loadAmbiencePrefs();
     if (prefs) {
       controller.setVolume(prefs.volume);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-only ambience prefs restore from localStorage
       setVolume(prefs.volume);
       if (prefs.level !== "off" && levelById(RAIN, prefs.level)) {
         controller.setLevel(prefs.level);

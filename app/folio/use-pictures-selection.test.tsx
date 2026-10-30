@@ -15,8 +15,10 @@ let seen: Hook[] = [];
 
 function Probe() {
   const h = usePictures({ bookId: "b", textVersion: "v", sceneId: "c1s1", pref: DEFAULT_IMAGE_STYLE });
+  /* eslint-disable-next-line react-hooks/refs -- test probe records hook output for assertions */
   seen.push(h);
   return (
+    /* eslint-disable-next-line react-hooks/refs -- test probe attaches the hook view ref */
     <div ref={h.viewRef}>
       <p id="p1" data-n="1">
         The cyclone had set the house down gently.

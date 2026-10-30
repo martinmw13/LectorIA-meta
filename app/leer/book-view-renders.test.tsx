@@ -80,7 +80,9 @@ const MANIFEST = {
 
 let ctl: NarrationController | null = null;
 function Probe() {
+  // eslint-disable-next-line react-hooks/globals -- test probe captures the narration controller
   ctl = useNarration();
+  // eslint-disable-next-line react-hooks/immutability -- test render counter
   counts.probe += 1;
   return null;
 }

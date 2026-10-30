@@ -46,6 +46,7 @@ export function useChapterPage({
   // The style pref arrives as a fresh object each render and is read
   // through a ref, like use-pictures; the key string tracks its value.
   const prefRef = useRef(pref);
+  // eslint-disable-next-line react-hooks/refs -- latest-pref mirror; the key string tracks its value
   prefRef.current = pref;
   const key = cacheKey(ch, pref);
   const [page, setPage] = useState<ChapterPage>(() => {
@@ -71,6 +72,7 @@ export function useChapterPage({
         .catch((err: unknown) => {
           if (cancelled) return;
           if (err instanceof HumanNeeded) {
+            // eslint-disable-next-line react-hooks/immutability -- deferred human-retry callback, runs after render
             humanRetry.current = (next: string) => request(next);
             setNeedHuman(true);
             setPage({ phase: "error", message: MSG_HUMAN });
@@ -101,6 +103,7 @@ export function useChapterPage({
     if (!reached) return;
     const hit = chapterCache.get(key);
     if (hit) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- cache-hit sync on chapter/pref change
       setPage({ phase: "ready", url: hit.url, caption: hit.caption });
       return;
     }

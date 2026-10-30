@@ -46,7 +46,9 @@ let harnessEntries = ENTRIES;
 
 function Harness() {
   const c = useNarrationController({ entries: harnessEntries, scenes: SCENES });
+  /* eslint-disable-next-line react-hooks/globals -- test probe captures the controller */
   ctl = c;
+  /* eslint-disable-next-line react-hooks/refs -- test probe attaches the controller audio ref */
   return <audio ref={c.audioRef} />;
 }
 

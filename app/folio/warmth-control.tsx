@@ -9,6 +9,7 @@ export function WarmthControl() {
 
   useEffect(() => {
     try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-only restore from localStorage after hydration
       setValue(loadWarmth(window.localStorage));
     } catch {
       // Private mode: neutral paper.

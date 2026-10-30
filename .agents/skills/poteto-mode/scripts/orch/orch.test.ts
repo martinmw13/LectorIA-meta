@@ -37,7 +37,7 @@ async function makeDirectory(): Promise<string> {
   return directory;
 }
 
-function useStore(
+function openTestStore(
   directory: string,
   options?: OpenStoreOptions
 ): Store {
@@ -51,7 +51,7 @@ async function initializedStore(): Promise<{
   readonly store: Store;
 }> {
   const directory = await makeDirectory();
-  const store = useStore(directory);
+  const store = openTestStore(directory);
   await store.init();
   return { directory, store };
 }
@@ -269,7 +269,7 @@ afterEach(async () => {
 describe("Store", () => {
   it("initializes an idempotent plain-file store and releases its lock", async () => {
     const directory = await makeDirectory();
-    const store = useStore(directory);
+    const store = openTestStore(directory);
 
     expect(await store.init()).toEqual({ store: directory });
     const firstUnits = await readFile(join(directory, "units.tsv"), "utf8");
@@ -425,7 +425,7 @@ describe("Store", () => {
     await writeFile(join(directory, ".orch.lock"), `${exited.pid}\n`);
 
     const stale: string[] = [];
-    const recovered = useStore(directory, {
+    const recovered = openTestStore(directory, {
       onStaleLock: (holder) => stale.push(holder),
     });
     expect(
@@ -441,13 +441,13 @@ describe("Store", () => {
     await store.close();
     await writeFile(join(directory, ".orch.lock"), `${process.pid}\n`);
 
-    const blocked = useStore(directory);
+    const blocked = openTestStore(directory);
     await expect(
       blocked.units.add({ id: "u1", track: "build" })
     ).rejects.toThrow(`store lock held by pid ${process.pid}`);
 
     const stolen: string[] = [];
-    const forced = useStore(directory, {
+    const forced = openTestStore(directory, {
       force: true,
       onLockStolen: (holder) => stolen.push(holder),
     });

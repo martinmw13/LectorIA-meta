@@ -78,6 +78,7 @@ export function BookView({
   maxReachedRef.current = maxReached;
   const infoCh = info?.ch;
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- spoiler reach tracks the highest chapter in view
     if (infoCh !== undefined) setMaxReached((prev) => Math.max(prev, infoCh));
   }, [infoCh]);
   const bookIndex = order.indexOf(currentId);
@@ -154,6 +155,7 @@ export function BookView({
   }, [gotoScene]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-only image-style pref restore from localStorage
     setStoredPref(loadImageStylePref());
   }, []);
 

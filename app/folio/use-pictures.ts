@@ -132,10 +132,12 @@ export function usePictures({
   const rangeRef = useRef<Range | null>(null);
   const openerRef = useRef<HTMLElement | null>(null);
   const prefRef = useRef(pref);
+  // eslint-disable-next-line react-hooks/refs -- latest-pref mirror for async poll callbacks
   prefRef.current = pref;
   // The continuous reader reuses one hook call while the scene in view
   // changes: track it so late poll results cannot paint another scene.
   const sceneRef = useRef(sceneId);
+  // eslint-disable-next-line react-hooks/refs -- latest-scene mirror so late polls cannot paint another scene
   sceneRef.current = sceneId;
 
   // The last selection rescan painted, so repeat events for an unchanged
@@ -156,6 +158,7 @@ export function usePictures({
   // The card and figures follow the scene in view through the session
   // caches; in-flight requests keep filling the cache they started.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- scene change resets card, figures and popover
     setCard(sceneCard(sceneId));
     setFigures(sceneFigures(sceneId));
     setPopover(null);
@@ -216,6 +219,7 @@ export function usePictures({
       .catch((err: unknown) => {
         if (sceneRef.current === sceneId) {
           if (err instanceof HumanNeeded) {
+            // eslint-disable-next-line react-hooks/immutability -- deferred human-retry callback, runs after render
             humanRetry.current = (t) => illustrateScene(t);
             setNeedHuman(true);
           }
@@ -282,6 +286,7 @@ export function usePictures({
               storeFigures(scene, (prev) =>
                 prev.map((f) => (f.id === id ? { ...f, phase: "loading", message: null } : f)),
               );
+              // eslint-disable-next-line react-hooks/immutability -- deferred figure retry recursion, runs after render
               requestFigure(scene, id, startN, endN, t);
             };
             humanRetry.current = retryWithToken;

@@ -14,9 +14,11 @@ let lastPopover: unknown = "unset";
 
 function Harness({ showText }: { showText: boolean }) {
   const pic = usePictures({ bookId: "oz", textVersion: "v", sceneId: "c1s1", pref: { kind: "preset", id: "denslow" } });
+  /* eslint-disable-next-line react-hooks/globals, react-hooks/refs -- test probe captures hook output for assertions */
   lastPopover = pic.popover;
   if (!showText) return <div data-testid="cover">cover</div>;
   return (
+    /* eslint-disable-next-line react-hooks/refs -- test probe attaches the hook view ref */
     <div ref={pic.viewRef}>
       <p id="c1p1" data-n="1">
         Dorothy lived in Kansas.
@@ -73,13 +75,17 @@ test("popover position is document-based, not view-relative", () => {
 
 function PortalHarness() {
   const pic = usePictures({ bookId: "oz", textVersion: "v", sceneId: "c9s9", pref: { kind: "preset", id: "denslow" } });
+  /* eslint-disable-next-line react-hooks/globals -- test probe captures hook output for assertions */
   lastPopover = pic.popover;
   return (
+    /* eslint-disable-next-line react-hooks/refs -- test probe attaches the hook view ref */
     <div ref={pic.viewRef}>
       <p id="c9p1" data-n="1">
         The cyclone spun over the gray prairie.
       </p>
+      {/* eslint-disable-next-line react-hooks/refs -- test probe reads the popover for assertions */}
       {pic.popover !== null ? (
+        /* eslint-disable-next-line react-hooks/refs -- test probe reads the popover for assertions */
         <SelectionPopover pos={pic.popover} popRef={pic.popRef} onPick={() => {}} />
       ) : null}
     </div>
@@ -135,9 +141,12 @@ let lastRescan: (() => void) | null = null;
 
 function SceneHarness({ sceneId }: { sceneId: string }) {
   const pic = usePictures({ bookId: "oz", textVersion: "v", sceneId, pref: { kind: "preset", id: "denslow" } });
+  /* eslint-disable-next-line react-hooks/globals, react-hooks/refs -- test probe captures hook output for assertions */
   lastPopover = pic.popover;
+  /* eslint-disable-next-line react-hooks/globals, react-hooks/refs -- test probe captures hook output for assertions */
   lastRescan = pic.rescan;
   return (
+    /* eslint-disable-next-line react-hooks/refs -- test probe attaches the hook view ref */
     <div ref={pic.viewRef}>
       <p id="c2p1" data-n="1">
         The house whirled around two or three times.
@@ -181,8 +190,10 @@ let live: Pic | null = null;
 
 function LiveHarness({ sceneId }: { sceneId: string }) {
   const pic = usePictures({ bookId: "oz", textVersion: "v", sceneId, pref: { kind: "preset", id: "denslow" } });
+  /* eslint-disable-next-line react-hooks/globals -- test probe captures the live hook for request control */
   live = pic;
   return (
+    /* eslint-disable-next-line react-hooks/refs -- test probe attaches the hook view ref */
     <div ref={pic.viewRef}>
       <p id="c3p1" data-n="1">
         The Scarecrow bowed politely.
