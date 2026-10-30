@@ -122,36 +122,6 @@ html[data-skin="chihiro"] .ob-input { border: 0; border-bottom: 2px solid rgba(1
 .ob-mine-row .ob-mini-meta { margin: 0; flex: none; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ob-mine-row .ob-quiet { margin-left: auto; flex: none; }
 
-@media (max-width: 1023px) {
-  /* Phones: 44px actions, 16px inputs so phones do not auto-zoom,
-     and the footer wraps instead of clipping. */
-  .ob-action,
-  .ob-quiet {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-  }
-
-  .ob-pickbtn {
-    min-height: 44px;
-    align-items: center;
-  }
-
-  .ob-eye {
-    width: 44px;
-    height: 44px;
-  }
-
-  .ob-keyrow input,
-  .ob-input {
-    font-size: 16px;
-  }
-
-  .ob-foot {
-    white-space: normal;
-  }
-}
-
 /* Keybox stays compact so the open page never scrolls; focus thickens the underline in Meta blue. */
 .ob-keybox .ob-keyrow { margin-top: 0; }
 .ob-keyrow input { padding: 2px 2px; }

@@ -4,7 +4,6 @@
 .read-aloud {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
   gap: 8px;
   min-width: 0;
   font-family: var(--font-ui);
@@ -94,13 +93,6 @@
   font-size: 12.5px;
   color: var(--color-text-muted);
   white-space: nowrap;
-}
-
-/* Phones: the play toggle reaches 44px. Desktop is untouched. */
-@media (max-width: 1023px) {
-  .read-aloud-btn {
-    min-height: 44px;
-  }
 }
 
 /* Word mark: an absolutely positioned overlay that never touches flow,

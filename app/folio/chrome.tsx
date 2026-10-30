@@ -33,11 +33,8 @@ export function TopLine({
 }) {
   return (
     <header className="top-line">
-      <span className="wordmark">
+      <Link href="/" className="wordmark wordmark-home" aria-label="Back to the shelf">
         Lector<em>IA</em>
-      </span>
-      <Link href="/" className="shelf-link" aria-label="Back to the shelf">
-        <span aria-hidden="true">‹&nbsp;</span>Shelf
       </Link>
       <div className="top-center">
         {bookTitle} · {author} ·{" "}

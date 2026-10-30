@@ -40,11 +40,13 @@ afterEach(() => {
   container.remove();
 });
 
-describe("reader shelf link", () => {
-  it("renders a back-to-shelf link to /", () => {
-    const link = container.querySelector<HTMLAnchorElement>('a[aria-label="Back to the shelf"]');
-    expect(link).not.toBeNull();
-    expect(link?.getAttribute("href")).toBe("/");
-    expect(link?.textContent).toContain("Shelf");
+describe("reader wordmark", () => {
+  it("is the one link back to the shelf", () => {
+    const links = container.querySelectorAll<HTMLAnchorElement>('a[aria-label="Back to the shelf"]');
+    expect(links).toHaveLength(1);
+    expect(links[0]?.getAttribute("href")).toBe("/");
+    expect(links[0]?.classList.contains("wordmark")).toBe(true);
+    expect(links[0]?.textContent).toBe("LectorIA");
+    expect(container.textContent).not.toContain("Shelf");
   });
 });
