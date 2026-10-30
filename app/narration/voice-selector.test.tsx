@@ -26,21 +26,27 @@ test("hides with one voice or none", () => {
 });
 
 test("shows the first chapter voice when the saved voice is missing", () => {
-  const host = render(["af_heart", "bf_emma"], "bm_george");
+  const host = render(["af_heart", "am_michael"], "bm_george");
   expect(host.querySelector("select")!.value).toBe("af_heart");
   document.body.innerHTML = "";
 });
 
 test("lists the chapter voices and reports the choice", () => {
   const onChange = vi.fn();
-  const host = render(["af_heart", "bf_emma"], "af_heart", onChange);
+  const host = render(["af_heart", "am_michael"], "af_heart", onChange);
   const select = host.querySelector("select")!;
   expect(select.getAttribute("aria-label")).toBe("Narration voice");
-  expect([...select.querySelectorAll("option")].map((o) => o.textContent)).toEqual(["Heart", "Emma"]);
+  expect([...select.querySelectorAll("option")].map((o) => o.textContent)).toEqual(["Heart", "Michael"]);
   act(() => {
-    select.value = "bf_emma";
+    select.value = "am_michael";
     select.dispatchEvent(new Event("change", { bubbles: true }));
   });
-  expect(onChange).toHaveBeenCalledWith("bf_emma");
+  expect(onChange).toHaveBeenCalledWith("am_michael");
+  document.body.innerHTML = "";
+});
+
+test("never offers retired voices even when a chapter still has them", () => {
+  const host = render(["af_heart", "bf_emma", "am_michael", "bm_george"], "af_heart");
+  expect([...host.querySelectorAll("option")].map((o) => o.textContent)).toEqual(["Heart", "Michael"]);
   document.body.innerHTML = "";
 });

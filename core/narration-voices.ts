@@ -4,7 +4,7 @@ import { NARRATION_VOICE } from "./narration-constants";
 export const DEFAULT_NARRATION_VOICE = NARRATION_VOICE;
 
 
-// The four read-aloud voices, shared by the client, the server, and
+// The two read-aloud voices (owner decision: Heart and Michael only), shared by the client, the server, and
 // the pipeline. Kokoro lang codes follow the voice prefix: American
 // voices (af_, am_) use "a", British voices (bf_, bm_) use "b".
 export interface NarrationVoice {
@@ -14,9 +14,7 @@ export interface NarrationVoice {
 
 export const NARRATION_VOICES: NarrationVoice[] = [
   { id: "af_heart", label: "Heart" },
-  { id: "bf_emma", label: "Emma" },
   { id: "am_michael", label: "Michael" },
-  { id: "bm_george", label: "George" },
 ];
 
 export function isNarrationVoiceId(value: unknown): value is string {

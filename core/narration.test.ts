@@ -115,12 +115,14 @@ describe("cache keys", () => {
 });
 
 describe("narration voices", () => {
-  it("lists the four voices with Heart first and default", () => {
-    expect(NARRATION_VOICES.map((v) => v.id)).toEqual(["af_heart", "bf_emma", "am_michael", "bm_george"]);
-    expect(NARRATION_VOICES.map((v) => v.label)).toEqual(["Heart", "Emma", "Michael", "George"]);
+  it("lists the two voices with Heart first and default", () => {
+    expect(NARRATION_VOICES.map((v) => v.id)).toEqual(["af_heart", "am_michael"]);
+    expect(NARRATION_VOICES.map((v) => v.label)).toEqual(["Heart", "Michael"]);
     expect(DEFAULT_NARRATION_VOICE).toBe("af_heart");
     for (const voice of NARRATION_VOICES) expect(isNarrationVoiceId(voice.id)).toBe(true);
     expect(isNarrationVoiceId("af_bella")).toBe(false);
+    expect(isNarrationVoiceId("bf_emma")).toBe(false);
+    expect(isNarrationVoiceId("bm_george")).toBe(false);
     expect(isNarrationVoiceId(null)).toBe(false);
   });
 
@@ -132,7 +134,7 @@ describe("narration voices", () => {
   });
 
   it("labels known voices and passes unknown ids through", () => {
-    expect(narrationVoiceLabel("bf_emma")).toBe("Emma");
+    expect(narrationVoiceLabel("am_michael")).toBe("Michael");
     expect(narrationVoiceLabel("xx_nope")).toBe("xx_nope");
   });
 
@@ -144,7 +146,7 @@ describe("narration voices", () => {
         voice,
       );
     const keys = new Set(NARRATION_VOICES.map((v) => keyOf(v.id)));
-    expect(keys.size).toBe(4);
+    expect(keys.size).toBe(NARRATION_VOICES.length);
     for (const voice of NARRATION_VOICES) expect(keyOf(voice.id)).toContain(`/${voice.id}/`);
   });
 });
