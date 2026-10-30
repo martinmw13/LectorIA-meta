@@ -1,5 +1,5 @@
 import "server-only";
-import { turnstilePair, usable } from "@/server/guard/env";
+import { parseCapUsd, turnstilePair, usable } from "@/server/guard/env";
 import type { TurnstilePair } from "@/server/guard/env";
 
 // Reads image env once per request. Any missing key means unavailable:
@@ -26,15 +26,6 @@ const REQUIRED = [
   "SESSION_SECRET",
   "IP_HASH_SALT",
 ] as const;
-
-// One rule for both caps: a finite, non-negative USD value wins,
-// anything else (missing, blank, non-numeric, negative, Infinity) falls back.
-// Zero stays valid so a zero cap can intentionally block spend.
-function parseCapUsd(raw: string | undefined, fallback: number): number {
-  if (raw === undefined || raw.trim() === "") return fallback;
-  const value = Number(raw);
-  return Number.isFinite(value) && value >= 0 ? value : fallback;
-}
 
 export function readImageEnv(from: NodeJS.ProcessEnv = process.env): ImageEnv {
   const upstashUrl = usable(from.UPSTASH_REDIS_REST_URL) ?? usable(from.KV_REST_API_URL);

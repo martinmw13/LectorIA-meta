@@ -42,6 +42,26 @@ const nextConfig: NextConfig = {
         source: '/music/v1/:path*',
         headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
       },
+      {
+        // Content-hash keys (narration/v2/<voice>/<hash>); any edit
+        // gives a new key, and puts forbid overwrite.
+        source: '/narration/v2/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
+      {
+        // Committed v1 loops with no in-place writer; a re-encode
+        // gets a new version folder, same as music.
+        source: '/ambience/v1/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
+      {
+        // Placeholder art replaced at the same paths (see SOURCES.md),
+        // so no immutable: a short cache with background refresh.
+        source: '/art/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=3600, stale-while-revalidate=86400' },
+        ],
+      },
     ];
   },
 };

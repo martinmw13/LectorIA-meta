@@ -17,7 +17,7 @@ const COVER_SKIN: Record<SkinId, CoverSkin> = {
   chihiro: "watercolor",
 };
 
-const OZ_COVER = "/art/panels/cyclone-house.jpg";
+const OZ_COVER = "/art/panels/cyclone-house.webp";
 
 export function coverFor(bookId: string, skin: SkinId, size: CoverSize): string {
   if (bookId === "oz") return OZ_COVER;
