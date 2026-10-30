@@ -6,6 +6,7 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { ReaderModel } from "@/core/reader";
+import { isUploadId } from "@/core/uploads";
 import { effectiveImageStylePref, loadImageStylePref, saveImageStylePref } from "../image-style";
 import type { ImageStylePref } from "../image-style";
 import { useSkin } from "../use-skin";
@@ -36,11 +37,16 @@ export function BookView({
   model,
   initialSceneId,
   panelsByChapter,
+  visualsOn: visualsOnProp,
 }: {
   model: ReaderModel;
   initialSceneId: string;
   panelsByChapter: { ch: number; panels: ChapterPanel[] }[];
+  visualsOn?: boolean;
 }) {
+  // Uploads keep the text only: the images API rejects u- ids, so every
+  // picture surface stays unmounted and no request goes out.
+  const visualsOn = visualsOnProp ?? !isUploadId(model.bookId);
   const [storedPref, setStoredPref] = useState<ImageStylePref | null>(null);
   // Server render uses the default so hydration matches; the live skin
   // applies on mount via useSyncExternalStore.
@@ -196,17 +202,21 @@ export function BookView({
 
   return (
     <>
-      <ImagePane
-        card={pic.card}
-        needHuman={pic.needHuman}
-        onHumanPass={pic.submitHumanToken}
-        onPicture={() => pic.illustrateScene()}
-        onRetry={() => pic.illustrateScene()}
-        onClear={pic.clearScene}
-        onOpen={pic.lightbox.open}
-        onPictureChapter={info ? () => setPanelsCh(info.ch) : null}
-      />
-      <Divider />
+      {visualsOn ? (
+        <>
+          <ImagePane
+            card={pic.card}
+            needHuman={pic.needHuman}
+            onHumanPass={pic.submitHumanToken}
+            onPicture={() => pic.illustrateScene()}
+            onRetry={() => pic.illustrateScene()}
+            onClear={pic.clearScene}
+            onOpen={pic.lightbox.open}
+            onPictureChapter={info ? () => setPanelsCh(info.ch) : null}
+          />
+          <Divider />
+        </>
+      ) : null}
       <main id="story" className="read-col" ref={readColRef} tabIndex={-1} aria-label="Reading column" onMouseUp={onReadMouseUp}>
         <h1 className="sr-only">{model.title}</h1>
         <ReadAlong columnRef={readColRef} />
@@ -238,14 +248,14 @@ export function BookView({
                 >
                   <div
                     className={si === 0 ? "body-text dropcap" : "body-text"}
-                    ref={s.id === currentId ? pic.viewRef : undefined}
+                    ref={visualsOn && s.id === currentId ? pic.viewRef : undefined}
                   >
                     {s.paragraphs.map((p, i, arr) => (
                       <Fragment key={p.id}>
                         <p id={p.id} data-n={p.n}>
                           {p.text}
                         </p>
-                        {figuresAfter(arr, i, figsByN).map((fig) => (
+                        {(visualsOn ? figuresAfter(arr, i, figsByN) : []).map((fig) => (
                           <InlineFigureView
                             key={fig.id}
                             figure={fig}
@@ -260,7 +270,7 @@ export function BookView({
                         ))}
                       </Fragment>
                     ))}
-                    {s.id === currentId && pic.popover !== null ? (
+                    {visualsOn && s.id === currentId && pic.popover !== null ? (
                       <SelectionPopover pos={pic.popover} popRef={pic.popRef} onPick={() => pic.illustratePassage()} />
                     ) : null}
                   </div>
@@ -268,7 +278,7 @@ export function BookView({
               ))}
               {chapter.ch === lastChapter ? (
                 <p className="the-end">The end.</p>
-              ) : (
+              ) : visualsOn ? (
                 <div className="chapter-relive">
                   <button
                     type="button"
@@ -279,20 +289,22 @@ export function BookView({
                     Relive this chapter in panels
                   </button>
                 </div>
-              )}
+              ) : null}
             </div>
           );
         })}
       </main>
-      <PictureVault
-        scene={pic.card.phase === "ready" ? { url: pic.card.url, caption: pic.card.caption } : null}
-        figures={pic.figures}
-        onGotoScene={gotoScenePicture}
-        onGotoFigure={gotoFigure}
-        onOpen={pic.lightbox.open}
-        pref={pref}
-        onPrefChange={changePref}
-      />
+      {visualsOn ? (
+        <PictureVault
+          scene={pic.card.phase === "ready" ? { url: pic.card.url, caption: pic.card.caption } : null}
+          figures={pic.figures}
+          onGotoScene={gotoScenePicture}
+          onGotoFigure={gotoFigure}
+          onOpen={pic.lightbox.open}
+          pref={pref}
+          onPrefChange={changePref}
+        />
+      ) : null}
       <BandPager
         k={info?.k ?? 1}
         n={info?.n ?? 1}
@@ -304,7 +316,7 @@ export function BookView({
         atBookEnd={bookIndex >= order.length - 1}
       />
       <Lightbox item={pic.lightbox.item} onClose={pic.lightbox.close} />
-      {panelsCh !== null ? (
+      {visualsOn && panelsCh !== null ? (
         <PanelsModal
           ch={panelsCh}
           chapterTitle={titles.get(panelsCh) ?? ""}
