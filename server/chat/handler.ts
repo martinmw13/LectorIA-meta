@@ -17,7 +17,7 @@ import {
 } from "@/core/chat";
 import type { ChatErrorBody, ChatErrorCode, ChatRequest } from "@/core/chat";
 import type { KV } from "@/core/types";
-import { loadOzBook } from "@/server/books";
+import { isKnownBookId, loadBookData } from "@/server/books";
 import {
   issueAnonId,
   parseAnonCookie,
@@ -47,9 +47,15 @@ export interface ChatHandlerDeps {
 // Expected failures (bad input, over limit, missing env, spent budget)
 // warn; only a truly unexpected crash (upstream or ours) errors. Names
 // only, never request text, keys, or error values.
-function fail(code: ChatErrorCode, ch: number | "?", cookies: string[], unexpected = false): Response {
-  if (unexpected) console.error(`chat ${code} book=oz ch=${ch}`);
-  else console.warn(`chat ${code} book=oz ch=${ch}`);
+function fail(
+  code: ChatErrorCode,
+  ch: number | "?",
+  cookies: string[],
+  unexpected = false,
+  book: string | "?" = "?",
+): Response {
+  if (unexpected) console.error(`chat ${code} book=${book} ch=${ch}`);
+  else console.warn(`chat ${code} book=${book} ch=${ch}`);
   const headers = new Headers();
   for (const cookie of cookies) headers.append("Set-Cookie", cookie);
   return Response.json(
@@ -79,6 +85,7 @@ export async function handleChatPost(req: Request, deps: ChatHandlerDeps = {}): 
   } catch {
     return fail("bad_request", "?", cookies);
   }
+  if (!isKnownBookId(body.bookId)) return fail("bad_request", "?", cookies, false, body.bookId);
 
   let env = deps.env;
   if (!env) {
@@ -88,7 +95,7 @@ export async function handleChatPost(req: Request, deps: ChatHandlerDeps = {}): 
       const message = e instanceof Error ? e.message : "";
       const prefix = "missing chat env:";
       console.warn(`chat env missing: ${message.startsWith(prefix) ? message.slice(prefix.length).trim() : ""}`);
-      return fail("unavailable", "?", cookies);
+      return fail("unavailable", "?", cookies, false, body.bookId);
     }
   }
 
@@ -103,7 +110,7 @@ export async function handleChatPost(req: Request, deps: ChatHandlerDeps = {}): 
     sessionSecret: env.sessionSecret,
     fetchFn,
   });
-  if (!human.ok) return fail("human", "?", cookies);
+  if (!human.ok) return fail("human", "?", cookies, false, body.bookId);
   if (human.setCookie) cookies.push(human.setCookie);
 
   let anonId = verifyAnonCookie(parseAnonCookie(req.headers.get("cookie")), env.sessionSecret);
@@ -118,7 +125,7 @@ export async function handleChatPost(req: Request, deps: ChatHandlerDeps = {}): 
   if (rawByok !== null) {
     const trimmed = rawByok.trim();
     if (trimmed.length < 8 || trimmed.length > 400 || !isAsciiPrintable(trimmed)) {
-      return fail("bad_request", "?", cookies);
+      return fail("bad_request", "?", cookies, false, body.bookId);
     }
     byokKey = trimmed;
   }
@@ -154,17 +161,17 @@ export async function handleChatPost(req: Request, deps: ChatHandlerDeps = {}): 
   };
   try {
     const taken = await takeDualQuota(kv, keys, { limit, ttlSec: CHAT_QUOTA_TTL_SEC });
-    if (!taken.ok) return fail("quota", "?", cookies);
+    if (!taken.ok) return fail("quota", "?", cookies, false, body.bookId);
     quotaTaken = true;
     const remaining = limit - Math.max(taken.ipCount, taken.anonCount);
 
-    const { book } = loadOzBook();
+    const { book } = await loadBookData(body.bookId);
     const maxN = book.paragraphs.reduce((m, p) => Math.max(m, p.n), 0);
     const clampedN = Math.min(body.upToN, maxN);
     const chapter =
       book.chapters.find((c) => clampedN >= c.start_n && clampedN <= c.end_n) ??
       book.chapters[book.chapters.length - 1];
-    if (!chapter) return fail("unavailable", "?", cookies);
+    if (!chapter) return fail("unavailable", "?", cookies, false, body.bookId);
     const system = buildChatSystemPrompt({
       title: book.title,
       author: book.author,
@@ -186,13 +193,13 @@ export async function handleChatPost(req: Request, deps: ChatHandlerDeps = {}): 
         });
         if (!spent.ok) {
           await refundAll();
-          return fail("byok_required", chapter.ch, cookies);
+          return fail("byok_required", chapter.ch, cookies, false, body.bookId);
         }
         reservation = spent.reservation;
       }
     } catch {
       await refundAll().catch(() => undefined);
-      return fail("unavailable", chapter.ch, cookies, true);
+      return fail("unavailable", chapter.ch, cookies, true, body.bookId);
     }
 
     const createStreamer = deps.createStreamer ?? createChatStreamer;
@@ -216,11 +223,11 @@ export async function handleChatPost(req: Request, deps: ChatHandlerDeps = {}): 
       }
     } catch {
       await refundAll();
-      return fail("unavailable", chapter.ch, cookies, true);
+      return fail("unavailable", chapter.ch, cookies, true, body.bookId);
     }
     if (headText === null) {
       await refundAll();
-      return fail("unavailable", chapter.ch, cookies, true);
+      return fail("unavailable", chapter.ch, cookies, true, body.bookId);
     }
     const firstText: string = headText;
 
@@ -296,6 +303,6 @@ export async function handleChatPost(req: Request, deps: ChatHandlerDeps = {}): 
     return new Response(stream, { headers });
   } catch {
     await refundAll().catch(() => undefined);
-    return fail("unavailable", "?", cookies, true);
+    return fail("unavailable", "?", cookies, true, body.bookId);
   }
 }

@@ -34,7 +34,7 @@ vi.mock("../folio/use-pictures", () => ({
 }));
 
 const MODEL = {
-  bookId: "b",
+  bookId: "oz",
   textVersion: "v",
   title: "The Book",
   author: "A",
@@ -139,5 +139,5 @@ test("focus in a far chapter never commits a later scene", async () => {
   await act(async () => {
     ioCb!([entry] as unknown as IntersectionObserverEntry[], null as unknown as IntersectionObserver);
   });
-  expect(window.location.pathname).toBe("/leer/c2s1");
+  expect(window.location.pathname).toBe("/read/oz/c2s1");
 });

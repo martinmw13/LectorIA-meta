@@ -27,13 +27,18 @@ describe("parseChatRequest", () => {
     expect(parseChatRequest(validBody())).toEqual(validBody());
   });
 
+  it("accepts any book id shape; the handler checks the registry", () => {
+    expect(parseChatRequest(validBody({ bookId: "alice" })).bookId).toBe("alice");
+  });
+
   it("rejects anything invalid", () => {
     const bad = [
       null,
       [],
       "x",
-      validBody({ bookId: "other" }),
+      validBody({ bookId: "" }),
       validBody({ bookId: 1 }),
+      validBody({ bookId: "x".repeat(65) }),
       validBody({ upToN: 0 }),
       validBody({ upToN: -3 }),
       validBody({ upToN: 1.5 }),

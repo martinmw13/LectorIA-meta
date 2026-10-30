@@ -41,7 +41,7 @@ vi.mock("../folio/use-pictures", () => ({
 }));
 
 const MODEL: ReaderModel = {
-  bookId: "b",
+  bookId: "oz",
   textVersion: "v",
   title: "T",
   author: "A",
@@ -195,6 +195,76 @@ test("each scene section carries its number and its chapter's scene count, past 
   expect(sections[1]!.style.getPropertyValue("--scene-n")).toBe('"2"');
   expect(sections[30]!.style.getPropertyValue("--scene-n")).toBe('"31"');
   expect(sections[30]!.style.getPropertyValue("--scene-of")).toBe('" of 31"');
+});
+
+test("non-Oz books hide every picture control but keep the text", async () => {
+  const model = {
+    ...MODEL,
+    bookId: "alice",
+    chapters: [
+      MODEL.chapters[0],
+      { ch: 2, title: "Two", scenes: [{ id: "c2s1", title: "S1", paragraphs: [{ id: "p3", n: 3, text: "More words." }] }] },
+    ],
+  } as unknown as ReaderModel;
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  const root = mountRoot(host);
+  await act(async () => {
+    root.render(
+      <NarrationProvider entries={[]} scenes={SCENES}>
+        <BookView model={model} initialSceneId="c1s1" panelsByChapter={[]} />
+      </NarrationProvider>,
+    );
+  });
+  expect(counts.book).toBe(0);
+  expect(host.querySelector(".vault")).toBeNull();
+  expect(host.querySelector(".panels-link")).toBeNull();
+  expect(host.querySelector("#p1")).not.toBeNull();
+  expect(host.querySelector("#p3")).not.toBeNull();
+});
+
+test("scene moves rewrite the deep link with the current book", async () => {
+  type Entry = { target: Element; isIntersecting: boolean; intersectionRatio: number };
+  let fire: ((entries: Entry[]) => void) | null = null;
+  vi.stubGlobal(
+    "IntersectionObserver",
+    class {
+      constructor(cb: (entries: Entry[]) => void) {
+        fire = cb;
+      }
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  );
+  const model = {
+    ...MODEL,
+    chapters: [
+      {
+        ...MODEL.chapters[0],
+        scenes: [
+          { id: "c1s1", title: "S1", paragraphs: [{ id: "p1", n: 1, text: "One." }] },
+          { id: "c1s2", title: "S2", paragraphs: [{ id: "p2", n: 2, text: "Two." }] },
+        ],
+      },
+    ],
+  } as unknown as ReaderModel;
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  const root = mountRoot(host);
+  await act(async () => {
+    root.render(
+      <NarrationProvider entries={[]} scenes={SCENES}>
+        <BookView model={model} initialSceneId="c1s1" panelsByChapter={[]} />
+      </NarrationProvider>,
+    );
+  });
+  const section = host.querySelector('[data-scene-id="c1s2"]');
+  expect(section).not.toBeNull();
+  await act(async () => {
+    fire!([{ target: section!, isIntersecting: true, intersectionRatio: 1 }]);
+  });
+  expect(window.location.pathname).toBe("/read/oz/c1s2");
 });
 
 test("chapter text shows at once and the pane opens the panels on demand", async () => {

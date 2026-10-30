@@ -4,7 +4,7 @@
 //
 // Run: npx tsx --conditions=react-server scripts/pregen-chapters.ts
 //   [--ch all|1,2] [--style skins|<id>] [--dry-run]
-import { loadOzBook } from "../server/books";
+import { loadBook } from "../server/books";
 import { createBlobStore } from "../server/images/blob";
 import { usable } from "../server/guard/env";
 import { createMetaClient } from "../server/images/meta";
@@ -76,7 +76,7 @@ async function main(): Promise<void> {
   const capMicro = Math.round(parseCapUsd(process.env.SPEND_CAP_USD, 10) * 1_000_000);
   const dailyCapMicro = Math.round(parseCapUsd(process.env.DAILY_SPEND_CAP_USD, 2) * 1_000_000);
 
-  const { book, scenes } = loadOzBook();
+  const { book, scenes } = await loadBook("oz");
   const known = new Map(book.chapters.map((c) => [c.ch, c.title]));
   const chArg = opt("--ch") ?? "all";
   const wantCh =

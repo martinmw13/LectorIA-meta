@@ -1,5 +1,5 @@
 import "server-only";
-import { loadOzBook } from "@/server/books";
+import { loadBookData } from "@/server/books";
 import {
   ImageStyleError,
   MAX_IMAGE_BODY_BYTES,
@@ -71,6 +71,15 @@ export async function handleImagesPost(req: Request, deps: ImagesHandlerDeps = {
     );
   }
 
+  // Pictures and chapter panels are Oz-only: other books stop here,
+  // before env, quota, or spend are touched.
+  if (parsed.bookId !== "oz") {
+    return Response.json(
+      { status: "error", code: "bad_request", message: MSG_BAD_REQUEST } satisfies ImageResponse,
+      { status: 400 },
+    );
+  }
+
   let env = deps.env;
   if (!env) {
     try {
@@ -88,7 +97,7 @@ export async function handleImagesPost(req: Request, deps: ImagesHandlerDeps = {
   }
 
   try {
-    const { book, scenes } = loadOzBook();
+    const { book, scenes } = await loadBookData("oz");
     try {
       validateAgainstBook(
         parsed,

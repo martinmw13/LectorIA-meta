@@ -1,14 +1,21 @@
 import { buildReaderModel } from "@/core/reader";
-import { loadOzBook } from "@/server/books";
+import { loadBook } from "@/server/books";
 import { loadNarrationEntries } from "@/server/narration";
-import { Reader } from "../reader";
+import { Reader } from "../../reader";
 
 // Static shell: audio and music state persist across scene routes.
 // Only slim metadata reaches the client: id, chapter, ordinal range,
 // emotion. The chapter narration index (~1 MB) stays server-side; the
 // client gets one small {chapter → src, manifest} map.
-export default function LeerLayout({ children }: { children: React.ReactNode }) {
-  const { book, scenes } = loadOzBook();
+export default async function ReadBookLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ bookId: string }>;
+}) {
+  const { bookId } = await params;
+  const { book, scenes } = await loadBook(bookId);
   const model = buildReaderModel(book, { scenes });
   const slim = model.chapters.flatMap((chapter) =>
     chapter.scenes.map((scene) => {
@@ -27,9 +34,16 @@ export default function LeerLayout({ children }: { children: React.ReactNode }) 
     title: chapter.title,
     firstSceneId: chapter.scenes[0]?.id ?? "",
   }));
-  const narration = loadNarrationEntries();
+  const narration = loadNarrationEntries(bookId);
   return (
-    <Reader scenes={slim} chapters={chapters} bookTitle={model.title} bookAuthor={model.author} narration={narration}>
+    <Reader
+      bookId={model.bookId}
+      scenes={slim}
+      chapters={chapters}
+      bookTitle={model.title}
+      bookAuthor={model.author}
+      narration={narration}
+    >
       {children}
     </Reader>
   );

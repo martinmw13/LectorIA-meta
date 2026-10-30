@@ -22,7 +22,7 @@ export interface ChatMessage {
 
 // The client sends a position, never book text: the server builds the context.
 export interface ChatRequest {
-  bookId: "oz";
+  bookId: string;
   // Global paragraph ordinal of the last paragraph the reader has reached.
   upToN: number;
   spoilers: boolean;
@@ -88,7 +88,11 @@ function isRecord(json: unknown): json is Record<string, unknown> {
 // client bug cannot widen the context or spend budget on a misread request.
 export function parseChatRequest(json: unknown): ChatRequest {
   if (!isRecord(json)) throw new ChatValidationError();
-  if (json.bookId !== "oz") throw new ChatValidationError();
+  // Shape only here; the handler checks the id against the book registry.
+  const bookId = json.bookId;
+  if (typeof bookId !== "string" || bookId.length === 0 || bookId.length > 64) {
+    throw new ChatValidationError();
+  }
   const upToN = json.upToN;
   if (typeof upToN !== "number" || !Number.isSafeInteger(upToN) || upToN <= 0) {
     throw new ChatValidationError();
@@ -116,7 +120,7 @@ export function parseChatRequest(json: unknown): ChatRequest {
     return { role: item.role, content: item.content };
   });
   const out: ChatRequest = {
-    bookId: "oz",
+    bookId,
     upToN,
     spoilers: json.spoilers,
     messages,
