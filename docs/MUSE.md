@@ -6,15 +6,15 @@ A Muse commit is a non-merge commit on main that carries the trailer `Co-authore
 
 ## Commits
 
-- Muse commits: 345 of 405 non-merge commits (85%).
+- Muse commits: 345 of 406 non-merge commits (85%).
 - Date range (UTC-3): 2026-10-27 to 2026-10-29.
 
 ## Lines
 
 | Scope | Muse added | Muse removed | Other added | Other removed | Muse share of added |
 | --- | --- | --- | --- | --- | --- |
-| Source code (`app/`, `core/`, `pipeline/`, `server/`, `scripts/`) | 51,408 | 10,647 | 7,607 | 2,797 | 87% |
-| All files | 257,706 | 14,817 | 27,888 | 3,339 | 90% |
+| Source code (`app/`, `core/`, `pipeline/`, `server/`, `scripts/`) | 51,408 | 10,647 | 7,651 | 2,798 | 87% |
+| All files | 257,706 | 14,817 | 27,932 | 3,340 | 90% |
 
 All files includes the Muse Code session transcripts in `agent-logs/`, the vendored skills in `.agents/` and `package-lock.json`.
 
