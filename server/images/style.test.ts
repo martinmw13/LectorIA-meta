@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MSG_BAD_REQUEST, MSG_STYLE, createMemoryKV, imageKey } from "@/core/images";
 import type { ImageGenerator, ImageRequest, ImageStore } from "@/core/images";
-import { loadOzBook } from "@/server/books";
+import { loadBookData } from "@/server/books";
+
+const { book: ozBook } = await loadBookData("oz");
 import type { ImageEnv } from "./env";
 import { handleImagesPost } from "./handler";
 import { orchestrate } from "./orchestrate";
@@ -35,7 +37,7 @@ afterEach(() => {
 });
 
 function passageBody(style: unknown) {
-  const { book } = loadOzBook();
+  const book = ozBook;
   const first = book.paragraphs[0];
   if (!first) throw new Error("test book has no paragraphs");
   return { kind: "passage", bookId: book.id, textVersion: book.textVersion, n: first.n, style };

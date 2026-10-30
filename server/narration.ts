@@ -5,8 +5,10 @@ import type { NarrationChapterEntry } from "../app/narration/types";
 
 // Small chapter map for the reader shell: each chapter's audio src and
 // its manifest URL (src with .mp3 replaced by .json). The 1 MB Oz index
-// never reaches the client; only this list of chapters ships.
-export function loadNarrationEntries(): NarrationChapterEntry[] {
+// never reaches the client; only this list of chapters ships. Prebuilt
+// narration exists for Oz only; other books read silently.
+export function loadNarrationEntries(bookId: string): NarrationChapterEntry[] {
+  if (bookId !== "oz") return [];
   const raw = readFileSync(join(process.cwd(), "data/books/oz/narration.json"), "utf8");
   const json = JSON.parse(raw) as { chapters?: Record<string, { src?: string }> };
   const chapters = json.chapters ?? {};

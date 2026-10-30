@@ -15,7 +15,7 @@ export function ReaderChat({
   chapter,
   chapterTitle,
 }: {
-  bookId: "oz";
+  bookId: string;
   upToN: number;
   chapter: number;
   chapterTitle: string;

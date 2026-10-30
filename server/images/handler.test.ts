@@ -2,7 +2,9 @@ import { createHmac } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MAX_IMAGE_BODY_BYTES, MSG_BAD_REQUEST, createMemoryKV } from "@/core/images";
 import type { ImageStore } from "@/core/images";
-import { loadOzBook } from "@/server/books";
+import { loadBookData } from "@/server/books";
+
+const { book: ozBook } = await loadBookData("oz");
 import { issueHumanCookie } from "@/server/guard/human";
 import { handleImagesPost } from "./handler";
 import type { ImageEnv } from "./env";
@@ -35,7 +37,7 @@ afterEach(() => {
 });
 
 function passageBody() {
-  const { book } = loadOzBook();
+  const book = ozBook;
   const first = book.paragraphs[0];
   if (!first) throw new Error("test book has no paragraphs");
   return { kind: "passage", bookId: book.id, textVersion: book.textVersion, n: first.n };
@@ -189,6 +191,23 @@ describe("handleImagesPost", () => {
           "Sec-Fetch-Site": "cross-site",
         },
         body: JSON.stringify(passageBody()),
+      }),
+      { generate },
+    );
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ status: "error", code: "bad_request" });
+    expect(generate.generate).not.toHaveBeenCalled();
+  });
+
+  it("rejects non-oz books explicitly without calling generate", async () => {
+    const { book, scenes } = await loadBookData("alice");
+    const generate = { generate: vi.fn(async () => new Uint8Array([1, 2, 3])) };
+    const res = await handleImagesPost(
+      post({
+        kind: "scene",
+        bookId: "alice",
+        textVersion: book.textVersion,
+        sceneId: scenes[0]?.id ?? "c1s1",
       }),
       { generate },
     );

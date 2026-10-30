@@ -2,11 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MSG_BAD_REQUEST, createMemoryKV } from "@/core/images";
 import type { ImageGenerator, ImageRequest, ImageStore } from "@/core/images";
 import { dailySpendKey, spendKey } from "@/server/guard/spend";
-import { loadOzBook } from "@/server/books";
+import { loadBookData } from "@/server/books";
 import type { ImageEnv } from "./env";
 import { handleImagesPost } from "./handler";
 import { orchestrate } from "./orchestrate";
 import type { OrchestrateDeps } from "./orchestrate";
+
+const { book: ozBook } = await loadBookData("oz");
 
 const env: ImageEnv = {
   upstashUrl: "https://x",
@@ -140,7 +142,7 @@ describe("handleImagesPost chapter pages", () => {
     process.env.UPSTASH_REDIS_REST_URL = "https://test.example";
     const fetchSpy = vi.fn().mockRejectedValue(new Error("must not be called"));
     vi.stubGlobal("fetch", fetchSpy);
-    const { book } = loadOzBook();
+    const book = ozBook;
     const res = await handleImagesPost(
       new Request("http://localhost/api/images", {
         method: "POST",
@@ -162,7 +164,7 @@ describe("handleImagesPost chapter pages", () => {
     process.env.UPSTASH_REDIS_REST_URL = "https://test.example";
     const fetchSpy = vi.fn().mockRejectedValue(new Error("must not be called"));
     vi.stubGlobal("fetch", fetchSpy);
-    const { book } = loadOzBook();
+    const book = ozBook;
     const res = await handleImagesPost(
       new Request("http://localhost/api/images", {
         method: "POST",

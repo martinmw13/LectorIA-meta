@@ -51,6 +51,7 @@ const DEV_LABELS: Record<(typeof EMOTIONS)[number], string> = {
 // Band contents run inside the narration provider so the music duck
 // and the read-aloud control share the controller.
 function BandPlay({
+  narrationOn,
   musicFailed,
   empty,
   track,
@@ -70,6 +71,7 @@ function BandPlay({
   onEnded,
   playlistOn,
 }: {
+  narrationOn: boolean;
   musicFailed: boolean;
   empty: boolean;
   track: Track | null;
@@ -92,7 +94,7 @@ function BandPlay({
   const { duck, ambienceDuck } = useNarration();
   return (
     <div className="band-play">
-      <ReadAloud />
+      {narrationOn ? <ReadAloud /> : null}
       {musicFailed || empty ? (
         <p className="player-note">The music is resting. The book is all yours.</p>
       ) : (
@@ -122,6 +124,7 @@ function BandPlay({
 }
 
 export function Reader({
+  bookId,
   scenes,
   chapters,
   bookTitle,
@@ -129,6 +132,7 @@ export function Reader({
   narration,
   children,
 }: {
+  bookId: string;
   scenes: SlimScene[];
   chapters: ChapterJump[];
   bookTitle: string;
@@ -355,9 +359,12 @@ export function Reader({
     : [];
 
 
+  // Pictures, panels, and narration are Oz-only; music follows any
+  // book's scene emotions, so it stays on everywhere.
+  const picturesOn = bookId === "oz";
   return (
     <NarrationProvider entries={narration} scenes={scenes}>
-      <div className="folio">
+      <div className="folio" data-pictures={picturesOn ? "on" : "off"}>
         <a href="#story" className="skip-link">
           Skip to the story
         </a>
@@ -373,6 +380,7 @@ export function Reader({
         />
         {children}
         <BandPlay
+          narrationOn={narration.length > 0}
           musicFailed={musicFailed}
           empty={empty}
           track={track}
@@ -394,7 +402,7 @@ export function Reader({
         />
       {chatScene && chatChapter && (
         <ReaderChat
-          bookId="oz"
+          bookId={bookId}
           upToN={chatScene.endN}
           chapter={chatChapter.ch}
           chapterTitle={chatChapter.title}

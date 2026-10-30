@@ -13,7 +13,7 @@ export type ChatStatus = "idle" | "loading" | "streaming" | "error";
 export type ByokReason = "quota" | "byok_required";
 
 export interface UseChatOptions {
-  bookId: "oz";
+  bookId: string;
   upToN: number;
   byokKey: string | null;
   turnstileToken: string | null;
@@ -26,11 +26,13 @@ export interface ChatSnapshot {
   spoilers: boolean;
 }
 
-const STORE_KEY = "lectoria:chat:oz";
+function storeKey(bookId: string): string {
+  return `lectoria:chat:${bookId}`;
+}
 
-function readStored(): ChatSnapshot | null {
+function readStored(key: string): ChatSnapshot | null {
   try {
-    const raw = window.sessionStorage.getItem(STORE_KEY);
+    const raw = window.sessionStorage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<ChatSnapshot>;
     if (!Array.isArray(parsed.messages)) return null;
@@ -164,7 +166,7 @@ export function useChat(opts: UseChatOptions) {
 
   // Restore the text-only conversation once, on mount.
   useEffect(() => {
-    const stored = readStored();
+    const stored = readStored(storeKey(optsRef.current.bookId));
     if (!stored) return;
     msgsRef.current = stored.messages;
     setMessages(stored.messages);
@@ -176,11 +178,11 @@ export function useChat(opts: UseChatOptions) {
   useEffect(() => {
     try {
       const snap: ChatSnapshot = { messages, remaining, spoilers };
-      window.sessionStorage.setItem(STORE_KEY, JSON.stringify(snap));
+      window.sessionStorage.setItem(storeKey(opts.bookId), JSON.stringify(snap));
     } catch {
       // Private mode or full storage: the chat still works for the visit.
     }
-  }, [messages, remaining, spoilers]);
+  }, [messages, remaining, spoilers, opts.bookId]);
 
   const fail = useCallback((code: string) => {
     abortRef.current = null;
@@ -212,7 +214,7 @@ export function useChat(opts: UseChatOptions) {
     setNeedHuman(false);
     setStatus("idle");
     try {
-      window.sessionStorage.removeItem(STORE_KEY);
+      window.sessionStorage.removeItem(storeKey(optsRef.current.bookId));
     } catch {
       // Nothing stored: nothing to clear.
     }

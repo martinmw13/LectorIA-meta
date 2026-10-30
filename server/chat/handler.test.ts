@@ -13,81 +13,21 @@ import { handleChatPost } from "./handler";
 import type { ChatHandlerDeps } from "./handler";
 import type { ChatEnv } from "./env";
 import { resetTurnstileWarnForTests } from "@/server/guard/human";
-import type { ChatStreamChunk, ChatStreamer, UpstreamMessage } from "./stream";
-
-const ENV: ChatEnv = {
-  upstashUrl: "https://kv.example",
-  upstashToken: "kv-token",
-  metaKey: "test-owner-meta",
-  sessionSecret: "session-secret-for-tests-123",
-  ipSalt: "test-salt",
-  spendCapMicro: 10_000_000,
-  dailySpendCapMicro: 2_000_000,
-};
-
-const DAY = "2026-10-28";
-const NOW = new Date("2026-10-28T12:00:00Z");
-const QUESTION = "Zebra question alpha 42?";
-const LATER_SENTENCE = "There is no place like home.";
-
-function validBody(over: Record<string, unknown> = {}) {
-  return {
-    bookId: "oz",
-    upToN: 135,
-    spoilers: false,
-    messages: [{ role: "user", content: QUESTION }],
-    ...over,
-  };
-}
-
-function post(body: unknown, headers: Record<string, string> = {}): Request {
-  return new Request("http://localhost/api/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...headers },
-    body: typeof body === "string" ? body : JSON.stringify(body),
-  });
-}
-
-interface Capture {
-  apiKey?: string;
-  messages?: UpstreamMessage[];
-}
-
-function factoryFor(
-  chunks: ChatStreamChunk[] | Error,
-  capture: Capture = {},
-  calls: { count: number } = { count: 0 },
-): ChatHandlerDeps["createStreamer"] {
-  return ({ apiKey }: { apiKey: string; fetchFn: typeof fetch }): ChatStreamer => {
-    capture.apiKey = apiKey;
-    return {
-      stream({ messages }: { messages: UpstreamMessage[] }) {
-        calls.count += 1;
-        capture.messages = messages;
-        return (async function* () {
-          if (chunks instanceof Error) throw chunks;
-          for (const chunk of chunks) yield chunk;
-        })();
-      },
-    };
-  };
-}
-
-const OK_CHUNKS: ChatStreamChunk[] = [
-  { type: "delta", text: "Hello " },
-  { type: "delta", text: "there" },
-  { type: "usage", promptTokens: 100, cachedTokens: 10, completionTokens: 5 },
-];
-
-function anonCookieFrom(res: Response): string {
-  const found = res.headers.getSetCookie().find((c) => c.startsWith("img_anon="));
-  expect(found).toBeDefined();
-  return found!.split(";")[0]!;
-}
-
-async function errBody(res: Response): Promise<ChatErrorBody> {
-  return (await res.json()) as ChatErrorBody;
-}
+import type { ChatStreamChunk } from "./stream";
+import {
+  DAY,
+  ENV,
+  LATER_SENTENCE,
+  NOW,
+  OK_CHUNKS,
+  QUESTION,
+  anonCookieFrom,
+  errBody,
+  factoryFor,
+  post,
+  validBody,
+} from "./test-fixtures";
+import type { Capture } from "./test-fixtures";
 
 let errorSpy: ReturnType<typeof vi.spyOn>;
 let warnSpy: ReturnType<typeof vi.spyOn>;
@@ -546,4 +486,5 @@ describe("handleChatPost", () => {
       }
     }
   });
+
 });
