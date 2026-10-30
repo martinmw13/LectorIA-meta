@@ -4,10 +4,13 @@ import {
   buildCharacters,
   buildLookup,
   cleanString,
+  isSceneAttr,
   sanitizeChapter,
   sanitizeStage1,
+  sceneAttributes,
   slugify,
   validateBookmap,
+  type BookMap,
 } from "./bookmap";
 
 describe("cleanString", () => {
@@ -163,5 +166,74 @@ describe("validateBookmap", () => {
       scenes: { c1s1: { ...valid.scenes.c1s1, characters_present: ["ghost"] } },
     })).toBeNull();
     expect(validateBookmap({ ...valid, provenance: { model: "m" } })).toBeNull();
+  });
+});
+
+describe("sceneAttributes", () => {
+  const map = {
+    bookId: "oz",
+    textVersion: "sha256:abc",
+    setting: { time_period: "t", world: "w", description: "d" },
+    characters: [
+      { id: "dorothy", name: "Dorothy", aliases: [], physical_description: "girl in gingham", first_ch: 1 },
+      { id: "ozma", name: "Princess Ozma", aliases: [], physical_description: "fairy", first_ch: 5 },
+      { id: "mystery", name: "Mystery", aliases: [], physical_description: "", first_ch: null },
+    ],
+    chapters: [{ ch: 5, title: "T", summary: "later summary", cover_description: "c" }],
+    scenes: {
+      c1s1: {
+        setting: { location: "farmhouse", time_of_day: "daytime", weather: "clear" },
+        characters_present: ["dorothy", "ozma", "mystery", "ghost"],
+        key_objects: ["trap door"],
+      },
+      c5s1: {
+        setting: { location: "palace", time_of_day: "night", weather: "still" },
+        characters_present: ["dorothy", "ozma"],
+        key_objects: [],
+      },
+    },
+    provenance: { date: "d", model: "m", input: "i", requests: 1, prompt_tokens: 1, cached_tokens: 0, completion_tokens: 1, cost_usd: 0, estimated_usd: 0 },
+  } as BookMap;
+
+  it("returns nothing for a null bookmap", () => {
+    expect(sceneAttributes(null, [{ id: "c1s1", ch: 1 }])).toEqual({});
+  });
+
+  it("covers only the requested scenes and skips entries without data", () => {
+    expect(sceneAttributes(map, [{ id: "c1s1", ch: 1 }])).toEqual({
+      c1s1: { location: "farmhouse", timeOfDay: "daytime", weather: "clear", cast: ["Dorothy"], keyObjects: ["trap door"] },
+    });
+    expect(sceneAttributes(map, [{ id: "missing", ch: 1 }])).toEqual({});
+  });
+
+  it("resolves display names and hides characters introduced later", () => {
+    const attrs = sceneAttributes(map, [
+      { id: "c1s1", ch: 1 },
+      { id: "c5s1", ch: 5 },
+    ]);
+    expect(attrs.c1s1?.cast).toEqual(["Dorothy"]);
+    expect(attrs.c5s1?.cast).toEqual(["Dorothy", "Princess Ozma"]);
+  });
+
+  it("sends no descriptions, summaries, or provenance", () => {
+    const attrs = sceneAttributes(map, [{ id: "c1s1", ch: 1 }]);
+    expect(Object.keys(attrs.c1s1 ?? {}).sort()).toEqual(["cast", "keyObjects", "location", "timeOfDay", "weather"]);
+    expect(JSON.stringify(attrs)).not.toContain("gingham");
+    expect(JSON.stringify(attrs)).not.toContain("later summary");
+  });
+});
+
+describe("isSceneAttr", () => {
+  const valid = { location: "farm", timeOfDay: "day", weather: "", cast: ["Dorothy"], keyObjects: [] };
+
+  it("accepts a well-formed attr", () => {
+    expect(isSceneAttr(valid)).toBe(true);
+  });
+
+  it("rejects missing fields, wrong types, and non-objects", () => {
+    expect(isSceneAttr(null)).toBe(false);
+    expect(isSceneAttr({ ...valid, cast: "Dorothy" })).toBe(false);
+    expect(isSceneAttr({ ...valid, keyObjects: [42] })).toBe(false);
+    expect(isSceneAttr({ location: "farm" })).toBe(false);
   });
 });

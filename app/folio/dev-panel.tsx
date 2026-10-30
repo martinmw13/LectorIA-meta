@@ -2,6 +2,8 @@
 // Opened by Shift+D or ?dev. Nothing here leaks into normal mode.
 "use client";
 
+import type { SceneAttr } from "@/core/bookmap";
+
 export interface DevBar {
   label: string;
   value: number;
@@ -15,6 +17,7 @@ export function DevPanel({
   intensity,
   tempo,
   trackTitle,
+  sceneAttr,
 }: {
   open: boolean;
   onClose: () => void;
@@ -23,6 +26,7 @@ export function DevPanel({
   intensity: number | null;
   tempo: number | null;
   trackTitle: string;
+  sceneAttr?: SceneAttr | null;
 }) {
   if (!open) return null;
   const ordered = [...bars].sort((a, b) => b.value - a.value);
@@ -51,6 +55,15 @@ export function DevPanel({
         tempo <span className="mono">{tempo === null ? "—" : tempo.toFixed(2)}</span>
       </div>
       <div className="dev-row">Track: {trackTitle}</div>
+      {sceneAttr ? (
+        <>
+          <div className="dev-row">Location: {sceneAttr.location || "—"}</div>
+          <div className="dev-row">Time of day: {sceneAttr.timeOfDay || "—"}</div>
+          <div className="dev-row">Weather: {sceneAttr.weather || "—"}</div>
+          <div className="dev-row">Cast: {sceneAttr.cast.length > 0 ? sceneAttr.cast.join(", ") : "—"}</div>
+          <div className="dev-row">Key objects: {sceneAttr.keyObjects.length > 0 ? sceneAttr.keyObjects.join(", ") : "—"}</div>
+        </>
+      ) : null}
     </div>
   );
 }

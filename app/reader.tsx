@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import { isSceneAttr, type SceneAttr } from "@/core/bookmap";
 import { canPlayAudio } from "./ambience-engine";
 import { choosePlayableSources, currentMode, musicModes, parseManifest } from "@/core/music";
 import type { MusicManifest, MusicMode, MusicModeId, SceneSignal, Track } from "@/core/music";
@@ -157,6 +158,7 @@ export function Reader({
   const [muted, setMuted] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [devOpen, setDevOpen] = useState(false);
+  const [sceneAttr, setSceneAttr] = useState<SceneAttr | null>(null);
   const prefsStoreRef = useRef(createMusicPrefsStore());
   // Ref mirrors so send and persist handlers always read fresh values.
   const volumeRef = useRef(volume);
@@ -263,6 +265,33 @@ export function Reader({
     }, 1000);
     return () => window.clearInterval(timer);
   }, [send]);
+
+  // Developer view slice: fetched on demand while the panel is open,
+  // so the page never ships all scenes' attrs. Stale requests abort on
+  // scene change; any failure hides the section.
+  useEffect(() => {
+    if (!devOpen || !routeSceneId) {
+      setSceneAttr(null);
+      return;
+    }
+    const controller = new AbortController();
+    setSceneAttr(null);
+    fetch(
+      `/api/scene-attrs?bookId=${encodeURIComponent(bookId)}&sceneId=${encodeURIComponent(routeSceneId)}`,
+      { signal: controller.signal },
+    )
+      .then((res) => {
+        if (!res.ok) throw new Error(`scene attrs ${res.status}`);
+        return res.json() as Promise<unknown>;
+      })
+      .then((json) => {
+        if (isSceneAttr(json)) setSceneAttr(json);
+      })
+      .catch(() => {
+        // The panel hides the section on any failure.
+      });
+    return () => controller.abort();
+  }, [devOpen, routeSceneId, bookId]);
 
   // Developer view: Shift+D outside inputs, Escape closes.
   useEffect(() => {
@@ -416,6 +445,7 @@ export function Reader({
         intensity={current?.intensity ?? null}
         tempo={current?.tempo ?? null}
         trackTitle={track?.title ?? "No track cued"}
+        sceneAttr={sceneAttr}
       />
       </div>
     </NarrationProvider>
