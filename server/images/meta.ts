@@ -4,7 +4,8 @@ import type { ImageGenerator } from "@/core/images";
 const ENDPOINT = "https://api.meta.ai/v1/images/generations";
 
 // Meta image client. Reads no env: the caller passes the key in, and
-// tests inject a fake generator instead of this module.
+// tests inject a fake generator instead of this module. The 100 s budget
+// leaves room inside the 120 s route for Blob, quota, and the refund.
 export function createMetaClient(apiKey: string): ImageGenerator {
   return {
     async generate(prompt: string): Promise<Uint8Array> {

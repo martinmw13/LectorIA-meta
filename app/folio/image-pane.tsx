@@ -137,9 +137,13 @@ export function ImagePane({
             ) : (
               <>
                 <p>{card.message}</p>
-                <button type="button" className="retry-text" onClick={onRetry}>
-                  {PICTURE_COPY.retry}
-                </button>
+                {card.quota ? (
+                  <p>{PICTURE_COPY.quotaByok}</p>
+                ) : (
+                  <button type="button" className="retry-text" onClick={onRetry}>
+                    {PICTURE_COPY.retry}
+                  </button>
+                )}
               </>
             )}
           </div>

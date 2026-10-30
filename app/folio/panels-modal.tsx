@@ -103,6 +103,8 @@ export function PanelsModal({
                 <p>{page.message}</p>
                 {needHuman ? (
                   <TurnstileWidget onToken={submitHumanPass} />
+                ) : page.quota ? (
+                  <p>{PICTURE_COPY.quotaByok}</p>
                 ) : (
                   <button type="button" className="retry-text" onClick={retry}>
                     {PICTURE_COPY.retry}

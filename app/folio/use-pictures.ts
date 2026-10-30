@@ -11,10 +11,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MSG_FAILED, MSG_HUMAN, MSG_RETRY } from "@/core/images";
+import { MSG_FAILED } from "@/core/images";
 import { canIllustrateScene, canRetryFigure } from "./figure-placement";
+import { HumanNeeded, ImageRequestError, isQuotaCode, poll } from "./image-poll";
 import { PICTURE_COPY } from "./picture-copy";
-import type { ImageResponse } from "@/core/images";
 import { requestStyleFields, styleCredit } from "../image-style";
 import type { ImageStylePref } from "../image-style";
 import { pickEndN, pickStartN } from "../picture-selection";
@@ -24,7 +24,7 @@ export type SceneCard =
   | { phase: "idle"; hint?: string }
   | { phase: "loading" }
   | { phase: "ready"; url: string; caption: string }
-  | { phase: "error"; message: string };
+  | { phase: "error"; message: string; quota?: boolean };
 
 export interface InlineFigure {
   id: string;
@@ -35,6 +35,8 @@ export interface InlineFigure {
   endN: number;
   credit: string;
   message: string | null;
+  // Daily or budget limit: retry is pointless, so the view hides it.
+  quota?: boolean;
 }
 
 export interface LightboxItem {
@@ -42,8 +44,6 @@ export interface LightboxItem {
   caption: string;
 }
 
-const POLL_MS = 3000;
-const POLL_MAX = 40;
 const HINT_MS = 2400;
 
 // What is generating right now, across scene moves. One at a time.
@@ -88,52 +88,6 @@ function paraOf(node: Node | null): Element | null {
   if (!node) return null;
   const el = node.nodeType === Node.TEXT_NODE ? node.parentElement : (node as Element);
   return el?.closest?.("p[id]") ?? null;
-}
-
-async function postImage(body: unknown): Promise<ImageResponse> {
-  const res = await fetch("/api/images", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  return (await res.json()) as ImageResponse;
-}
-
-// Shared by the chapter page hook: one poll loop for every picture kind.
-// Thrown when the API needs a human proof; the caller surfaces the
-// widget once instead of polling through the failure.
-export class HumanNeeded extends Error {
-  constructor() {
-    super(MSG_HUMAN);
-    this.name = "HumanNeeded";
-  }
-}
-
-export async function poll(
-  body: Record<string, unknown>,
-  token?: string,
-): Promise<{ url: string; caption: string }> {
-  let left = POLL_MAX;
-  let first = true;
-  for (;;) {
-    let res: ImageResponse;
-    try {
-      // The token rides the first post only; later polls reuse the cookie.
-      const payload = first && token ? { ...body, turnstileToken: token } : body;
-      first = false;
-      res = await postImage(payload);
-    } catch {
-      throw new Error(MSG_FAILED);
-    }
-    if (res.status === "ready") return { url: res.url, caption: res.caption };
-    if (res.status === "error") {
-      if (res.code === "human") throw new HumanNeeded();
-      throw new Error(res.message);
-    }
-    left -= 1;
-    if (left <= 0) throw new Error(MSG_RETRY);
-    await new Promise((done) => setTimeout(done, POLL_MS));
-  }
 }
 
 export function usePictures({
@@ -252,7 +206,11 @@ export function usePictures({
             humanRetry.current = (t) => illustrateScene(t);
             setNeedHuman(true);
           }
-          setCard({ phase: "error", message: err instanceof Error ? err.message : MSG_FAILED });
+          setCard({
+            phase: "error",
+            message: err instanceof Error ? err.message : MSG_FAILED,
+            quota: err instanceof ImageRequestError && isQuotaCode(err.code),
+          });
         }
       })
       .finally(() => {
@@ -289,7 +247,12 @@ export function usePictures({
           storeFigures(scene, (prev) =>
             prev.map((f) =>
               f.id === id
-                ? { ...f, phase: "error", message: err instanceof Error ? err.message : MSG_FAILED }
+                ? {
+                    ...f,
+                    phase: "error",
+                    message: err instanceof Error ? err.message : MSG_FAILED,
+                    quota: err instanceof ImageRequestError && isQuotaCode(err.code),
+                  }
                 : f,
             ),
           );

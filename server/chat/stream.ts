@@ -8,7 +8,9 @@ export interface UpstreamMessage {
 
 const META_CHAT_URL = "https://api.meta.ai/v1/chat/completions";
 const FIRST_TOKEN_TIMEOUT_MS = 20_000;
-const TOTAL_TIMEOUT_MS = 60_000;
+// Under the 60 s route budget, so the error event still goes out before
+// the function kill.
+const TOTAL_TIMEOUT_MS = 55_000;
 
 export type ChatStreamChunk =
   | { type: "delta"; text: string }

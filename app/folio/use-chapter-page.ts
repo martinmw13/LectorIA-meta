@@ -6,12 +6,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { MSG_FAILED, MSG_HUMAN } from "@/core/images";
 import { requestStyleFields } from "../image-style";
 import type { ImageStylePref } from "../image-style";
-import { HumanNeeded, poll } from "./use-pictures";
+import { HumanNeeded, ImageRequestError, isQuotaCode, poll } from "./image-poll";
 
 export type ChapterPage =
   | { phase: "loading" }
   | { phase: "ready"; url: string; caption: string }
-  | { phase: "error"; message: string };
+  | { phase: "error"; message: string; quota?: boolean };
 
 const chapterCache = new Map<string, { url: string; caption: string }>();
 
@@ -75,7 +75,11 @@ export function useChapterPage({
             setNeedHuman(true);
             setPage({ phase: "error", message: MSG_HUMAN });
           } else {
-            setPage({ phase: "error", message: err instanceof Error ? err.message : MSG_FAILED });
+            setPage({
+              phase: "error",
+              message: err instanceof Error ? err.message : MSG_FAILED,
+              quota: err instanceof ImageRequestError && isQuotaCode(err.code),
+            });
           }
         });
       return stop;

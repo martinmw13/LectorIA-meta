@@ -16,26 +16,50 @@ export async function takeDualQuota(
   keys: DualKeys,
   opts: { limit: number; ttlSec: number },
 ): Promise<{ ok: true; ipCount: number; anonCount: number } | { ok: false }> {
-  const ipCount = await kv.incr(keys.ip);
-  await kv.expire(keys.ip, opts.ttlSec);
-  const anonCount = await kv.incr(keys.anon);
-  await kv.expire(keys.anon, opts.ttlSec);
-  if (ipCount > opts.limit || anonCount > opts.limit) {
-    // Compensating decrs are best effort: a Redis failure here must
-    // neither throw nor leak the caller's counts, so each stands alone.
-    try {
-      await kv.decr(keys.ip);
-    } catch {
-      // The increment already landed; the TTL bounds the damage.
+  let ipTaken = false;
+  let anonTaken = false;
+  try {
+    const ipCount = await kv.incr(keys.ip);
+    ipTaken = true;
+    await kv.expire(keys.ip, opts.ttlSec);
+    const anonCount = await kv.incr(keys.anon);
+    anonTaken = true;
+    await kv.expire(keys.anon, opts.ttlSec);
+    if (ipCount > opts.limit || anonCount > opts.limit) {
+      // Compensating decrs are best effort: a Redis failure here must
+      // neither throw nor leak the caller's counts, so each stands alone.
+      try {
+        await kv.decr(keys.ip);
+      } catch {
+        // The increment already landed; the TTL bounds the damage.
+      }
+      try {
+        await kv.decr(keys.anon);
+      } catch {
+        // The increment already landed; the TTL bounds the damage.
+      }
+      return { ok: false };
     }
-    try {
-      await kv.decr(keys.anon);
-    } catch {
-      // The increment already landed; the TTL bounds the damage.
+    return { ok: true, ipCount, anonCount };
+  } catch (e) {
+    // A Redis failure between increments gives back what landed, so a
+    // timeout never leaks quota. Best effort, then the caller maps it.
+    if (anonTaken) {
+      try {
+        await kv.decr(keys.anon);
+      } catch {
+        // The increment already landed; the TTL bounds the damage.
+      }
     }
-    return { ok: false };
+    if (ipTaken) {
+      try {
+        await kv.decr(keys.ip);
+      } catch {
+        // The increment already landed; the TTL bounds the damage.
+      }
+    }
+    throw e;
   }
-  return { ok: true, ipCount, anonCount };
 }
 
 // Best effort: a Redis failure here must never become a client 500.

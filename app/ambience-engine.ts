@@ -46,7 +46,7 @@ export class WebAmbienceEngine implements AmbienceEngine {
     let pending = decoded.get(picked.src);
     if (!pending) {
       pending = (async () => {
-        const response = await fetch(picked.src);
+        const response = await fetch(picked.src, { signal: AbortSignal.timeout(15_000) });
         if (!response.ok) throw new Error(`ambience fetch failed: ${picked.src}`);
         return ctx.decodeAudioData(await response.arrayBuffer());
       })();
