@@ -11,7 +11,7 @@ import { runPool } from "./http";
 import type { MetaClient } from "./meta";
 import { metaCostUsd } from "./prices";
 
-const SCENE_SCHEMA = {
+export const SCENE_SCHEMA = {
   type: "object",
   properties: {
     scenes: {
@@ -34,7 +34,7 @@ const SCENE_SCHEMA = {
   additionalProperties: false,
 };
 
-function chapterPrompt(chapter: Chapter, paragraphs: { n: number; text: string }[], problems?: string): string {
+export function chapterPrompt(chapter: Chapter, paragraphs: { n: number; text: string }[], problems?: string): string {
   const lines = paragraphs.map((p) => `[${p.n}] ${p.text}`).join("\n");
   const base =
     `Split chapter "${chapter.title}" into scenes in order. A scene is a stretch with one dominant mood, ` +
@@ -45,7 +45,7 @@ function chapterPrompt(chapter: Chapter, paragraphs: { n: number; text: string }
   return problems ? `${base}\n\nYour last answer had these coverage problems, fix them:\n${problems}` : base;
 }
 
-function parseScenes(data: unknown): SceneInput[] {
+export function parseScenes(data: unknown): SceneInput[] {
   const scenes = (data as { scenes?: unknown })?.scenes;
   if (!Array.isArray(scenes)) throw new Error("Meta answer has no scenes array");
   return scenes.map((s) => {

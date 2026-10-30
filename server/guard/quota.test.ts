@@ -103,32 +103,46 @@ describe("refundDualQuota", () => {
 
 describe("free book quota", () => {
   const SALT = "test-salt";
+  const DAY = "2026-10-30";
 
-  it("allows the first book", async () => {
+  it("allows two books a day", async () => {
     const kv = createMemoryKV();
-    const keys = bookQuotaKeysFor({ ip: "1.2.3.4", salt: SALT, anonId: "anon-1" });
+    const keys = bookQuotaKeysFor({ day: DAY, ip: "1.2.3.4", salt: SALT, anonId: "anon-1" });
     expect(await checkBookQuota(kv, keys)).toEqual({ ok: true });
+    expect(await checkBookQuota(kv, keys)).toEqual({ ok: true });
+    expect(await checkBookQuota(kv, keys)).toEqual({ ok: false });
   });
 
-  it("blocks a second book on a new cookie from the same IP", async () => {
+  it("blocks a third book on a new cookie from the same IP", async () => {
     const kv = createMemoryKV();
-    const first = bookQuotaKeysFor({ ip: "1.2.3.4", salt: SALT, anonId: "anon-1" });
+    const first = bookQuotaKeysFor({ day: DAY, ip: "1.2.3.4", salt: SALT, anonId: "anon-1" });
     expect(await checkBookQuota(kv, first)).toEqual({ ok: true });
-    const second = bookQuotaKeysFor({ ip: "1.2.3.4", salt: SALT, anonId: "anon-2" });
-    expect(await checkBookQuota(kv, second)).toEqual({ ok: false });
+    expect(await checkBookQuota(kv, first)).toEqual({ ok: true });
+    const third = bookQuotaKeysFor({ day: DAY, ip: "1.2.3.4", salt: SALT, anonId: "anon-2" });
+    expect(await checkBookQuota(kv, third)).toEqual({ ok: false });
   });
 
-  it("blocks a second book on a new IP with the same cookie", async () => {
+  it("blocks a third book on a new IP with the same cookie", async () => {
     const kv = createMemoryKV();
-    const first = bookQuotaKeysFor({ ip: "1.2.3.4", salt: SALT, anonId: "anon-1" });
+    const first = bookQuotaKeysFor({ day: DAY, ip: "1.2.3.4", salt: SALT, anonId: "anon-1" });
     expect(await checkBookQuota(kv, first)).toEqual({ ok: true });
-    const second = bookQuotaKeysFor({ ip: "9.9.9.9", salt: SALT, anonId: "anon-1" });
-    expect(await checkBookQuota(kv, second)).toEqual({ ok: false });
+    expect(await checkBookQuota(kv, first)).toEqual({ ok: true });
+    const third = bookQuotaKeysFor({ day: DAY, ip: "9.9.9.9", salt: SALT, anonId: "anon-1" });
+    expect(await checkBookQuota(kv, third)).toEqual({ ok: false });
+  });
+
+  it("starts fresh the next day", async () => {
+    const kv = createMemoryKV();
+    const today = bookQuotaKeysFor({ day: DAY, ip: "1.2.3.4", salt: SALT, anonId: "anon-1" });
+    expect(await checkBookQuota(kv, today)).toEqual({ ok: true });
+    expect(await checkBookQuota(kv, today)).toEqual({ ok: true });
+    const tomorrow = bookQuotaKeysFor({ day: "2026-10-31", ip: "1.2.3.4", salt: SALT, anonId: "anon-1" });
+    expect(await checkBookQuota(kv, tomorrow)).toEqual({ ok: true });
   });
 
   it("allows a retry after a refund", async () => {
     const kv = createMemoryKV();
-    const keys = bookQuotaKeysFor({ ip: "1.2.3.4", salt: SALT, anonId: "anon-1" });
+    const keys = bookQuotaKeysFor({ day: DAY, ip: "1.2.3.4", salt: SALT, anonId: "anon-1" });
     expect(await checkBookQuota(kv, keys)).toEqual({ ok: true });
     await refundBookQuota(kv, keys);
     expect(await checkBookQuota(kv, keys)).toEqual({ ok: true });
@@ -139,8 +153,8 @@ describe("free book quota", () => {
     await expect(refundBookQuota(kv, KEYS)).resolves.toBeUndefined();
   });
 
-  it("caps one free book per person", () => {
-    expect(FREE_BOOKS_PER_PERSON).toBe(1);
-    expect(BOOK_QUOTA_TTL_SEC).toBe(10 * 24 * 3600);
+  it("caps two free books per person per day", () => {
+    expect(FREE_BOOKS_PER_PERSON).toBe(2);
+    expect(BOOK_QUOTA_TTL_SEC).toBe(48 * 3600);
   });
 });
