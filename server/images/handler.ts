@@ -1,4 +1,5 @@
 import "server-only";
+import { classifyInputOf } from "@/core/fingerprint";
 import { isReadyBookId, loadBookData } from "@/server/books";
 import {
   ImageStyleError,
@@ -159,7 +160,7 @@ export async function handleImagesPost(req: Request, deps: ImagesHandlerDeps = {
 
     // Bookmap reference details for the prompt (delimited block).
     // A missing bookmap yields "" and the prompt stays as it was.
-    const bookmap = getBookmap(book.id, book.textVersion);
+    const bookmap = getBookmap(book.id, book.textVersion, classifyInputOf(scenes, book.textVersion));
     let reference = "";
     if (parsed.kind === "passage") {
       const start = parsed.n;

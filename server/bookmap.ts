@@ -3,10 +3,10 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { validateBookmap, type BookMap } from "@/core/bookmap";
 
-// Loads the enrichment map when it exists and matches this text. A
-// missing, unreadable, invalid, or stale file returns null, so books
-// without it keep working exactly as before.
-export function loadBookmap(bookId: string, textVersion: string, root = join(process.cwd(), "data/books")): BookMap | null {
+// Loads the enrichment map when it exists and matches this text and
+// scene fingerprint. A missing, unreadable, invalid, or stale file
+// returns null, so books without it keep working exactly as before.
+export function loadBookmap(bookId: string, textVersion: string, expectedInput: string, root = join(process.cwd(), "data/books")): BookMap | null {
   let raw: string;
   try {
     raw = readFileSync(join(root, bookId, "bookmap.json"), "utf8");
@@ -20,6 +20,6 @@ export function loadBookmap(bookId: string, textVersion: string, root = join(pro
     return null;
   }
   const bookmap = validateBookmap(data);
-  if (!bookmap || bookmap.bookId !== bookId || bookmap.textVersion !== textVersion) return null;
+  if (!bookmap || bookmap.bookId !== bookId || bookmap.textVersion !== textVersion || bookmap.provenance.input !== expectedInput) return null;
   return bookmap;
 }

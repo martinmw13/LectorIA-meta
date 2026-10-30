@@ -1,14 +1,12 @@
 // One freshness rule per pipeline step: each step compares the
 // fingerprint of its real input against the key its last run recorded.
 // Reuse only when the keys match and --force is off.
-import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { classifyInputOf, fingerprint } from "../core/fingerprint";
 import { NARRATION_FORMAT, NARRATION_MODEL, NARRATION_SPEED, NARRATION_VOICE } from "../core/narration";
 
-export function fingerprint(value: unknown): string {
-  return createHash("sha256").update(JSON.stringify(value)).digest("hex").slice(0, 16);
-}
+export { classifyInputOf, fingerprint };
 
 export interface StepKeys {
   recorded: string | undefined;
@@ -41,16 +39,6 @@ function asRecord(value: unknown): Record<string, unknown> {
 
 function asString(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
-}
-
-export function classifyInputOf(
-  scenes: { id: unknown; ch: unknown; start_n: unknown; end_n: unknown; title: unknown; summary: unknown; characters: unknown }[],
-  textVersion: unknown,
-): string {
-  return fingerprint({
-    textVersion,
-    scenes: scenes.map((s) => ({ id: s.id, ch: s.ch, start_n: s.start_n, end_n: s.end_n, title: s.title, summary: s.summary, characters: s.characters })),
-  });
 }
 
 export function resplitInputOf(scenes: { id: unknown; start_n: unknown; end_n: unknown }[], textVersion: unknown): string {
