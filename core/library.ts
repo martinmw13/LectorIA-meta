@@ -54,3 +54,21 @@ export function readingMinutes(words: number): string {
 }
 
 export const library: LibraryBook[] = loadLibrary();
+
+// Ready ids in shelf order (favorites first, manifest order otherwise),
+// skipping entries that are not listed ready. The server book loader map
+// and the pregen scripts share this order and filter so the lists cannot
+// drift apart; each side only adds its own availability check (loader
+// entry on the server, data on disk for scripts).
+export function shelfReadyIds(raw: unknown = manifest): string[] {
+  if (!Array.isArray(raw)) throw new Error("library manifest must be an array");
+  const entries: { id: string; favorite: boolean }[] = [];
+  for (const entry of raw) {
+    if (typeof entry !== "object" || entry === null) continue;
+    const { id, status, favorite } = entry as Record<string, unknown>;
+    if (typeof id !== "string" || status !== "ready") continue;
+    entries.push({ id, favorite: favorite === true });
+  }
+  entries.sort((a, b) => Number(b.favorite) - Number(a.favorite));
+  return entries.map((e) => e.id);
+}

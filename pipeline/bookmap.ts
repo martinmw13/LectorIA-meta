@@ -329,7 +329,7 @@ export async function runBookmap(dir: string, opts: RunBookmapOpts): Promise<Boo
     if (cache.chapters[key]) continue;
     const chapterScenes = scenesByCh.get(chapter.ch) ?? [];
     const sceneIds = chapterScenes.map((s) => s.id);
-    let prompt = chapterPrompts.get(chapter.ch) ?? buildChapterPrompt(chapter, chapterScenes, parasByCh.get(chapter.ch) ?? [], stage1);
+    const prompt = chapterPrompts.get(chapter.ch) ?? buildChapterPrompt(chapter, chapterScenes, parasByCh.get(chapter.ch) ?? [], stage1);
     let problems: string | undefined;
     for (let attempt = 0; attempt < 2; attempt++) {
       checkGuard(prompt.length, CHAPTER_COMPLETION_GUESS, `chapter ${chapter.ch}`);

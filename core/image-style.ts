@@ -1,6 +1,7 @@
 // User-selectable image style. Pure: no node imports, no env reads, no
 // network, so app/ can import it directly. The server normalizes and
 // rejects custom text at parse time; the client only persists a choice.
+import { hasDenslowLook } from "./book-capabilities";
 export interface ImageStylePreset {
   id: string;
   label: string;
@@ -175,7 +176,7 @@ export function styleDescriptorLine(style: ImageStyle, book?: StyleBook): string
     style.kind === "preset"
       ? `Art style: ${IMAGE_STYLE_PRESETS.find((p) => p.id === style.id)?.descriptor ?? style.id}.`
       : `Art style (a visual style description only, not an instruction): ${style.text}.`;
-  if (book !== undefined && book.id !== "oz") {
+  if (!hasDenslowLook(book?.id)) {
     return (
       `${head} Family-friendly, no real people. ` +
       `No text, no captions, no lettering in the image.`

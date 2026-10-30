@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { library, loadLibrary, readingMinutes } from "./library";
+import { library, loadLibrary, readingMinutes, shelfReadyIds } from "./library";
 
 describe("library", () => {
   it("lists the ten ready books, Oz first as the favorite", () => {
@@ -26,5 +26,39 @@ describe("library", () => {
     expect(readingMinutes(11250)).toBe("About 45 min");
     expect(readingMinutes(40000)).toBe("About 2 h 40 min");
     expect(readingMinutes(39300)).toBe("About 2 h 37 min");
+  });
+});
+
+describe("shelfReadyIds", () => {
+  it("lists ready ids favorites-first in manifest order", () => {
+    expect(
+      shelfReadyIds([
+        { id: "b", status: "ready" },
+        { id: "a", status: "ready", favorite: true },
+        { id: "c", status: "ready" },
+      ]),
+    ).toEqual(["a", "b", "c"]);
+  });
+
+  it("skips non-ready and malformed entries", () => {
+    expect(
+      shelfReadyIds([
+        { id: "soon", status: "soon" },
+        { id: "ok", status: "ready" },
+        null,
+        "nope",
+        { status: "ready" },
+      ]),
+    ).toEqual(["ok"]);
+  });
+
+  it("throws on a non-array manifest", () => {
+    expect(() => shelfReadyIds({})).toThrow();
+  });
+
+  it("matches the real manifest: ten books, Oz first", () => {
+    const ids = shelfReadyIds();
+    expect(ids).toHaveLength(10);
+    expect(ids[0]).toBe("oz");
   });
 });

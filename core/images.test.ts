@@ -13,6 +13,7 @@ import {
   parseImageRequest,
   quotaKeys,
   validateAgainstBook,
+  withImageLock,
 } from "./images";
 import { IMAGE_COST_MICRO } from "./types";
 
@@ -463,6 +464,32 @@ describe("quota and budget helpers", () => {
     expect(canRelease("t", "t")).toBe(true);
     expect(canRelease("t", "other")).toBe(false);
     expect(canRelease("t", null)).toBe(false);
+  });
+});
+
+describe("withImageLock", () => {
+  const key = "images/oz/t/chapter-1.webp";
+
+  it("runs fn and releases the lock", async () => {
+    const kv = createMemoryKV();
+    const out = await withImageLock(kv, key, "a", async () => "ok");
+    expect(out).toBe("ok");
+    expect(await kv.get(lockKeyFor(key))).toBeNull();
+  });
+
+  it("returns null while another worker holds the lock", async () => {
+    const kv = createMemoryKV();
+    expect(await kv.setNxEx(lockKeyFor(key), "holder", 150)).toBe(true);
+    expect(await withImageLock(kv, key, "skipped", async () => "never")).toBeNull();
+    expect(await kv.get(lockKeyFor(key))).toBe("holder");
+  });
+
+  it("releases the lock when fn throws", async () => {
+    const kv = createMemoryKV();
+    await expect(withImageLock(kv, key, "a", async () => Promise.reject(new Error("no")))).rejects.toThrow(
+      "no",
+    );
+    expect(await kv.get(lockKeyFor(key))).toBeNull();
   });
 });
 

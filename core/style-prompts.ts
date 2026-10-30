@@ -2,6 +2,7 @@
 // imports, so core and app can import it directly. Unlike user custom
 // text, these prompts may name their references (Denslow, Marvel,
 // Studio Ghibli, Beatrix Potter, Arthur Rackham).
+import { hasDenslowLook } from "./book-capabilities";
 import type { ImageStyle, ImageStylePresetId, StyleBook } from "./image-style";
 
 export interface StylePrompt {
@@ -109,7 +110,7 @@ function hasPrompt(id: string): id is StylePromptId {
 // keep the generic line.
 export function stylePromptFor(style: ImageStyle | undefined, book?: StyleBook): StylePrompt | undefined {
   if (style === undefined) {
-    if (book === undefined || book.id === "oz") return STYLE_PROMPTS.denslow;
+    if (hasDenslowLook(book?.id)) return STYLE_PROMPTS.denslow;
     return undefined;
   }
   if (style.kind === "preset" && hasPrompt(style.id)) return STYLE_PROMPTS[style.id];
@@ -125,7 +126,7 @@ function cleanField(value: string): string {
 // books stay faithful to their text and period.
 export function guardLine(book?: StyleBook): string {
   const head =
-    book === undefined || book.id === "oz"
+    book === undefined || hasDenslowLook(book.id)
       ? "Characters follow the 1900 book: Dorothy wears silver shoes. Nothing from the 1939 MGM film, no ruby slippers, no film look."
       : `Faithful to the text and period of ${cleanField(book.title)} by ${cleanField(book.author)}, not any film or TV adaptation.`;
   return (

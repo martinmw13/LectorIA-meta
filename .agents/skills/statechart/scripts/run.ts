@@ -308,8 +308,8 @@ export async function check(specFile: string, configFile: string): Promise<Check
     if (xml.status !== 0)
       throw new Error(`SANY could not read ${specFile} (exit ${xml.status}):\n${tail(xml)}`);
     const sany = readSany(fs.readFileSync(xml.stdout, "utf8"));
-    const module = path.basename(specFile, ".tla");
-    const spec = { ...readSpec({ module, sany, checks }), folder };
+    const moduleName = path.basename(specFile, ".tla");
+    const spec = { ...readSpec({ module: moduleName, sany, checks }), folder };
     const rules = stateRules(spec);
     const all = [...rules];
     for (const name of spec.properties) all.push({ kind: "property", name });

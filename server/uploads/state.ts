@@ -245,8 +245,9 @@ export async function settleSpendOnce(kv: KV, job: UploadJob, actualMicro: numbe
   return true;
 }
 
-// Marks the job failed, keeps what was really spent, and refunds the book
-// quota only when nothing ran at all. Exactly once via the settle guard,
+// Marks the job failed, keeps what was really spent, and refunds the
+// per-person quota only when nothing ran at all. Exactly once via the
+// settle guard,
 // best effort throughout: when the tally itself fails the reserve is kept,
 // which is the conservative side. Settles before saving, so a kill between
 // the two leaves at most an unsettled working job the cron still picks up.

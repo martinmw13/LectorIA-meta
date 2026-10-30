@@ -1,4 +1,7 @@
+import { existsSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { shelfReadyIds } from "@/core/library";
 import { isKnownBookId, isReadyBookId, loadBook, loadBookData, readyBookIds } from "./books";
 import { loadUploadedBook } from "./uploads/loader";
 
@@ -51,6 +54,25 @@ describe("book registry", () => {
     for (const id of ["../..", "..\\..", "oz/../alice", "oz/../../etc/passwd", "", "OZ", " oz ", "alice\0"]) {
       expect(isKnownBookId(id)).toBe(false);
       expect(notFoundDigest(() => loadBook(id))).toContain("404");
+    }
+  });
+
+  it("derives the ready list from the shared shelf order", () => {
+    expect(readyBookIds()).toEqual(shelfReadyIds().filter(isKnownBookId));
+  });
+
+  it("keeps the loader map and the on-disk books in sync", () => {
+    for (const id of readyBookIds()) {
+      expect(existsSync(join(process.cwd(), "data/books", id))).toBe(true);
+    }
+    const onDisk = readdirSync(join(process.cwd(), "data/books"), { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => d.name);
+    for (const id of shelfReadyIds()) {
+      if (existsSync(join(process.cwd(), "data/books", id, "book.json"))) {
+        expect(onDisk).toContain(id);
+        expect(isKnownBookId(id)).toBe(true);
+      }
     }
   });
 });
