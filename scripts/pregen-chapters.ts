@@ -4,7 +4,8 @@
 //
 // Run: npx tsx --conditions=react-server scripts/pregen-chapters.ts
 //   [--ch all|1,2] [--style skins|<id>] [--dry-run]
-import { loadBook } from "../server/books";
+import { readFileSync } from "node:fs";
+import type { BookPayload } from "../server/books";
 import { createBlobStore } from "../server/images/blob";
 import { usable } from "../server/guard/env";
 import { createMetaClient } from "../server/images/meta";
@@ -76,7 +77,11 @@ async function main(): Promise<void> {
   const capMicro = Math.round(parseCapUsd(process.env.SPEND_CAP_USD, 10) * 1_000_000);
   const dailyCapMicro = Math.round(parseCapUsd(process.env.DAILY_SPEND_CAP_USD, 2) * 1_000_000);
 
-  const { book, scenes } = await loadBook("oz");
+  // Read the JSON directly: server/books imports next/navigation, which
+  // cannot load outside Next (it broke this script after #122).
+  const read = (f: string): unknown => JSON.parse(readFileSync(`data/books/oz/${f}`, "utf8"));
+  const book = read("book.json") as BookPayload["book"];
+  const { scenes } = read("analysis.json") as { scenes: BookPayload["scenes"] };
   const known = new Map(book.chapters.map((c) => [c.ch, c.title]));
   const chArg = opt("--ch") ?? "all";
   const wantCh =
