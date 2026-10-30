@@ -1,5 +1,5 @@
 # Chapter narration on a Modal GPU: Kokoro-82M at 0.95x, one of four
-# voices (af_heart, bf_emma, am_michael, bm_george). British voices
+# voices (af_heart, am_michael). British voices
 # (bf_, bm_) run through a KPipeline with lang_code "b", American
 # voices (af_, am_) with lang_code "a"; one pipeline stays cached per
 # lang code. One function, narrate(texts, gaps, voice, speed), scales
@@ -30,7 +30,7 @@ app = modal.App("lectoria-narration", image=kimg)
 SAMPLE_RATE = 24000
 MIN_SPAN_SAMPLES = int(round(0.05 * SAMPLE_RATE))
 # Kokoro lang code per voice: British voices need "b", American "a".
-VOICE_LANGS = {"af_heart": "a", "bf_emma": "b", "am_michael": "a", "bm_george": "b"}
+VOICE_LANGS = {"af_heart": "a", "am_michael": "a"}
 
 _pipes = {}
 
@@ -87,7 +87,7 @@ def check(texts, gaps, voice, speed):
         if not isinstance(gap, (int, float)) or not 0 <= gap <= 3:
             raise ValueError("each gap must be 0..3 s")
     if voice not in VOICE_LANGS:
-        raise ValueError("voice must be one of af_heart, bf_emma, am_michael, bm_george")
+        raise ValueError("voice must be one of af_heart, am_michael")
     if not isinstance(speed, (int, float)) or not 0.5 <= speed <= 1.5:
         raise ValueError("speed must be 0.5..1.5")
 

@@ -4,9 +4,10 @@ Read-aloud narration, one compact mp3 per chapter plus a per-chapter
 manifest with sentence timings. The unit is the chapter (owner
 decision): the reader plays any scene by seeking to its first sentence
 (`sceneSpan`) and highlights the sentence being read (`activeChunkAt`).
-Four Kokoro-82M voices at speed 0.95, generated on a Modal GPU
-function that scales to zero: `af_heart` (Heart, default), `bf_emma`
-(Emma), `am_michael` (Michael), `bm_george` (George). The list lives
+Two Kokoro-82M voices at speed 0.95, generated on a Modal GPU
+function that scales to zero: `af_heart` (Heart, default) and
+`am_michael` (Michael). Saved prefs for a retired or missing voice fall
+back to the first voice the book has. The list lives
 in `core/narration.ts` (`NARRATION_VOICES`) and is shared by the
 client, the server, and the pipeline. British voices (`bf_`, `bm_`)
 run through a `KPipeline` with lang code `b`, American voices with

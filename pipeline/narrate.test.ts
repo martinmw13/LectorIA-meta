@@ -193,15 +193,15 @@ describe("runNarrate", () => {
     const ctx = { bookKey: "oz", force: false, dir };
 
     await runNarrate(ctx, { synthesize, store, capUsd: 2, voice: "af_heart" });
-    const second = await runNarrate(ctx, { synthesize, store, capUsd: 2, voice: "bf_emma" });
+    const second = await runNarrate(ctx, { synthesize, store, capUsd: 2, voice: "am_michael" });
     expect(second).toMatchObject({ generated: 2, cached: 0, stopped: false });
     expect(calls()).toBe(4);
     expect(Object.keys(voiceChapters(dir, "af_heart")).sort()).toEqual(["1", "2"]);
-    expect(Object.keys(voiceChapters(dir, "bf_emma")).sort()).toEqual(["1", "2"]);
-    for (const manifest of Object.values(voiceChapters(dir, "bf_emma"))) {
-      expect(manifest.voice).toBe("bf_emma");
+    expect(Object.keys(voiceChapters(dir, "am_michael")).sort()).toEqual(["1", "2"]);
+    for (const manifest of Object.values(voiceChapters(dir, "am_michael"))) {
+      expect(manifest.voice).toBe("am_michael");
     }
-    expect(readNarration(dir).provenance.voices).toEqual(["af_heart", "bf_emma"]);
+    expect(readNarration(dir).provenance.voices).toEqual(["af_heart", "am_michael"]);
 
     // A repeat run for the first voice reuses it without new synthesis.
     const reuse = await runNarrate(ctx, { synthesize, store, capUsd: 2, voice: "af_heart" });

@@ -253,21 +253,21 @@ test("switching voice mid-playback restarts the chapter near the same position",
   );
   harnessEntries = [
     { ch: 1, voice: "af_heart", src: "/narration/a1.mp3", manifest: "/narration/a1.json" },
-    { ch: 1, voice: "bf_emma", src: "/narration/b1.mp3", manifest: "/narration/b1.json" },
+    { ch: 1, voice: "am_michael", src: "/narration/b1.mp3", manifest: "/narration/b1.json" },
   ];
   const { root, audio, fake } = await playLive("c1s1");
   expect(ctl!.voice).toBe("af_heart");
-  expect(ctl!.voices).toEqual(["af_heart", "bf_emma"]);
+  expect(ctl!.voices).toEqual(["af_heart", "am_michael"]);
   expect(audio.dataset.key).toBe("a1");
   fake.setTime(12.3);
   act(() => {
-    ctl!.setVoice("bf_emma");
+    ctl!.setVoice("am_michael");
   });
   await flush();
   act(() => {
     audio.dispatchEvent(new Event("loadedmetadata"));
   });
-  expect(ctl!.voice).toBe("bf_emma");
+  expect(ctl!.voice).toBe("am_michael");
   expect(audio.dataset.key).toBe("b1");
   expect(audio.src).toContain("b1.mp3");
   expect(fake.time()).toBeCloseTo(12.3, 3);
@@ -281,23 +281,23 @@ test("saved voice missing from the chapter falls back without overwriting the pr
   vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => MAN1 })));
   window.localStorage.setItem(
     NARRATION_PREFS_KEY,
-    JSON.stringify({ on: false, volume: 0.8, voice: "bf_emma" }),
+    JSON.stringify({ on: false, volume: 0.8, voice: "am_michael" }),
   );
   const { root, audio } = await playLive("c1s1");
   expect(ctl!.voice).toBe("af_heart");
   expect(ctl!.status).toBe("ready");
   expect(audio.dataset.key).toBe("k1");
   expect(audio.src).toContain("k1.mp3");
-  expect(JSON.parse(window.localStorage.getItem(NARRATION_PREFS_KEY)!).voice).toBe("bf_emma");
+  expect(JSON.parse(window.localStorage.getItem(NARRATION_PREFS_KEY)!).voice).toBe("am_michael");
   act(() => {
     root.unmount();
   });
 });
 
 test("pickEffectiveVoice keeps the saved voice only when offered", () => {
-  expect(pickEffectiveVoice("bf_emma", ["af_heart", "bf_emma"])).toBe("bf_emma");
+  expect(pickEffectiveVoice("am_michael", ["af_heart", "am_michael"])).toBe("am_michael");
   expect(pickEffectiveVoice("bf_emma", ["af_heart"])).toBe("af_heart");
-  expect(pickEffectiveVoice("bf_emma", [])).toBe("bf_emma");
+  expect(pickEffectiveVoice("am_michael", [])).toBe("am_michael");
 });
 
 test("after an audio error the next press reloads the source once, then rests idle", async () => {

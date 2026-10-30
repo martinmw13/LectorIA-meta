@@ -19,9 +19,9 @@ describe("narration prefs", () => {
 
   it("round-trips on, volume, and voice through the documented key", () => {
     const storage = mem();
-    saveNarrationPrefs(storage, { on: true, volume: 0.3, voice: "bf_emma" });
+    saveNarrationPrefs(storage, { on: true, volume: 0.3, voice: "am_michael" });
     expect(storage.raw.get(NARRATION_PREFS_KEY)).toContain("0.3");
-    expect(loadNarrationPrefs(storage)).toEqual({ on: true, volume: 0.3, voice: "bf_emma" });
+    expect(loadNarrationPrefs(storage)).toEqual({ on: true, volume: 0.3, voice: "am_michael" });
   });
 
   it("ignores bad shapes, out-of-range volumes, and unknown voices", () => {

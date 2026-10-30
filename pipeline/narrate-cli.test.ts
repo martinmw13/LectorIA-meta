@@ -35,13 +35,13 @@ describe("parseNarrateArgs", () => {
     const selection = parseNarrateArgs(["--book", "all-shelf", "--voice", "all"]);
     expect(selection.books).toEqual(SHELF_BOOKS);
     expect(selection.books).toContain("oz");
-    expect(selection.voices).toEqual(["af_heart", "bf_emma", "am_michael", "bm_george"]);
+    expect(selection.voices).toEqual(["af_heart", "am_michael"]);
     expect(selection.dryRun).toBe(false);
   });
 
   it("accepts one book and one voice plus flags", () => {
-    const selection = parseNarrateArgs(["--book", "oz", "--voice", "bf_emma", "--dry-run", "--force"]);
-    expect(selection).toEqual({ books: ["oz"], voices: ["bf_emma"], force: true, dryRun: true });
+    const selection = parseNarrateArgs(["--book", "oz", "--voice", "am_michael", "--dry-run", "--force"]);
+    expect(selection).toEqual({ books: ["oz"], voices: ["am_michael"], force: true, dryRun: true });
   });
 
   it("rejects missing and unknown values", () => {
