@@ -6,21 +6,21 @@ A Muse commit is a non-merge commit on main that carries the trailer `Co-authore
 
 ## Commits
 
-- Muse commits: 355 of 433 non-merge commits (82%).
+- Muse commits: 356 of 434 non-merge commits (82%).
 - Date range (UTC-3): 2026-10-27 to 2026-10-30.
 
 ## Lines
 
 | Scope | Muse added | Muse removed | Other added | Other removed | Muse share of added |
 | --- | --- | --- | --- | --- | --- |
-| Source code (`app/`, `core/`, `pipeline/`, `server/`, `scripts/`) | 54,199 | 10,964 | 15,849 | 3,760 | 77% |
-| All files | 261,729 | 15,158 | 55,173 | 4,763 | 83% |
+| Source code (`app/`, `core/`, `pipeline/`, `server/`, `scripts/`) | 54,666 | 11,056 | 15,849 | 3,760 | 78% |
+| All files | 263,763 | 15,254 | 55,173 | 4,763 | 83% |
 
 All files includes the Muse Code session transcripts in `agent-logs/`, the vendored skills in `.agents/` and `package-lock.json`.
 
 ## Pull requests
 
-81 merged PRs contain Muse commits. Each carries the `Muse Code` label.
+82 merged PRs contain Muse commits. Each carries the `Muse Code` label.
 
 | PR | Title | Merged (UTC-3) | Muse commits |
 | --- | --- | --- | --- |
@@ -105,3 +105,4 @@ All files includes the Muse Code session transcripts in `agent-logs/`, the vendo
 | [#134](https://github.com/martinmw13/LectorIA-meta/pull/134) | fix(reader): center non-Oz books like Oz on wide screens | 2026-10-30 | 1 of 2 |
 | [#135](https://github.com/martinmw13/LectorIA-meta/pull/135) | fix(images): clip bookmap descriptions at boundaries and drop later-story looks | 2026-10-30 | 1 of 1 |
 | [#139](https://github.com/martinmw13/LectorIA-meta/pull/139) | feat(pregen): pregenerate chapter panels for any shelf book | 2026-10-30 | 1 of 1 |
+| [#140](https://github.com/martinmw13/LectorIA-meta/pull/140) | feat(images): distinct owner-approved style prompts (v5/c5) | 2026-10-30 | 1 of 1 |
