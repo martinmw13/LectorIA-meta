@@ -16,10 +16,10 @@ const COVER_CHARS = 220;
 
 const cache = new Map<string, BookMap | null>();
 
-export function getBookmap(bookId: string, textVersion: string, root?: string): BookMap | null {
-  const key = `${bookId} ${textVersion} ${root ?? ""}`;
+export function getBookmap(bookId: string, textVersion: string, expectedInput: string, root?: string): BookMap | null {
+  const key = `${bookId} ${textVersion} ${expectedInput} ${root ?? ""}`;
   if (!cache.has(key)) {
-    cache.set(key, root === undefined ? loadBookmap(bookId, textVersion) : loadBookmap(bookId, textVersion, root));
+    cache.set(key, root === undefined ? loadBookmap(bookId, textVersion, expectedInput) : loadBookmap(bookId, textVersion, expectedInput, root));
   }
   return cache.get(key) ?? null;
 }

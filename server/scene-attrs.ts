@@ -1,5 +1,6 @@
 import "server-only";
 import { sceneAttributes } from "@/core/bookmap";
+import { classifyInputOf } from "@/core/fingerprint";
 import { loadBookmap } from "@/server/bookmap";
 import { isReadyBookId, loadBookData } from "@/server/books";
 
@@ -22,7 +23,7 @@ export async function handleSceneAttrsGet(req: Request): Promise<Response> {
     const { book, scenes } = await loadBookData(bookId);
     const scene = scenes.find((s) => s.id === sceneId);
     if (!scene) return notFound();
-    const attr = sceneAttributes(loadBookmap(book.id, book.textVersion), [
+    const attr = sceneAttributes(loadBookmap(book.id, book.textVersion, classifyInputOf(scenes, book.textVersion)), [
       { id: sceneId, ch: scene.ch },
     ])[sceneId];
     if (!attr) return notFound();

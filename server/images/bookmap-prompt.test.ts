@@ -199,10 +199,11 @@ describe("getBookmap", () => {
     const root = mkdtempSync(join(tmpdir(), "bookmap-"));
     mkdirSync(join(root, "oz"), { recursive: true });
     writeFileSync(join(root, "oz", "bookmap.json"), JSON.stringify(bookmap()));
-    expect(getBookmap("oz", "t", root)?.bookId).toBe("oz");
-    expect(getBookmap("oz", "t", root)).toBe(getBookmap("oz", "t", root));
-    expect(getBookmap("oz", "other", root)).toBeNull();
-    expect(getBookmap("missing", "t", root)).toBeNull();
+    expect(getBookmap("oz", "t", "i", root)?.bookId).toBe("oz");
+    expect(getBookmap("oz", "t", "i", root)).toBe(getBookmap("oz", "t", "i", root));
+    expect(getBookmap("oz", "other", "i", root)).toBeNull();
+    expect(getBookmap("oz", "t", "stale", root)).toBeNull();
+    expect(getBookmap("missing", "t", "i", root)).toBeNull();
   });
 
   it("loads another book's bookmap by id for its reference block", () => {
@@ -219,7 +220,7 @@ describe("getBookmap", () => {
       },
     };
     writeFileSync(join(root, "alice", "bookmap.json"), JSON.stringify(alice));
-    const loaded = getBookmap("alice", "t", root);
+    const loaded = getBookmap("alice", "t", "i", root);
     expect(loaded?.bookId).toBe("alice");
     const ref = passageReference({
       bookmap: loaded,
