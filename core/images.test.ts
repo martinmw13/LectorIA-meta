@@ -124,19 +124,19 @@ describe("styled imageKey", () => {
   const scene = { kind: "scene", bookId: "oz", textVersion: "t123", sceneId: "c1s1" } as const;
 
   it("keys an omitted style exactly like today", () => {
-    expect(imageKey({ ...passage })).toBe("images/oz/t123/v3/p836.webp");
-    expect(imageKey({ ...scene })).toBe("images/oz/t123/v3/scene-c1s1.webp");
+    expect(imageKey({ ...passage })).toBe("images/oz/t123/v4/p836.webp");
+    expect(imageKey({ ...scene })).toBe("images/oz/t123/v4/scene-c1s1.webp");
     expect(imageKey(parseImageRequest({ ...passage, style: { preset: "denslow" } }))).toBe(
-      "images/oz/t123/v3/p836.webp",
+      "images/oz/t123/v4/p836.webp",
     );
   });
 
   it("inserts the preset segment before the file name", () => {
     expect(imageKey({ ...passage, style: { kind: "preset", id: "pencil" } })).toBe(
-      "images/oz/t123/v3/style-pencil/p836.webp",
+      "images/oz/t123/v4/style-pencil/p836.webp",
     );
     expect(imageKey({ ...scene, style: { kind: "preset", id: "pencil" } })).toBe(
-      "images/oz/t123/v3/style-pencil/scene-c1s1.webp",
+      "images/oz/t123/v4/style-pencil/scene-c1s1.webp",
     );
   });
 
@@ -151,7 +151,7 @@ describe("styled imageKey", () => {
       imageKey(parseImageRequest({ ...passage, style: { custom } })),
     );
     expect(new Set(keys).size).toBe(1);
-    expect(keys[0]).toBe("images/oz/t123/v3/style-c505d8a83e9688ac8/p836.webp");
+    expect(keys[0]).toBe("images/oz/t123/v4/style-c505d8a83e9688ac8/p836.webp");
   });
 
   it("keeps different customs and presets apart", () => {
@@ -166,8 +166,8 @@ describe("styled imageKey", () => {
     const watercolor = imageKey({ ...passage, style: { kind: "preset", id: "watercolor" } });
     const penPencil = imageKey({ ...passage, style: { kind: "preset", id: "pen-pencil" } });
     expect(new Set([plain, watercolor, penPencil]).size).toBe(3);
-    expect(watercolor).toBe("images/oz/t123/v3/style-watercolor/p836.webp");
-    expect(penPencil).toBe("images/oz/t123/v3/style-pen-pencil/p836.webp");
+    expect(watercolor).toBe("images/oz/t123/v4/style-watercolor/p836.webp");
+    expect(penPencil).toBe("images/oz/t123/v4/style-pen-pencil/p836.webp");
   });
 
   it("regenerates nothing for the same style", () => {
@@ -321,13 +321,13 @@ describe("passage endN", () => {
 
   it("keys ranges without breaking the bare pN key", () => {
     expect(imageKey({ kind: "passage", bookId: "oz", textVersion: "t123", n: 3 })).toBe(
-      "images/oz/t123/v3/p3.webp",
+      "images/oz/t123/v4/p3.webp",
     );
     expect(imageKey({ kind: "passage", bookId: "oz", textVersion: "t123", n: 3, endN: 3 })).toBe(
-      "images/oz/t123/v3/p3.webp",
+      "images/oz/t123/v4/p3.webp",
     );
     expect(imageKey({ kind: "passage", bookId: "oz", textVersion: "t123", n: 3, endN: 5 })).toBe(
-      "images/oz/t123/v3/p3-5.webp",
+      "images/oz/t123/v4/p3-5.webp",
     );
   });
 });
@@ -361,13 +361,13 @@ describe("validateAgainstBook", () => {
 describe("imageKey", () => {
   it("uses only the start paragraph for passages", () => {
     expect(imageKey({ kind: "passage", bookId: "oz", textVersion: "t123", n: 7 })).toBe(
-      "images/oz/t123/v3/p7.webp",
+      "images/oz/t123/v4/p7.webp",
     );
   });
 
   it("uses the scene id for scenes", () => {
     expect(imageKey({ kind: "scene", bookId: "oz", textVersion: "t123", sceneId: "c1s1" })).toBe(
-      "images/oz/t123/v3/scene-c1s1.webp",
+      "images/oz/t123/v4/scene-c1s1.webp",
     );
   });
 
