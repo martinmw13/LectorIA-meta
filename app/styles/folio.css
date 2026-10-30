@@ -41,17 +41,6 @@ scrolls at desktop size; the reading column scrolls inside itself. */
   outline-offset: 2px;
 }
 
-/* Books without pictures: the pane and margin columns collapse away
-   and the text holds the full measure. */
-.folio[data-pictures="off"] {
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-areas:
-    "top"
-    "pager"
-    "read"
-    "play";
-}
-
 .top-line {
   grid-area: top;
   display: flex;
