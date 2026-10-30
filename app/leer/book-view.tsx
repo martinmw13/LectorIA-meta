@@ -7,7 +7,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { ReaderModel } from "@/core/reader";
 import { isUploadId } from "@/core/uploads";
-import { effectiveImageStylePref, loadImageStylePref, saveImageStylePref } from "../image-style";
+import { effectiveImageStylePref, loadImageStylePref, requestStyleFields, saveImageStylePref, styleCredit } from "../image-style";
 import type { ImageStylePref } from "../image-style";
 import { useSkin } from "../use-skin";
 import { BandPager, Divider } from "../folio/chrome";
@@ -17,8 +17,8 @@ import { InlineFigureView, SelectionPopover } from "../folio/inline-figures";
 import { Lightbox } from "../folio/lightbox";
 import { usePictures } from "../folio/use-pictures";
 import type { InlineFigure } from "../folio/use-pictures";
-import { PictureVault } from "../folio/vault";
-import { coverTitleLong } from "../folio/panels";
+import { PictureVault, StylePicker } from "../folio/vault";
+import { PANELS_LABEL, coverTitleLong } from "../folio/panels";
 import type { ChapterPanel } from "../folio/panels";
 import { PanelsModal } from "../folio/panels-modal";
 import { GOTO_SCENE_EVENT, setCurrentSceneId } from "./current-scene";
@@ -163,6 +163,30 @@ export function BookView({
 
   const closePanels = useCallback(() => setPanelsCh(null), []);
 
+  // Phone entry: the image pane hides below 1024px, so the reading
+  // column carries its own Picture this button, style picker and scene
+  // result, reusing the inline figure view. Hidden on desktop by CSS.
+  let sceneFigure: InlineFigure | null = null;
+  if (visualsOn && pic.card.phase !== "idle") {
+    const card = pic.card;
+    const id = `scene-${currentId}`;
+    sceneFigure =
+      card.phase === "loading"
+        ? { id, phase: "loading", url: null, quote: "", startN: 0, endN: 0, credit: "", message: null }
+        : card.phase === "ready"
+          ? {
+              id,
+              phase: "ready",
+              url: card.url,
+              quote: card.caption,
+              startN: 0,
+              endN: 0,
+              credit: styleCredit(requestStyleFields(pref)),
+              message: null,
+            }
+          : { id, phase: "error", url: null, quote: "", startN: 0, endN: 0, credit: "", message: card.message, quota: card.quota };
+  }
+
   const figsByN = useMemo(() => groupFiguresByEndN(pic.figures), [pic.figures]);
 
   function gotoFigure(fig: InlineFigure) {
@@ -220,6 +244,33 @@ export function BookView({
       <main id="story" className="read-col" ref={readColRef} tabIndex={-1} aria-label="Reading column" onMouseUp={onReadMouseUp}>
         <h1 className="sr-only">{model.title}</h1>
         <ReadAlong columnRef={readColRef} />
+        {visualsOn ? (
+          <div className="read-pictools">
+            <div className="read-picbar" role="group" aria-label="Picture choices">
+              <button type="button" className="read-picbtn" onClick={() => pic.illustrateScene()}>
+                Picture this scene
+              </button>
+              {info ? (
+                <button type="button" className="read-picbtn" onClick={() => setPanelsCh(info.ch)}>
+                  {PANELS_LABEL}
+                </button>
+              ) : null}
+            </div>
+            <StylePicker pref={pref} onChange={changePref} />
+            {sceneFigure !== null ? (
+              <InlineFigureView
+                figure={sceneFigure}
+                onRemove={pic.clearScene}
+                onRetry={() => pic.illustrateScene()}
+                onOpen={pic.lightbox.open}
+                refCb={(el) => {
+                  if (el) figEls.current.set(sceneFigure?.id ?? "", el);
+                  else figEls.current.delete(sceneFigure?.id ?? "");
+                }}
+              />
+            ) : null}
+          </div>
+        ) : null}
         {model.chapters.map((chapter) => {
           const coverLong = coverTitleLong(chapter.title);
           return (

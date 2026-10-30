@@ -378,3 +378,54 @@ html[data-theme="dark"] .panel img {
 .chapter-relive .panels-link {
   margin-bottom: 0;
 }
+
+/* Phones: the modal fits 360px wide, panels stack in one column, the
+   cover number steps down. Desktop (1024px and up) is untouched. */
+@media (max-width: 1023px) {
+  .cover-num {
+    font-size: 4.5rem;
+  }
+
+  .cover-num[data-long="1"] {
+    font-size: 4rem;
+  }
+
+  .cover-num[data-long="2"] {
+    font-size: 3.5rem;
+  }
+
+  .panels-modal {
+    padding: 12px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+
+  .panels-box {
+    padding: 20px 16px;
+    max-height: calc(100dvh - 24px);
+  }
+
+  .panels-frame {
+    width: 100%;
+  }
+
+  .panel-grid,
+  .panel-grid.two {
+    grid-template-columns: 1fr;
+  }
+
+  .panel-grid > :first-child {
+    grid-column: auto;
+  }
+
+  .panels-x {
+    width: 44px;
+    height: 44px;
+  }
+
+  .panels-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin-bottom: 0;
+  }
+}

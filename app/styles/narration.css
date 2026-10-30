@@ -96,6 +96,13 @@
   white-space: nowrap;
 }
 
+/* Phones: the play toggle reaches 44px. Desktop is untouched. */
+@media (max-width: 1023px) {
+  .read-aloud-btn {
+    min-height: 44px;
+  }
+}
+
 /* Word mark: an absolutely positioned overlay that never touches flow,
    so pagination never reflows under the highlight. */
 .narr-mark {
