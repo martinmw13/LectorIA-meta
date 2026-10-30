@@ -9,6 +9,7 @@
     "dev": "next dev",
     "build": "next build",
     "build:book": "tsx pipeline/build.ts",
+    "enrich": "tsx pipeline/enrich.ts",
     "build:music": "tsx pipeline/labels-to-manifest.ts",
     "clean:epub": "tsx pipeline/clean-epub.ts",
     "start": "next start",
