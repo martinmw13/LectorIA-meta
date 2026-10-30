@@ -63,7 +63,7 @@ const MODEL: ReaderModel = {
   ],
 } as unknown as ReaderModel;
 const SCENES = [{ id: "c1s1", ch: 1, startN: 1, endN: 2 }];
-const ENTRIES = [{ ch: 1, src: "/narration/k1.mp3", manifest: "/narration/k1.json" }];
+const ENTRIES = [{ ch: 1, voice: "af_heart", src: "/narration/k1.mp3", manifest: "/narration/k1.json" }];
 const MANIFEST = {
   format: 2,
   key: "k1",

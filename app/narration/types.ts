@@ -4,6 +4,7 @@ export type NarrationStatus = "idle" | "loading" | "ready" | "error";
 
 export interface NarrationChapterEntry {
   ch: number;
+  voice: string;
   src: string;
   manifest: string;
 }
@@ -11,4 +12,5 @@ export interface NarrationChapterEntry {
 export interface NarrationPrefs {
   on: boolean;
   volume: number;
+  voice: string;
 }

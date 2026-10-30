@@ -12,6 +12,7 @@
     "enrich": "tsx pipeline/enrich.ts",
     "build:music": "tsx pipeline/labels-to-manifest.ts",
     "clean:epub": "tsx pipeline/clean-epub.ts",
+    "narrate": "tsx pipeline/narrate-cli.ts",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

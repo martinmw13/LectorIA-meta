@@ -1,6 +1,10 @@
-# Chapter narration on a Modal GPU: Kokoro-82M voice af_heart at 0.95x.
-# One function, narrate(texts, gaps, voice, speed), scales to zero after
-# a minute idle. Deploy with: modal deploy pipeline/modal/narrate.py.
+# Chapter narration on a Modal GPU: Kokoro-82M at 0.95x, one of four
+# voices (af_heart, bf_emma, am_michael, bm_george). British voices
+# (bf_, bm_) run through a KPipeline with lang_code "b", American
+# voices (af_, am_) with lang_code "a"; one pipeline stays cached per
+# lang code. One function, narrate(texts, gaps, voice, speed), scales
+# to zero after a minute idle. Deploy with:
+# modal deploy pipeline/modal/narrate.py.
 # Remove entirely with: modal app stop lectoria-narration.
 from __future__ import annotations
 
@@ -25,18 +29,19 @@ app = modal.App("lectoria-narration", image=kimg)
 
 SAMPLE_RATE = 24000
 MIN_SPAN_SAMPLES = int(round(0.05 * SAMPLE_RATE))
-VOICE_RE = re.compile(r"^[a-z]{2}_[a-z]+$")
+# Kokoro lang code per voice: British voices need "b", American "a".
+VOICE_LANGS = {"af_heart": "a", "bf_emma": "b", "am_michael": "a", "bm_george": "b"}
 
-_pipe = None
+_pipes = {}
 
 
-def pipeline():
-    global _pipe
-    if _pipe is None:
+def pipeline_for(voice):
+    lang = VOICE_LANGS[voice]
+    if lang not in _pipes:
         from kokoro import KPipeline
 
-        _pipe = KPipeline(lang_code="a")
-    return _pipe
+        _pipes[lang] = KPipeline(lang_code=lang)
+    return _pipes[lang]
 
 
 def clean(text: str) -> str:
@@ -81,8 +86,8 @@ def check(texts, gaps, voice, speed):
     for gap in gaps:
         if not isinstance(gap, (int, float)) or not 0 <= gap <= 3:
             raise ValueError("each gap must be 0..3 s")
-    if not isinstance(voice, str) or not VOICE_RE.match(voice):
-        raise ValueError("voice must match ^[a-z]{2}_[a-z]+$")
+    if voice not in VOICE_LANGS:
+        raise ValueError("voice must be one of af_heart, bf_emma, am_michael, bm_george")
     if not isinstance(speed, (int, float)) or not 0.5 <= speed <= 1.5:
         raise ValueError("speed must be 0.5..1.5")
 
@@ -91,7 +96,7 @@ def check(texts, gaps, voice, speed):
 def narrate(texts: list[str], gaps: list[float], voice: str, speed: float) -> dict:
     started = time.monotonic()
     check(texts, gaps, voice, speed)
-    pipe = pipeline()
+    pipe = pipeline_for(voice)
     parts: list[np.ndarray] = []
     spans: list[dict] = []
     cursor = 0

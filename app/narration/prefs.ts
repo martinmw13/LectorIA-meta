@@ -1,12 +1,18 @@
-// Persisted read-aloud prefs: on/off plus a narration-only volume.
-// Storage can throw (private mode), so every access is guarded.
+// Persisted read-aloud prefs: on/off, a narration-only volume, and the
+// chosen voice. Storage can throw (private mode), so every access is
+// guarded.
+import { DEFAULT_NARRATION_VOICE, isNarrationVoiceId } from "@/core/narration";
 import type { NarrationPrefs } from "./types";
 
 export const NARRATION_PREFS_KEY = "lectoria.narration.v1";
 
 export const DEFAULT_NARRATION_VOLUME = 0.8;
 
-export const DEFAULT_NARRATION_PREFS: NarrationPrefs = { on: false, volume: DEFAULT_NARRATION_VOLUME };
+export const DEFAULT_NARRATION_PREFS: NarrationPrefs = {
+  on: false,
+  volume: DEFAULT_NARRATION_VOLUME,
+  voice: DEFAULT_NARRATION_VOICE,
+};
 
 type PrefsStorage = Pick<Storage, "getItem" | "setItem">;
 
@@ -20,10 +26,11 @@ export function loadNarrationPrefs(storage?: PrefsStorage): NarrationPrefs {
     if (!raw) return { ...DEFAULT_NARRATION_PREFS };
     const json: unknown = JSON.parse(raw);
     if (typeof json !== "object" || json === null) return { ...DEFAULT_NARRATION_PREFS };
-    const { on, volume } = json as Record<string, unknown>;
+    const { on, volume, voice } = json as Record<string, unknown>;
     return {
       on: typeof on === "boolean" ? on : false,
       volume: validVolume(volume) ?? DEFAULT_NARRATION_VOLUME,
+      voice: isNarrationVoiceId(voice) ? voice : DEFAULT_NARRATION_VOICE,
     };
   } catch {
     return { ...DEFAULT_NARRATION_PREFS };

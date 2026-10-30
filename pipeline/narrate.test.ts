@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { NarrationDeps } from "../core/narration-cache";
 import { runNarrate } from "./narrate";
+import { parseBookNarration } from "../core/narration-book";
 import type { ChapterNarration } from "../core/narration";
 
 function setupBook(dir: string): void {
@@ -86,11 +87,20 @@ function setupMixedBook(dir: string): void {
   );
 }
 
-function readNarration(dir: string): { provenance: Record<string, unknown>; chapters: Record<string, ChapterNarration> } {
+function readNarration(dir: string): {
+  textVersion: string;
+  provenance: Record<string, unknown>;
+  chapters: Record<string, Record<string, ChapterNarration>>;
+} {
   return JSON.parse(readFileSync(join(dir, "narration.json"), "utf8")) as {
+    textVersion: string;
     provenance: Record<string, unknown>;
-    chapters: Record<string, ChapterNarration>;
+    chapters: Record<string, Record<string, ChapterNarration>>;
   };
+}
+
+function voiceChapters(dir: string, voice: string): Record<string, ChapterNarration> {
+  return readNarration(dir).chapters[voice] ?? {};
 }
 
 describe("runNarrate", () => {
@@ -107,10 +117,12 @@ describe("runNarrate", () => {
     expect(first.actualMicro).toBeGreaterThan(0);
     expect(calls()).toBe(2);
     const file = readNarration(dir);
-    expect(Object.keys(file.chapters).sort()).toEqual(["1", "2"]);
+    expect(Object.keys(voiceChapters(dir, "af_heart")).sort()).toEqual(["1", "2"]);
     expect(file.provenance.voice).toBe("af_heart");
+    expect(file.provenance.voices).toEqual(["af_heart"]);
     expect(file.provenance.chapters_generated).toBe(2);
-    for (const manifest of Object.values(file.chapters)) {
+    for (const manifest of Object.values(voiceChapters(dir, "af_heart"))) {
+      expect(manifest.voice).toBe("af_heart");
       expect(manifest.src).toMatch(/^https:\/\//);
       expect(manifest.chunks.length).toBeGreaterThan(0);
     }
@@ -162,14 +174,70 @@ describe("runNarrate", () => {
     // The paid chapter is kept, and no input is recorded so the next run
     // redoes instead of reusing the partial file.
     const partial = readNarration(dir);
-    expect(Object.keys(partial.chapters)).toEqual(["1"]);
+    expect(Object.keys(voiceChapters(dir, "af_heart"))).toEqual(["1"]);
     expect(partial.provenance.input).toBeNull();
 
     // The retry resumes the ready chapter and generates the missing one.
     const retry = await runNarrate(ctx, { synthesize: good.synthesize, store, capUsd: 2 });
     expect(retry).toMatchObject({ generated: 1, cached: 1, stopped: false });
     const file = readNarration(dir);
-    expect(Object.keys(file.chapters).sort()).toEqual(["1", "2"]);
+    expect(Object.keys(voiceChapters(dir, "af_heart")).sort()).toEqual(["1", "2"]);
     expect(typeof file.provenance.input).toBe("string");
+  });
+
+  it("keeps one voice while generating another", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "narrate-voices-"));
+    setupBook(dir);
+    const { synthesize, calls } = fakeSynthesize();
+    const { store } = memoryStore();
+    const ctx = { bookKey: "oz", force: false, dir };
+
+    await runNarrate(ctx, { synthesize, store, capUsd: 2, voice: "af_heart" });
+    const second = await runNarrate(ctx, { synthesize, store, capUsd: 2, voice: "bf_emma" });
+    expect(second).toMatchObject({ generated: 2, cached: 0, stopped: false });
+    expect(calls()).toBe(4);
+    expect(Object.keys(voiceChapters(dir, "af_heart")).sort()).toEqual(["1", "2"]);
+    expect(Object.keys(voiceChapters(dir, "bf_emma")).sort()).toEqual(["1", "2"]);
+    for (const manifest of Object.values(voiceChapters(dir, "bf_emma"))) {
+      expect(manifest.voice).toBe("bf_emma");
+    }
+    expect(readNarration(dir).provenance.voices).toEqual(["af_heart", "bf_emma"]);
+
+    // A repeat run for the first voice reuses it without new synthesis.
+    const reuse = await runNarrate(ctx, { synthesize, store, capUsd: 2, voice: "af_heart" });
+    expect(reuse).toMatchObject({ generated: 0, cached: 2, stopped: false });
+    expect(calls()).toBe(4);
+  });
+
+  it("resumes a legacy flat file without regenerating", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "narrate-legacy-"));
+    setupBook(dir);
+    const { synthesize, calls } = fakeSynthesize();
+    const { store } = memoryStore();
+    const ctx = { bookKey: "oz", force: false, dir };
+
+    await runNarrate(ctx, { synthesize, store, capUsd: 2, voice: "af_heart" });
+    // Rewrite the file in the old flat shape (chapter numbers at top).
+    const file = readNarration(dir);
+    writeFileSync(
+      join(dir, "narration.json"),
+      JSON.stringify({ textVersion: file.textVersion, provenance: file.provenance, chapters: file.chapters.af_heart }),
+    );
+    const again = await runNarrate(ctx, { synthesize, store, capUsd: 2, voice: "af_heart" });
+    expect(again).toMatchObject({ generated: 0, cached: 2, stopped: false });
+    expect(calls()).toBe(2);
+    // The untouched legacy file still parses into the default voice.
+    const legacy = parseBookNarration(JSON.parse(readFileSync(join(dir, "narration.json"), "utf8")) as unknown);
+    expect(Object.keys(legacy.chaptersByVoice.af_heart ?? {}).sort()).toEqual(["1", "2"]);
+  });
+
+  it("rejects an unknown voice", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "narrate-voice-"));
+    setupBook(dir);
+    const { synthesize } = fakeSynthesize();
+    const { store } = memoryStore();
+    await expect(
+      runNarrate({ bookKey: "oz", force: false, dir }, { synthesize, store, capUsd: 2, voice: "af_bella" }),
+    ).rejects.toThrow(/unknown voice/);
   });
 });

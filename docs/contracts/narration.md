@@ -4,8 +4,13 @@ Read-aloud narration, one compact mp3 per chapter plus a per-chapter
 manifest with sentence timings. The unit is the chapter (owner
 decision): the reader plays any scene by seeking to its first sentence
 (`sceneSpan`) and highlights the sentence being read (`activeChunkAt`).
-Voice Kokoro-82M `af_heart` at speed 0.95, generated on a Modal GPU
-function that scales to zero.
+Four Kokoro-82M voices at speed 0.95, generated on a Modal GPU
+function that scales to zero: `af_heart` (Heart, default), `bf_emma`
+(Emma), `am_michael` (Michael), `bm_george` (George). The list lives
+in `core/narration.ts` (`NARRATION_VOICES`) and is shared by the
+client, the server, and the pipeline. British voices (`bf_`, `bm_`)
+run through a `KPipeline` with lang code `b`, American voices with
+`a`; the Modal function caches one pipeline per lang code.
 
 ## Manifest
 
@@ -16,6 +21,13 @@ function that scales to zero.
 `parseChapterNarration` throws on any bad field: it is a trust
 boundary, since the reader fetches this JSON. `src` is an `https:`
 URL or a same-origin path under `/narration/`.
+
+The per-book file `data/books/<id>/narration.json` holds chapters per
+voice: `chapters: { [voice]: { [ch]: ChapterNarration } }` with
+per-voice freshness inputs in `provenance.inputs`. The old flat shape
+(chapter numbers at the top, Oz `af_heart` only) still parses via
+`parseBookNarration` into the default voice, so existing audio keeps
+working without regeneration.
 
 ## Word timings
 
@@ -41,10 +53,31 @@ NFC-normalized, whitespace-collapsed chunk texts joined with `"\n"`,
 plus voice, model, speed, and format. Callers hash it with SHA-256;
 `narrationKey` returns `narration/v2/<voice>/<first 32 hex>`. Same
 text + voice + model + speed gives the same key, any edit gives a new
-one. Audio lives at `<key>.mp3`, the manifest at `<key>.json`, as
-deterministic public Blob paths; the Redis index `narr:idx:<key>`
-holds the manifest JSON. Oz is pregenerated through the same keys, so
-a second reader of the same text gets it free.
+one, and each voice gets its own key. Audio lives at `<key>.mp3`, the
+manifest at `<key>.json`, as deterministic public Blob paths; the
+Redis index `narr:idx:<key>` holds the manifest JSON. Oz is
+pregenerated through the same keys, so a second reader of the same
+text gets it free.
+
+## Reader voices
+
+The reader loads narration for every shelf book with a
+`narration.json`, not only Oz. The read-aloud control shows a small
+voice picker next to Read aloud with only the voices that have
+narration for the current chapter; with a single voice it hides. The
+choice persists with the other narration prefs. Switching voice
+mid-playback restarts the current chapter near the same position.
+
+## Generation
+
+`npm run narrate -- --book <id|all-shelf> --voice <id|all>` generates
+any shelf book in any voice through `runNarrate`, resume-safe
+(chapters already stored are skipped) under `NARRATION_CAP_USD`.
+Audio goes to Vercel Blob when `BLOB_READ_WRITE_TOKEN` is set,
+otherwise under `public/`; per-book manifests always land in
+`data/books/<id>/narration.json`. `--dry-run` prints the cost
+estimate (summed `estimateNarrationMicro` over all chapters) without
+calling Modal or Blob.
 
 ## Concurrency
 

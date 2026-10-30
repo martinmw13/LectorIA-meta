@@ -17,8 +17,8 @@ const SCENES = [
   { id: "c2s2", ch: 2, startN: 7, endN: 8 },
 ];
 const ENTRIES = [
-  { ch: 1, src: "/narration/k1.mp3", manifest: "/narration/k1.json" },
-  { ch: 2, src: "/narration/k2.mp3", manifest: "/narration/k2.json" },
+  { ch: 1, voice: "af_heart", src: "/narration/k1.mp3", manifest: "/narration/k1.json" },
+  { ch: 2, voice: "af_heart", src: "/narration/k2.mp3", manifest: "/narration/k2.json" },
 ];
 
 function chunk(n: number, t0: number, t1: number) {
@@ -41,9 +41,10 @@ const MAN2 = manifest("k2", 5);
 
 type Ctl = ReturnType<typeof useNarrationController>;
 let ctl: Ctl | null = null;
+let harnessEntries = ENTRIES;
 
 function Harness() {
-  const c = useNarrationController({ entries: ENTRIES, scenes: SCENES });
+  const c = useNarrationController({ entries: harnessEntries, scenes: SCENES });
   ctl = c;
   return <audio ref={c.audioRef} />;
 }
@@ -123,6 +124,7 @@ afterEach(() => {
   document.body.innerHTML = "";
   window.localStorage.clear();
   setCurrentSceneId(null);
+  harnessEntries = ENTRIES;
   vi.unstubAllGlobals();
 });
 
@@ -231,6 +233,42 @@ test("seekTo an earlier scene lands inside its span", async () => {
   expect(span).not.toBeNull();
   expect(span!.startSec).toBeLessThanOrEqual(5.001);
   expect(5.001).toBeLessThanOrEqual(span!.endSec);
+  act(() => {
+    root.unmount();
+  });
+});
+
+test("switching voice mid-playback restarts the chapter near the same position", async () => {
+  const MAN_A = manifest("a1", 1);
+  const MAN_B = manifest("b1", 1);
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string) => ({
+      ok: true,
+      json: async () => (String(url).includes("b1") ? MAN_B : MAN_A),
+    })),
+  );
+  harnessEntries = [
+    { ch: 1, voice: "af_heart", src: "/narration/a1.mp3", manifest: "/narration/a1.json" },
+    { ch: 1, voice: "bf_emma", src: "/narration/b1.mp3", manifest: "/narration/b1.json" },
+  ];
+  const { root, audio, fake } = await playLive("c1s1");
+  expect(ctl!.voice).toBe("af_heart");
+  expect(ctl!.voices).toEqual(["af_heart", "bf_emma"]);
+  expect(audio.dataset.key).toBe("a1");
+  fake.setTime(12.3);
+  act(() => {
+    ctl!.setVoice("bf_emma");
+  });
+  await flush();
+  act(() => {
+    audio.dispatchEvent(new Event("loadedmetadata"));
+  });
+  expect(ctl!.voice).toBe("bf_emma");
+  expect(audio.dataset.key).toBe("b1");
+  expect(audio.src).toContain("b1.mp3");
+  expect(fake.time()).toBeCloseTo(12.3, 3);
+  expect(ctl!.playing).toBe(true);
   act(() => {
     root.unmount();
   });

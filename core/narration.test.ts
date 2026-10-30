@@ -1,9 +1,11 @@
 import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_NARRATION_VOICE,
   NARRATION_FORMAT,
   NARRATION_MODEL,
   NARRATION_SPEED,
+  NARRATION_VOICES,
   NARRATION_VOICE,
   PARAGRAPH_GAP_SEC,
   SENTENCE_GAP_SEC,
@@ -14,14 +16,18 @@ import {
   chapterChunks,
   chaptersToPrepare,
   estimateNarrationMicro,
+  isNarrationVoiceId,
+  kokoroLangCode,
   narrationKey,
   narrationKeyInput,
+  narrationVoiceLabel,
   parseChapterNarration,
   sceneSpan,
   splitSentences,
   wordAt,
 } from "./narration";
 import type { WordToken } from "./narration";
+import { parseBookNarration } from "./narration-book";
 import probeRaw from "./fixtures/kokoro-probe.json";
 
 const OZ = `“I am Oz, the Great and Terrible,” said the little man, in a trembling voice. “But don't strike me — please don't — and I will do anything you want me to do.” “Oh, you're a humbug!” said Dorothy. Mr. H. M. Wogglebug rushed — very fast — toward the door!” said Dorothy, turning pale.`;
@@ -105,6 +111,88 @@ describe("cache keys", () => {
     expect(narrationKey(hashOf(base), NARRATION_VOICE)).toBe(
       `narration/v${NARRATION_FORMAT}/${NARRATION_VOICE}/${hashOf(base).slice(0, 32)}`,
     );
+  });
+});
+
+describe("narration voices", () => {
+  it("lists the four voices with Heart first and default", () => {
+    expect(NARRATION_VOICES.map((v) => v.id)).toEqual(["af_heart", "bf_emma", "am_michael", "bm_george"]);
+    expect(NARRATION_VOICES.map((v) => v.label)).toEqual(["Heart", "Emma", "Michael", "George"]);
+    expect(DEFAULT_NARRATION_VOICE).toBe("af_heart");
+    for (const voice of NARRATION_VOICES) expect(isNarrationVoiceId(voice.id)).toBe(true);
+    expect(isNarrationVoiceId("af_bella")).toBe(false);
+    expect(isNarrationVoiceId(null)).toBe(false);
+  });
+
+  it("maps British voices to lang b and American ones to lang a", () => {
+    expect(kokoroLangCode("af_heart")).toBe("a");
+    expect(kokoroLangCode("am_michael")).toBe("a");
+    expect(kokoroLangCode("bf_emma")).toBe("b");
+    expect(kokoroLangCode("bm_george")).toBe("b");
+  });
+
+  it("labels known voices and passes unknown ids through", () => {
+    expect(narrationVoiceLabel("bf_emma")).toBe("Emma");
+    expect(narrationVoiceLabel("xx_nope")).toBe("xx_nope");
+  });
+
+  it("gives each voice its own cache key", () => {
+    const chunks = [{ text: "The road was long. Dorothy walked on." }];
+    const keyOf = (voice: string): string =>
+      narrationKey(
+        createHash("sha256").update(narrationKeyInput({ chunks, voice, model: NARRATION_MODEL, speed: NARRATION_SPEED, format: NARRATION_FORMAT })).digest("hex"),
+        voice,
+      );
+    const keys = new Set(NARRATION_VOICES.map((v) => keyOf(v.id)));
+    expect(keys.size).toBe(4);
+    for (const voice of NARRATION_VOICES) expect(keyOf(voice.id)).toContain(`/${voice.id}/`);
+  });
+});
+
+describe("parseBookNarration", () => {
+  const chapter = (voice: string, key: string) => ({
+    format: 2,
+    key,
+    src: `/narration/v2/${voice}/abc.mp3`,
+    durationSec: 10,
+    voice,
+    model: "kokoro-82m/0.9.4",
+    speed: 0.95,
+    chunks: [{ n: 1, start: 0, end: 5, t0: 0, t1: 4, w: [0, 5, 0.5, 3.5] }],
+  });
+
+  it("reads the legacy flat file into the default voice", () => {
+    const file = parseBookNarration({
+      textVersion: "sha256:x",
+      provenance: { input: "abc", voice: "af_heart" },
+      chapters: { 1: chapter("af_heart", "k1"), 2: chapter("af_heart", "k2") },
+    });
+    expect(Object.keys(file.chaptersByVoice)).toEqual(["af_heart"]);
+    expect(Object.keys(file.chaptersByVoice.af_heart ?? {})).toEqual(["1", "2"]);
+    expect(file.inputs).toEqual({ af_heart: "abc" });
+  });
+
+  it("reads chapters per voice with per-voice inputs", () => {
+    const file = parseBookNarration({
+      textVersion: "sha256:x",
+      provenance: { inputs: { af_heart: "aaa", bf_emma: null } },
+      chapters: { af_heart: { 1: chapter("af_heart", "k1") }, bf_emma: { 1: chapter("bf_emma", "k2") } },
+    });
+    expect(Object.keys(file.chaptersByVoice).sort()).toEqual(["af_heart", "bf_emma"]);
+    expect(file.chaptersByVoice.bf_emma?.["1"]?.voice).toBe("bf_emma");
+    expect(file.inputs).toEqual({ af_heart: "aaa", bf_emma: null });
+  });
+
+  it("stays strict on bad shapes", () => {
+    const bad: unknown[] = [
+      null,
+      { textVersion: "sha256:x" },
+      { textVersion: "sha256:x", chapters: { 1: { format: 2 } } },
+      { textVersion: "sha256:x", chapters: { nope: { 1: chapter("af_heart", "k1") } } },
+      { textVersion: "sha256:x", chapters: { af_heart: { one: chapter("af_heart", "k1") } } },
+      { textVersion: "", chapters: {} },
+    ];
+    for (const entry of bad) expect(() => parseBookNarration(entry)).toThrow();
   });
 });
 
