@@ -1,9 +1,10 @@
 import "server-only";
-import { usable } from "@/server/guard/env";
+import { turnstilePair, usable } from "@/server/guard/env";
+import type { TurnstilePair } from "@/server/guard/env";
 
 // Reads image env once per request. Any missing key means unavailable:
 // with no quotas or budget configured, the route must never spend.
-export interface ImageEnv {
+export interface ImageEnv extends TurnstilePair {
   upstashUrl: string;
   upstashToken: string;
   metaKey: string;
@@ -11,7 +12,6 @@ export interface ImageEnv {
   ipSalt: string;
   spendCapMicro: number;
   dailySpendCapMicro: number;
-  turnstileSecret?: string;
 }
 
 // Vercel's Upstash marketplace integration injects KV_REST_API_* names.
@@ -55,7 +55,7 @@ export function readImageEnv(from: NodeJS.ProcessEnv = process.env): ImageEnv {
     ipSalt: from.IP_HASH_SALT as string,
     spendCapMicro: Math.round(parseCapUsd(from.SPEND_CAP_USD, 10) * 1_000_000),
     dailySpendCapMicro: Math.round(parseCapUsd(from.DAILY_SPEND_CAP_USD, 2) * 1_000_000),
-    // Optional like chat: without it the route skips the human check (dev).
-    ...(from.TURNSTILE_SECRET_KEY ? { turnstileSecret: from.TURNSTILE_SECRET_KEY } : {}),
+    // Optional like chat: without both keys the route skips the human check (dev).
+    ...turnstilePair(from),
   };
 }

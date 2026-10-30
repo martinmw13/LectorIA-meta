@@ -117,6 +117,7 @@ describe("verifyTurnstile", () => {
 
 describe("checkHuman", () => {
   const base = { cookieHeader: null as string | null, ip: "1.2.3.4", sessionSecret: SECRET };
+  const keys = { turnstileSecret: "ts-secret", turnstileSiteKey: "ts-site" };
 
   it("skips with a one-time warning when no secret is configured", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -126,13 +127,35 @@ describe("checkHuman", () => {
     expect(warn.mock.calls[0]?.[0]).toContain("turnstile");
   });
 
+  it("skips with a one-time warning when only the secret is set", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    await expect(checkHuman({ ...base, turnstileSecret: "ts-secret" })).resolves.toEqual({ ok: true });
+    await expect(checkHuman({ ...base, turnstileSecret: "ts-secret" })).resolves.toEqual({ ok: true });
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]?.[0]).toContain("turnstile");
+    expect(String(warn.mock.calls[0]?.[0])).not.toContain("ts-secret");
+  });
+
+  it("skips when only the site key is set", async () => {
+    await expect(checkHuman({ ...base, turnstileSiteKey: "ts-site" })).resolves.toEqual({ ok: true });
+  });
+
+  it("skips placeholder values for either key", async () => {
+    await expect(
+      checkHuman({ ...base, turnstileSecret: "[SENSITIVE]", turnstileSiteKey: "[SENSITIVE]" }),
+    ).resolves.toEqual({ ok: true });
+    await expect(
+      checkHuman({ ...base, turnstileSecret: "ts-secret", turnstileSiteKey: "[SENSITIVE]" }),
+    ).resolves.toEqual({ ok: true });
+  });
+
   it("honors the neutral cookie without calling siteverify", async () => {
     const fetchFn = vi.fn(async () => Response.json({ success: true }));
     const value = issueHumanCookie(SECRET).split(";")[0]!;
     const res = await checkHuman({
       ...base,
+      ...keys,
       cookieHeader: value,
-      turnstileSecret: "ts-secret",
       fetchFn: fetchFn as unknown as typeof fetch,
     });
     expect(res).toEqual({ ok: true });
@@ -144,8 +167,8 @@ describe("checkHuman", () => {
     const value = legacyCookie(SECRET, Math.floor(Date.now() / 1000)).split(";")[0]!;
     const res = await checkHuman({
       ...base,
+      ...keys,
       cookieHeader: value,
-      turnstileSecret: "ts-secret",
       fetchFn: fetchFn as unknown as typeof fetch,
     });
     expect(res).toEqual({ ok: true });
@@ -155,7 +178,7 @@ describe("checkHuman", () => {
   it("fails closed with no cookie and no token", async () => {
     const fetchFn = vi.fn(async () => Response.json({ success: true }));
     await expect(
-      checkHuman({ ...base, turnstileSecret: "ts-secret", fetchFn: fetchFn as unknown as typeof fetch }),
+      checkHuman({ ...base, ...keys, fetchFn: fetchFn as unknown as typeof fetch }),
     ).resolves.toEqual({ ok: false });
     expect(fetchFn).not.toHaveBeenCalled();
   });
@@ -164,8 +187,8 @@ describe("checkHuman", () => {
     const fetchFn = vi.fn(async () => Response.json({ success: true }));
     const res = await checkHuman({
       ...base,
+      ...keys,
       token: "tok",
-      turnstileSecret: "ts-secret",
       fetchFn: fetchFn as unknown as typeof fetch,
     });
     expect(fetchFn).toHaveBeenCalledOnce();
@@ -180,8 +203,8 @@ describe("checkHuman", () => {
     await expect(
       checkHuman({
         ...base,
+        ...keys,
         token: "tok",
-        turnstileSecret: "ts-secret",
         fetchFn: fetchFn as unknown as typeof fetch,
       }),
     ).resolves.toEqual({ ok: false });

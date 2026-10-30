@@ -435,6 +435,7 @@ describe("human gate", () => {
       ip: "9.9.9.9",
       sessionSecret: "s",
       turnstileSecret: "ts-secret",
+      turnstileSiteKey: "ts-site",
       fetchFn: noFetch as unknown as typeof fetch,
       ...over,
     };

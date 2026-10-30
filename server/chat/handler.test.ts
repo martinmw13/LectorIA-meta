@@ -408,7 +408,7 @@ describe("handleChatPost", () => {
 
   it("requires Turnstile when configured, then honors the human cookie", async () => {
     const kv = createMemoryKV();
-    const turnEnv: ChatEnv = { ...ENV, turnstileSecret: "ts-secret" };
+    const turnEnv: ChatEnv = { ...ENV, turnstileSecret: "ts-secret", turnstileSiteKey: "ts-site" };
     const siteFetch = vi.fn(async () => Response.json({ success: true }));
 
     const blocked = await handleChatPost(post(validBody()), {
@@ -463,7 +463,7 @@ describe("handleChatPost", () => {
 
   it("accepts an outstanding legacy chat_human cookie without siteverify", async () => {
     const kv = createMemoryKV();
-    const turnEnv: ChatEnv = { ...ENV, turnstileSecret: "ts-secret" };
+    const turnEnv: ChatEnv = { ...ENV, turnstileSecret: "ts-secret", turnstileSiteKey: "ts-site" };
     const siteFetch = vi.fn(async () => Response.json({ success: true }));
     const { createHmac } = await import("node:crypto");
     const expiry = Math.floor(Date.now() / 1000) + 3600;
