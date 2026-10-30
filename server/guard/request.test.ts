@@ -25,6 +25,21 @@ describe("request helpers", () => {
     expect(ipBucket("unknown", "anon-1")).not.toBe(ipBucket("unknown", "anon-2"));
   });
 
+  it("buckets IPv6 by /64 prefix", () => {
+    expect(ipBucket("2001:db8:abcd:12::1", "a")).toBe(ipBucket("2001:db8:abcd:12:ffff:ffff:ffff:ffff", "a"));
+    expect(ipBucket("2001:db8:abcd:12::1", "a")).not.toBe(ipBucket("2001:db8:abcd:13::1", "a"));
+    expect(ipBucket("2001:db8:abcd:12::1", "a")).toBe(ipBucket("2001:0db8:abcd:0012:0000:0000:0000:0001", "a"));
+    expect(ipBucket("2001:DB8:ABCD:12::1", "a")).toBe("2001:0db8:abcd:0012::/64");
+    expect(ipBucket("[2001:db8:abcd:12::1]", "a")).toBe("2001:0db8:abcd:0012::/64");
+    expect(ipBucket("not an ip", "a")).toBe("not an ip");
+  });
+
+  it("handles IPv4 and IPv4-mapped IPv6 and zone ids", () => {
+    expect(ipBucket("1.2.3.4", "a")).toBe("1.2.3.4");
+    expect(ipBucket("::ffff:1.2.3.4", "a")).toBe("1.2.3.4");
+    expect(ipBucket("fe80::1%eth0", "a")).toBe(ipBucket("fe80::2", "a"));
+  });
+
   it("prefers the platform headers over x-forwarded-for", () => {
     expect(
       clientIp(headers([["x-vercel-forwarded-for", "1.1.1.1"], ["x-real-ip", "2.2.2.2"], ["x-forwarded-for", "3.3.3.3"]])),
