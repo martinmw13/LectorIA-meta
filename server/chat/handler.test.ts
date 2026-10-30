@@ -482,6 +482,31 @@ describe("handleChatPost", () => {
     expect(siteFetch).not.toHaveBeenCalled();
   });
 
+  it("rejects a text/plain cross-site POST with 400 without calling upstream", async () => {
+    const kv = createMemoryKV();
+    const capture: Capture = {};
+    const calls = { count: 0 };
+    const req = new Request("http://localhost/api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/plain",
+        Origin: "https://evil.example",
+        "Sec-Fetch-Site": "cross-site",
+      },
+      body: JSON.stringify(validBody()),
+    });
+    const res = await handleChatPost(req, {
+      env: ENV,
+      kv,
+      now: NOW,
+      createStreamer: factoryFor(OK_CHUNKS, capture, calls),
+    });
+    expect(res.status).toBe(400);
+    expect((await errBody(res)).code).toBe("bad_request");
+    expect(calls.count).toBe(0);
+    expect(capture.messages).toBeUndefined();
+  });
+
   it("never leaks the key, upstream text, or question in responses or logs", async () => {
     const kv = createMemoryKV();
     const deps: ChatHandlerDeps = {

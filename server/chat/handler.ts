@@ -28,7 +28,7 @@ import { readBodyCapped } from "@/server/guard/body";
 import { checkHuman } from "@/server/guard/human";
 import { createRestKV } from "@/server/guard/kv";
 import { CHAT_QUOTA_TTL_SEC, refundDualQuota, takeDualQuota } from "@/server/guard/quota";
-import { clientIp, hashIp, ipBucket, utcDay } from "@/server/guard/request";
+import { clientIp, hashIp, ipBucket, rejectsCrossSite, utcDay } from "@/server/guard/request";
 import { reserveSpend } from "@/server/guard/spend";
 import type { SpendReservation } from "@/server/guard/spend";
 import { readChatEnv } from "./env";
@@ -67,6 +67,8 @@ function isAsciiPrintable(text: string): boolean {
 // its quota and spend reserves; mid-stream failures do not.
 export async function handleChatPost(req: Request, deps: ChatHandlerDeps = {}): Promise<Response> {
   const cookies: string[] = [];
+
+  if (rejectsCrossSite(req.headers, req.url)) return fail("bad_request", "?", cookies);
 
   const capped = await readBodyCapped(req, CHAT_MAX_BODY_BYTES);
   if (!capped.ok) return fail(capped.reason === "too_large" ? "too_large" : "bad_request", "?", cookies);
