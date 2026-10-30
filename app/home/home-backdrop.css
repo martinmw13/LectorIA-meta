@@ -13,8 +13,6 @@
   background-image: var(--texture);
 }
 
-html[data-skin="comic"] .ob-desk::before { background-size: 11px 11px; }
-
 /* Pencil: the same graphite study on Bristol the reader uses. */
 html[data-skin="pencil"] .ob-desk::before {
   background:
@@ -30,6 +28,25 @@ html[data-skin="chihiro"] .ob-desk::before {
   background: url("/art/skins/chihiro/sky-lantern.jpg") center / cover no-repeat, #f6be78;
 }
 
+/* Comic, engraving, watercolor and ink: one painted storybook scene per
+   skin, detail at the edges and a calm middle, under the skin's paper. */
+html[data-skin="comic"] .ob-desk::before {
+  background: url("/art/skins/comic/home.jpg") center / cover no-repeat, #fffdf4;
+}
+html[data-skin="engraving"] .ob-desk::before {
+  background: url("/art/skins/engraving/home.jpg") center / cover no-repeat, #efe6ce;
+}
+html[data-skin="watercolor"] .ob-desk::before {
+  background: url("/art/skins/watercolor/home.jpg") center / cover no-repeat, #fbf8f1;
+}
+html[data-skin="ink"] .ob-desk::before {
+  background: url("/art/skins/ink/home.jpg") center / cover no-repeat, #fffef9;
+}
+
 /* Pages stay readable: a touch more paper where the backdrop is busiest. */
 html[data-skin="pencil"] .ob-desk,
-html[data-skin="chihiro"] .ob-desk { --page-alpha: 88%; }
+html[data-skin="chihiro"] .ob-desk,
+html[data-skin="comic"] .ob-desk,
+html[data-skin="engraving"] .ob-desk,
+html[data-skin="watercolor"] .ob-desk,
+html[data-skin="ink"] .ob-desk { --page-alpha: 88%; }

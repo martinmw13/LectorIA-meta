@@ -1,7 +1,7 @@
 // The home backdrop is one full-bleed layer pinned to the viewport, so
 // the skin painting never steps where the 1280px desk starts. jsdom does
 // no layout, so the rules are pinned against the CSS source.
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const strip = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, "");
@@ -33,6 +33,21 @@ describe("home backdrop", () => {
     const chihiro = rules(backdrop).find(([sel]) => sel.includes('"chihiro"') && sel.endsWith("::before"));
     expect(chihiro?.[1]).toContain("sky-lantern.jpg");
     expect(chihiro?.[1]).not.toMatch(/gradient/);
+  });
+
+  it.each(["comic", "engraving", "watercolor", "ink"])("paints %s with its own home painting", (skin) => {
+    const rule = rules(backdrop).find(([sel]) => sel.includes(`"${skin}"`) && sel.endsWith("::before"));
+    expect(rule?.[1]).toContain(`/art/skins/${skin}/home.jpg`);
+    expect(rule?.[1]).toMatch(/center \/ cover no-repeat/);
+    expect(rule?.[1]).not.toMatch(/gradient/);
+    expect(existsSync(new URL(`../../public/art/skins/${skin}/home.jpg`, import.meta.url))).toBe(true);
+  });
+
+  it("keeps the pages a touch more opaque over every painted backdrop", () => {
+    const alpha = rules(backdrop).find(([, body]) => /--page-alpha:\s*88%/.test(body));
+    for (const skin of ["pencil", "chihiro", "comic", "engraving", "watercolor", "ink"]) {
+      expect(alpha?.[0]).toContain(`html[data-skin="${skin}"] .ob-desk`);
+    }
   });
 
   it("lets the backdrop show softly through the pages", () => {
