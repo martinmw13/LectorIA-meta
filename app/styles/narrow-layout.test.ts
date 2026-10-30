@@ -110,6 +110,15 @@ describe("phone reader controls", () => {
     expect(css).toMatch(/\.read-picbtn\s*\{[^}]*min-height:\s*44px/);
   });
 
+  it("pins the picture tools to the column top", () => {
+    const css = narrow(folio);
+    expect(css).toMatch(/\.read-pictools\s*\{[^}]*position:\s*sticky/);
+    expect(css).toMatch(/\.read-pictools\s*\{[^}]*top:\s*0/);
+    expect(css).toMatch(/\.read-pictools\s*\{[^}]*background:\s*var\(--color-surface\)/);
+    expect(css).toMatch(/\.read-pictools\s*\{[^}]*z-index:\s*\d+/);
+    expect(css).toMatch(/\.read-pictools\s*\{[^}]*env\(safe-area-inset-top\)/);
+  });
+
   it("keeps 44px transport and sticker targets", () => {
     const css = narrow(player);
     expect(css).toMatch(/\.player \.skip\s*\{[^}]*width:\s*44px/);

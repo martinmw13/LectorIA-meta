@@ -7,7 +7,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { ReaderModel } from "@/core/reader";
 import { isUploadId } from "@/core/uploads";
-import { effectiveImageStylePref, loadImageStylePref, requestStyleFields, saveImageStylePref, styleCredit } from "../image-style";
+import { effectiveImageStylePref, loadImageStylePref, saveImageStylePref } from "../image-style";
 import type { ImageStylePref } from "../image-style";
 import { useSkin } from "../use-skin";
 import { BandPager, Divider } from "../folio/chrome";
@@ -15,6 +15,7 @@ import { figuresAfter, groupFiguresByEndN } from "../folio/figure-placement";
 import { ImagePane } from "../folio/image-pane";
 import { InlineFigureView, SelectionPopover } from "../folio/inline-figures";
 import { Lightbox } from "../folio/lightbox";
+import { PICTURE_COPY } from "../folio/picture-copy";
 import { usePictures } from "../folio/use-pictures";
 import type { InlineFigure } from "../folio/use-pictures";
 import { PictureVault, StylePicker } from "../folio/vault";
@@ -164,28 +165,22 @@ export function BookView({
   const closePanels = useCallback(() => setPanelsCh(null), []);
 
   // Phone entry: the image pane hides below 1024px, so the reading
-  // column carries its own Picture this button, style picker and scene
-  // result, reusing the inline figure view. Hidden on desktop by CSS.
-  let sceneFigure: InlineFigure | null = null;
-  if (visualsOn && pic.card.phase !== "idle") {
-    const card = pic.card;
-    const id = `scene-${currentId}`;
-    sceneFigure =
-      card.phase === "loading"
-        ? { id, phase: "loading", url: null, quote: "", startN: 0, endN: 0, credit: "", message: null }
-        : card.phase === "ready"
-          ? {
-              id,
-              phase: "ready",
-              url: card.url,
-              quote: card.caption,
-              startN: 0,
-              endN: 0,
-              credit: styleCredit(requestStyleFields(pref)),
-              message: null,
-            }
-          : { id, phase: "error", url: null, quote: "", startN: 0, endN: 0, credit: "", message: card.message, quota: card.quota };
-  }
+  // column carries its own Picture this button and style picker. The
+  // bar sticks to the column top; the finished scene picture opens in
+  // the lightbox, loading and error show as a status line below.
+  // Hidden on desktop by CSS.
+  const sceneCard = visualsOn ? pic.card : null;
+  const prevCardPhase = useRef(pic.card.phase);
+  useEffect(() => {
+    const prev = prevCardPhase.current;
+    prevCardPhase.current = pic.card.phase;
+    // Only a picture drawn on this view (loading first) pops open:
+    // a cached ready card on scene entry stays quiet.
+    if (!visualsOn || pic.card.phase !== "ready" || prev !== "loading") return;
+    if (typeof window.matchMedia !== "function") return;
+    if (!window.matchMedia("(max-width: 1023px)").matches) return;
+    pic.lightbox.open(pic.card.url, pic.card.caption, null);
+  }, [visualsOn, pic.card, pic.lightbox]);
 
   const figsByN = useMemo(() => groupFiguresByEndN(pic.figures), [pic.figures]);
 
@@ -257,17 +252,21 @@ export function BookView({
               ) : null}
             </div>
             <StylePicker pref={pref} onChange={changePref} />
-            {sceneFigure !== null ? (
-              <InlineFigureView
-                figure={sceneFigure}
-                onRemove={pic.clearScene}
-                onRetry={() => pic.illustrateScene()}
-                onOpen={pic.lightbox.open}
-                refCb={(el) => {
-                  if (el) figEls.current.set(sceneFigure?.id ?? "", el);
-                  else figEls.current.delete(sceneFigure?.id ?? "");
-                }}
-              />
+            {sceneCard?.phase === "loading" ? (
+              <p className="read-picstatus" aria-live="polite">
+                Painting your scene — ready in about twenty seconds.
+              </p>
+            ) : sceneCard?.phase === "error" ? (
+              <p className="read-picstatus" aria-live="polite">
+                {sceneCard.message}{" "}
+                {sceneCard.quota ? (
+                  PICTURE_COPY.quotaByok
+                ) : (
+                  <button type="button" className="retry-text" onClick={() => pic.illustrateScene()}>
+                    {PICTURE_COPY.retry}
+                  </button>
+                )}
+              </p>
             ) : null}
           </div>
         ) : null}

@@ -887,12 +887,19 @@ h2.chapter-title:focus-visible {
   }
 
   /* Phone picture entry: boxless buttons, 44px targets, then the style
-     picker and the scene result in one column. */
+     picker and the scene status in one column. Sticky so the buttons
+     stay reachable after scrolling past chapter 1. */
   .read-pictools {
     display: flex;
     flex-direction: column;
     gap: 4px;
     margin: 4px 0 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--color-surface);
+    padding: 8px 0;
+    padding-top: calc(8px + env(safe-area-inset-top));
   }
 
   .read-picbar {
@@ -922,6 +929,15 @@ h2.chapter-title:focus-visible {
 
   .read-pictools .style-picker select {
     min-height: 44px;
+  }
+
+  /* Small scene status inside the sticky bar: loading or error only,
+     the finished picture opens in the lightbox instead. */
+  .read-picstatus {
+    margin: 0;
+    font-family: var(--font-ui);
+    font-size: 13px;
+    color: var(--color-text-muted);
   }
 
   /* 44px targets for the controls that stay in the narrow header. */
