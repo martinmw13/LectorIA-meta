@@ -1,25 +1,16 @@
-// The one file that owns cover paths. Placeholders exist only for the
-// three painted skins, so each newer skin reuses one (typed, so a new
-// skin must choose). Oz always uses the cyclone-house panel. Swapping in
-// final covers later means editing this file only.
+// The one file that owns shelf cover paths. Covers are committed
+// statics under public/covers/v1, listed in cover-manifest.ts (rewritten
+// by `npm run pregen:covers`). A missing cover returns null so the home
+// renders the placeholder instead of a stale panel or a broken image.
 import type { SkinId } from "../skin";
+import { COVER_MANIFEST } from "./cover-manifest";
 
-export type CoverSize = "sm" | "lg";
+type Manifest = Readonly<Record<string, Readonly<Record<string, string>> | undefined>>;
 
-type CoverSkin = "engraving" | "watercolor" | "ink";
-
-const COVER_SKIN: Record<SkinId, CoverSkin> = {
-  engraving: "engraving",
-  watercolor: "watercolor",
-  ink: "ink",
-  pencil: "engraving",
-  comic: "ink",
-  chihiro: "watercolor",
-};
-
-const OZ_COVER = "/art/panels/cyclone-house.webp";
-
-export function coverFor(bookId: string, skin: SkinId, size: CoverSize): string {
-  if (bookId === "oz") return OZ_COVER;
-  return `/art/covers/${bookId}-${COVER_SKIN[skin]}${size === "sm" ? "-sm" : ""}.jpg`;
+export function coverFor(
+  bookId: string,
+  skin: SkinId,
+  manifest: Manifest = COVER_MANIFEST,
+): string | null {
+  return manifest[skin]?.[bookId] ?? null;
 }

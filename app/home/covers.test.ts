@@ -1,42 +1,42 @@
-import { existsSync } from "node:fs";
-import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { SKINS } from "../skin";
 import { shelf } from "./shelf";
-import { coverFor, type CoverSize } from "./covers";
-
-const SIZES: CoverSize[] = ["sm", "lg"];
-
-function onDisk(publicPath: string): boolean {
-  return existsSync(join(__dirname, "..", "..", "public", publicPath));
-}
+import { coverFor } from "./covers";
 
 describe("covers", () => {
-  it("resolves every shelf book in every skin and size to a file under public/", () => {
-    expect(shelf.length).toBeGreaterThan(0);
+  it("returns null while a cover is missing", () => {
+    expect(coverFor("oz", "comic", {})).toBeNull();
+    expect(coverFor("alice", "engraving", {})).toBeNull();
+  });
+
+  it("returns null for unknown books and skins", () => {
+    expect(coverFor("moby", "comic", {})).toBeNull();
+    expect(coverFor("oz", "comic", { comic: { oz: "/covers/v1/comic/oz.webp" } })).toBe(
+      "/covers/v1/comic/oz.webp",
+    );
+  });
+
+  it("reads every shelf cover from the manifest", () => {
+    const manifest: Record<string, Record<string, string>> = {};
     for (const book of shelf) {
       for (const skin of SKINS) {
-        for (const size of SIZES) {
-          const path = coverFor(book.id, skin, size);
-          expect(path.startsWith("/art/")).toBe(true);
-          expect(onDisk(path), `${book.id} ${skin} ${size}: ${path}`).toBe(true);
-        }
+        ((manifest[skin] ??= {})[book.id] = `/covers/v1/${skin}/${book.id}.webp`);
+      }
+    }
+    for (const book of shelf) {
+      for (const skin of SKINS) {
+        expect(coverFor(book.id, skin, manifest)).toBe(`/covers/v1/${skin}/${book.id}.webp`);
       }
     }
   });
 
-  it("always shows Oz on the cyclone-house panel", () => {
-    for (const skin of SKINS) {
-      for (const size of SIZES) {
-        expect(coverFor("oz", skin, size)).toBe("/art/panels/cyclone-house.webp");
+  it("keeps the committed manifest under public/covers/v1", async () => {
+    const { COVER_MANIFEST } = await import("./cover-manifest");
+    for (const [skin, books] of Object.entries(COVER_MANIFEST)) {
+      expect(skin.length).toBeGreaterThan(0);
+      for (const [book, path] of Object.entries(books ?? {})) {
+        expect(path, `${skin}/${book}`).toBe(`/covers/v1/${skin}/${book}.webp`);
       }
     }
-  });
-
-  it("maps the newer skins onto the three painted cover sets", () => {
-    expect(coverFor("alice", "pencil", "lg")).toBe(coverFor("alice", "engraving", "lg"));
-    expect(coverFor("alice", "comic", "lg")).toBe(coverFor("alice", "ink", "lg"));
-    expect(coverFor("alice", "chihiro", "lg")).toBe(coverFor("alice", "watercolor", "lg"));
-    expect(coverFor("alice", "pencil", "sm")).toContain("-engraving-sm.jpg");
   });
 });

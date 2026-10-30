@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSkin } from "../use-skin";
 import { shelf, shelfById } from "./shelf";
 import { coverFor } from "./covers";
+import { CoverImage } from "./cover";
 import { StyleMenu } from "../style-menu";
 import { UploadSection } from "./upload";
 import { YourBooks } from "./your-books";
@@ -83,7 +84,7 @@ export function HomeSpread() {
                     <HomeIcon name="heart" />
                   </span>
                 )}
-                <img className={entry.id === "oz" ? "oz-art" : undefined} src={coverFor(entry.id, skin, "sm")} alt="" loading="lazy" decoding="async" />
+                <CoverImage title={entry.title} url={coverFor(entry.id, skin)} />
                 <span className="lb-name">{entry.label}</span>
               </button>
             ))}
@@ -122,13 +123,7 @@ export function HomeSpread() {
               <HomeIcon name={book.favorite ? "heart" : "book"} />
               {book.tag}
             </span>
-            <img
-              className={book.id === "oz" ? "ob-art oz-art" : "ob-art"}
-              src={coverFor(book.id, skin, "lg")}
-              alt={book.alt}
-              fetchPriority="high"
-              decoding="async"
-            />
+            <CoverImage title={book.title} url={coverFor(book.id, skin)} className="ob-art" eager />
             <div className="ob-txt">
               <h2 id="obPlateTitle">{book.title}</h2>
               <p className="ob-by">
