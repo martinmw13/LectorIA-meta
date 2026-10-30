@@ -97,7 +97,7 @@ html[data-skin="comic"] :is(.stickers[data-art="hero"] .sticker, .sticker-wrap .
   text-transform: uppercase;
   line-height: 1;
   white-space: nowrap;
-  color: #14161c;
+  color: var(--color-text);
   pointer-events: none;
 }
 
@@ -126,7 +126,7 @@ html[data-skin="comic"] .read-aloud-label {
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #14161c;
+  color: var(--color-text);
 }
 
 /* Button motion (panel snap, POW burst, press) lives in motion-comic.css. */

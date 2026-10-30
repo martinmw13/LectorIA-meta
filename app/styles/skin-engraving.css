@@ -87,7 +87,7 @@ html[data-skin="engraving"] .body-text > p + p:not([data-cont]) {
   margin-top: 0.85em;
 }
 
-html[data-skin="engraving"] h1.chapter-title {
+html[data-skin="engraving"] h2.chapter-title {
   font-family: var(--font-eng-display);
   font-style: italic;
   font-weight: 400;

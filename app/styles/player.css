@@ -101,10 +101,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .player-track {
+  .player-track,
+  .player-track[data-overflow="1"] {
     mask-image: none;
   }
-  .player-track .player-track-inner {
+  .player-track .player-track-inner,
+  .player-track[data-overflow="1"] .player-track-inner {
     animation: none;
     transform: none;
     display: block;

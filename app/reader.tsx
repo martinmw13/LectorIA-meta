@@ -358,6 +358,9 @@ export function Reader({
   return (
     <NarrationProvider entries={narration} scenes={scenes}>
       <div className="folio">
+        <a href="#story" className="skip-link">
+          Skip to the story
+        </a>
         <TopLine
           bookTitle={bookTitle}
           author={bookAuthor}

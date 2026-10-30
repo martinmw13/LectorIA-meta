@@ -372,6 +372,16 @@ export function usePictures({
     [storeFigures, sceneId],
   );
 
+  // The last selection rescan painted, so repeat events for an unchanged
+  // selection (pointerup plus mouseup, selectionchange bursts) paint once.
+  const lastSelRef = useRef<{
+    text: string;
+    anchor: Node | null;
+    anchorOffset: number;
+    focus: Node | null;
+    focusOffset: number;
+  } | null>(null);
+
   // Re-read the live selection against the current text view. The
   // continuous reader calls it after switching scenes under a selection
   // that started elsewhere, so the popover follows without a second tap.
@@ -380,14 +390,35 @@ export function usePictures({
     if (!view) return;
     const sel = window.getSelection();
     const text = sel?.toString().trim() ?? "";
-    if (!sel || sel.isCollapsed || text.length < 3 || !sel.rangeCount) {
+    if (
+      !sel ||
+      sel.isCollapsed ||
+      text.length < 3 ||
+      !sel.rangeCount ||
+      !view.contains(sel.anchorNode) ||
+      !view.contains(sel.focusNode)
+    ) {
+      lastSelRef.current = null;
       setPopover(null);
       return;
     }
-    if (!view.contains(sel.anchorNode) || !view.contains(sel.focusNode)) {
-      setPopover(null);
+    const prev = lastSelRef.current;
+    if (
+      prev !== null &&
+      prev.text === text &&
+      prev.anchor === sel.anchorNode &&
+      prev.anchorOffset === sel.anchorOffset &&
+      prev.focus === sel.focusNode &&
+      prev.focusOffset === sel.focusOffset
+    )
       return;
-    }
+    lastSelRef.current = {
+      text,
+      anchor: sel.anchorNode,
+      anchorOffset: sel.anchorOffset,
+      focus: sel.focusNode,
+      focusOffset: sel.focusOffset,
+    };
     const range = sel.getRangeAt(0);
     rangeRef.current = range.cloneRange();
     setPopover(popoverPos(range.getBoundingClientRect(), { x: window.scrollX, y: window.scrollY }));
@@ -397,14 +428,28 @@ export function usePictures({
     const view = viewEl;
     if (!view) return;
     let frame = 0;
-    const onMouseUp = () => {
+    const schedule = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(rescan);
     };
-    view.addEventListener("mouseup", onMouseUp);
+    // pointerup covers touch and pen; mouseup stays for older mice. Both
+    // share one frame, so a click rescans once.
+    view.addEventListener("mouseup", schedule);
+    view.addEventListener("pointerup", schedule);
+    // Keyboard selections (shift+arrows) fire no pointer event, only a
+    // document-level selectionchange. Debounced; rescan dedupes repeats.
+    let timer = 0;
+    const onSelectionChange = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(rescan, 250);
+    };
+    document.addEventListener("selectionchange", onSelectionChange);
     return () => {
       cancelAnimationFrame(frame);
-      view.removeEventListener("mouseup", onMouseUp);
+      window.clearTimeout(timer);
+      view.removeEventListener("mouseup", schedule);
+      view.removeEventListener("pointerup", schedule);
+      document.removeEventListener("selectionchange", onSelectionChange);
     };
   }, [viewEl, rescan]);
 

@@ -85,7 +85,7 @@ html[data-skin="chihiro"][data-theme="light"] .band-pager .ticks i:not(.on) {
   background: rgba(110, 98, 90, 0.45);
 }
 
-html[data-skin="chihiro"][data-theme="light"] h1.chapter-title {
+html[data-skin="chihiro"][data-theme="light"] h2.chapter-title {
   color: #9c2f1e;
 }
 

@@ -48,7 +48,7 @@ export function BookView({
   const pref = effectiveImageStylePref(storedPref, skin);
   const [currentId, setCurrentId] = useState(initialSceneId);
   const [panelsCh, setPanelsCh] = useState<number | null>(null);
-  const readColRef = useRef<HTMLDivElement | null>(null);
+  const readColRef = useRef<HTMLElement | null>(null);
   const figEls = useRef(new Map<string, HTMLElement>());
   const pic = usePictures({ bookId: model.bookId, textVersion: model.textVersion, sceneId: currentId, pref });
   const order = useMemo(() => model.chapters.flatMap((c) => c.scenes.map((s) => s.id)), [model]);
@@ -67,6 +67,8 @@ export function BookView({
   // Spoiler reach: the highest chapter in view this visit. A chapter's
   // page and captions load only once the reader has reached it.
   const [maxReached, setMaxReached] = useState(() => sceneOf.get(initialSceneId)?.ch ?? 1);
+  const maxReachedRef = useRef(maxReached);
+  maxReachedRef.current = maxReached;
   const infoCh = info?.ch;
   useEffect(() => {
     if (infoCh !== undefined) setMaxReached((prev) => Math.max(prev, infoCh));
@@ -112,13 +114,27 @@ export function BookView({
           else seen.delete(id);
         }
         const next = pickCurrentScene(order, seen);
-        if (next) commitScene(next);
+        if (!next) return;
+        // Focus in a far chapter scrolls it under the reading line; that
+        // scroll must not commit a later scene or push "reached" (and the
+        // chat spoiler gate) forward.
+        const active = document.activeElement;
+        const focusCh = Number(
+          active instanceof HTMLElement ? active.closest?.("[data-ch]")?.getAttribute("data-ch") : NaN,
+        );
+        if (
+          Number.isFinite(focusCh) &&
+          focusCh > maxReachedRef.current &&
+          (sceneOf.get(next)?.ch ?? 0) > maxReachedRef.current
+        )
+          return;
+        commitScene(next);
       },
       { root: col, rootMargin: "-40% 0px -59% 0px", threshold: 0 },
     );
     for (const section of col.querySelectorAll("[data-scene-id]")) io.observe(section);
     return () => io.disconnect();
-  }, [order, commitScene]);
+  }, [order, commitScene, sceneOf]);
 
   // Chapter jumps from outside the column arrive here.
   useEffect(() => {
@@ -188,19 +204,20 @@ export function BookView({
         onPictureChapter={info ? () => setPanelsCh(info.ch) : null}
       />
       <Divider />
-      <div className="read-col" ref={readColRef} tabIndex={-1} aria-label="Reading column" onMouseUp={onReadMouseUp}>
+      <main id="story" className="read-col" ref={readColRef} tabIndex={-1} aria-label="Reading column" onMouseUp={onReadMouseUp}>
+        <h1 className="sr-only">{model.title}</h1>
         <ReadAlong columnRef={readColRef} />
         {model.chapters.map((chapter) => {
           const coverLong = coverTitleLong(chapter.title);
           return (
-            <div className="chapter-block" key={chapter.ch}>
+            <div className="chapter-block" key={chapter.ch} data-ch={chapter.ch}>
               <div className="kicker">Chapter</div>
               <p className="cover-num" data-long={coverLong} aria-label={`Chapter ${chapter.ch}`}>
                 {chapter.ch}
               </p>
-              <h1 className="chapter-title cover-title" data-long={coverLong}>
+              <h2 className="chapter-title cover-title" data-long={coverLong}>
                 {chapter.title}
-              </h1>
+              </h2>
               <hr className="cover-rule" />
               {chapter.scenes.map((s, si) => (
                 <section
@@ -253,6 +270,7 @@ export function BookView({
                   <button
                     type="button"
                     className="panels-link"
+                    tabIndex={chapter.ch === infoCh ? undefined : -1}
                     onClick={() => setPanelsCh(chapter.ch)}
                   >
                     Relive this chapter in panels
@@ -262,7 +280,7 @@ export function BookView({
             </div>
           );
         })}
-      </div>
+      </main>
       <PictureVault
         scene={pic.card.phase === "ready" ? { url: pic.card.url, caption: pic.card.caption } : null}
         figures={pic.figures}

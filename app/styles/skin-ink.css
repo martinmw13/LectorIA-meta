@@ -81,7 +81,7 @@ html[data-skin="ink"] .body-text > p + p:not([data-cont]) {
   margin-top: 1.05em;
 }
 
-html[data-skin="ink"] h1.chapter-title {
+html[data-skin="ink"] h2.chapter-title {
   font-family: var(--font-ink-title);
   font-weight: 700;
   font-style: normal;

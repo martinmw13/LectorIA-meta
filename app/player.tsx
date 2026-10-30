@@ -92,15 +92,14 @@ export function Player({
   const [playing, setPlaying] = useState(false);
   const requestPlayRef = useRef((_: Track, __: number) => {});
 
-  const [reducedMotion, setReducedMotion] = useState(
-    () =>
-      typeof window !== "undefined" &&
-      !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches,
-  );
+  // Starts false on server and client alike so hydration matches; the
+  // effect below then reads the real preference and re-renders.
+  const [reducedMotion, setReducedMotion] = useState(false);
 
   useEffect(() => {
     const query = window.matchMedia?.("(prefers-reduced-motion: reduce)");
     if (!query) return;
+    setReducedMotion(query.matches);
     const onChange = (event: MediaQueryListEvent) => setReducedMotion(event.matches);
     query.addEventListener("change", onChange);
     return () => query.removeEventListener("change", onChange);
