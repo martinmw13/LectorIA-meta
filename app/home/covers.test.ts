@@ -28,7 +28,7 @@ describe("covers", () => {
   it("always shows Oz on the cyclone-house panel", () => {
     for (const skin of SKINS) {
       for (const size of SIZES) {
-        expect(coverFor("oz", skin, size)).toBe("/art/panels/cyclone-house.jpg");
+        expect(coverFor("oz", skin, size)).toBe("/art/panels/cyclone-house.webp");
       }
     }
   });

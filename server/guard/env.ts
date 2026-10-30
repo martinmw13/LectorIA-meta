@@ -19,3 +19,12 @@ export function turnstilePair(from: NodeJS.ProcessEnv): TurnstilePair {
     ...(siteKey ? { turnstileSiteKey: siteKey } : {}),
   };
 }
+
+// One rule for both spend caps: a finite, non-negative USD value wins,
+// anything else (missing, blank, non-numeric, negative, Infinity) falls back.
+// Zero stays valid so a zero cap can intentionally block spend.
+export function parseCapUsd(raw: string | undefined, fallback: number): number {
+  if (raw === undefined || raw.trim() === "") return fallback;
+  const value = Number(raw);
+  return Number.isFinite(value) && value >= 0 ? value : fallback;
+}

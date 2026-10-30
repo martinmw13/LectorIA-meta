@@ -82,7 +82,7 @@ export function HomeSpread() {
                     <HomeIcon name="heart" />
                   </span>
                 )}
-                <img className={entry.id === "oz" ? "oz-art" : undefined} src={coverFor(entry.id, skin, "sm")} alt="" />
+                <img className={entry.id === "oz" ? "oz-art" : undefined} src={coverFor(entry.id, skin, "sm")} alt="" loading="lazy" decoding="async" />
                 <span className="lb-name">{entry.label}</span>
               </button>
             ))}
@@ -124,6 +124,8 @@ export function HomeSpread() {
               className={book.id === "oz" ? "ob-art oz-art" : "ob-art"}
               src={coverFor(book.id, skin, "lg")}
               alt={book.alt}
+              fetchPriority="high"
+              decoding="async"
             />
             <div className="ob-txt">
               <h2 id="obPlateTitle">{book.title}</h2>
