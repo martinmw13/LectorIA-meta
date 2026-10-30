@@ -124,19 +124,19 @@ describe("styled imageKey", () => {
   const scene = { kind: "scene", bookId: "oz", textVersion: "t123", sceneId: "c1s1" } as const;
 
   it("keys an omitted style exactly like today", () => {
-    expect(imageKey({ ...passage })).toBe("images/oz/t123/v4/p836.webp");
-    expect(imageKey({ ...scene })).toBe("images/oz/t123/v4/scene-c1s1.webp");
+    expect(imageKey({ ...passage })).toBe("images/oz/t123/v5/p836.webp");
+    expect(imageKey({ ...scene })).toBe("images/oz/t123/v5/scene-c1s1.webp");
     expect(imageKey(parseImageRequest({ ...passage, style: { preset: "denslow" } }))).toBe(
-      "images/oz/t123/v4/p836.webp",
+      "images/oz/t123/v5/p836.webp",
     );
   });
 
   it("inserts the preset segment before the file name", () => {
     expect(imageKey({ ...passage, style: { kind: "preset", id: "pencil" } })).toBe(
-      "images/oz/t123/v4/style-pencil/p836.webp",
+      "images/oz/t123/v5/style-pencil/p836.webp",
     );
     expect(imageKey({ ...scene, style: { kind: "preset", id: "pencil" } })).toBe(
-      "images/oz/t123/v4/style-pencil/scene-c1s1.webp",
+      "images/oz/t123/v5/style-pencil/scene-c1s1.webp",
     );
   });
 
@@ -151,7 +151,7 @@ describe("styled imageKey", () => {
       imageKey(parseImageRequest({ ...passage, style: { custom } })),
     );
     expect(new Set(keys).size).toBe(1);
-    expect(keys[0]).toBe("images/oz/t123/v4/style-c505d8a83e9688ac8/p836.webp");
+    expect(keys[0]).toBe("images/oz/t123/v5/style-c505d8a83e9688ac8/p836.webp");
   });
 
   it("keeps different customs and presets apart", () => {
@@ -166,8 +166,8 @@ describe("styled imageKey", () => {
     const watercolor = imageKey({ ...passage, style: { kind: "preset", id: "watercolor" } });
     const penPencil = imageKey({ ...passage, style: { kind: "preset", id: "pen-pencil" } });
     expect(new Set([plain, watercolor, penPencil]).size).toBe(3);
-    expect(watercolor).toBe("images/oz/t123/v4/style-watercolor/p836.webp");
-    expect(penPencil).toBe("images/oz/t123/v4/style-pen-pencil/p836.webp");
+    expect(watercolor).toBe("images/oz/t123/v5/style-watercolor/p836.webp");
+    expect(penPencil).toBe("images/oz/t123/v5/style-pen-pencil/p836.webp");
   });
 
   it("regenerates nothing for the same style", () => {
@@ -195,30 +195,40 @@ describe("styled buildPrompt", () => {
     passageText: "Dorothy ran outside.",
     sceneClip: "Gray prairie and a small house.",
   };
-  const denslow =
-    "Illustration in the style of W. W. Denslow's 1900 first-edition " +
-    "illustrations for The Wonderful Wizard of Oz: flat color, bold black " +
-    "ink outlines, limited palette. Dorothy wears silver shoes. Nothing " +
-    "from the 1939 MGM film, no ruby slippers, no film look. No text, " +
-    "no captions, no lettering in the image.";
-
-  it("keeps the default prompt byte-identical", () => {
-    expect(buildPrompt({ kind: "passage", ...base })).toBe(
-      `Scene "The Cyclone". Passage: Dorothy ran outside.. Context: Gray prairie and a small house.. ${denslow}`,
+  it("builds the structured Denslow prompt by default, with single periods", () => {
+    const passage = buildPrompt({ kind: "passage", ...base });
+    expect(passage.startsWith("STYLE: In the style of W. W. Denslow")).toBe(true);
+    expect(passage).toContain(
+      'CONTENT: Scene "The Cyclone". Passage: Dorothy ran outside. Context: Gray prairie and a small house.',
     );
-    expect(buildPrompt({ kind: "scene", ...base })).toBe(
-      `Scene "The Cyclone". Gray prairie and a small house.. ${denslow}`,
-    );
+    expect(passage).toContain("STYLE REMINDER: the whole image is drawn in this one style.");
+    expect(passage).toContain("silver shoes");
+    expect(passage).not.toContain("..");
+    const scene = buildPrompt({ kind: "scene", ...base });
+    expect(scene.startsWith("STYLE: In the style of W. W. Denslow")).toBe(true);
+    expect(scene).toContain('CONTENT: Scene "The Cyclone". Gray prairie and a small house.');
+    expect(scene).not.toContain("..");
   });
 
-  it("replaces the Denslow sentence with the descriptor line", () => {
+  it("uses the structured prompt for presets with approved text", () => {
     const prompt = buildPrompt({
       kind: "passage",
       ...base,
       style: { kind: "preset", id: "watercolor" },
     });
+    expect(prompt.startsWith("STYLE:")).toBe(true);
+    expect(prompt).toContain("Beatrix Potter");
+    expect(prompt).toContain("silver shoes");
+  });
+
+  it("keeps the descriptor line for legacy presets", () => {
+    const prompt = buildPrompt({
+      kind: "passage",
+      ...base,
+      style: { kind: "preset", id: "oil" },
+    });
     expect(prompt).not.toContain("Denslow");
-    expect(prompt).toContain("Art style: soft storybook watercolor painting,");
+    expect(prompt).toContain("Art style: classical oil painting,");
     expect(prompt).toContain("silver shoes");
   });
 
@@ -321,13 +331,13 @@ describe("passage endN", () => {
 
   it("keys ranges without breaking the bare pN key", () => {
     expect(imageKey({ kind: "passage", bookId: "oz", textVersion: "t123", n: 3 })).toBe(
-      "images/oz/t123/v4/p3.webp",
+      "images/oz/t123/v5/p3.webp",
     );
     expect(imageKey({ kind: "passage", bookId: "oz", textVersion: "t123", n: 3, endN: 3 })).toBe(
-      "images/oz/t123/v4/p3.webp",
+      "images/oz/t123/v5/p3.webp",
     );
     expect(imageKey({ kind: "passage", bookId: "oz", textVersion: "t123", n: 3, endN: 5 })).toBe(
-      "images/oz/t123/v4/p3-5.webp",
+      "images/oz/t123/v5/p3-5.webp",
     );
   });
 });
@@ -361,13 +371,13 @@ describe("validateAgainstBook", () => {
 describe("imageKey", () => {
   it("uses only the start paragraph for passages", () => {
     expect(imageKey({ kind: "passage", bookId: "oz", textVersion: "t123", n: 7 })).toBe(
-      "images/oz/t123/v4/p7.webp",
+      "images/oz/t123/v5/p7.webp",
     );
   });
 
   it("uses the scene id for scenes", () => {
     expect(imageKey({ kind: "scene", bookId: "oz", textVersion: "t123", sceneId: "c1s1" })).toBe(
-      "images/oz/t123/v4/scene-c1s1.webp",
+      "images/oz/t123/v5/scene-c1s1.webp",
     );
   });
 
@@ -400,8 +410,8 @@ describe("buildPrompt", () => {
 
   it("clips a long passage near 600 chars", () => {
     const prompt = buildPrompt({ kind: "passage", passageText: "x".repeat(2000), ...base });
-    const passagePart = prompt.split("Context:")[0] ?? "";
-    expect(passagePart.length).toBeLessThan(900);
+    const passagePart = (prompt.split("Passage: ")[1] ?? "").split(" Context:")[0] ?? "";
+    expect(passagePart.length).toBeLessThan(650);
   });
 
   it("builds a scene prompt from the scene clip", () => {

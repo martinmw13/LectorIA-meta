@@ -8,6 +8,7 @@ import {
   styleSegment,
 } from "./image-style";
 import type { ImageStyle, StyleBook } from "./image-style";
+import { guardLine, sentence, stripColorWords, stylePromptFor } from "./style-prompts";
 import { CHAPTER_PROMPT_VERSION, IMAGE_COST_MICRO, PROMPT_VERSION } from "./types";
 import type { ImageKind, ImageRequest } from "./types";
 
@@ -272,7 +273,9 @@ export function styleLine(style: ImageStyle | undefined, book?: StyleBook): stri
 // Base prompt from trusted server-side book text only. The client sends
 // ordinals and ids, never free text, so there is no injection path. Only
 // the optional parsed style reaches the prompt, never raw client text.
-// The route appends validated, clipped model-derived bookmap details after this base.
+// Styles with an approved prompt get the structured form with the
+// validated, clipped bookmap reference before the style reminder; the
+// rest keep the legacy descriptor line with the reference appended.
 export function buildPrompt(args: {
   kind: Exclude<ImageKind, "chapter">;
   passageText: string;
@@ -280,17 +283,44 @@ export function buildPrompt(args: {
   sceneClip: string;
   style?: ImageStyle;
   book?: StyleBook;
+  reference?: string;
 }): string {
-  const style = styleLine(args.style, args.book);
-  if (args.kind === "scene") {
-    return (
-      `Scene "${args.sceneTitle}". ${clipText(args.sceneClip, MAX_SCENE_CLIP_CHARS)}. ${style}`
-    );
+  const prompt = stylePromptFor(args.style, args.book);
+  if (prompt !== undefined) {
+    const content =
+      args.kind === "scene"
+        ? [sentence(clipText(args.sceneClip, MAX_SCENE_CLIP_CHARS))]
+        : [
+            `Passage: ${sentence(clipText(args.passageText, MAX_PASSAGE_CHARS))}`,
+            `Context: ${sentence(clipText(args.sceneClip, MAX_SCENE_CLIP_CHARS))}`,
+          ];
+    return [
+      `STYLE: ${prompt.lead}`,
+      prompt.composition,
+      `CONTENT: Scene "${args.sceneTitle}".`,
+      ...content,
+      referencePart(args.reference, prompt.monochrome),
+      `STYLE REMINDER: the whole image is drawn in this one style. ${prompt.reminder}`,
+      guardLine(args.book),
+    ]
+      .filter((p) => p !== "")
+      .join(" ");
   }
-  return (
-    `Scene "${args.sceneTitle}". Passage: ${clipText(args.passageText, MAX_PASSAGE_CHARS)}. ` +
-    `Context: ${clipText(args.sceneClip, MAX_SCENE_CLIP_CHARS)}. ${style}`
-  );
+  const style = styleLine(args.style, args.book);
+  const base =
+    args.kind === "scene"
+      ? `Scene "${args.sceneTitle}". ${sentence(clipText(args.sceneClip, MAX_SCENE_CLIP_CHARS))} ${style}`
+      : `Scene "${args.sceneTitle}". Passage: ${sentence(clipText(args.passageText, MAX_PASSAGE_CHARS))} ` +
+        `Context: ${sentence(clipText(args.sceneClip, MAX_SCENE_CLIP_CHARS))} ${style}`;
+  return args.reference ? `${base} ${args.reference}` : base;
+}
+
+// Reference block for the structured form: monochrome styles drop hue
+// words so the book's colors do not leak into a grayscale drawing.
+export function referencePart(reference: string | undefined, monochrome: boolean): string {
+  if (!reference) return "";
+  const text = monochrome ? stripColorWords(reference).trim() : reference;
+  return text;
 }
 
 export function buildCaption(args: {

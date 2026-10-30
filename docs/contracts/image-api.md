@@ -33,11 +33,11 @@ ready to read, with its soundtrack and illustrations. It never says
 built server-side.
 
 The cache key is the Blob path
-`images/{bookId}/{textVersion}/v4/{file}`, where `{file}` is
+`images/{bookId}/{textVersion}/v5/{file}`, where `{file}` is
 `p{n}.webp` for one paragraph, `p{n}-{endN}.webp` for a range,
-`scene-{sceneId}.webp` for a scene, and `chapter-{ch}-c4.webp`
-for a chapter page. The `v4` directory is `PROMPT_VERSION`; the
-chapter file name also carries `CHAPTER_PROMPT_VERSION` (`c4`).
+`scene-{sceneId}.webp` for a scene, and `chapter-{ch}-c5.webp`
+for a chapter page. The `v5` directory is `PROMPT_VERSION`; the
+chapter file name also carries `CHAPTER_PROMPT_VERSION` (`c5`).
 
 Overlapping selections share a picture. Each cached passage range is
 recorded in a small per-scene list in Upstash (`img:ranges:` plus the

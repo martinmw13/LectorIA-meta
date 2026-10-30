@@ -156,7 +156,7 @@ describe("orchestrate with style", () => {
     expect(prompt).toContain("graphite pencil sketch");
     expect(prompt).not.toContain("Denslow");
     expect(d.saved).toEqual([imageKey(styledPassage)]);
-    expect(imageKey(styledPassage)).toBe("images/oz/t/v4/style-pencil/p3.webp");
+    expect(imageKey(styledPassage)).toBe("images/oz/t/v5/style-pencil/p3.webp");
   });
 
   it("serves a styled cache hit without generating", async () => {
@@ -204,6 +204,6 @@ describe("orchestrate with style", () => {
     expect(res.status).toBe("ready");
     expect(prompt.split("crayon drawing").length - 1).toBe(1);
     expect(d.saved).toEqual([imageKey(req)]);
-    expect(imageKey(req)).toMatch(/^images\/oz\/t\/v4\/style-c[0-9a-f]{16}\/scene-c1s1\.webp$/);
+    expect(imageKey(req)).toMatch(/^images\/oz\/t\/v5\/style-c[0-9a-f]{16}\/scene-c1s1\.webp$/);
   });
 });

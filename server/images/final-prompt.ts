@@ -18,24 +18,25 @@ export function buildFinalPrompt(args: {
   book?: StyleBook;
   reference?: string;
 }): string {
-  const base =
-    args.kind === "chapter"
-      ? buildChapterPrompt({
-          chapterTitle: args.sceneTitle,
-          panels: args.chapterPanels ?? [],
-          style: args.style,
-          book: args.book,
-        })
-      : buildPrompt({
-          kind: args.kind,
-          passageText: args.passageText,
-          sceneTitle: args.sceneTitle,
-          sceneClip: args.sceneClip,
-          style: args.style,
-          book: args.book,
-        });
-  const reference = args.reference ?? "";
-  return reference ? `${base} ${reference}` : base;
+  // The builders place the reference: structured prompts put it before
+  // the style reminder, legacy ones append it at the end.
+  return args.kind === "chapter"
+    ? buildChapterPrompt({
+        chapterTitle: args.sceneTitle,
+        panels: args.chapterPanels ?? [],
+        style: args.style,
+        book: args.book,
+        reference: args.reference,
+      })
+    : buildPrompt({
+        kind: args.kind,
+        passageText: args.passageText,
+        sceneTitle: args.sceneTitle,
+        sceneClip: args.sceneClip,
+        style: args.style,
+        book: args.book,
+        reference: args.reference,
+      });
 }
 
 // Chapter prompt exactly as the route builds it: panels over the
