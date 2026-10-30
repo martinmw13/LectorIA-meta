@@ -16,6 +16,9 @@ export interface CoverTask {
   skin: string;
   style: ImageStyle | undefined;
   prompt: string;
+  // Same style, generic subject: used once when the provider's safety
+  // filter rejects the book-specific prompt.
+  fallbackPrompt: string;
   path: string;
 }
 
@@ -50,15 +53,13 @@ export function planCoverTasks(args: {
         continue;
       }
       const style = coverStyleForSkin(skin);
+      const book = { id: subject.bookId, title: subject.title, author: subject.author };
       tasks.push({
         bookId: subject.bookId,
         skin,
         style,
-        prompt: buildCoverPrompt({
-          book: { id: subject.bookId, title: subject.title, author: subject.author },
-          coverDescription: subject.coverDescription,
-          style,
-        }),
+        prompt: buildCoverPrompt({ book, coverDescription: subject.coverDescription, style }),
+        fallbackPrompt: buildCoverPrompt({ book, coverDescription: "", style }),
         path,
       });
     }
@@ -81,6 +82,8 @@ export async function runCoverTasks(args: {
   concurrency: number;
   generate: (prompt: string) => Promise<Uint8Array>;
   write: (diskPath: string, bytes: Uint8Array) => Promise<void> | void;
+  onFailure?: (task: CoverTask, stage: "generate" | "write", error: unknown) => void;
+  isPolicyRejection?: (error: unknown) => boolean;
 }): Promise<CoverRunResult> {
   let generated = 0;
   let failed = 0;
@@ -88,6 +91,14 @@ export async function runCoverTasks(args: {
   let spent = 0;
   let next = 0;
   const workers = Math.max(1, Math.floor(args.concurrency));
+  async function generateWithFallback(task: CoverTask): Promise<Uint8Array> {
+    try {
+      return await args.generate(task.prompt);
+    } catch (e) {
+      if (!args.isPolicyRejection?.(e)) throw e;
+      return args.generate(task.fallbackPrompt);
+    }
+  }
   async function worker(): Promise<void> {
     while (next < args.tasks.length && !stoppedAtCap) {
       const task = args.tasks[next++];
@@ -99,15 +110,17 @@ export async function runCoverTasks(args: {
       spent += args.costMicro;
       let bytes: Uint8Array;
       try {
-        bytes = await args.generate(task.prompt);
-      } catch {
+        bytes = await generateWithFallback(task);
+      } catch (e) {
+        args.onFailure?.(task, "generate", e);
         spent -= args.costMicro;
         failed++;
         continue;
       }
       try {
         await args.write(task.path, bytes);
-      } catch {
+      } catch (e) {
+        args.onFailure?.(task, "write", e);
         spent -= args.costMicro;
         failed++;
         continue;

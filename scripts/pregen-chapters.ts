@@ -8,7 +8,7 @@ import { existsSync, readFileSync } from "node:fs";
 import type { Scene } from "../core/types";
 import { createBlobStore } from "../server/images/blob";
 import { parseCapUsd, usable } from "../server/guard/env";
-import { createMetaClient } from "../server/images/meta";
+import { createMetaClient, safeFailureReason } from "../server/images/meta";
 import { createRestKV } from "../server/guard/kv";
 import { utcDay } from "../server/guard/request";
 import { reserveSpend } from "../server/guard/spend";
@@ -222,10 +222,10 @@ async function main(): Promise<void> {
             bytes = await generate.generate(
               buildPregenChapterPrompt({ book: plan.book, scenes: plan.scenes, ch, style }),
             );
-          } catch {
+          } catch (e) {
             await refund();
             failed++;
-            console.log(line(`ch ${ch} ${styleId} failed -`));
+            console.log(line(`ch ${ch} ${styleId} failed - ${safeFailureReason(e)}`));
             return "done" as const;
           }
           let saved: string;
