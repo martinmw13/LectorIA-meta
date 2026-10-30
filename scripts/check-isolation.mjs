@@ -1,4 +1,4 @@
-// Whole-book check: every scene route ships the full book as one scroll.
+// Whole-book check: each ready book's prerendered first-scene route ships its text.
 // Scans the prerendered HTML and RSC files of every scene route for the
 // scene's own excerpt. Run after `npm run build`. Fails when the scene's
 // own text is missing from its HTML (which would prove the scan itself
@@ -37,18 +37,31 @@ export function excerpt(text) {
   return normalize(text).slice(0, EXCERPT_LEN);
 }
 
+// Only each ready book's first scene is prerendered (the rest render on
+// demand), so the check scans that one route per book under /read.
 function loadScenes() {
-  const book = JSON.parse(readFileSync(join(root, "data/books/oz/book.json"), "utf8"));
-  const analysis = JSON.parse(readFileSync(join(root, "data/books/oz/analysis.json"), "utf8"));
-  const byN = new Map(book.paragraphs.map((p) => [p.n, p.text]));
-  return analysis.scenes.map((scene) => ({
-    id: scene.id,
-    texts: Array.from({ length: scene.end_n - scene.start_n + 1 }, (_, i) => byN.get(scene.start_n + i) ?? ""),
-  }));
+  const library = JSON.parse(readFileSync(join(root, "data/library.json"), "utf8"));
+  const out = [];
+  for (const entry of library) {
+    if (entry.status !== "ready") continue;
+    const dir = join(root, "data/books", entry.id);
+    if (!existsSync(join(dir, "analysis.json"))) continue;
+    const book = JSON.parse(readFileSync(join(dir, "book.json"), "utf8"));
+    const analysis = JSON.parse(readFileSync(join(dir, "analysis.json"), "utf8"));
+    const first = analysis.scenes[0];
+    if (!first) continue;
+    const byN = new Map(book.paragraphs.map((p) => [p.n, p.text]));
+    out.push({
+      id: `${entry.id}/${first.id}`,
+      texts: Array.from({ length: first.end_n - first.start_n + 1 }, (_, i) => byN.get(first.start_n + i) ?? ""),
+    });
+  }
+  return out;
 }
 
-function routeFiles(sceneId) {
-  const dir = join(root, ".next/server/app/leer");
+function routeFiles(routeId) {
+  const [bookId, sceneId] = routeId.split("/");
+  const dir = join(root, ".next/server/app/read", bookId);
   const names = existsSync(dir) ? readdirSync(dir) : [];
   const own = [`${sceneId}.html`, `${sceneId}.rsc`];
   const segments = names.filter((n) => n === `${sceneId}.segments`);
@@ -94,5 +107,5 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     for (const failure of failures) console.error(`isolation: ${failure}`);
     process.exit(1);
   }
-  console.log("isolation: every scene route carries the whole book");
+  console.log("isolation: every prerendered first-scene route carries its own text");
 }
