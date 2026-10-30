@@ -89,8 +89,17 @@ function checkBook(id) {
   const narration = load(dir, "narration.json");
   if (narration) {
     if (narration.textVersion !== tv) bad(id, "narration.json textVersion stale");
-    const chs = Object.keys(narration.chapters).map(Number).sort((a, b) => a - b).join();
-    if (chs !== book.chapters.map((c) => c.ch).join()) bad(id, `narration chapters ${chs}`);
+    // Format 1 keys chapters directly; the per-voice format keys voices,
+    // and every voice must cover every chapter.
+    const keys = Object.keys(narration.chapters);
+    const byVoice = keys.length > 0 && keys.every((k) => Number.isNaN(Number(k)))
+      ? narration.chapters
+      : { default: narration.chapters };
+    const want = book.chapters.map((c) => c.ch).join();
+    for (const [voice, chapters] of Object.entries(byVoice)) {
+      const chs = Object.keys(chapters).map(Number).sort((a, b) => a - b).join();
+      if (chs !== want) bad(id, `narration chapters ${voice === "default" ? "" : `(${voice}) `}${chs}`);
+    }
   }
 }
 
