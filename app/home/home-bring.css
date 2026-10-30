@@ -111,6 +111,17 @@ html[data-skin="pencil"] .ob-input { border: 0; border-bottom: 1px solid rgba(44
 html[data-skin="comic"] .ob-input { border: 2px solid #14161C; border-radius: 4px; background: #fff; }
 html[data-skin="chihiro"] .ob-input { border: 0; border-bottom: 2px solid rgba(156, 47, 30, .55); border-radius: 0; background: transparent; }
 .ob-error { color: #b3261e; font-size: 13px; margin: 2px 0 0; }
+/* Upload progress: the fill follows state, never a loop. */
+.ob-progress { height: 6px; border-radius: 3px; background: var(--paper-2); border: 1px solid var(--muted); margin-top: 10px; overflow: hidden; }
+.ob-progress-fill { height: 100%; width: 0; background: var(--color-accent); border-radius: 2px; transition: width var(--m-fast) var(--ease); }
+
+/* Your books: uploads finished in this browser. */
+.ob-mine { list-style: none; margin: 2px 0 0; padding: 0; display: grid; gap: 4px; }
+.ob-mine-row { display: flex; gap: 8px; align-items: baseline; min-width: 0; }
+.ob-mine-row .ob-action { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ob-mine-row .ob-mini-meta { margin: 0; flex: none; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ob-mine-row .ob-quiet { margin-left: auto; flex: none; }
+
 /* Keybox stays compact so the open page never scrolls; focus thickens the underline in Meta blue. */
 .ob-keybox .ob-keyrow { margin-top: 0; }
 .ob-keyrow input { padding: 2px 2px; }

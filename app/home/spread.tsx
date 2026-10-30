@@ -7,6 +7,7 @@ import { shelf, shelfById } from "./shelf";
 import { coverFor } from "./covers";
 import { StyleMenu } from "../style-menu";
 import { UploadSection } from "./upload";
+import { YourBooks } from "./your-books";
 import { HomeIcon } from "./home-icons";
 
 // The open-book spread: shelf and drop zone on the left page, the
@@ -90,6 +91,7 @@ export function HomeSpread() {
 
           <h2 className="ob-sec-t">Or bring your own book</h2>
           <UploadSection />
+          <YourBooks />
 
           <footer className="ob-foot">
             Want more? Find free classics at{" "}

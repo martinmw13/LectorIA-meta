@@ -4,9 +4,13 @@
 // the shelf data, so enabling a book needs no test change.
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { shelf } from "./shelf";
 import { HomeSpread } from "./spread";
+
+const { pushMock } = vi.hoisted(() => ({ pushMock: vi.fn() }));
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: pushMock }) }));
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -26,6 +30,11 @@ function shelfButton(id: string): HTMLButtonElement {
 }
 
 beforeEach(() => {
+  try {
+    window.localStorage.clear();
+  } catch {
+    // jsdom without storage: the shelf tolerates it.
+  }
   document.body.innerHTML = "";
   container = document.createElement("div");
   document.body.appendChild(container);
@@ -63,5 +72,60 @@ describe("shelf links", () => {
       expect(container.querySelector(".ob-cta-soon")).toBeNull();
       expect(container.querySelector("a.ob-read")?.getAttribute("href")).toBe(`/read/${book.id}`);
     }
+  });
+});
+
+describe("your books", () => {
+  const UPLOAD_ID = "u-AAAAAAAAAAAAAAAAAAAAAA";
+
+  function seed() {
+    window.localStorage.setItem(
+      "lectoria.myBooks.v1",
+      JSON.stringify([
+        { id: UPLOAD_ID, title: "Middlemarch", author: "George Eliot", savedAt: 1 },
+        { id: "u-BBBBBBBBBBBBBBBBBBBBBB", title: "Emma", author: "Jane Austen", savedAt: 2 },
+      ]),
+    );
+  }
+
+  function rerender() {
+    act(() => {
+      root?.unmount();
+      root = createRoot(container);
+    });
+    act(() => {
+      root?.render(<HomeSpread />);
+    });
+  }
+
+  test("shows nothing without stored books", () => {
+    expect(container.querySelector('[aria-label="Your books"]')).toBeNull();
+  });
+
+  test("bad JSON shows nothing", () => {
+    window.localStorage.setItem("lectoria.myBooks.v1", "{oops");
+    rerender();
+    expect(container.querySelector('[aria-label="Your books"]')).toBeNull();
+  });
+
+  test("links each book to its reader and forgets on x", () => {
+    seed();
+    rerender();
+    const section = container.querySelector('[aria-label="Your books"]');
+    expect(section?.querySelector("h2")?.textContent).toBe("Your books");
+    const links = [...section!.querySelectorAll("a")];
+    expect(links.map((a) => a.getAttribute("href"))).toEqual([
+      `/read/${UPLOAD_ID}`,
+      "/read/u-BBBBBBBBBBBBBBBBBBBBBB",
+    ]);
+    const forget = [...section!.querySelectorAll("button")].find(
+      (b) => b.getAttribute("aria-label") === "Forget Middlemarch",
+    );
+    if (!forget) throw new Error("forget button missing");
+    click(forget);
+    expect(JSON.parse(window.localStorage.getItem("lectoria.myBooks.v1") ?? "[]")).toEqual([
+      { id: "u-BBBBBBBBBBBBBBBBBBBBBB", title: "Emma", author: "Jane Austen", savedAt: 2 },
+    ]);
+    expect(container.querySelector('[aria-label="Your books"]')?.textContent).not.toContain("Middlemarch");
   });
 });

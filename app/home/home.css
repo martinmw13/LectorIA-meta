@@ -67,7 +67,9 @@ html[data-skin="comic"] .ob-desk :focus-visible { outline-width: 3px; }
 
 .ob-book { display: grid; grid-template-columns: 7fr 40px 6fr; align-items: stretch; min-height: 0; flex: 1; max-height: 100%; }
 .ob-page { position: relative; background: var(--paper); padding: 20px 30px 14px; min-height: 0; }
-.ob-left { border-radius: 14px 3px 3px 14px; display: flex; flex-direction: column; }
+.ob-left { border-radius: 14px 3px 3px 14px; display: flex; flex-direction: column; overflow-y: auto; }
+/* Tall states (key step, progress) scroll inside the page at natural height instead of shrinking the shelf over its own labels. */
+.ob-left > * { flex-shrink: 0; }
 .ob-right { border-radius: 3px 14px 14px 3px; display: flex; }
 html[data-skin="engraving"] .ob-page { box-shadow: 0 1px 0 var(--rule), 0 18px 30px -18px rgba(42, 36, 28, .55); }
 html[data-skin="engraving"] .ob-page::before { content: ""; position: absolute; inset: 10px; pointer-events: none; border: 1px solid var(--rule); outline: 1px solid rgba(42, 36, 28, .5); outline-offset: 3px; }
@@ -180,5 +182,8 @@ html[data-skin="chihiro"] .lb-item[aria-pressed="true"] img { outline: 2.5px sol
   }
   .ob-desk .ob-drop, .ob-desk .lb-item img {
     transition: opacity 200ms ease !important;
+  }
+  .ob-desk .ob-progress-fill {
+    transition: none !important;
   }
 }

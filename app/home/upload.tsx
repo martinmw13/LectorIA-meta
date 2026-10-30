@@ -1,26 +1,60 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import { EPUB_ERROR_MESSAGES, EpubError, readEpubFile, type EpubBook } from "@/core/epub";
+import { useRouter } from "next/navigation";
+import type { RawSection } from "@/core/clean-types";
+import { EPUB_ERROR_MESSAGES, EpubError, readEpubFileWithSections, type EpubBook } from "@/core/epub";
+import { UPLOAD_MESSAGES } from "@/core/uploads";
 import { approxPages, FREE_BOOK_MAX_WORDS, uploadRoute } from "@/core/upload-policy";
+import { TurnstileWidget } from "../turnstile";
 import { BookCard } from "./book-card";
 import { ByokStep } from "./byok";
-import { getFreeBookUsed, setFreeBookUsed } from "./free-book";
+import { countFreeBookToday, getFreeBooksToday } from "./free-book";
 import { HomeIcon } from "./home-icons";
+import { saveMyBook } from "./my-books";
+import { driveUpload, UploadFlowError, type FlowCode, type FlowProgress } from "./upload-flow";
+
+interface ParsedBook {
+  book: EpubBook;
+  sections: RawSection[];
+}
 
 type Status =
   | { step: "idle" }
   | { step: "reading" }
   | { step: "error"; message: string }
-  | { step: "parsed"; book: EpubBook }
-  | { step: "processing"; book: EpubBook };
+  | { step: "parsed"; parsed: ParsedBook }
+  | { step: "working"; parsed: ParsedBook; key: string | null; progress: FlowProgress | null }
+  | { step: "finishing"; parsed: ParsedBook; id: string; progress: FlowProgress }
+  | {
+      step: "failed";
+      parsed: ParsedBook;
+      key: string | null;
+      code: FlowCode;
+      progress: FlowProgress | null;
+    };
 
-// Client-side only: files are parsed in the browser and never uploaded.
+const NETWORK_MESSAGE = "We lost the connection for a moment. Try again?";
+
+function progressCopy(progress: FlowProgress | null): string {
+  if (!progress) return "Reading your book…";
+  if (progress.total > 0 && progress.done >= progress.total) return "Setting it to music…";
+  if (progress.done <= 0) return "Finding the scenes…";
+  return `Listening for the mood of chapter ${progress.done + 1} of ${progress.total}…`;
+}
+
+function progressPercent(progress: FlowProgress | null): number {
+  if (!progress || progress.total <= 0) return 0;
+  return Math.min(100, Math.round((progress.done / progress.total) * 100));
+}
+
+// Client upload: the EPUB parses in the browser, then the sections POST
+// to /api/uploads and the steps run until done. Keys live in state only.
 export function UploadSection() {
+  const router = useRouter();
   const [status, setStatus] = useState<Status>({ step: "idle" });
   const [dragging, setDragging] = useState(false);
-  const [freeUsed, setFreeUsed] = useState(false);
+  const [freeCount, setFreeCount] = useState(0);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [keyOpen, setKeyOpen] = useState(false);
   // Tab-only scratch: never stored, logged, or sent; dies with this component.
@@ -28,17 +62,29 @@ export function UploadSection() {
   const [showKey, setShowKey] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
+  const runRef = useRef(0);
+  const abortRef = useRef<AbortController | null>(null);
   const freePages = approxPages(FREE_BOOK_MAX_WORDS);
 
-  useEffect(() => setFreeUsed(getFreeBookUsed()), []);
+  useEffect(() => setFreeCount(getFreeBooksToday()), []);
+  useEffect(() => () => abortRef.current?.abort(), []);
 
-  // The parsed and processing views replace the drop zone, so move focus
-  // into the result; otherwise keyboard focus is lost when it unmounts.
+  // The result views replace the drop zone, so move focus into the
+  // result; otherwise keyboard focus is lost when it unmounts.
   useEffect(() => {
-    if (status.step === "parsed" || status.step === "processing") resultRef.current?.focus();
+    if (status.step !== "idle" && status.step !== "reading" && status.step !== "error") {
+      resultRef.current?.focus();
+    }
   }, [status]);
 
-  const book = status.step === "parsed" || status.step === "processing" ? status.book : null;
+  const parsed =
+    status.step === "parsed" ||
+    status.step === "working" ||
+    status.step === "finishing" ||
+    status.step === "failed"
+      ? status.parsed
+      : null;
+  const book = parsed?.book ?? null;
   useEffect(() => {
     if (!book?.cover) {
       setCoverUrl(null);
@@ -52,7 +98,8 @@ export function UploadSection() {
   async function openFile(file: File) {
     setStatus({ step: "reading" });
     try {
-      setStatus({ step: "parsed", book: await readEpubFile(file) });
+      const { book: parsedBook, sections } = await readEpubFileWithSections(file);
+      setStatus({ step: "parsed", parsed: { book: parsedBook, sections } });
     } catch (err) {
       const message =
         err instanceof EpubError ? EPUB_ERROR_MESSAGES[err.code] : EPUB_ERROR_MESSAGES.unreadable;
@@ -61,43 +108,141 @@ export function UploadSection() {
   }
 
   function reset() {
+    runRef.current += 1;
+    abortRef.current?.abort();
+    abortRef.current = null;
     if (inputRef.current) inputRef.current.value = "";
     setIdleKey("");
     setShowKey(false);
     setStatus({ step: "idle" });
   }
 
-  const route = status.step === "parsed" ? uploadRoute(status.book.words, freeUsed) : null;
+  function startDrive(
+    next: ParsedBook,
+    opts: { key: string | null; token?: string | null; jobId?: string | null; progress?: FlowProgress | null },
+  ) {
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+    const run = (runRef.current += 1);
+    const alive = (): boolean => runRef.current === run && !ctrl.signal.aborted;
+    const key = opts.key;
+    let counted = opts.jobId != null;
+    let latest = opts.progress ?? null;
+    setStatus({ step: "working", parsed: next, key, progress: latest });
+    void driveUpload({
+      title: next.book.title,
+      author: next.book.author,
+      sections: next.sections,
+      key,
+      token: opts.token ?? null,
+      jobId: opts.jobId ?? null,
+      signal: ctrl.signal,
+      onProgress: (progress) => {
+        if (!alive()) return;
+        if (!counted) {
+          counted = true;
+          if (!key) {
+            countFreeBookToday();
+            setFreeCount(getFreeBooksToday());
+          }
+        }
+        latest = progress;
+        setStatus({ step: "working", parsed: next, key, progress });
+      },
+    }).then(
+      ({ id, chapters }) => {
+        if (!alive()) return;
+        saveMyBook({ id, title: next.book.title, author: next.book.author ?? "Unknown author", savedAt: Date.now() });
+        setStatus({
+          step: "finishing",
+          parsed: next,
+          id,
+          progress: latest ?? { jobId: id, done: 1, total: 1, chapters },
+        });
+        router.push(`/read/${id}`);
+      },
+      (err: unknown) => {
+        if (!alive()) return;
+        if (err instanceof UploadFlowError) {
+          setStatus({ step: "failed", parsed: next, key, code: err.code, progress: latest });
+          return;
+        }
+        setStatus({ step: "failed", parsed: next, key, code: "unavailable", progress: latest });
+      },
+    );
+  }
+
+  const route = status.step === "parsed" ? uploadRoute(status.parsed.book.words, freeCount) : null;
+
+  if (status.step === "working" || status.step === "finishing") {
+    const progress = status.progress;
+    return (
+      <section className="ob-bring" aria-label="Bring your own book">
+        <div ref={resultRef} tabIndex={-1}>
+          <BookCard book={status.parsed.book} coverUrl={coverUrl} />
+          <div
+            className="ob-progress"
+            role="progressbar"
+            aria-label="Preparing your book"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={progressPercent(progress)}
+          >
+            <div className="ob-progress-fill" style={{ width: `${progressPercent(progress)}%` }} />
+          </div>
+          <p className="ob-note" aria-live="polite">
+            {progressCopy(progress)}
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  if (status.step === "failed") {
+    return (
+      <section className="ob-bring" aria-label="Bring your own book">
+        <div ref={resultRef} tabIndex={-1}>
+          <BookCard book={status.parsed.book} coverUrl={coverUrl} />
+          <FailedView
+            status={status}
+            idleKey={idleKey}
+            onRetryKey={(key) =>
+              startDrive(status.parsed, { key, progress: null })
+            }
+            onRetryToken={(token) =>
+              startDrive(status.parsed, {
+                key: status.key,
+                token,
+                jobId: status.progress?.jobId ?? null,
+                progress: status.progress,
+              })
+            }
+            onRetry={() =>
+              startDrive(status.parsed, {
+                key: status.key,
+                jobId: status.progress?.jobId ?? null,
+                progress: status.progress,
+              })
+            }
+            onReset={reset}
+          />
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="ob-bring" aria-label="Bring your own book">
-      {status.step === "processing" ? (
+      {status.step === "parsed" && route ? (
         <div ref={resultRef} tabIndex={-1}>
-          <p className="ob-note">
-            Soundtracks for your own books are coming soon. For now, Oz shows how it works.
-          </p>
-          <div className="ob-actions">
-            <Link className="ob-action" href="/read/oz">
-              Read Oz instead
-            </Link>
-            <button className="ob-quiet" type="button" onClick={reset}>
-              Choose another book
-            </button>
-          </div>
-        </div>
-      ) : status.step === "parsed" && route ? (
-        <div ref={resultRef} tabIndex={-1}>
-          <BookCard book={status.book} coverUrl={coverUrl} />
+          <BookCard book={status.parsed.book} coverUrl={coverUrl} />
           {route.kind === "free" ? (
             <div className="ob-actions">
               <button
                 className="ob-action"
                 type="button"
-                onClick={() => {
-                  setFreeBookUsed();
-                  setFreeUsed(true);
-                  setStatus({ step: "processing", book: status.book });
-                }}
+                onClick={() => startDrive(status.parsed, { key: null })}
               >
                 Read with soundtrack
               </button>
@@ -108,12 +253,13 @@ export function UploadSection() {
           ) : (
             <div>
               <ByokStep
+                metaOnly
                 reason={route.reason}
                 initialKey={idleKey}
-                onSubmit={() => {
+                onSubmit={(key) => {
                   setIdleKey("");
                   setShowKey(false);
-                  setStatus({ step: "processing", book: status.book });
+                  startDrive(status.parsed, { key });
                 }}
               />
               <div className="ob-actions">
@@ -196,7 +342,7 @@ export function UploadSection() {
               </span>
               <span>
                 <b>Free</b>
-                <small>Your first book is on us, up to about {freePages} pages.</small>
+                <small>Two books a day are on us, up to about {freePages} pages each.</small>
               </span>
             </button>
             <button
@@ -252,5 +398,85 @@ export function UploadSection() {
         </div>
       )}
     </section>
+  );
+}
+
+// One failed upload: coded errors map to the next step, never a dead end.
+function FailedView({
+  status,
+  idleKey,
+  onRetryKey,
+  onRetryToken,
+  onRetry,
+  onReset,
+}: {
+  status: Extract<Status, { step: "failed" }>;
+  idleKey: string;
+  onRetryKey: (key: string) => void;
+  onRetryToken: (token: string) => void;
+  onRetry: () => void;
+  onReset: () => void;
+}) {
+  const code = status.code;
+  if (code === "too_long" || code === "daily_books_reached" || code === "daily_budget_reached") {
+    return (
+      <div>
+        <ByokStep
+          metaOnly
+          note={UPLOAD_MESSAGES[code]}
+          initialKey={idleKey}
+          actionLabel="Bring your own key!"
+          onSubmit={onRetryKey}
+        />
+        <div className="ob-actions">
+          <button className="ob-quiet" type="button" onClick={onReset}>
+            Choose another book
+          </button>
+        </div>
+      </div>
+    );
+  }
+  if (code === "human_required") {
+    return (
+      <div>
+        <p className="ob-note">{UPLOAD_MESSAGES.human_required} Complete the check and we&apos;ll pick up where we left off.</p>
+        <TurnstileWidget onToken={onRetryToken} />
+        <div className="ob-actions">
+          <button className="ob-action" type="button" onClick={onRetry}>
+            Try again
+          </button>
+          <button className="ob-quiet" type="button" onClick={onReset}>
+            Choose another book
+          </button>
+        </div>
+      </div>
+    );
+  }
+  if (code === "expired" || code === "not_found") {
+    return (
+      <div>
+        <p className="ob-note">{UPLOAD_MESSAGES[code]} Upload it again to start over.</p>
+        <div className="ob-actions">
+          <button className="ob-action" type="button" onClick={onReset}>
+            Upload it again
+          </button>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div>
+      <p className="ob-note" role="alert">
+        {code === "network" ? NETWORK_MESSAGE : UPLOAD_MESSAGES[code]}
+      </p>
+      <div className="ob-actions">
+        <button className="ob-action" type="button" onClick={onRetry}>
+          Try again
+        </button>
+        <button className="ob-quiet" type="button" onClick={onReset}>
+          Choose another book
+        </button>
+      </div>
+    </div>
   );
 }

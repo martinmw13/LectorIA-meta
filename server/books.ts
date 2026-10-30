@@ -2,6 +2,8 @@ import "server-only";
 import { notFound } from "next/navigation";
 import { library } from "@/core/library";
 import type { AnalyzedScene, Book } from "@/core/types";
+import { isUploadId } from "@/core/uploads";
+import { loadUploadedBook } from "./uploads/loader";
 
 export interface BookPayload {
   book: Pick<Book, "id" | "title" | "author" | "chapters" | "paragraphs" | "textVersion">;
@@ -91,13 +93,22 @@ function readPayload(id: string): Promise<BookPayload> {
 // Processed data for any known id. Chat uses this: a question about a
 // processed book is answerable whether the shelf lists it or not.
 // Unknown ids throw notFound() synchronously, before any work starts.
+// Uploads never load here: chat, pictures, and panels stay shelf-only.
 export function loadBookData(bookId: string): Promise<BookPayload> {
   if (!isKnownBookId(bookId)) notFound();
   return readPayload(bookId);
 }
 
-// Shelf books only. Unknown, unlisted, or traversal-ish ids 404.
+// Shelf books plus finished uploads. Missing, unfinished, or expired
+// uploads 404 like unknown ids. Uploads bypass the module cache: they
+// expire after 30 days, so a forever entry would serve a dead book.
 export function loadBook(bookId: string): Promise<BookPayload> {
+  if (isUploadId(bookId)) {
+    return loadUploadedBook(bookId).then((payload) => {
+      if (!payload) notFound();
+      return payload;
+    });
+  }
   if (!isReadyBookId(bookId)) notFound();
   return readPayload(bookId);
 }

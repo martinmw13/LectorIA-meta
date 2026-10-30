@@ -1,5 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { isKnownBookId, isReadyBookId, loadBook, loadBookData, readyBookIds } from "./books";
+import { loadUploadedBook } from "./uploads/loader";
+
+vi.mock("./uploads/loader", () => ({ loadUploadedBook: vi.fn() }));
+
+const mockedLoader = vi.mocked(loadUploadedBook);
 
 function notFoundDigest(fn: () => unknown): string {
   try {
@@ -47,5 +52,51 @@ describe("book registry", () => {
       expect(isKnownBookId(id)).toBe(false);
       expect(notFoundDigest(() => loadBook(id))).toContain("404");
     }
+  });
+});
+
+const UPLOAD_ID = "u-AAAAAAAAAAAAAAAAAAAAAA";
+
+async function rejectedDigest(promise: Promise<unknown>): Promise<string> {
+  try {
+    await promise;
+  } catch (e) {
+    return String((e as { digest?: unknown }).digest ?? (e as Error).message);
+  }
+  throw new Error("expected notFound() to reject");
+}
+
+describe("upload ids", () => {
+  beforeEach(() => {
+    mockedLoader.mockReset();
+  });
+
+  it("delegates valid u- ids to the upload loader", async () => {
+    const payload = {
+      book: { id: UPLOAD_ID, title: "Middlemarch", author: "G. Eliot", chapters: [], paragraphs: [], textVersion: "v" },
+      scenes: [],
+    };
+    mockedLoader.mockResolvedValue(payload as never);
+    await expect(loadBook(UPLOAD_ID)).resolves.toEqual(payload);
+    expect(mockedLoader).toHaveBeenCalledWith(UPLOAD_ID);
+    expect(isKnownBookId(UPLOAD_ID)).toBe(false);
+    expect(isReadyBookId(UPLOAD_ID)).toBe(false);
+  });
+
+  it("404s missing or expired uploads", async () => {
+    mockedLoader.mockResolvedValue(null);
+    await expect(rejectedDigest(loadBook(UPLOAD_ID))).resolves.toContain("404");
+  });
+
+  it("404s malformed u- ids without calling the loader", async () => {
+    for (const id of ["u-", "u-short", "u-AAAAAAAAAAAAAAAAAAAAA", `x${UPLOAD_ID}`, `${UPLOAD_ID}x`, "u-AAAAAAAAAAAAAAAAAAAAA!"]) {
+      expect(notFoundDigest(() => loadBook(id))).toContain("404");
+    }
+    expect(mockedLoader).not.toHaveBeenCalled();
+  });
+
+  it("keeps loadBookData shelf-only for upload ids", () => {
+    expect(notFoundDigest(() => loadBookData(UPLOAD_ID))).toContain("404");
+    expect(mockedLoader).not.toHaveBeenCalled();
   });
 });
