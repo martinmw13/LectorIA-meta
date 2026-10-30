@@ -35,6 +35,9 @@ export function TopLine({
       <span className="wordmark">
         Lector<em>IA</em>
       </span>
+      <a href="/" className="shelf-link" aria-label="Back to the shelf">
+        <span aria-hidden="true">‹&nbsp;</span>Shelf
+      </a>
       <div className="top-center">
         {bookTitle} · {author} ·{" "}
         <span className="chapter-jump">
