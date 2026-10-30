@@ -500,8 +500,36 @@ html[data-skin="comic"] .chat-note .ob-input {
 }
 
 @media (max-width: 1023px) {
+  /* The launcher stays; the panel opens as a bottom sheet. The sheet
+     has its own close button, so the launcher hides while it is open
+     instead of floating over it. */
   .reader-chat {
+    right: 12px;
+  }
+
+  .chat-panel {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    max-height: 70dvh;
+    border-radius: 12px 12px 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    animation: chat-sheet-up 0.16s ease-out;
+  }
+
+  .reader-chat:has(.chat-panel) .chat-launch {
     display: none;
+  }
+}
+
+@keyframes chat-sheet-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
   }
 }
 
