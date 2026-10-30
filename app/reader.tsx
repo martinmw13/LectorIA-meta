@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { isSceneAttr, type SceneAttr } from "@/core/bookmap";
+import { isUploadId } from "@/core/uploads";
 import { canPlayAudio } from "./ambience-engine";
 import { choosePlayableSources, currentMode, musicModes, parseManifest } from "@/core/music";
 import type { MusicManifest, MusicMode, MusicModeId, SceneSignal, Track } from "@/core/music";
@@ -388,6 +389,8 @@ export function Reader({
     : [];
 
 
+  // Chat runs on our key for shelf books only, so uploads read without it.
+  const chatOn = !isUploadId(bookId);
   return (
     <NarrationProvider entries={narration} scenes={scenes}>
       <div className="folio">
@@ -426,7 +429,7 @@ export function Reader({
           onEnded={ended}
           playlistOn={playlistOn}
         />
-      {chatScene && chatChapter && (
+      {chatOn && chatScene && chatChapter && (
         <ReaderChat
           bookId={bookId}
           upToN={chatScene.endN}

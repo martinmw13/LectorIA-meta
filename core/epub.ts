@@ -420,7 +420,13 @@ export function readEpubSections(
   return { title, author, sections };
 }
 
-export function parseEpub(bytes: Uint8Array): EpubBook {
+export interface EpubParse {
+  book: EpubBook;
+  sections: RawSection[];
+}
+
+// The upload POSTs the same sections the card counts, parsed once.
+export function parseEpubWithSections(bytes: Uint8Array): EpubParse {
   const { title, author, sections, cover } = openEpub(bytes, browserParse, {
     checkMimetype: true,
     strictSpine: false,
@@ -431,10 +437,19 @@ export function parseEpub(bytes: Uint8Array): EpubBook {
   for (const chapter of kept) {
     for (const paragraph of chapter.paragraphs) words = countWords(paragraph, words);
   }
-  return { title, author, chapters: kept.map((chapter) => chapter.title), words, cover };
+  return { book: { title, author, chapters: kept.map((chapter) => chapter.title), words, cover }, sections };
+}
+
+export function parseEpub(bytes: Uint8Array): EpubBook {
+  return parseEpubWithSections(bytes).book;
 }
 
 export async function readEpubFile(file: File): Promise<EpubBook> {
   if (file.size > MAX_EPUB_BYTES) throw new EpubError("too_large");
   return parseEpub(new Uint8Array(await file.arrayBuffer()));
+}
+
+export async function readEpubFileWithSections(file: File): Promise<EpubParse> {
+  if (file.size > MAX_EPUB_BYTES) throw new EpubError("too_large");
+  return parseEpubWithSections(new Uint8Array(await file.arrayBuffer()));
 }

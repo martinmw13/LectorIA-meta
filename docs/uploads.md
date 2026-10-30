@@ -61,9 +61,31 @@ of 10 creates a day; exhaustion answers `daily_books_reached`.
 ## Reading and cleanup
 
 `loadUploadedBook(id)` in `server/uploads/loader.ts` returns the
-`BookPayload` the reader consumes (`{ book, scenes }`). Uploads expire
+`BookPayload` the reader consumes (`{ book, scenes }`). `loadBook` in
+`server/books.ts` delegates `u-` ids to it (no module cache: uploads
+expire); missing or expired uploads 404. Uploads read at `/read/<id>`
+with chat hidden, since chat runs on our key for shelf books only;
+pictures, panels, and narration were already Oz-only. Uploads expire
 after 30 days; `GET /api/cron/cleanup-uploads` (Bearer `CRON_SECRET`,
 daily) deletes their private blobs.
+
+## Client flow
+
+`app/home/upload.tsx` parses the EPUB in the browser (`core/epub.ts`),
+POSTs `{title, author, sections}` to `/api/uploads`, then drives
+`POST /api/uploads/<id>/step` until `done` and navigates to
+`/read/<id>` (`app/home/upload-flow.ts`). The BYOK key travels in the
+`x-byok-key` header on every call and stays in React state; finished
+books land in the localStorage "Your books" list
+(`{id, title, author, savedAt}`, newest first, 20 max). The human check
+reuses the chat/images Turnstile widget when the server asks for it.
+Steps retry network failures and uncoded 5xx up to 3 times with
+backoff and resume from the server's `done/total`; coded errors map to
+the next step (`too_long`, `daily_books_reached`, `daily_budget_reached`
+open the key step, `human_required` re-asks the check,
+`expired`/`not_found` restart the upload). The free hint allows 2 books
+per UTC day (`core/upload-policy.ts`, `app/home/free-book.ts`); the
+server enforces the real quota.
 
 ## Storage
 

@@ -83,3 +83,24 @@ BYOK key stays in memory (header per call, never stored or logged).
 - Meta/Jev retries keep the pipeline's fixed policy; a pathological retry
   storm can hit the route kill, and the client just re-drives the step.
 - No resplit pass for uploads (Oz-only refinement).
+
+## 86b: upload UI and reader wiring
+
+Client flow on top of the API above, no `server/uploads` changes:
+
+- `loadBook` accepts valid `u-` ids via `loadUploadedBook` (no module
+  cache); unknown, malformed, missing, or expired ids 404.
+  `loadBookData` stays shelf-only, so uploads never reach chat or image
+  generation on our key. The reader hides chat for `u-` books; pictures,
+  panels, and narration were already Oz-only.
+- `app/home/upload.tsx` + `app/home/upload-flow.ts`: POST create, step
+  until done, navigate to `/read/<id>`. Key in the `x-byok-key` header
+  per call, memory only. Human check reuses the shared Turnstile
+  widget. Steps retry network failures and uncoded 5xx 3 times with
+  backoff; coded errors map to the key step, a re-check, a retry, or a
+  restart. Progress bar plus live copy, no motion under
+  `prefers-reduced-motion`.
+- Free hint: 2 books per UTC day (`core/upload-policy.ts`,
+  `app/home/free-book.ts`); over 50k words routes to BYOK. Finished
+  uploads land in the localStorage "Your books" list (20 max, forget
+  button removes locally only).
