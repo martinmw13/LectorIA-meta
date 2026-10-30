@@ -343,4 +343,46 @@ describe("human gate", () => {
     expect(hit).toMatchObject({ status: "ready", cached: true });
     expect(noFetch).not.toHaveBeenCalled();
   });
+
+  it("never calls Blob findUrl when the human check fails", async () => {
+    const d = deps({ human: gate() });
+    await d.store.save(imageKey(passage), new Uint8Array([1]));
+    await d.store.save(imageKey({ ...passage, endN: 4 }), new Uint8Array([1]));
+    await d.kv.set(rangeListKeyFor(passage, "s1"), JSON.stringify([{ start: 3, end: 4 }]));
+    const findUrl = vi.fn(d.store.findUrl.bind(d.store));
+    d.store = { ...d.store, findUrl };
+    const res = await orchestrate(passage, d);
+    expect(res).toEqual({ status: "error", code: "human", message: MSG_HUMAN });
+    expect(findUrl).not.toHaveBeenCalled();
+  });
+
+  it("serves a KV index hit without the human check or Blob lookup", async () => {
+    const d = deps();
+    expect((await orchestrate(passage, d)).status).toBe("ready");
+    const findUrl = vi.fn(d.store.findUrl.bind(d.store));
+    const store = { ...d.store, findUrl };
+    const hit = await orchestrate(passage, deps({ kv: d.kv, store, human: gate() }));
+    expect(hit).toMatchObject({ status: "ready", cached: true });
+    expect(findUrl).not.toHaveBeenCalled();
+    expect(noFetch).not.toHaveBeenCalled();
+  });
+
+  it("serves a Blob hit after a passing human check with no quota and a freed lock", async () => {
+    const value = issueHumanCookie("s").split(";")[0];
+    const d = deps({ human: gate({ cookieHeader: value }) });
+    await d.store.save(imageKey(passage), new Uint8Array([1]));
+    let calls = 0;
+    d.generate = { generate: async () => (calls++, new Uint8Array([9])) };
+    const res = await orchestrate(passage, d);
+    expect(res).toMatchObject({ status: "ready", cached: true });
+    expect(calls).toBe(0);
+    expect(await d.kv.get(spendKey())).toBeNull();
+    expect(await d.kv.get(dailySpendKey(d.day))).toBeNull();
+    const keys = quotaKeys({ day: d.day, ipHash: hashIp("1.2.3.4", "salt"), anonId: "anon-1" });
+    expect(await d.kv.get(keys.ip)).toBeNull();
+    expect(await d.kv.get(keys.anon)).toBeNull();
+    expect(await d.kv.get(indexKeyFor(imageKey(passage)))).not.toBeNull();
+    expect(await d.kv.setNxEx(lockKeyFor(imageKey(passage)), "probe", 150)).toBe(true);
+    expect(noFetch).not.toHaveBeenCalled();
+  });
 });
