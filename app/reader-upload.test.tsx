@@ -1,10 +1,13 @@
 // @vitest-environment jsdom
-// Uploads read without chat: the launcher mounts for shelf books and
-// stays out for u- ids, where chat on our key must not run.
+// Uploads read without chat and without pictures: the launcher mounts for
+// shelf books and stays out for u- ids, where chat on our key must not run;
+// the images API rejects u- ids, so no picture surface mounts for them either.
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import type { ReaderModel } from "@/core/reader";
 import { Reader, type ChapterJump, type SlimScene } from "./reader";
+import { BookView } from "./leer/book-view";
 
 vi.mock("next/navigation", () => ({ useParams: () => ({}) }));
 vi.mock("./chat/reader-chat", () => ({
@@ -22,8 +25,40 @@ if (typeof AbortSignal.timeout !== "function") {
 const SCENES: SlimScene[] = [{ id: "c1s1", ch: 1, startN: 1, endN: 2, emotion: null }];
 const CHAPTERS: ChapterJump[] = [{ ch: 1, title: "One", firstSceneId: "c1s1" }];
 
+const UPLOAD_ID = "u-AAAAAAAAAAAAAAAAAAAAAA";
+
+function bookModel(bookId: string): ReaderModel {
+  return {
+    bookId,
+    textVersion: "v",
+    title: "T",
+    author: "A",
+    chapters: [1, 2].map((ch) => ({
+      ch,
+      title: `Chapter ${ch}`,
+      scenes: [
+        {
+          id: `c${ch}s1`,
+          title: `S${ch}`,
+          paragraphs: [{ id: `p${ch}`, n: ch, text: `Words ${ch}.` }],
+        },
+      ],
+    })),
+  } as unknown as ReaderModel;
+}
+
+const BOOK_SCENES: SlimScene[] = [
+  { id: "c1s1", ch: 1, startN: 1, endN: 1, emotion: null },
+  { id: "c2s1", ch: 2, startN: 2, endN: 2, emotion: null },
+];
+const BOOK_CHAPTERS: ChapterJump[] = [
+  { ch: 1, title: "Chapter 1", firstSceneId: "c1s1" },
+  { ch: 2, title: "Chapter 2", firstSceneId: "c2s1" },
+];
+
 let container: HTMLDivElement;
 let root: Root | null = null;
+let fetchMock: ReturnType<typeof vi.fn>;
 
 async function renderReader(bookId: string) {
   await act(async () => {
@@ -42,10 +77,33 @@ async function renderReader(bookId: string) {
   });
 }
 
+async function renderBook(bookId: string) {
+  await act(async () => {
+    root?.render(
+      <Reader
+        bookId={bookId}
+        scenes={BOOK_SCENES}
+        chapters={BOOK_CHAPTERS}
+        bookTitle="T"
+        bookAuthor="A"
+        narration={[]}
+      >
+        <BookView model={bookModel(bookId)} initialSceneId="c1s1" panelsByChapter={[]} />
+      </Reader>,
+    );
+  });
+}
+
 beforeEach(() => {
+  fetchMock = vi.fn(async () => new Response(JSON.stringify({ version: 2, tracks: [] }), { status: 200 }));
+  vi.stubGlobal("fetch", fetchMock);
   vi.stubGlobal(
-    "fetch",
-    vi.fn(async () => new Response(JSON.stringify({ version: 2, tracks: [] }), { status: 200 })),
+    "IntersectionObserver",
+    class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
   );
   document.body.innerHTML = "";
   container = document.createElement("div");
@@ -74,5 +132,35 @@ describe("reader chat gate", () => {
     await renderReader("u-AAAAAAAAAAAAAAAAAAAAAA");
     expect(container.querySelector('[data-testid="reader-chat"]')).toBeNull();
     expect(container.textContent).toContain("story");
+  });
+});
+
+describe("reader visuals gate", () => {
+  test("hides every picture surface for an upload id", async () => {
+    await renderBook(UPLOAD_ID);
+    expect(container.querySelector(".img-pane")).toBeNull();
+    expect(container.querySelector(".pane-divider")).toBeNull();
+    expect(container.querySelector(".vault")).toBeNull();
+    expect(container.querySelector(".panels-link")).toBeNull();
+    expect(container.querySelector(".panels-modal")).toBeNull();
+    expect(document.querySelector(".picture-float")).toBeNull();
+    expect(container.querySelector(".folio")?.classList.contains("no-visuals")).toBe(true);
+    expect(container.textContent).toContain("Words 1.");
+    expect(container.textContent).not.toContain("Picture this");
+    expect(container.textContent).not.toContain("Relive this chapter in panels");
+    const urls = fetchMock.mock.calls.map((call) => String(call[0]));
+    expect(urls.filter((u) => u.includes("/api/images") || u.includes("/api/pictures") || u.includes("/api/panels"))).toEqual(
+      [],
+    );
+  });
+
+  test("keeps picture surfaces for a shelf book", async () => {
+    await renderBook("oz");
+    expect(container.querySelector(".img-pane")).not.toBeNull();
+    expect(container.querySelector(".pane-divider")).not.toBeNull();
+    expect(container.querySelector(".vault")).not.toBeNull();
+    expect(container.querySelector(".panels-link")).not.toBeNull();
+    expect(container.querySelector(".folio")?.classList.contains("no-visuals")).toBe(false);
+    expect(container.textContent).toContain("Picture this");
   });
 });

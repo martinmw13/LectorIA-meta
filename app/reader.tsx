@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Children, cloneElement, isValidElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { isSceneAttr, type SceneAttr } from "@/core/bookmap";
 import { isUploadId } from "@/core/uploads";
@@ -391,9 +391,17 @@ export function Reader({
 
   // Chat runs on our key for shelf books only, so uploads read without it.
   const chatOn = !isUploadId(bookId);
+  // Pictures serve shelf books only: the images API rejects upload ids,
+  // so the shell hands the flag to the book view and drops the side columns.
+  const visualsOn = !isUploadId(bookId);
+  const kids = Children.map(children, (child) =>
+    isValidElement<{ visualsOn?: boolean }>(child) && typeof child.type === "function"
+      ? cloneElement(child, { visualsOn })
+      : child,
+  );
   return (
     <NarrationProvider entries={narration} scenes={scenes}>
-      <div className="folio">
+      <div className={visualsOn ? "folio" : "folio no-visuals"}>
         <a href="#story" className="skip-link">
           Skip to the story
         </a>
@@ -407,7 +415,7 @@ export function Reader({
           theme={theme}
           onToggleTheme={toggleTheme}
         />
-        {children}
+        {kids}
         <BandPlay
           narrationOn={narration.length > 0}
           musicFailed={musicFailed}

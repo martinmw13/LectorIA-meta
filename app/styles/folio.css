@@ -18,6 +18,25 @@ scrolls at desktop size; the reading column scrolls inside itself. */
     "play play play play";
 }
 
+/* Uploads mount no picture surfaces; the text keeps the full width. */
+.folio.no-visuals {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "top"
+    "pager"
+    "read"
+    "play";
+}
+
+.folio.no-visuals .read-col {
+  padding: 0 4px 16px;
+  margin-top: 12px;
+}
+
+.folio.no-visuals .band-pager {
+  padding: 0 4px;
+}
+
 /* First tab stop: jumps to the reading column. Offscreen until focused;
    no transition, so it appears at once. Absolute, so the folio grid ignores it. */
 .skip-link {
