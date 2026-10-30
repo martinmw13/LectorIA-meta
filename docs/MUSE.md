@@ -6,21 +6,21 @@ A Muse commit is a non-merge commit on main that carries the trailer `Co-authore
 
 ## Commits
 
-- Muse commits: 345 of 414 non-merge commits (83%).
-- Date range (UTC-3): 2026-10-27 to 2026-10-29.
+- Muse commits: 346 of 415 non-merge commits (83%).
+- Date range (UTC-3): 2026-10-27 to 2026-10-30.
 
 ## Lines
 
 | Scope | Muse added | Muse removed | Other added | Other removed | Muse share of added |
 | --- | --- | --- | --- | --- | --- |
-| Source code (`app/`, `core/`, `pipeline/`, `server/`, `scripts/`) | 51,408 | 10,647 | 9,431 | 3,212 | 84% |
-| All files | 257,706 | 14,817 | 35,186 | 4,199 | 88% |
+| Source code (`app/`, `core/`, `pipeline/`, `server/`, `scripts/`) | 52,615 | 10,647 | 9,431 | 3,212 | 85% |
+| All files | 258,917 | 14,817 | 35,186 | 4,199 | 88% |
 
 All files includes the Muse Code session transcripts in `agent-logs/`, the vendored skills in `.agents/` and `package-lock.json`.
 
 ## Pull requests
 
-70 merged PRs contain Muse commits. Each carries the `Muse Code` label.
+71 merged PRs contain Muse commits. Each carries the `Muse Code` label.
 
 | PR | Title | Merged (UTC-3) | Muse commits |
 | --- | --- | --- | --- |
@@ -94,3 +94,4 @@ All files includes the Muse Code session transcripts in `agent-logs/`, the vendo
 | [#108](https://github.com/martinmw13/LectorIA-meta/pull/108) | refactor(guard): shared abuse and spend guards; Turnstile for images | 2026-10-29 | 1 of 1 |
 | [#109](https://github.com/martinmw13/LectorIA-meta/pull/109) | fix(guard): platform client IP, per-cookie unknown bucket, warn-level chat failures | 2026-10-29 | 1 of 1 |
 | [#110](https://github.com/martinmw13/LectorIA-meta/pull/110) | fix(chat): release the spend reservation when the stream fails to start | 2026-10-29 | 1 of 1 |
+| [#120](https://github.com/martinmw13/LectorIA-meta/pull/120) | feat(pipeline): add bookmap enrichment pass with Oz data | 2026-10-30 | 1 of 1 |
