@@ -20,8 +20,18 @@ export const UPLOAD_MAX_CHAPTERS = 500;
 export const UPLOAD_MAX_PART_PARAGRAPHS = 150;
 // Global free-upload spend: USD 1 per UTC day, shared across readers.
 export const UPLOAD_DAILY_SPEND_CAP_MICRO = 1_000_000;
-// Flat reserve per free book; the real cost reconciles at finalize.
+// Ceiling on the per-book hold; the real cost reconciles at finalize.
 export const UPLOAD_RESERVE_MICRO = 250_000;
+export const UPLOAD_RESERVE_FLOOR_MICRO = 50_000;
+export const UPLOAD_RESERVE_PER_PART_MICRO = 5_000;
+
+// Measured: a 3,955-word book cost USD 0.0027 (~0.7 micro/word). The hold
+// prices 1 micro/word plus 5k micro/part for the judge and retries, so a
+// 50k-word book holds ~110k micro, well under the USD 1/day cap.
+export function uploadReserveMicro(parts: number, words: number): number {
+  const sized = Math.max(UPLOAD_RESERVE_FLOOR_MICRO, parts * UPLOAD_RESERVE_PER_PART_MICRO + Math.max(0, Math.round(words)));
+  return Math.min(UPLOAD_RESERVE_MICRO, sized);
+}
 export const UPLOAD_TTL_DAYS = 30;
 export const UPLOAD_JOB_TTL_SEC = 30 * 24 * 3600;
 export const UPLOAD_MODEL = "muse-spark-1.3-contributor";

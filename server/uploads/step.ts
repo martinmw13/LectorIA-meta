@@ -2,33 +2,32 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import type { AnalyzedScene, SceneEmotion, SceneInput } from "@/core/types";
 import { validateBookCoverage } from "@/core/scenes";
-import {
-  UPLOAD_JOB_TTL_SEC,
-  UPLOAD_TTL_DAYS,
-  partKey,
-  uploadAnalysisPath,
-  uploadBookPath,
-  uploadDailySpendKey,
-  uploadPartPath,
-} from "@/core/uploads";
-import { refundDualQuota } from "@/server/guard/quota";
-import { spendKey } from "@/server/guard/spend";
+import { UPLOAD_TTL_DAYS, partKey, uploadAnalysisPath, uploadBookPath, uploadPartPath } from "@/core/uploads";
 import type { KV } from "@/core/types";
 import type { JevClient } from "../../pipeline/jev";
 import type { MetaClient } from "../../pipeline/meta";
 import type { UploadStore } from "./blob";
 import type { UploadBook } from "./create";
 import {
+  emptyUsage,
+  failUploadJob,
+  isUsage,
   loadUploadJob,
   saveUploadJob,
+  settleSpendOnce,
+  sumRecordedUsage,
+  sumUsage,
   uploadFinalizeKey,
   uploadLockKey,
-  uploadRefundKey,
+  UPLOAD_FINALIZE_LEASE_SEC,
   UPLOAD_LOCK_TTL_SEC,
   UploadFailure,
+  usageCostMicro,
+  usageCostUsd,
   type UploadJob,
+  type UploadUsage,
 } from "./state";
-import { classifyPart, segmentPart, usageCostMicro, usageCostUsd, WorkError } from "./work";
+import { classifyPart, segmentPart, WorkError } from "./work";
 
 export interface StepArgs {
   kv: KV;
@@ -47,6 +46,7 @@ interface StoredPart {
   part: string;
   ch: number;
   scenes: (SceneInput & SceneEmotion & { ch: number })[];
+  usage: UploadUsage;
 }
 
 function parseStoredPart(raw: string): StoredPart | null {
@@ -66,7 +66,9 @@ function parseStoredPart(raw: string): StoredPart | null {
     if (typeof scene.title !== "string" || typeof scene.summary !== "string") return null;
     if (!Array.isArray(scene.characters)) return null;
   }
-  return json as StoredPart;
+  // Blobs written before per-part usage count as empty; their spend sits in
+  // the job usage already.
+  return { part: p.part as string, ch: p.ch as number, scenes: p.scenes as StoredPart["scenes"], usage: isUsage(p.usage) ? p.usage : emptyUsage() };
 }
 
 function parseUploadBook(raw: string | null, job: UploadJob): UploadBook | null {
@@ -98,36 +100,6 @@ function doneResult(job: UploadJob): StepResult {
   };
 }
 
-// Marks the job failed and refunds quota plus the spend reserve exactly
-// once per job, via a setNxEx guard. Best effort throughout: when Redis
-// itself is down the reservation is kept, which is the conservative side.
-// A job already done is never refunded.
-async function failJob(kv: KV, job: UploadJob): Promise<void> {
-  if (job.status === "done") return;
-  job.status = "failed";
-  try {
-    await saveUploadJob(kv, job);
-  } catch {
-    // The refund guard below still bounds us to one refund.
-  }
-  let first = false;
-  try {
-    first = await kv.setNxEx(uploadRefundKey(job.id), "1", UPLOAD_JOB_TTL_SEC);
-  } catch {
-    return;
-  }
-  if (!first) return;
-  if (job.quotaIp && job.quotaAnon) await refundDualQuota(kv, { ip: job.quotaIp, anon: job.quotaAnon });
-  if (job.reservedMicro > 0) {
-    try {
-      await kv.decrBy(spendKey(), job.reservedMicro);
-      await kv.decrBy(uploadDailySpendKey(job.day), job.reservedMicro);
-    } catch {
-      // Kept on Redis failure: conservative, like an abandoned job.
-    }
-  }
-}
-
 async function markDoneAndMaybeFinalize(args: StepArgs, job: UploadJob, part: string): Promise<StepResult> {
   if (!job.doneParts.includes(part)) job.doneParts.push(part);
   await saveUploadJob(args.kv, job);
@@ -135,11 +107,13 @@ async function markDoneAndMaybeFinalize(args: StepArgs, job: UploadJob, part: st
   return finalize(args, job);
 }
 
-// Assembles the analysis once, under a guard: concurrent last-part drivers
-// converge on the winner's result, and a finalize that died between the
-// blob write and the job save repairs from the blob on retry.
+// Assembles the analysis under a short lease: concurrent last-part drivers
+// converge on the winner's result, a finalize killed at the route limit
+// frees the key for a retake, and a finalize that died between the blob
+// write and the job save repairs from the blob on retry. Spend settles
+// exactly once through the shared guard, whichever path lands first.
 async function finalize(args: StepArgs, job: UploadJob): Promise<StepResult> {
-  const first = await args.kv.setNxEx(uploadFinalizeKey(job.id), "1", UPLOAD_JOB_TTL_SEC);
+  const first = await args.kv.setNxEx(uploadFinalizeKey(job.id), "1", UPLOAD_FINALIZE_LEASE_SEC);
   if (!first) {
     const fresh = await loadUploadJob(args.kv, job.id);
     if (!fresh) throw new UploadFailure("not_found");
@@ -147,20 +121,25 @@ async function finalize(args: StepArgs, job: UploadJob): Promise<StepResult> {
     if (fresh.status === "failed") throw new UploadFailure("unavailable");
     const analysis = await args.store.readText(uploadAnalysisPath(job.id));
     if (analysis) {
+      const usage = await sumRecordedUsage(args.store, fresh);
       fresh.status = "done";
-      fresh.costMicro = usageCostMicro(fresh.usage);
+      fresh.usage = usage;
+      fresh.costMicro = usageCostMicro(usage);
+      await settleSpendOnce(args.kv, fresh, fresh.costMicro);
       await saveUploadJob(args.kv, fresh);
       return doneResult(fresh);
     }
     return workingResult(fresh);
   }
   const scenes: AnalyzedScene[] = [];
+  const partUsages: UploadUsage[] = [];
   for (const chapter of [...job.chapters].sort((a, b) => a.ch - b.ch)) {
     const chParts = job.parts.filter((p) => p.ch === chapter.ch).sort((a, b) => a.part - b.part);
     let k = 0;
     for (const p of chParts) {
       const stored = parseStoredPart(await args.store.readText(uploadPartPath(job.id, partKey(p))) ?? "");
       if (!stored) throw new WorkError("store");
+      partUsages.push(stored.usage);
       for (const s of stored.scenes) {
         k += 1;
         scenes.push({ ...s, id: `c${chapter.ch}s${k}`, ch: chapter.ch });
@@ -172,26 +151,21 @@ async function finalize(args: StepArgs, job: UploadJob): Promise<StepResult> {
   const problems = validateBookCoverage(book, scenes);
   if (problems.length > 0) throw new WorkError("segment");
   await args.store.saveJson(uploadAnalysisPath(job.id), JSON.stringify({ bookId: job.id, textVersion: job.textVersion, scenes }));
-  if (job.path === "free" && job.reservedMicro > 0) {
-    const delta = usageCostMicro(job.usage) - job.reservedMicro;
-    if (delta !== 0) {
-      try {
-        await args.kv.incrBy(spendKey(), delta);
-        await args.kv.incrBy(uploadDailySpendKey(job.day), delta);
-      } catch {
-        // Best effort: the reserve already bounds the spend.
-      }
-    }
-  }
+  const usage = sumUsage([job.usage, ...partUsages]);
+  const costMicro = usageCostMicro(usage);
+  await settleSpendOnce(args.kv, job, costMicro);
   job.status = "done";
-  job.costMicro = usageCostMicro(job.usage);
+  job.usage = usage;
+  job.costMicro = costMicro;
   await saveUploadJob(args.kv, job);
   return doneResult(job);
 }
 
 // One idempotent unit of work: re-calling a finished part or a finished
-// job costs nothing. Any throw after the guards fails the job with the
-// once-guarded refund above, and the client sees only `unavailable`.
+// job costs nothing. Usage accrues to this part's blob only, so parallel
+// drivers on different parts never overwrite each other. Any throw after
+// the guards fails the job with the once-guarded settle, and the client
+// sees only `unavailable`.
 export async function stepUpload(args: StepArgs): Promise<StepResult> {
   const job = await loadUploadJob(args.kv, args.id);
   if (!job) throw new UploadFailure("not_found");
@@ -210,7 +184,7 @@ export async function stepUpload(args: StepArgs): Promise<StepResult> {
       return await finalize(args, job);
     } catch (e) {
       if (e instanceof UploadFailure) throw e;
-      await failJob(args.kv, job);
+      await failUploadJob(args.kv, args.store, job);
       throw new UploadFailure("unavailable");
     }
   }
@@ -224,6 +198,7 @@ export async function stepUpload(args: StepArgs): Promise<StepResult> {
   const lock = uploadLockKey(job.id, key);
   const token = randomUUID();
   if (!(await args.kv.setNxEx(lock, token, UPLOAD_LOCK_TTL_SEC))) return workingResult(job);
+  const partUsage = emptyUsage();
   try {
     if (parseStoredPart((await args.store.readText(path)) ?? "")) {
       return markDoneAndMaybeFinalize(args, job, key);
@@ -239,7 +214,7 @@ export async function stepUpload(args: StepArgs): Promise<StepResult> {
       args.meta,
       { ch: chapter.ch, title: chapter.title, start_n: part.startN, end_n: part.endN },
       paras,
-      job.usage,
+      partUsage,
     );
     const scenes = inputs.map((s, k) => ({ ...s, id: `w-${key}-${k}`, ch: part.ch }));
     const texts = scenes.map((s) =>
@@ -253,7 +228,7 @@ export async function stepUpload(args: StepArgs): Promise<StepResult> {
       texts,
       { bookTitle: job.title, chapterTitle: chapter.title },
       { meta: args.meta, jev: args.jev },
-      job.usage,
+      partUsage,
     );
     const stored: StoredPart = {
       part: key,
@@ -267,12 +242,13 @@ export async function stepUpload(args: StepArgs): Promise<StepResult> {
         ch: s.ch,
         ...(emotions[i] as SceneEmotion),
       })),
+      usage: partUsage,
     };
     await args.store.saveJson(path, JSON.stringify(stored));
     return await markDoneAndMaybeFinalize(args, job, key);
   } catch (e) {
     if (e instanceof UploadFailure) throw e;
-    await failJob(args.kv, job);
+    await failUploadJob(args.kv, args.store, job, partUsage);
     throw new UploadFailure("unavailable");
   } finally {
     try {

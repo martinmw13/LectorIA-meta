@@ -1,6 +1,18 @@
 import "server-only";
 import type { KV } from "@/core/types";
-import { UPLOAD_JOB_TTL_SEC, isUploadId, type UploadErrorCode, type UploadPart } from "@/core/uploads";
+import {
+  UPLOAD_JOB_TTL_SEC,
+  isUploadId,
+  partKey,
+  uploadDailySpendKey,
+  uploadPartPath,
+  type UploadErrorCode,
+  type UploadPart,
+} from "@/core/uploads";
+import { refundDualQuota } from "@/server/guard/quota";
+import { spendKey } from "@/server/guard/spend";
+import { jevCostUsd, metaCostUsd } from "../../pipeline/prices";
+import type { UploadStore } from "./blob";
 
 // Control flow between orchestration and HTTP: the handler maps the code
 // to a status and message, never the wrapped error.
@@ -25,6 +37,46 @@ export interface UploadUsage {
 
 export function emptyUsage(): UploadUsage {
   return { metaPrompt: 0, metaCached: 0, metaCompletion: 0, metaRequests: 0, jevInput: 0, jevOutput: 0, jevRequests: 0 };
+}
+
+// Steps never mutate the job's usage (parallel drivers would lose each
+// other's counts); each part result carries its own usage and the terminal
+// paths sum job usage plus every finished part.
+export function sumUsage(all: UploadUsage[]): UploadUsage {
+  const total = emptyUsage();
+  for (const usage of all) {
+    total.metaPrompt += usage.metaPrompt;
+    total.metaCached += usage.metaCached;
+    total.metaCompletion += usage.metaCompletion;
+    total.metaRequests += usage.metaRequests;
+    total.jevInput += usage.jevInput;
+    total.jevOutput += usage.jevOutput;
+    total.jevRequests += usage.jevRequests;
+  }
+  return total;
+}
+
+export function isUsageZero(usage: UploadUsage): boolean {
+  return (
+    usage.metaPrompt === 0 &&
+    usage.metaCached === 0 &&
+    usage.metaCompletion === 0 &&
+    usage.metaRequests === 0 &&
+    usage.jevInput === 0 &&
+    usage.jevOutput === 0 &&
+    usage.jevRequests === 0
+  );
+}
+
+export function usageCostMicro(usage: UploadUsage): number {
+  const usd =
+    metaCostUsd({ prompt: usage.metaPrompt, cached: usage.metaCached, completion: usage.metaCompletion }) +
+    jevCostUsd(usage.jevInput);
+  return Math.round(usd * 1_000_000);
+}
+
+export function usageCostUsd(usage: UploadUsage): number {
+  return Math.round((usageCostMicro(usage) / 1_000_000) * 1_000_000) / 1_000_000;
 }
 
 export type UploadStatus = "working" | "done" | "failed";
@@ -75,6 +127,9 @@ export function uploadFinalizeKey(id: string): string {
 }
 
 export const UPLOAD_LOCK_TTL_SEC = 120;
+// Short lease, not a durable marker: a finalize killed at the 60 s limit
+// frees the key, and the settle guard below still keeps spend exactly-once.
+export const UPLOAD_FINALIZE_LEASE_SEC = 90;
 
 function isPart(value: unknown): value is UploadPart {
   if (typeof value !== "object" || value === null) return false;
@@ -90,7 +145,7 @@ function isPart(value: unknown): value is UploadPart {
   );
 }
 
-function isUsage(value: unknown): value is UploadUsage {
+export function isUsage(value: unknown): value is UploadUsage {
   if (typeof value !== "object" || value === null) return false;
   return (["metaPrompt", "metaCached", "metaCompletion", "metaRequests", "jevInput", "jevOutput", "jevRequests"] as const).every(
     (k) => typeof (value as Record<string, unknown>)[k] === "number",
@@ -139,4 +194,78 @@ export async function loadUploadJob(kv: KV, id: string): Promise<UploadJob | nul
 export async function saveUploadJob(kv: KV, job: UploadJob): Promise<void> {
   await kv.set(uploadJobKey(job.id), JSON.stringify(job));
   await kv.expire(uploadJobKey(job.id), UPLOAD_JOB_TTL_SEC);
+}
+
+function parsePartUsage(raw: string | null): UploadUsage {
+  if (raw === null) return emptyUsage();
+  try {
+    const json: unknown = JSON.parse(raw);
+    if (typeof json === "object" && json !== null && isUsage((json as { usage?: unknown }).usage)) {
+      return (json as { usage: UploadUsage }).usage;
+    }
+  } catch {
+    // A corrupt part counts as empty here; finalize still validates scenes.
+  }
+  return emptyUsage();
+}
+
+// Every terminal path tallies the same way: create-time judge usage plus
+// each finished part's blob usage, plus the failing step's in-flight usage
+// when the caller hands it over. Blobs without a usage field count as
+// empty, so jobs straddling the deploy still tally exactly once.
+export async function sumRecordedUsage(store: UploadStore, job: UploadJob, extra?: UploadUsage): Promise<UploadUsage> {
+  const parts: UploadUsage[] = [];
+  for (const p of job.parts) {
+    parts.push(parsePartUsage(await store.readText(uploadPartPath(job.id, partKey(p)))));
+  }
+  return sumUsage(extra ? [job.usage, extra, ...parts] : [job.usage, ...parts]);
+}
+
+// The only money writer. The first caller folds actual-minus-reserved into
+// both spend counters; every other terminal path is a no-op, so a retried
+// finalize, a racing fail, and the stale cleanup can never double-adjust.
+// Never throws; true when this call won the guard.
+export async function settleSpendOnce(kv: KV, job: UploadJob, actualMicro: number): Promise<boolean> {
+  let first = false;
+  try {
+    first = await kv.setNxEx(uploadRefundKey(job.id), "1", UPLOAD_JOB_TTL_SEC);
+  } catch {
+    return false;
+  }
+  if (!first || job.reservedMicro <= 0) return first;
+  const delta = actualMicro - job.reservedMicro;
+  if (delta !== 0) {
+    try {
+      await kv.incrBy(spendKey(), delta);
+      await kv.incrBy(uploadDailySpendKey(job.day), delta);
+    } catch {
+      // Kept on Redis failure: conservative, like an abandoned job.
+    }
+  }
+  return true;
+}
+
+// Marks the job failed, keeps what was really spent, and refunds the book
+// quota only when nothing ran at all. Exactly once via the settle guard,
+// best effort throughout: when the tally itself fails the reserve is kept,
+// which is the conservative side. A job already done is never touched.
+export async function failUploadJob(kv: KV, store: UploadStore, job: UploadJob, extra?: UploadUsage): Promise<void> {
+  if (job.status === "done") return;
+  let usage: UploadUsage | null = null;
+  try {
+    usage = await sumRecordedUsage(store, job, extra);
+  } catch {
+    usage = null;
+  }
+  job.status = "failed";
+  if (usage) job.usage = usage;
+  try {
+    await saveUploadJob(kv, job);
+  } catch {
+    // The settle guard below still bounds us to one money write.
+  }
+  const first = await settleSpendOnce(kv, job, usage ? usageCostMicro(usage) : job.reservedMicro);
+  if (first && usage && isUsageZero(usage) && job.quotaIp && job.quotaAnon) {
+    await refundDualQuota(kv, { ip: job.quotaIp, anon: job.quotaAnon });
+  }
 }
