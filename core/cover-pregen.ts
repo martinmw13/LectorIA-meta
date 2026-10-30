@@ -74,7 +74,8 @@ export interface CoverRunResult {
 }
 
 // Spend-capped pool. Dry-run callers pass an empty task list and only
-// read the plan; the cap counts one image cost per successful generate.
+// read the plan; the cap counts one image cost per successful provider
+// call, so a cover saved by the policy fallback costs two.
 export async function runCoverTasks(args: {
   tasks: CoverTask[];
   capMicro: number;
@@ -91,12 +92,25 @@ export async function runCoverTasks(args: {
   let spent = 0;
   let next = 0;
   const workers = Math.max(1, Math.floor(args.concurrency));
+  // A policy-filtered cover gets one retry with the generic prompt. The
+  // retry is a second provider call, so it reserves its own cost against
+  // the cap; an identical prompt would be rejected again, so it is skipped.
   async function generateWithFallback(task: CoverTask): Promise<Uint8Array> {
     try {
       return await args.generate(task.prompt);
     } catch (e) {
-      if (!args.isPolicyRejection?.(e)) throw e;
-      return args.generate(task.fallbackPrompt);
+      if (!args.isPolicyRejection?.(e) || task.fallbackPrompt === task.prompt) throw e;
+      if (spent + args.costMicro > args.capMicro) {
+        stoppedAtCap = true;
+        throw e;
+      }
+      spent += args.costMicro;
+      try {
+        return await args.generate(task.fallbackPrompt);
+      } catch (retryError) {
+        spent -= args.costMicro;
+        throw retryError;
+      }
     }
   }
   async function worker(): Promise<void> {

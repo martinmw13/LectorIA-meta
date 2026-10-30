@@ -36,8 +36,13 @@ async function safeErrorDetail(res: Response): Promise<string> {
   }
 }
 
+// Providers word content filtering differently (content_policy_violation,
+// safety_block, content_filter, "blocked"), so match a small marker set
+// case-insensitively against the scrubbed code/type/message.
+const POLICY_MARKERS = /content_policy|policy|safety|content_filter|blocked/i;
+
 export function isPolicyRejection(e: unknown): boolean {
-  return e instanceof MetaImageError && e.detail.includes("code=content_policy_violation");
+  return e instanceof MetaImageError && POLICY_MARKERS.test(e.detail);
 }
 
 // One-line reason for logs in operator scripts. Unknown errors map to

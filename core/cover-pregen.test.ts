@@ -145,4 +145,69 @@ describe("runCoverTasks policy fallback", () => {
     expect(seen).toEqual([task.prompt, task.fallbackPrompt]);
     expect(failures).toEqual([]);
   });
+
+  const policy = (e: unknown) => e instanceof Error && e.message === "policy";
+
+  it("charges the fallback call against the cap", async () => {
+    const tasks = planCoverTasks({ subjects: SUBJECTS, skins: SKINS.slice(0, 2), exists: () => false }).tasks.slice(0, 2);
+    const first = tasks[0];
+    if (!first || tasks.length < 2) throw new Error("expected two planned tasks");
+    const seen: string[] = [];
+    const result = await runCoverTasks({
+      tasks,
+      capMicro: 20_000,
+      costMicro: 10_000,
+      concurrency: 1,
+      isPolicyRejection: policy,
+      generate: async (prompt) => {
+        seen.push(prompt);
+        if (prompt === first.prompt) throw new Error("policy");
+        return new Uint8Array([1]);
+      },
+      write: async () => {},
+    });
+    expect(seen).toEqual([first.prompt, first.fallbackPrompt]);
+    expect(result).toEqual({ generated: 1, failed: 0, stoppedAtCap: true });
+  });
+
+  it("stops instead of retrying when the cap has no room for the fallback", async () => {
+    const [task] = planCoverTasks({ subjects: SUBJECTS, skins: SKINS.slice(0, 1), exists: () => false }).tasks;
+    if (!task) throw new Error("expected a planned task");
+    const seen: string[] = [];
+    const result = await runCoverTasks({
+      tasks: [task],
+      capMicro: 10_000,
+      costMicro: 10_000,
+      concurrency: 1,
+      isPolicyRejection: policy,
+      generate: async (prompt) => {
+        seen.push(prompt);
+        throw new Error("policy");
+      },
+      write: async () => {},
+    });
+    expect(seen).toEqual([task.prompt]);
+    expect(result).toEqual({ generated: 0, failed: 1, stoppedAtCap: true });
+  });
+
+  it("skips the retry when the fallback prompt is the same prompt", async () => {
+    const [planned] = planCoverTasks({ subjects: SUBJECTS, skins: SKINS.slice(0, 1), exists: () => false }).tasks;
+    if (!planned) throw new Error("expected a planned task");
+    const task = { ...planned, fallbackPrompt: planned.prompt };
+    const seen: string[] = [];
+    const result = await runCoverTasks({
+      tasks: [task],
+      capMicro: 1_000_000,
+      costMicro: 10_000,
+      concurrency: 1,
+      isPolicyRejection: policy,
+      generate: async (prompt) => {
+        seen.push(prompt);
+        throw new Error("policy");
+      },
+      write: async () => {},
+    });
+    expect(seen).toEqual([task.prompt]);
+    expect(result).toEqual({ generated: 0, failed: 1, stoppedAtCap: false });
+  });
 });
