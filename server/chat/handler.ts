@@ -221,11 +221,15 @@ export async function handleChatPost(req: Request, deps: ChatHandlerDeps = {}): 
           break;
         }
       }
-    } catch {
+    } catch (e) {
+      // Stream errors carry only a status number or a timeout word.
+      const reason = e instanceof Error && e.message.startsWith("chat upstream") ? e.message : "chat upstream error";
+      console.warn(reason);
       await refundAll();
       return fail("unavailable", chapter.ch, cookies, true, body.bookId);
     }
     if (headText === null) {
+      console.warn("chat upstream empty answer");
       await refundAll();
       return fail("unavailable", chapter.ch, cookies, true, body.bookId);
     }

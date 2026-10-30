@@ -3,6 +3,7 @@ import {
   CHAT_MAX_ANSWER_CHARS,
   CHAT_MAX_MESSAGES,
   CHAT_MAX_QUESTION_CHARS,
+  CHAT_MAX_TOKENS,
   bookTextUpTo,
   buildChatSystemPrompt,
   chatQuotaKeys,
@@ -150,7 +151,7 @@ describe("buildChatSystemPrompt", () => {
     expect(prompt.startsWith('Book text of "The Wonderful Wizard of Oz" by L. Frank Baum:\nBOOK')).toBe(true);
     const bookAt = prompt.indexOf("BOOK");
     expect(prompt.indexOf("Chapter 3")).toBeGreaterThan(bookAt);
-    expect(prompt).toContain("under 120 words");
+    expect(prompt).toContain("under 150 words");
     expect(prompt).not.toContain("c3p40");
   });
 
@@ -162,9 +163,16 @@ describe("buildChatSystemPrompt", () => {
   });
 });
 
+describe("token budget", () => {
+  it("leaves room for reasoning plus a full answer", () => {
+    // Meta counts reasoning inside max_tokens; 400 starved follow-ups.
+    expect(CHAT_MAX_TOKENS).toBeGreaterThanOrEqual(1500);
+  });
+});
+
 describe("cost math", () => {
-  it("estimates the reserve from chars plus two full outputs", () => {
-    expect(estimateCostMicro(400)).toBe(125 + 3400);
+  it("estimates the reserve from chars plus a full output budget", () => {
+    expect(estimateCostMicro(400)).toBe(125 + 8500);
   });
 
   it("prices cached input below fresh input", () => {
