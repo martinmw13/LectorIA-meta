@@ -11,7 +11,14 @@ export function jevCostUsd(inputTokens: number): number {
   return (inputTokens / 1_000_000) * PRICES.jevInputPer1M;
 }
 
-export function metaCostUsd(input: { prompt: number; cached: number; completion: number }): number {
+// Standard-mode Muse Spark (no "-contributor" suffix) bills at the
+// higher Standard rates, the same table as the Modal Shared Endpoint.
+export function isStandardMuse(model: string | undefined): boolean {
+  return model !== undefined && model.startsWith("muse-") && !model.endsWith("-contributor");
+}
+
+export function metaCostUsd(input: { prompt: number; cached: number; completion: number }, model?: string): number {
+  if (isStandardMuse(model)) return modalCostUsd(input);
   const fresh = Math.max(0, input.prompt - input.cached);
   return (
     (fresh / 1_000_000) * PRICES.metaInputPer1M +
@@ -39,5 +46,5 @@ export function modalCostUsd(input: { prompt: number; cached: number; completion
 // Open-weights models served by Modal ship as meta-models/*.
 export function costUsdFor(model: string, input: { prompt: number; cached: number; completion: number }): number {
   if (model.startsWith("meta-models/")) return modalCostUsd(input);
-  return metaCostUsd(input);
+  return metaCostUsd(input, model);
 }

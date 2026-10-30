@@ -108,7 +108,7 @@ export async function runSegment(ctx: StepCtx, deps: { meta: MetaClient }): Prom
     throw new Error(`chapter ${chapter.ch} scenes still invalid after retry: ${problems}`);
   });
   const scenes = chapters.flat();
-  usage.costUsd = metaCostUsd({ prompt: usage.promptTokens, cached: usage.cachedTokens, completion: usage.completionTokens });
+  usage.costUsd = metaCostUsd({ prompt: usage.promptTokens, cached: usage.cachedTokens, completion: usage.completionTokens }, usage.model);
   writeFileSync(
     outPath,
     `${JSON.stringify({
