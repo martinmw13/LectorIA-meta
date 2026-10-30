@@ -6,7 +6,8 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { setCurrentSceneId } from "../leer/current-scene";
-import { useNarrationController } from "./use-narration";
+import { pickEffectiveVoice, useNarrationController } from "./use-narration";
+import { NARRATION_PREFS_KEY } from "./prefs";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -272,6 +273,29 @@ test("switching voice mid-playback restarts the chapter near the same position",
   act(() => {
     root.unmount();
   });
+});
+
+test("saved voice missing from the chapter falls back without overwriting the pref", async () => {
+  vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => MAN1 })));
+  window.localStorage.setItem(
+    NARRATION_PREFS_KEY,
+    JSON.stringify({ on: false, volume: 0.8, voice: "bf_emma" }),
+  );
+  const { root, audio } = await playLive("c1s1");
+  expect(ctl!.voice).toBe("af_heart");
+  expect(ctl!.status).toBe("ready");
+  expect(audio.dataset.key).toBe("k1");
+  expect(audio.src).toContain("k1.mp3");
+  expect(JSON.parse(window.localStorage.getItem(NARRATION_PREFS_KEY)!).voice).toBe("bf_emma");
+  act(() => {
+    root.unmount();
+  });
+});
+
+test("pickEffectiveVoice keeps the saved voice only when offered", () => {
+  expect(pickEffectiveVoice("bf_emma", ["af_heart", "bf_emma"])).toBe("bf_emma");
+  expect(pickEffectiveVoice("bf_emma", ["af_heart"])).toBe("af_heart");
+  expect(pickEffectiveVoice("bf_emma", [])).toBe("bf_emma");
 });
 
 test("after an audio error the next press reloads the source once, then rests idle", async () => {

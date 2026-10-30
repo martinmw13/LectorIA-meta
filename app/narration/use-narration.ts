@@ -37,6 +37,12 @@ function cacheKey(voice: string, ch: number): string {
   return `${voice}:${ch}`;
 }
 
+// The saved voice when the chapter offers it, else the chapter's first
+// available voice. The saved pref never changes here; only setVoice saves.
+export function pickEffectiveVoice(saved: string, available: string[]): string {
+  return available.includes(saved) ? saved : (available[0] ?? saved);
+}
+
 function useDuckRamp(target: number): number {
   const [duck, setDuck] = useState(1);
   const duckRef = useRef(1);
@@ -107,6 +113,18 @@ export function useNarrationController(opts: {
     }
   }
 
+  // Voices with narration for the current chapter, in the shared list
+  // order. Falling back to every known entry voice before the first
+  // scene keeps the picker stable while the scene resolves.
+  const voices = useMemo(() => {
+    const inChapter =
+      scene === null ? opts.entries : opts.entries.filter((e) => e.ch === scene.ch);
+    const ids = new Set(inChapter.map((e) => e.voice));
+    return NARRATION_VOICES.filter((v) => ids.has(v.id)).map((v) => v.id);
+  }, [opts.entries, scene]);
+
+  const effectiveVoice = pickEffectiveVoice(prefs.voice, voices);
+
   // Current chapter manifest in the chosen voice: cache hit or a lazy
   // fetch, parsed at the trust boundary.
   useEffect(() => {
@@ -117,7 +135,7 @@ export function useNarrationController(opts: {
       }
       return;
     }
-    const key = cacheKey(prefs.voice, scene.ch);
+    const key = cacheKey(effectiveVoice, scene.ch);
     const cached = cacheRef.current.get(key);
     if (cached) {
       setManifest(cached);
@@ -127,7 +145,7 @@ export function useNarrationController(opts: {
     const token = (loadToken.current += 1);
     setStatus("loading");
     setManifest(null);
-    const entry = entriesRef.current.find((e) => e.ch === scene.ch && e.voice === prefs.voice);
+    const entry = entriesRef.current.find((e) => e.ch === scene.ch && e.voice === effectiveVoice);
     if (!entry) {
       if (loadToken.current === token) {
         setStatus("error");
@@ -153,7 +171,7 @@ export function useNarrationController(opts: {
           wantPlay.current = false;
         }
       });
-  }, [prefs.on, prefs.voice, scene]);
+  }, [prefs.on, effectiveVoice, scene]);
 
   // On a chapter's last scene the next manifest is fetched ahead, so the
   // boundary advance usually finds it cached. It only fills the cache:
@@ -164,9 +182,9 @@ export function useNarrationController(opts: {
     const at = order.findIndex((s) => s.id === scene.id);
     const next = at >= 0 ? order[at + 1] : undefined;
     if (!next || next.ch === scene.ch) return;
-    const key = cacheKey(prefs.voice, next.ch);
+    const key = cacheKey(effectiveVoice, next.ch);
     if (cacheRef.current.has(key)) return;
-    const entry = entriesRef.current.find((e) => e.ch === next.ch && e.voice === prefs.voice);
+    const entry = entriesRef.current.find((e) => e.ch === next.ch && e.voice === effectiveVoice);
     if (!entry || prefetching.current.has(key)) return;
     prefetching.current.add(key);
     fetch(entry.manifest, { signal: AbortSignal.timeout(15_000) })
@@ -183,7 +201,7 @@ export function useNarrationController(opts: {
       .finally(() => {
         prefetching.current.delete(key);
       });
-  }, [prefs.on, prefs.voice, scene]);
+  }, [prefs.on, effectiveVoice, scene]);
 
   // Seek to the scene span, swapping chapter audio when needed. A fresh
   // src seeks on loadedmetadata; a kept src seeks at once. An explicit
@@ -191,7 +209,8 @@ export function useNarrationController(opts: {
   const seekScene = useCallback(() => {
     const audio = audioRef.current;
     const current = sceneRef.current;
-    const heard = current !== null ? cacheRef.current.get(cacheKey(prefsRef.current.voice, current.ch)) : undefined;
+    const heard =
+      current !== null ? cacheRef.current.get(cacheKey(effectiveVoice, current.ch)) : undefined;
     if (!audio || !current || !heard) return;
     const span = sceneSpan(heard, current.startN, current.endN);
     if (!span) return;
@@ -209,14 +228,14 @@ export function useNarrationController(opts: {
         pendingSeek.current = pos;
       }
     }
-  }, []);
+  }, [effectiveVoice]);
 
   const playCurrent = useCallback(() => {
     const audio = audioRef.current;
     if (
       !audio ||
       sceneRef.current === null ||
-      cacheRef.current.get(cacheKey(prefsRef.current.voice, sceneRef.current.ch)) === undefined
+      cacheRef.current.get(cacheKey(effectiveVoice, sceneRef.current.ch)) === undefined
     ) {
       return;
     }
@@ -225,7 +244,7 @@ export function useNarrationController(opts: {
     void audio.play().catch(() => {
       wantPlay.current = false;
     });
-  }, [seekScene]);
+  }, [seekScene, effectiveVoice]);
 
   // Scene moves seek at once; playback resumes when the manifest lands.
   // A self-advance inside one chapter never seeks: that audio is
@@ -246,12 +265,12 @@ export function useNarrationController(opts: {
       prevSceneCh.current = scene.ch;
       advancingRef.current = false;
       if (keepPlaying) return;
-      if (cacheRef.current.get(cacheKey(prefsRef.current.voice, scene.ch)) !== undefined) {
+      if (cacheRef.current.get(cacheKey(effectiveVoice, scene.ch)) !== undefined) {
         if (wantPlay.current && prefsRef.current.on) playCurrent();
         else seekScene();
       }
     }
-  }, [scene, manifest, seekScene, playCurrent]);
+  }, [scene, manifest, seekScene, playCurrent, effectiveVoice]);
 
   // The want-to-play flag survives the manifest fetch.
   useEffect(() => {
@@ -288,7 +307,7 @@ export function useNarrationController(opts: {
     const advance = () => {
       const current = sceneRef.current;
       if (advancingRef.current || !current) return;
-      const heard = cacheRef.current.get(cacheKey(prefsRef.current.voice, current.ch));
+      const heard = cacheRef.current.get(cacheKey(effectiveVoice, current.ch));
       if (!heard || audio.dataset.key !== heard.key) return;
       const order = scenesRef.current;
       const at = order.findIndex((s) => s.id === current.id);
@@ -305,7 +324,7 @@ export function useNarrationController(opts: {
     const onTime = () => {
       const current = sceneRef.current;
       if (!current || audio.paused) return;
-      const heard = cacheRef.current.get(cacheKey(prefsRef.current.voice, current.ch));
+      const heard = cacheRef.current.get(cacheKey(effectiveVoice, current.ch));
       if (!heard || audio.dataset.key !== heard.key) return;
       const span = sceneSpan(heard, current.startN, current.endN);
       if (span !== null && audio.currentTime >= span.endSec - 0.15) advance();
@@ -331,7 +350,7 @@ export function useNarrationController(opts: {
       audio.removeEventListener("ended", advance);
       audio.removeEventListener("error", onError);
     };
-  }, []);
+  }, [effectiveVoice]);
 
   // Duck ramps: music about 11 dB and rain about 6 dB under the user's
   // own sliders while the voice plays, ~300 ms each way. Pause, the end
@@ -381,7 +400,7 @@ export function useNarrationController(opts: {
       return;
     }
     wantPlay.current = true;
-    const heard = cacheRef.current.get(cacheKey(prefsRef.current.voice, target.ch));
+    const heard = cacheRef.current.get(cacheKey(effectiveVoice, target.ch));
     if (audio && heard && audio.dataset.key === heard.key) {
       // Still positioned in this scene: resume where it paused.
       void audio.play().catch(() => {
@@ -390,7 +409,7 @@ export function useNarrationController(opts: {
       return;
     }
     playCurrent();
-  }, [playing, playCurrent]);
+  }, [playing, playCurrent, effectiveVoice]);
 
   const setVolume = useCallback(
     (volume: number) => {
@@ -398,16 +417,6 @@ export function useNarrationController(opts: {
     },
     [],
   );
-
-  // Voices with narration for the current chapter, in the shared list
-  // order. Falling back to every known entry voice before the first
-  // scene keeps the picker stable while the scene resolves.
-  const voices = useMemo(() => {
-    const inChapter =
-      scene === null ? opts.entries : opts.entries.filter((e) => e.ch === scene.ch);
-    const ids = new Set(inChapter.map((e) => e.voice));
-    return NARRATION_VOICES.filter((v) => ids.has(v.id)).map((v) => v.id);
-  }, [opts.entries, scene]);
 
   // Switching voice mid-playback restarts the current chapter at
   // roughly the same position: the live seconds carry over through
@@ -435,7 +444,7 @@ export function useNarrationController(opts: {
     if (t !== undefined) pendingSeek.current = t;
     if (sceneRef.current?.id === target.id) {
       const audio = audioRef.current;
-      const heard = cacheRef.current.get(cacheKey(prefsRef.current.voice, target.ch));
+      const heard = cacheRef.current.get(cacheKey(effectiveVoice, target.ch));
       if (t !== undefined && audio && heard && audio.dataset.key === heard.key) {
         pendingSeek.current = null;
         try {
@@ -447,7 +456,7 @@ export function useNarrationController(opts: {
       return;
     }
     setScene(target);
-  }, []);
+  }, [effectiveVoice]);
 
   const span =
     scene !== null && manifest !== null ? sceneSpan(manifest, scene.startN, scene.endN) : null;
@@ -456,7 +465,7 @@ export function useNarrationController(opts: {
     audioRef,
     on: prefs.on,
     volume: prefs.volume,
-    voice: prefs.voice,
+    voice: effectiveVoice,
     voices,
     status,
     playing,

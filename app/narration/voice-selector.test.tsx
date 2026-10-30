@@ -25,6 +25,12 @@ test("hides with one voice or none", () => {
   document.body.innerHTML = "";
 });
 
+test("shows the first chapter voice when the saved voice is missing", () => {
+  const host = render(["af_heart", "bf_emma"], "bm_george");
+  expect(host.querySelector("select")!.value).toBe("af_heart");
+  document.body.innerHTML = "";
+});
+
 test("lists the chapter voices and reports the choice", () => {
   const onChange = vi.fn();
   const host = render(["af_heart", "bf_emma"], "af_heart", onChange);
