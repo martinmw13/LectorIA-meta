@@ -34,13 +34,19 @@ function isBook(value: unknown): value is LibraryBook {
   );
 }
 
-export function loadLibrary(raw: unknown = manifest): LibraryBook[] {
+// The one manifest parser. Every entry must be a valid ready book, so a
+// typo fails loudly everywhere instead of hiding a book on one side.
+export function parseManifest(raw: unknown = manifest): LibraryBook[] {
   if (!Array.isArray(raw)) throw new Error("library manifest must be an array");
   const books = raw.map((entry) => {
     if (!isBook(entry)) throw new Error(`bad library entry: ${JSON.stringify(entry)}`);
     return entry;
   });
   return [...books].sort((a, b) => Number(b.favorite ?? false) - Number(a.favorite ?? false));
+}
+
+export function loadLibrary(raw: unknown = manifest): LibraryBook[] {
+  return parseManifest(raw);
 }
 
 // 250 words/min, rounded to the minute.
@@ -55,20 +61,11 @@ export function readingMinutes(words: number): string {
 
 export const library: LibraryBook[] = loadLibrary();
 
-// Ready ids in shelf order (favorites first, manifest order otherwise),
-// skipping entries that are not listed ready. The server book loader map
-// and the pregen scripts share this order and filter so the lists cannot
-// drift apart; each side only adds its own availability check (loader
-// entry on the server, data on disk for scripts).
+// Ready ids in shelf order (favorites first, manifest order otherwise).
+// The server book loader map and the pregen scripts share this order, and
+// it goes through the same strict parser as loadLibrary, so the lists
+// cannot drift apart; each side only adds its own availability check
+// (loader entry on the server, data on disk for scripts).
 export function shelfReadyIds(raw: unknown = manifest): string[] {
-  if (!Array.isArray(raw)) throw new Error("library manifest must be an array");
-  const entries: { id: string; favorite: boolean }[] = [];
-  for (const entry of raw) {
-    if (typeof entry !== "object" || entry === null) continue;
-    const { id, status, favorite } = entry as Record<string, unknown>;
-    if (typeof id !== "string" || status !== "ready") continue;
-    entries.push({ id, favorite: favorite === true });
-  }
-  entries.sort((a, b) => Number(b.favorite) - Number(a.favorite));
-  return entries.map((e) => e.id);
+  return parseManifest(raw).map((b) => b.id);
 }

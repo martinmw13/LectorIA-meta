@@ -29,27 +29,37 @@ describe("library", () => {
   });
 });
 
+const book = (id: string) => ({
+  id,
+  title: id.toUpperCase(),
+  author: "Author",
+  year: 1900,
+  words: 1000,
+  gutenbergId: 1,
+  status: "ready",
+  cover: `/art/covers/${id}.jpg`,
+  coverAlt: `Cover of ${id}`,
+});
+
 describe("shelfReadyIds", () => {
   it("lists ready ids favorites-first in manifest order", () => {
     expect(
-      shelfReadyIds([
-        { id: "b", status: "ready" },
-        { id: "a", status: "ready", favorite: true },
-        { id: "c", status: "ready" },
-      ]),
+      shelfReadyIds([book("b"), { ...book("a"), favorite: true }, book("c")]),
     ).toEqual(["a", "b", "c"]);
   });
 
-  it("skips non-ready and malformed entries", () => {
-    expect(
-      shelfReadyIds([
-        { id: "soon", status: "soon" },
-        { id: "ok", status: "ready" },
-        null,
-        "nope",
-        { status: "ready" },
-      ]),
-    ).toEqual(["ok"]);
+  it("rejects the same malformed entries loadLibrary rejects", () => {
+    const bad = [
+      [{ id: "soon", status: "soon" }],
+      [null],
+      ["nope"],
+      [{ status: "ready" }],
+      [{ id: "x", status: "ready" }],
+    ];
+    for (const raw of bad) {
+      expect(() => shelfReadyIds(raw)).toThrow();
+      expect(() => loadLibrary(raw)).toThrow();
+    }
   });
 
   it("throws on a non-array manifest", () => {
