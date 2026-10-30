@@ -65,12 +65,12 @@ export function readSany(xml: string): Sany {
   for (const entry of child(modules, "context")?.children ?? [])
     symbols.set(textOf(entry, "UID"), entry.children[1]);
   const root = textOf(modules, "RootModule");
-  let module: XmlNode | undefined;
+  let rootModule: XmlNode | undefined;
   for (const node of symbols.values())
-    if (node.tag === "ModuleNode" && textOf(node, "uniquename") === root) module = node;
+    if (node.tag === "ModuleNode" && textOf(node, "uniquename") === root) rootModule = node;
   const definitions = new Map<string, XmlNode>();
   const variables: { uid: number; name: string }[] = [];
-  for (const ref of module?.children ?? []) {
+  for (const ref of rootModule?.children ?? []) {
     if (ref.tag !== "OpDeclNodeRef" && ref.tag !== "UserDefinedOpKindRef") continue;
     const uid = textOf(ref, "UID");
     const node = symbols.get(uid);

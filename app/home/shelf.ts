@@ -16,7 +16,7 @@ export interface ShelfBook {
   ready: boolean;
 }
 
-interface ShelfDraft extends Omit<ShelfBook, "ready"> {}
+type ShelfDraft = Omit<ShelfBook, "ready">;
 
 const DRAFTS: ShelfDraft[] = [
   {

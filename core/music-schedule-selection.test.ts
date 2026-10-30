@@ -241,7 +241,7 @@ describe("noteTrackEnded", () => {
 
 describe("switchStyle", () => {
   it("switches at once with the normal crossfade and sets the override", () => {
-    let d = observeScene(initScheduler(), "s1", signal("calma"), manifest, 0, orch);
+    const d = observeScene(initScheduler(), "s1", signal("calma"), manifest, 0, orch);
     expect(d.switchToId).toBe("a-calma");
     const changed = switchStyle(d.state, signal("calma"), manifest, 1, "piano");
     expect(changed.switchToId).toBe("p-calma");

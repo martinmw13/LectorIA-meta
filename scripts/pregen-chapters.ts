@@ -3,15 +3,17 @@
 // first and run only with the owner's say-so.
 //
 // Run: npx tsx --conditions=react-server scripts/pregen-chapters.ts --book all-shelf --ch 1 --style skins --dry-run
+import { randomUUID } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import type { Scene } from "../core/types";
 import { createBlobStore } from "../server/images/blob";
-import { usable } from "../server/guard/env";
+import { parseCapUsd, usable } from "../server/guard/env";
 import { createMetaClient } from "../server/images/meta";
 import { createRestKV } from "../server/guard/kv";
 import { utcDay } from "../server/guard/request";
 import { reserveSpend } from "../server/guard/spend";
-import { imageCostMicro, imageKey, indexKeyFor } from "../core/images";
+import { imageCostMicro, imageKey, indexKeyFor, withImageLock } from "../core/images";
+import { shelfReadyIds } from "../core/library";
 import { SKIN_DEFAULT_IMAGE_STYLE, parseStyleChoice } from "../core/image-style";
 import type { ImageStylePresetId } from "../core/image-style";
 import { buildPregenChapterPrompt } from "../server/images/final-prompt";
@@ -58,27 +60,12 @@ function usd(micro: number): string {
   return `$${(micro / 1_000_000).toFixed(2)}`;
 }
 
-function parseCapUsd(raw: string | undefined, fallback: number): number {
-  if (raw === undefined || raw.trim() === "") return fallback;
-  const value = Number(raw);
-  return Number.isFinite(value) && value >= 0 ? value : fallback;
-}
-
-// Ready shelf ids in library order: manifest order, favorites first
-// (mirrors core/library.ts), keeping only ids with data on disk.
+// Ready shelf ids with data on disk, in the shared library order. The
+// server checks its loader map instead; both sides derive the order and
+// the ready filter from shelfReadyIds so they cannot drift apart.
 function readyShelfIds(): string[] {
   const raw = JSON.parse(readFileSync("data/library.json", "utf8")) as unknown;
-  if (!Array.isArray(raw)) throw new Error("library manifest must be an array");
-  const entries: { id: string; favorite: boolean }[] = [];
-  for (const entry of raw) {
-    if (typeof entry !== "object" || entry === null) continue;
-    const { id, status, favorite } = entry as Record<string, unknown>;
-    if (typeof id !== "string" || status !== "ready") continue;
-    if (!existsSync(`data/books/${id}`)) continue;
-    entries.push({ id, favorite: favorite === true });
-  }
-  entries.sort((a, b) => Number(b.favorite) - Number(a.favorite));
-  return entries.map((e) => e.id);
+  return shelfReadyIds(raw).filter((id) => existsSync(`data/books/${id}`));
 }
 
 // Names only, never values.
@@ -211,50 +198,62 @@ async function main(): Promise<void> {
           console.log(line(`ch ${ch} ${styleId} planned`));
           continue;
         }
-        const spent = await reserveSpend(kv, {
-          amountMicro: cost,
-          day,
-          spendCapMicro: capMicro,
-          dailySpendCapMicro: dailyCapMicro,
+        // Same lock the app route takes: a concurrent pregen run or live
+        // request generating this page makes this one skip it.
+        const outcome = await withImageLock(kv, key, randomUUID(), async () => {
+          const spent = await reserveSpend(kv, {
+            amountMicro: cost,
+            day,
+            spendCapMicro: capMicro,
+            dailySpendCapMicro: dailyCapMicro,
+          });
+          if (!spent.ok) {
+            const at = multi ? `at ${plan.id} ch ${ch} ${styleId}` : `at ch ${ch} ${styleId}`;
+            console.log(
+              spent.which === "total"
+                ? `Stopped: spend cap reached ${at}, reserve refunded.`
+                : `Stopped: daily spend cap reached ${at}, reserve refunded.`,
+            );
+            return "stop" as const;
+          }
+          const refund = (): Promise<void> => spent.reservation.release();
+          let bytes: Uint8Array;
+          try {
+            bytes = await generate.generate(
+              buildPregenChapterPrompt({ book: plan.book, scenes: plan.scenes, ch, style }),
+            );
+          } catch {
+            await refund();
+            failed++;
+            console.log(line(`ch ${ch} ${styleId} failed -`));
+            return "done" as const;
+          }
+          let saved: string;
+          try {
+            saved = await store.save(key, bytes);
+          } catch {
+            await refund();
+            failed++;
+            console.log(line(`ch ${ch} ${styleId} failed -`));
+            return "done" as const;
+          }
+          try {
+            await kv.set(indexKey, saved);
+          } catch {
+            // The file exists; the next run backfills the index.
+          }
+          generated++;
+          console.log(line(`ch ${ch} ${styleId} generated ${saved}`));
+          return "done" as const;
         });
-        if (!spent.ok) {
-          const at = multi ? `at ${plan.id} ch ${ch} ${styleId}` : `at ch ${ch} ${styleId}`;
-          console.log(
-            spent.which === "total"
-              ? `Stopped: spend cap reached ${at}, reserve refunded.`
-              : `Stopped: daily spend cap reached ${at}, reserve refunded.`,
-          );
+        if (outcome === null) {
+          console.log(line(`ch ${ch} ${styleId} pending (locked)`));
+          continue;
+        }
+        if (outcome === "stop") {
           process.exitCode = 1;
           return;
         }
-        const refund = (): Promise<void> => spent.reservation.release();
-        let bytes: Uint8Array;
-        try {
-          bytes = await generate.generate(
-            buildPregenChapterPrompt({ book: plan.book, scenes: plan.scenes, ch, style }),
-          );
-        } catch {
-          await refund();
-          failed++;
-          console.log(line(`ch ${ch} ${styleId} failed -`));
-          continue;
-        }
-        let saved: string;
-        try {
-          saved = await store.save(key, bytes);
-        } catch {
-          await refund();
-          failed++;
-          console.log(line(`ch ${ch} ${styleId} failed -`));
-          continue;
-        }
-        try {
-          await kv.set(indexKey, saved);
-        } catch {
-          // The file exists; the next run backfills the index.
-        }
-        generated++;
-        console.log(line(`ch ${ch} ${styleId} generated ${saved}`));
       }
     }
     totalCached += cached;

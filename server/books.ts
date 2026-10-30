@@ -1,6 +1,6 @@
 import "server-only";
 import { notFound } from "next/navigation";
-import { library } from "@/core/library";
+import { shelfReadyIds } from "@/core/library";
 import type { AnalyzedScene, Book } from "@/core/types";
 import { isUploadId } from "@/core/uploads";
 import { loadUploadedBook } from "./uploads/loader";
@@ -64,7 +64,7 @@ export function isKnownBookId(id: unknown): id is string {
   return typeof id === "string" && Object.hasOwn(LOADERS, id);
 }
 
-const readyIds = new Set(library.map((entry) => entry.id));
+const readyIds = new Set(shelfReadyIds());
 
 // Known plus listed on the shelf with status ready. The shelf manifest
 // is the owner's switch: data alone does not publish a book.
@@ -73,7 +73,7 @@ export function isReadyBookId(id: unknown): boolean {
 }
 
 export function readyBookIds(): string[] {
-  return library.map((entry) => entry.id).filter(isKnownBookId);
+  return shelfReadyIds().filter(isKnownBookId);
 }
 
 // Parsed once per book per process; import failures are deterministic

@@ -1,6 +1,7 @@
 // Folio chrome: top line, resizable divider, bottom pager with ticks.
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { pressButton } from "../button-fx";
 import { Icon } from "../icons";
@@ -35,9 +36,9 @@ export function TopLine({
       <span className="wordmark">
         Lector<em>IA</em>
       </span>
-      <a href="/" className="shelf-link" aria-label="Back to the shelf">
+      <Link href="/" className="shelf-link" aria-label="Back to the shelf">
         <span aria-hidden="true">‹&nbsp;</span>Shelf
-      </a>
+      </Link>
       <div className="top-center">
         {bookTitle} · {author} ·{" "}
         <span className="chapter-jump">

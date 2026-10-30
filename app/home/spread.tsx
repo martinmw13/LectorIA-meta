@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
+import { hasPanels } from "@/core/book-capabilities";
 import { useSkin } from "../use-skin";
 import { shelf, shelfById } from "./shelf";
 import { coverFor } from "./covers";
@@ -133,7 +134,7 @@ export function HomeSpread() {
                 {book.hook}
                 <span className="ob-ready">
                   {book.ready
-                    ? book.id === "oz"
+                    ? hasPanels(book.id)
                       ? "Pictures and music are ready, scene by scene."
                       : "Music is ready, scene by scene."
                     : "Coming soon. We're still setting this one to music."}

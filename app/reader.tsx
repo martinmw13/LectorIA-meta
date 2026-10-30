@@ -1,12 +1,13 @@
 "use client";
 
-import { Children, cloneElement, isValidElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { isSceneAttr, type SceneAttr } from "@/core/bookmap";
 import { isUploadId } from "@/core/uploads";
 import { canPlayAudio } from "./ambience-engine";
 import { choosePlayableSources, currentMode, musicModes, parseManifest } from "@/core/music";
 import type { MusicManifest, MusicMode, MusicModeId, SceneSignal, Track } from "@/core/music";
+import { hasNarration } from "@/core/book-capabilities";
 import { EMOTIONS } from "@/core/types";
 import { dispatch, startSession } from "@/core/music-session";
 import type { MusicIntent, MusicSession, SessionView } from "@/core/music-session";
@@ -391,14 +392,9 @@ export function Reader({
 
   // Chat runs on our key for shelf books only, so uploads read without it.
   const chatOn = !isUploadId(bookId);
-  // Pictures serve shelf books only: the images API rejects upload ids,
-  // so the shell hands the flag to the book view and drops the side columns.
+  // Pictures serve shelf books only: the images API rejects upload ids.
+  // The book view defaults to the same flag from its own model id.
   const visualsOn = !isUploadId(bookId);
-  const kids = Children.map(children, (child) =>
-    isValidElement<{ visualsOn?: boolean }>(child) && typeof child.type === "function"
-      ? cloneElement(child, { visualsOn })
-      : child,
-  );
   return (
     <NarrationProvider entries={narration} scenes={scenes}>
       <div className={visualsOn ? "folio" : "folio no-visuals"}>
@@ -415,9 +411,9 @@ export function Reader({
           theme={theme}
           onToggleTheme={toggleTheme}
         />
-        {kids}
+        {children}
         <BandPlay
-          narrationOn={narration.length > 0}
+          narrationOn={hasNarration(narration)}
           musicFailed={musicFailed}
           empty={empty}
           track={track}

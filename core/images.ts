@@ -1,6 +1,7 @@
 // Pure image logic: validation, cache keys, prompts, quota and budget
 // helpers. No env reads, no network, no secrets. Server modules inject
 // the KV, store, and generator clients defined here.
+import { hasDenslowLook } from "./book-capabilities";
 import {
   ImageValidationError,
   parseStyleChoice,
@@ -213,6 +214,27 @@ export function lockKeyFor(key: string): string {
   return `img:lock:${key}`;
 }
 
+// Runs fn while holding the image lock; a concurrent holder gets null
+// instead of generating the same image twice. The lock always releases,
+// so a throw never wedges the key until TTL.
+export async function withImageLock<T>(
+  kv: KV,
+  key: string,
+  token: string,
+  fn: () => Promise<T>,
+): Promise<T | null> {
+  if (!(await kv.setNxEx(lockKeyFor(key), token, LOCK_TTL_SEC))) return null;
+  try {
+    return await fn();
+  } finally {
+    try {
+      await kv.releaseIfToken(lockKeyFor(key), token);
+    } catch {
+      // Lock expires on its own; nothing to do.
+    }
+  }
+}
+
 export function quotaKeys(args: { day: string; ipHash: string; anonId: string }): {
   ip: string;
   anon: string;
@@ -252,7 +274,7 @@ function cleanBookField(value: string): string {
 // otherwise; other books get the generic period-faithful line.
 export function styleLine(style: ImageStyle | undefined, book?: StyleBook): string {
   if (style !== undefined) return styleDescriptorLine(style, book);
-  if (book === undefined || book.id === "oz") {
+  if (book === undefined || hasDenslowLook(book.id)) {
     return (
       "Illustration in the style of W. W. Denslow's 1900 first-edition " +
       "illustrations for The Wonderful Wizard of Oz: flat color, bold black " +
