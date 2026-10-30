@@ -23,3 +23,5 @@ next-env.d.ts
 *.epub
 data/raw/
 pipeline/out/
+# Resume scratch for the bookmap pass; bookmap.json itself is committed
+bookmap.cache.json
