@@ -16,6 +16,7 @@ import { requestGotoScene, useCurrentSceneId } from "./leer/current-scene";
 import { DEFAULT_VOLUME, createMusicPrefsStore } from "./music-prefs";
 import { NarrationProvider, useNarration } from "./narration/context";
 import { ReadAloud } from "./narration/read-aloud";
+import { ReadAloudSoon } from "./narration/read-aloud-soon";
 import type { NarrationChapterEntry } from "./narration/types";
 import { Player } from "./player";
 import { ReaderChat } from "./chat/reader-chat";
@@ -97,7 +98,7 @@ function BandPlay({
   const { duck, ambienceDuck } = useNarration();
   return (
     <div className="band-play">
-      {narrationOn ? <ReadAloud /> : null}
+      {narrationOn ? <ReadAloud /> : <ReadAloudSoon />}
       {musicFailed || empty ? (
         <p className="player-note">The music is resting. The book is all yours.</p>
       ) : (

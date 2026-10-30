@@ -46,7 +46,13 @@ describe("reader wordmark", () => {
     expect(links).toHaveLength(1);
     expect(links[0]?.getAttribute("href")).toBe("/");
     expect(links[0]?.classList.contains("wordmark")).toBe(true);
-    expect(links[0]?.textContent).toBe("LectorIA");
+    expect(links[0]?.querySelector(".wm-brand")?.textContent).toBe("LectorIA");
     expect(container.textContent).not.toContain("Shelf");
+  });
+
+  it("swaps to a hidden 'Back to shelf' face that screen readers skip", () => {
+    const back = container.querySelector(".wordmark-home .wm-back");
+    expect(back?.textContent?.trim()).toBe("Back to shelf");
+    expect(back?.getAttribute("aria-hidden")).toBe("true");
   });
 });

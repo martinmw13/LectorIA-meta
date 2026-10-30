@@ -87,12 +87,42 @@ scrolls at desktop size; the reading column scrolls inside itself. */
 .wordmark-home {
   color: inherit;
   text-decoration: none;
-  text-underline-offset: 4px;
 }
 
-.wordmark-home:hover {
-  text-decoration: underline;
-  text-decoration-color: var(--color-accent, #0866ff);
+/* Hover or focus swaps "LectorIA" for "Back to shelf" with a soft
+   crossfade; same font, size and colour, no underline. */
+.wm-swap {
+  display: inline-grid;
+  justify-items: start;
+  vertical-align: baseline;
+}
+
+.wm-brand,
+.wm-back {
+  grid-area: 1 / 1;
+  white-space: nowrap;
+  transition: opacity 220ms ease;
+}
+
+.wm-back {
+  opacity: 0;
+}
+
+.wordmark-home:hover .wm-brand,
+.wordmark-home:focus-visible .wm-brand {
+  opacity: 0;
+}
+
+.wordmark-home:hover .wm-back,
+.wordmark-home:focus-visible .wm-back {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wm-brand,
+  .wm-back {
+    transition: none;
+  }
 }
 
 .wordmark-home:focus-visible {
