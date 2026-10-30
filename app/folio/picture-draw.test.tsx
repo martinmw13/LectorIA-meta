@@ -197,6 +197,7 @@ test("a ready url swap never shows the new image as revealed", () => {
   let mark: () => void = () => {};
   function LoadedProbe({ url }: { url: string }) {
     const { loaded, markLoaded } = usePictureLoaded(url);
+    // eslint-disable-next-line react-hooks/globals -- test probe captures the callback for the next act()
     mark = markLoaded;
     seen.push({ url, loaded });
     return null;

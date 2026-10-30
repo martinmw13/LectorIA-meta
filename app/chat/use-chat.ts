@@ -157,10 +157,13 @@ export function useChat(opts: UseChatOptions) {
   const [needHuman, setNeedHuman] = useState(false);
 
   const optsRef = useRef(opts);
+  // eslint-disable-next-line react-hooks/refs -- latest-props mirror for async callbacks
   optsRef.current = opts;
   const spoilersRef = useRef(false);
+  // eslint-disable-next-line react-hooks/refs -- latest-props mirror for async callbacks
   spoilersRef.current = spoilers;
   const msgsRef = useRef<ChatMessage[]>([]);
+  // eslint-disable-next-line react-hooks/refs -- latest-props mirror for async callbacks
   msgsRef.current = messages;
   const abortRef = useRef<AbortController | null>(null);
 

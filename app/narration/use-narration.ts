@@ -82,12 +82,16 @@ export function useNarrationController(opts: {
   // voice never refetches.
   const cacheRef = useRef(new Map<string, ChapterNarration>());
   const entriesRef = useRef(opts.entries);
+  // eslint-disable-next-line react-hooks/refs -- latest-props mirror for async audio callbacks
   entriesRef.current = opts.entries;
   const scenesRef = useRef(opts.scenes);
+  // eslint-disable-next-line react-hooks/refs -- latest-props mirror for async audio callbacks
   scenesRef.current = opts.scenes;
   const sceneRef = useRef(scene);
+  // eslint-disable-next-line react-hooks/refs -- latest-props mirror for async audio callbacks
   sceneRef.current = scene;
   const prefsRef = useRef(prefs);
+  // eslint-disable-next-line react-hooks/refs -- latest-props mirror for async audio callbacks
   prefsRef.current = prefs;
   const loadToken = useRef(0);
   const wantPlay = useRef(false);
@@ -98,6 +102,7 @@ export function useNarrationController(opts: {
   // Stored prefs apply after the server-matching first render.
   useEffect(() => {
     try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-only narration prefs restore from localStorage
       setPrefs(loadNarrationPrefs(window.localStorage));
     } catch {
       // Defaults already render; playback starts on user press.
@@ -130,6 +135,7 @@ export function useNarrationController(opts: {
   useEffect(() => {
     if (!prefs.on || scene === null) {
       if (!prefs.on) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- manifest/status sync on voice/scene change; cache hits apply inline
         setStatus("idle");
         setManifest(null);
       }

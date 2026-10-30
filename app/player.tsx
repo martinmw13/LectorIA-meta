@@ -66,18 +66,24 @@ export function Player({
   // Slider value and mute live in the reader (persisted prefs); refs
   // mirror the props so the engine never re-runs on volume moves.
   const volumeRef = useRef(volume);
+  // eslint-disable-next-line react-hooks/refs -- latest-prop mirror so the engine never re-runs on volume moves
   volumeRef.current = volume;
   const mutedRef = useRef(muted);
+  // eslint-disable-next-line react-hooks/refs -- latest-prop mirror so the engine never re-runs on volume moves
   mutedRef.current = muted;
   const duckRef = useRef(duck);
+  // eslint-disable-next-line react-hooks/refs -- latest-prop mirror so the engine never re-runs on volume moves
   duckRef.current = duck;
   const fadeRef = useRef<number | null>(null);
   const loopArmedRef = useRef<string | null>(null);
   const trackRef = useRef<Track | null>(track);
+  // eslint-disable-next-line react-hooks/refs -- latest-prop mirror so the engine never re-runs on track moves
   trackRef.current = track;
   const fadeSecRef = useRef(fadeSec);
+  // eslint-disable-next-line react-hooks/refs -- latest-prop mirror so the engine never re-runs on track moves
   fadeSecRef.current = fadeSec;
   const onEndedRef = useRef(onEnded);
+  // eslint-disable-next-line react-hooks/refs -- latest-prop mirror so the engine never re-runs on callback moves
   onEndedRef.current = onEnded;
   const playingRef = useRef(false);
   const startedRef = useRef(false);
@@ -99,6 +105,7 @@ export function Player({
   useEffect(() => {
     const query = window.matchMedia?.("(prefers-reduced-motion: reduce)");
     if (!query) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-only reduced-motion read; initial false keeps hydration matching
     setReducedMotion(query.matches);
     const onChange = (event: MediaQueryListEvent) => setReducedMotion(event.matches);
     query.addEventListener("change", onChange);
@@ -146,6 +153,7 @@ export function Player({
   // Assigned each render so handlers always see fresh refs. Fades from
   // the currently louder element to the newest track; a mid-fade request
   // cancels the pending fade and starts from current levels.
+  // eslint-disable-next-line react-hooks/refs -- handler reassigned each render so callbacks see fresh refs
   requestPlayRef.current = (next: Track, durSec: number) => {
     const els = [firstRef.current, secondRef.current];
     const srcIdx = (levelRef.current[0] ?? 0) >= (levelRef.current[1] ?? 0) ? 0 : 1;
@@ -181,6 +189,7 @@ export function Player({
     if (playingRef.current) startEl(dst, dstIdx);
     const startSrc = levelRef.current[srcIdx] ?? 0;
     const startDst = levelRef.current[dstIdx] ?? 0;
+    // eslint-disable-next-line react-hooks/purity -- fade clock starts when the fade runs, not during render
     let t0 = performance.now();
     let prev = t0;
     const tick = (now: number) => {

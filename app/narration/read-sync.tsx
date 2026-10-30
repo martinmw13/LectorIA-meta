@@ -77,6 +77,7 @@ export function useReadSync(opts: {
   const [active, setActive] = useState<ActiveSpot | null>(null);
 
   const live = useRef(opts);
+  // eslint-disable-next-line react-hooks/refs -- latest-opts mirror for the follow loop
   live.current = opts;
 
   // A skin switch restyles the mark live: data-skin is picked whenever

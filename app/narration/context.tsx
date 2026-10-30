@@ -19,7 +19,9 @@ export function NarrationProvider({
 }) {
   const controller = useNarrationController({ entries, scenes });
   return (
+    /* eslint-disable-next-line react-hooks/refs -- provider passes the single controller (audio owner) down */
     <NarrationContext.Provider value={controller}>
+      {/* eslint-disable-next-line react-hooks/refs -- the one audio element owned by the provider */}
       <audio ref={controller.audioRef} preload="auto" aria-label="Read aloud" />
       {children}
     </NarrationContext.Provider>

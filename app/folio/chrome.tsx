@@ -87,6 +87,7 @@ export function Divider() {
     try {
       const saved = Number(window.localStorage.getItem(SPLIT_KEY));
       if (Number.isFinite(saved) && saved > 0) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-only split restore from localStorage after hydration
         setWidth(clampSplitWidth(saved, window.innerWidth));
         return () => window.removeEventListener("resize", measure);
       }
