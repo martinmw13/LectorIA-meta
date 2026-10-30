@@ -199,20 +199,18 @@ describe("handleImagesPost", () => {
     expect(generate.generate).not.toHaveBeenCalled();
   });
 
-  it("rejects non-oz books explicitly without calling generate", async () => {
-    const { book, scenes } = await loadBookData("alice");
+  it("rejects an unknown book before env, quota, or spend", async () => {
+    for (const k of ALL_ENV) delete process.env[k];
+    const fetchSpy = vi.fn().mockRejectedValue(new Error("must not be called"));
+    vi.stubGlobal("fetch", fetchSpy);
     const generate = { generate: vi.fn(async () => new Uint8Array([1, 2, 3])) };
     const res = await handleImagesPost(
-      post({
-        kind: "scene",
-        bookId: "alice",
-        textVersion: book.textVersion,
-        sceneId: scenes[0]?.id ?? "c1s1",
-      }),
+      post({ kind: "passage", bookId: "nope", textVersion: "t", n: 1 }),
       { generate },
     );
     expect(res.status).toBe(400);
     expect(await res.json()).toMatchObject({ status: "error", code: "bad_request" });
+    expect(fetchSpy).not.toHaveBeenCalled();
     expect(generate.generate).not.toHaveBeenCalled();
   });
 
@@ -341,6 +339,37 @@ describe("human gate", () => {
     expect(res.status).toBe(200);
     expect(prompt).toContain("Reference details:");
     expect(prompt).toContain("Dorothy:");
+  });
+
+  it("serves a ready non-Oz book with its own style line and no reference block", async () => {
+    const { book: alice } = await loadBookData("alice");
+    const first = alice.paragraphs[0];
+    if (!first) throw new Error("test book has no paragraphs");
+    const { kv, store } = fakes();
+    let prompt = "";
+    const generate = {
+      generate: async (p: string) => {
+        prompt = p;
+        return new Uint8Array([1, 2, 3]);
+      },
+    };
+    const siteFetch = vi.fn(async () => {
+      throw new Error("siteverify must not be called");
+    });
+    const cookie = issueHumanCookie(secret).split(";")[0] as string;
+    const res = await handleImagesPost(
+      passagePost(
+        { kind: "passage", bookId: "alice", textVersion: alice.textVersion, n: first.n },
+        { Cookie: cookie },
+      ),
+      { env: imgEnv, kv, store, generate, fetchFn: siteFetch as unknown as typeof fetch },
+    );
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ status: "ready" });
+    expect(prompt).toContain("Alice's Adventures in Wonderland");
+    expect(prompt).not.toContain("Dorothy");
+    expect(prompt).not.toContain("silver shoes");
+    expect(prompt).not.toContain("Reference details:");
   });
 
   it("accepts the legacy chat_human cookie", async () => {

@@ -16,7 +16,7 @@ import {
   lockKeyFor,
   quotaKeys,
 } from "@/core/images";
-import type { ImageGenerator, ImageRequest, ImageResponse, ImageStore } from "@/core/images";
+import type { ImageGenerator, ImageRequest, ImageResponse, ImageStore, StyleBook } from "@/core/images";
 import type { KV } from "@/core/types";
 import { addRange, parseRanges, pickReusable, rangeListKeyFor } from "@/core/image-ranges";
 import type { ParaRange } from "@/core/image-ranges";
@@ -40,6 +40,9 @@ export interface ImageContent {
   // Optional bookmap reference block, appended after the prompt. Empty
   // or absent leaves the prompt byte-identical to the no-bookmap build.
   reference?: string;
+  // Trusted book identity for the style line. Absent means Oz, so old
+  // callers keep the Denslow prompt byte-identical.
+  book?: StyleBook;
 }
 
 export interface OrchestrateDeps {
@@ -225,6 +228,7 @@ export async function orchestrate(
               chapterTitle: deps.content.sceneTitle,
               panels: deps.content.chapterPanels ?? [],
               style: req.style,
+              book: deps.content.book,
             })
           : buildPrompt({
               kind: req.kind,
@@ -232,6 +236,7 @@ export async function orchestrate(
               sceneTitle: deps.content.sceneTitle,
               sceneClip: deps.content.sceneClip,
               style: req.style,
+              book: deps.content.book,
             });
       const reference = deps.content.reference ?? "";
       bytes = await deps.generate.generate(reference ? `${base} ${reference}` : base);

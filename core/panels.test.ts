@@ -87,6 +87,18 @@ describe("buildChapterPrompt", () => {
     expect(styled).toContain("Art style: soft storybook watercolor painting,");
   });
 
+  it("uses the generic line for a non-Oz book", () => {
+    const prompt = buildChapterPrompt({
+      chapterTitle: "Down the Rabbit-Hole",
+      panels: groups,
+      book: { id: "alice", title: "Alice's Adventures in Wonderland", author: "Lewis Carroll" },
+    });
+    expect(prompt).not.toContain("Denslow");
+    expect(prompt).not.toContain("silver shoes");
+    expect(prompt).toContain("Alice's Adventures in Wonderland");
+    expect(prompt).toContain("speech balloons");
+  });
+
   it("clips each panel description near 300 chars", () => {
     const summary = `Dorothy ${"walks ".repeat(200)}home.`;
     const long = chapterPanels([{ id: "s1", summary }]);

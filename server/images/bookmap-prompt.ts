@@ -98,6 +98,11 @@ function charLine(char: BookmapCharacter): string {
   return `${oneLine(char.name)}: ${clipWords(oneLine(char.physical_description), DESC_CHARS)}`;
 }
 
+// One sentence-ending period: a clipped value may already end in ".".
+function sentence(text: string): string {
+  return /[.!?]$/.test(text) ? text : `${text}.`;
+}
+
 function block(parts: string[]): string {
   if (parts.length === 0) return "";
   return clipWords(`Reference details: ${parts.join(" ")}`, BLOCK_CHARS);
@@ -118,17 +123,17 @@ export function passageReference(args: {
   const cast = knownCast(bookmap, ids, args.ch).slice(0, PASSAGE_CHAR_CAP);
   const parts: string[] = [];
   if (cast.length > 0) {
-    parts.push(`Characters (keep consistent): ${cast.map(charLine).join("; ")}.`);
+    parts.push(sentence(`Characters (keep consistent): ${cast.map(charLine).join("; ")}`));
   }
   const first = scenes[0];
   if (first) {
     const setting = [first.setting.location, first.setting.time_of_day, first.setting.weather]
       .map(oneLine)
       .filter((p) => p !== "");
-    if (setting.length > 0) parts.push(`Setting: ${setting.join(", ")}.`);
+    if (setting.length > 0) parts.push(sentence(`Setting: ${setting.join(", ")}`));
   }
   const world = [bookmap.setting.time_period, bookmap.setting.world].map(oneLine).filter((p) => p !== "");
-  if (world.length > 0) parts.push(`World: ${world.join(", ")}.`);
+  if (world.length > 0) parts.push(sentence(`World: ${world.join(", ")}`));
   const seen = new Set<string>();
   const objects: string[] = [];
   for (const scene of scenes) {
@@ -141,7 +146,7 @@ export function passageReference(args: {
     }
     if (objects.length >= OBJECT_CAP) break;
   }
-  if (objects.length > 0) parts.push(`Objects: ${objects.join(", ")}.`);
+  if (objects.length > 0) parts.push(sentence(`Objects: ${objects.join(", ")}`));
   return block(parts);
 }
 
@@ -157,14 +162,14 @@ export function chapterReference(args: { bookmap: BookMap | null; sceneIds: stri
     args.ch,
   ).slice(0, CHAPTER_CAST_CAP);
   if (cast.length > 0) {
-    parts.push(`Characters (keep consistent): ${cast.map(charLine).join("; ")}.`);
+    parts.push(sentence(`Characters (keep consistent): ${cast.map(charLine).join("; ")}`));
   }
   const places = [...new Set(scenes.map((s) => oneLine(s.setting.location)).filter((p) => p !== ""))].slice(
     0,
     PLACE_CAP,
   );
-  if (places.length > 0) parts.push(`Places: ${places.join("; ")}.`);
+  if (places.length > 0) parts.push(sentence(`Places: ${places.join("; ")}`));
   const cover = oneLine(bookmap.chapters.find((c) => c.ch === args.ch)?.cover_description ?? "");
-  if (cover) parts.push(`Key panel: ${clipWords(cover, COVER_CHARS)}.`);
+  if (cover) parts.push(sentence(`Key panel: ${clipWords(cover, COVER_CHARS)}`));
   return block(parts);
 }

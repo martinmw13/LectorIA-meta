@@ -258,4 +258,22 @@ describe("styleDescriptorLine", () => {
     );
     expect(line).toContain("silver shoes");
   });
+
+  it("keeps the Oz line byte-identical with an explicit Oz book", () => {
+    const oz = { id: "oz", title: "The Wonderful Wizard of Oz", author: "L. Frank Baum" };
+    expect(styleDescriptorLine({ kind: "preset", id: "watercolor" }, oz)).toBe(
+      styleDescriptorLine({ kind: "preset", id: "watercolor" }),
+    );
+  });
+
+  it("drops the Oz tail for other books but keeps the guards", () => {
+    const alice = { id: "alice", title: "Alice's Adventures in Wonderland", author: "Lewis Carroll" };
+    const line = styleDescriptorLine({ kind: "preset", id: "watercolor" }, alice);
+    expect(line.startsWith("Art style: soft storybook watercolor painting,")).toBe(true);
+    expect(line).not.toContain("Dorothy");
+    expect(line).not.toContain("silver shoes");
+    expect(line).not.toContain("MGM");
+    expect(line).toContain("Family-friendly, no real people.");
+    expect(line).toContain("No text, no captions, no lettering in the image.");
+  });
 });
