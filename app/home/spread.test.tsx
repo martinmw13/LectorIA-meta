@@ -56,14 +56,12 @@ describe("shelf links", () => {
     }
   });
 
-  test("books off the shelf show coming soon with an Oz waiting link", () => {
-    const coming = shelf.filter((book) => !book.ready);
-    expect(coming.length).toBeGreaterThan(0);
-    for (const book of coming) {
+  test("every book on the shelf opens its own reader", () => {
+    expect(shelf.every((book) => book.ready)).toBe(true);
+    for (const book of shelf) {
       click(shelfButton(book.id));
-      expect(container.querySelector("a.ob-read")).toBeNull();
-      expect(container.querySelector(".ob-cta-soon")).not.toBeNull();
-      expect(container.querySelector("a.ob-wait")?.getAttribute("href")).toBe("/read/oz");
+      expect(container.querySelector(".ob-cta-soon")).toBeNull();
+      expect(container.querySelector("a.ob-read")?.getAttribute("href")).toBe(`/read/${book.id}`);
     }
   });
 });

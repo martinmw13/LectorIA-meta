@@ -2,9 +2,10 @@ import { describe, expect, it } from "vitest";
 import { library, loadLibrary, readingMinutes } from "./library";
 
 describe("library", () => {
-  it("lists only the ready Oz entry, favorite first", () => {
-    expect(library).toHaveLength(1);
+  it("lists the ten ready books, Oz first as the favorite", () => {
+    expect(library).toHaveLength(10);
     expect(library[0]).toMatchObject({ id: "oz", status: "ready", favorite: true });
+    expect(library.every((entry) => entry.status === "ready")).toBe(true);
   });
 
   it("throws on a bad entry", () => {
