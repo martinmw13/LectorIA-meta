@@ -17,7 +17,7 @@ import {
   runCoverTasks,
   type CoverSubject,
 } from "../core/cover-pregen";
-import { createMetaClient } from "../server/images/meta";
+import { createMetaClient, isPolicyRejection, safeFailureReason } from "../server/images/meta";
 import { shelf, shelfById } from "../app/home/shelf";
 
 
@@ -142,6 +142,7 @@ async function main(): Promise<void> {
   const capMicro = Math.round(parseCapUsd(opt("--cap"), 1) * 1_000_000);
   const generate = createMetaClient(process.env.META_API_KEY as string);
   const done: string[] = [];
+  const failures: string[] = [];
   const result = await runCoverTasks({
     tasks,
     capMicro,
@@ -154,8 +155,14 @@ async function main(): Promise<void> {
       const task = tasks.find((t) => t.path === diskPath);
       if (task) done.push(`${task.skin}/${task.bookId}`);
     },
+    isPolicyRejection,
+    onFailure: (task, stage, e) => {
+      const why = stage === "write" ? `write ${e instanceof Error ? e.name : "error"}` : safeFailureReason(e);
+      failures.push(`${task.skin}/${task.bookId}: ${why}`);
+    },
   });
   for (const name of done.sort()) console.log(`  saved ${name}`);
+  for (const f of failures.sort()) console.log(`  failed ${f}`);
   refreshManifest();
   console.log(
     `covers: ${result.generated} generated, ${result.failed} failed, ${skipped} cached${result.stoppedAtCap ? ` (stopped: spend cap ${usd(capMicro)} reached)` : ""}`,

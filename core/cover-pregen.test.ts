@@ -120,3 +120,29 @@ describe("parseCapUsd", () => {
     expect(parseCapUsd("2.5", 1)).toBe(2.5);
   });
 });
+
+describe("runCoverTasks policy fallback", () => {
+  it("retries once with the generic prompt after a policy rejection and reports other failures", async () => {
+    const [task] = planCoverTasks({ subjects: SUBJECTS, skins: SKINS.slice(0, 1), exists: () => false }).tasks;
+    if (!task) throw new Error("expected a planned task");
+    const seen: string[] = [];
+    const failures: string[] = [];
+    const result = await runCoverTasks({
+      tasks: [task],
+      capMicro: 1_000_000,
+      costMicro: 10_000,
+      concurrency: 1,
+      isPolicyRejection: (e) => e instanceof Error && e.message === "policy",
+      generate: async (prompt) => {
+        seen.push(prompt);
+        if (prompt === task.prompt) throw new Error("policy");
+        return new Uint8Array([1]);
+      },
+      write: async () => {},
+      onFailure: (_t, stage) => failures.push(stage),
+    });
+    expect(result.generated).toBe(1);
+    expect(seen).toEqual([task.prompt, task.fallbackPrompt]);
+    expect(failures).toEqual([]);
+  });
+});
