@@ -7,14 +7,14 @@ import {
   styleDescriptorLine,
   styleSegment,
 } from "./image-style";
-import type { ImageStyle } from "./image-style";
+import type { ImageStyle, StyleBook } from "./image-style";
 import { CHAPTER_PROMPT_VERSION, IMAGE_COST_MICRO, PROMPT_VERSION } from "./types";
 import type { ImageKind, ImageRequest } from "./types";
 
 export type { ImageErrorCode, ImageKind, ImageRequest, ImageResponse, KV } from "./types";
 import type { KV } from "./types";
 export { ImageStyleError, ImageValidationError } from "./image-style";
-export type { ImageStyle, ImageStylePresetId, StyleChoice } from "./image-style";
+export type { ImageStyle, ImageStylePresetId, StyleBook, StyleChoice } from "./image-style";
 
 export const DAILY_IMAGE_LIMIT = 5;
 export const QUOTA_TTL_SEC = 48 * 3600;
@@ -28,7 +28,7 @@ export const MSG_BAD_REQUEST = "Something went wrong there. Try again?";
 export const MSG_QUOTA = "That's all five pictures for today. More tomorrow.";
 export const MSG_CREDITS_OUT =
   "So many people loved this that we've run out of credits to share. " +
-  "Feel free to bring your own key! Meanwhile, The Wonderful Wizard of Oz " +
+  "Feel free to bring your own key! Meanwhile, your book " +
   "is ready to read, with its soundtrack and illustrations.";
 export const CREDITS_OUT_LIBRARY_HREF = "/";
 export const MSG_UNAVAILABLE = "Pictures aren't available right now.";
@@ -241,16 +241,31 @@ export function clipText(text: string, max: number): string {
   return clean.slice(0, max).trimEnd();
 }
 
-// The illustration style line, shared by scene and chapter prompts: the
-// Denslow sentence by default, the parsed style's descriptor otherwise.
-export function styleLine(style: ImageStyle | undefined): string {
-  if (style !== undefined) return styleDescriptorLine(style);
+// Trusted book.json text, still stripped of control chars for the prompt.
+function cleanBookField(value: string): string {
+  return value.replace(/[\p{Cc}\p{Cf}]/gu, " ").replace(/\s+/g, " ").trim();
+}
+
+// The illustration style line, shared by scene and chapter prompts: Oz
+// keeps the Denslow sentence by default, the parsed style's descriptor
+// otherwise; other books get the generic period-faithful line.
+export function styleLine(style: ImageStyle | undefined, book?: StyleBook): string {
+  if (style !== undefined) return styleDescriptorLine(style, book);
+  if (book === undefined || book.id === "oz") {
+    return (
+      "Illustration in the style of W. W. Denslow's 1900 first-edition " +
+      "illustrations for The Wonderful Wizard of Oz: flat color, bold black " +
+      "ink outlines, limited palette. Dorothy wears silver shoes. Nothing " +
+      "from the 1939 MGM film, no ruby slippers, no film look. No text, " +
+      "no captions, no lettering in the image."
+    );
+  }
+  const title = cleanBookField(book.title);
+  const author = cleanBookField(book.author);
   return (
-    "Illustration in the style of W. W. Denslow's 1900 first-edition " +
-    "illustrations for The Wonderful Wizard of Oz: flat color, bold black " +
-    "ink outlines, limited palette. Dorothy wears silver shoes. Nothing " +
-    "from the 1939 MGM film, no ruby slippers, no film look. No text, " +
-    "no captions, no lettering in the image."
+    `Classic book illustration for ${title} by ${author}: ink and watercolor, ` +
+    `faithful to the book's own text and period, not any film or TV adaptation. ` +
+    `No text, no captions, no lettering in the image.`
   );
 }
 
@@ -263,8 +278,9 @@ export function buildPrompt(args: {
   sceneTitle: string;
   sceneClip: string;
   style?: ImageStyle;
+  book?: StyleBook;
 }): string {
-  const style = styleLine(args.style);
+  const style = styleLine(args.style, args.book);
   if (args.kind === "scene") {
     return (
       `Scene "${args.sceneTitle}". ${clipText(args.sceneClip, MAX_SCENE_CLIP_CHARS)}. ${style}`

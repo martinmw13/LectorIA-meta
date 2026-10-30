@@ -85,7 +85,7 @@ describe("chapter validateAgainstBook", () => {
 describe("chapter imageKey", () => {
   it("keys the chapter page apart from scenes and passages", () => {
     expect(imageKey({ kind: "chapter", bookId: "oz", textVersion: "t123", ch: 2, reachedCh: 2 })).toBe(
-      "images/oz/t123/v2/chapter-2-c2.webp",
+      "images/oz/t123/v3/chapter-2-c3.webp",
     );
   });
 
@@ -98,22 +98,22 @@ describe("chapter imageKey", () => {
   it("inserts the style segment and treats denslow as omitted", () => {
     expect(
       imageKey({ kind: "chapter", bookId: "oz", textVersion: "t123", ch: 2, reachedCh: 2, style: { kind: "preset", id: "pencil" } }),
-    ).toBe("images/oz/t123/v2/style-pencil/chapter-2-c2.webp");
+    ).toBe("images/oz/t123/v3/style-pencil/chapter-2-c3.webp");
     expect(imageKey(parseImageRequest({ ...chapter, style: { preset: "denslow" } }))).toBe(
-      "images/oz/t123/v2/chapter-2-c2.webp",
+      "images/oz/t123/v3/chapter-2-c3.webp",
     );
   });
 
   it("leaves scene and passage keys byte-identical", () => {
     expect(imageKey({ kind: "passage", bookId: "oz", textVersion: "t123", n: 7 })).toBe(
-      "images/oz/t123/v2/p7.webp",
+      "images/oz/t123/v3/p7.webp",
     );
     expect(imageKey({ kind: "scene", bookId: "oz", textVersion: "t123", sceneId: "c1s1" })).toBe(
-      "images/oz/t123/v2/scene-c1s1.webp",
+      "images/oz/t123/v3/scene-c1s1.webp",
     );
     expect(
       imageKey({ kind: "scene", bookId: "oz", textVersion: "t123", sceneId: "c1s1", style: { kind: "preset", id: "pencil" } }),
-    ).toBe("images/oz/t123/v2/style-pencil/scene-c1s1.webp");
+    ).toBe("images/oz/t123/v3/style-pencil/scene-c1s1.webp");
   });
 });
 

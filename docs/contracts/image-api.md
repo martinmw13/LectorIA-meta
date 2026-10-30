@@ -26,16 +26,17 @@ every 3 s up to ~2 minutes; `{ status: "error", code, message }`
 where code is `quota`, `budget`, `daily_budget`, `unavailable`, or
 `bad_request` with a friendly English message. Both `budget` and
 `daily_budget` answer `MSG_CREDITS_OUT` (`core/images.ts`): the free
-credits ran out, bring your own key, and meanwhile the Oz reader is
-ready with its soundtrack and illustrations. It never says "come back
-tomorrow". The UI links the Oz sentence via `CREDITS_OUT_LIBRARY_HREF`
+credits ran out, bring your own key, and meanwhile your book is
+ready to read, with its soundtrack and illustrations. It never says
+"come back tomorrow". The UI links home via `CREDITS_OUT_LIBRARY_HREF`
 (`"/"`). Caption is the scene title, or the paragraph's first words,
 built server-side.
 
 The passage cache key is book plus the selection's paragraph range
-plus `textVersion` plus `PROMPT_VERSION` (`v2`): `p{n}.webp` for one
-paragraph (the key every older picture already has), `p{n}-{endN}.webp`
-for a range. The scene key swaps in the scene id and never changes.
+plus `textVersion` plus `PROMPT_VERSION` (`v3`): `p{n}.webp` for one
+paragraph, `p{n}-{endN}.webp` for a range. The scene key swaps in the
+scene id. Chapter pages carry `CHAPTER_PROMPT_VERSION` (`c3`) in the
+file name instead.
 
 Overlapping selections share a picture. Each cached passage range is
 recorded in a small per-scene list in Upstash (`img:ranges:` plus the

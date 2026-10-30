@@ -197,7 +197,7 @@ test("each scene section carries its number and its chapter's scene count, past 
   expect(sections[30]!.style.getPropertyValue("--scene-of")).toBe('" of 31"');
 });
 
-test("non-Oz books hide every picture control but keep the text", async () => {
+test("non-Oz books show picture controls with the text", async () => {
   const model = {
     ...MODEL,
     bookId: "alice",
@@ -216,9 +216,9 @@ test("non-Oz books hide every picture control but keep the text", async () => {
       </NarrationProvider>,
     );
   });
-  expect(counts.book).toBe(0);
-  expect(host.querySelector(".vault")).toBeNull();
-  expect(host.querySelector(".panels-link")).toBeNull();
+  expect(counts.book).toBeGreaterThan(0);
+  expect(host.querySelector(".vault")).not.toBeNull();
+  expect(host.querySelector(".panels-link")).not.toBeNull();
   expect(host.querySelector("#p1")).not.toBeNull();
   expect(host.querySelector("#p3")).not.toBeNull();
 });

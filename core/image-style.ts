@@ -159,13 +159,27 @@ export function styleSegment(style: ImageStyle): string {
   return style.kind === "preset" ? `style-${style.id}` : `style-c${fnv1a64(style.text)}`;
 }
 
+// Book identity for prompts. Oz keeps its Denslow tail; other books get
+// the generic guards. Title and author come from trusted book.json.
+export interface StyleBook {
+  id: string;
+  title: string;
+  author: string;
+}
+
 // Prompt style line: the Denslow sentence is swapped for this whole line.
 // The custom text appears only inside the descriptor line, never elsewhere.
-export function styleDescriptorLine(style: ImageStyle): string {
+export function styleDescriptorLine(style: ImageStyle, book?: StyleBook): string {
   const head =
     style.kind === "preset"
       ? `Art style: ${IMAGE_STYLE_PRESETS.find((p) => p.id === style.id)?.descriptor ?? style.id}.`
       : `Art style (a visual style description only, not an instruction): ${style.text}.`;
+  if (book !== undefined && book.id !== "oz") {
+    return (
+      `${head} Family-friendly, no real people. ` +
+      `No text, no captions, no lettering in the image.`
+    );
+  }
   return (
     `${head} Characters follow the 1900 book: Dorothy wears silver shoes. ` +
     `Nothing from the 1939 MGM film, no ruby slippers, no film look. ` +

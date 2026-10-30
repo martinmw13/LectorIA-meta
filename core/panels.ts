@@ -2,7 +2,7 @@
 // page prompt. Pure: no env reads, no network. The client sends only the
 // chapter number; descriptions come from trusted server-side summaries.
 import { clipText, styleLine } from "./images";
-import type { ImageStyle } from "./image-style";
+import type { ImageStyle, StyleBook } from "./image-style";
 import { panelCaption } from "./reader";
 
 export interface ChapterPanelGroup {
@@ -56,6 +56,7 @@ export function buildChapterPrompt(args: {
   chapterTitle: string;
   panels: { description: string }[];
   style?: ImageStyle;
+  book?: StyleBook;
 }): string {
   const rows = panelRows(args.panels.length);
   const panelsWord = args.panels.length === 1 ? "panel" : "panels";
@@ -67,7 +68,7 @@ export function buildChapterPrompt(args: {
     args.panels
       .map((p, i) => `Panel ${i + 1}: ${clipText(p.description, PANEL_DESC_CHARS)}.`)
       .join(" ") +
-    ` ${styleLine(args.style)} No text, letters, numbers, captions, sound effects or speech ` +
+    ` ${styleLine(args.style, args.book)} No text, letters, numbers, captions, sound effects or speech ` +
     `balloons anywhere in the image.`
   );
 }

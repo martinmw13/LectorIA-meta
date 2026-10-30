@@ -144,6 +144,17 @@ describe("passageReference", () => {
     expect(ref).not.toContain("\n");
     expect(ref).toContain("Girl in a gingham dress.");
   });
+
+  it("never doubles a period when a clipped value already ends in one", () => {
+    const ref = passageReference({
+      bookmap: bookmap(),
+      sceneIds: ["c1s1"],
+      selectedText: "Dorothy lifted the trap door",
+      ch: 1,
+    });
+    expect(ref).toContain("Dorothy: Girl in a gingham dress.");
+    expect(ref).not.toContain("..");
+  });
 });
 
 describe("chapterReference", () => {
@@ -175,6 +186,12 @@ describe("chapterReference", () => {
     expect(ref).toContain("E: E look.");
     expect(ref).not.toContain("F: F look.");
   });
+
+  it("clips the cover hint without doubling its period", () => {
+    const ref = chapterReference({ bookmap: bookmap(), sceneIds: ["c1s1", "c1s2"], ch: 1 });
+    expect(ref).toContain("Key panel: House in a cyclone.");
+    expect(ref).not.toContain("..");
+  });
 });
 
 describe("getBookmap", () => {
@@ -186,6 +203,32 @@ describe("getBookmap", () => {
     expect(getBookmap("oz", "t", root)).toBe(getBookmap("oz", "t", root));
     expect(getBookmap("oz", "other", root)).toBeNull();
     expect(getBookmap("missing", "t", root)).toBeNull();
+  });
+
+  it("loads another book's bookmap by id for its reference block", () => {
+    const root = mkdtempSync(join(tmpdir(), "bookmap-"));
+    mkdirSync(join(root, "alice"), { recursive: true });
+    const alice = bookmap();
+    alice.bookId = "alice";
+    alice.characters = [char("alice", "Alice", [], "Curious girl with long arms.", 1)];
+    alice.scenes = {
+      c1s1: {
+        setting: { location: "rabbit hole", time_of_day: "", weather: "" },
+        characters_present: ["alice"],
+        key_objects: [],
+      },
+    };
+    writeFileSync(join(root, "alice", "bookmap.json"), JSON.stringify(alice));
+    const loaded = getBookmap("alice", "t", root);
+    expect(loaded?.bookId).toBe("alice");
+    const ref = passageReference({
+      bookmap: loaded,
+      sceneIds: ["c1s1"],
+      selectedText: "Alice fell down",
+      ch: 1,
+    });
+    expect(ref).toContain("Alice: Curious girl with long arms.");
+    expect(ref).not.toContain("..");
   });
 });
 

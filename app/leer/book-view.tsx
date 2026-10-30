@@ -75,8 +75,8 @@ export function BookView({
   }, [infoCh]);
   const bookIndex = order.indexOf(currentId);
   const lastChapter = model.chapters[model.chapters.length - 1]?.ch ?? 0;
-  // Pictures and panels are Oz-only; other books hide those controls.
-  const picturesOn = model.bookId === "oz";
+  // Pictures and panels run for every book the reader opens.
+  const picturesOn = true;
 
   // One commit path for every scene change: state, the live store the
   // music container reads, and the deep-link URL. No router pushes, so

@@ -1,5 +1,5 @@
 import "server-only";
-import { loadBookData } from "@/server/books";
+import { isReadyBookId, loadBookData } from "@/server/books";
 import {
   ImageStyleError,
   MAX_IMAGE_BODY_BYTES,
@@ -72,9 +72,9 @@ export async function handleImagesPost(req: Request, deps: ImagesHandlerDeps = {
     );
   }
 
-  // Pictures and chapter panels are Oz-only: other books stop here,
-  // before env, quota, or spend are touched.
-  if (parsed.bookId !== "oz") {
+  // Pictures and chapter panels serve every ready shelf book. Unknown
+  // or not-ready ids stop here, before env, quota, or spend are touched.
+  if (!isReadyBookId(parsed.bookId)) {
     return Response.json(
       { status: "error", code: "bad_request", message: MSG_BAD_REQUEST } satisfies ImageResponse,
       { status: 400 },
@@ -98,7 +98,7 @@ export async function handleImagesPost(req: Request, deps: ImagesHandlerDeps = {
   }
 
   try {
-    const { book, scenes } = await loadBookData("oz");
+    const { book, scenes } = await loadBookData(parsed.bookId);
     try {
       validateAgainstBook(
         parsed,
@@ -201,7 +201,11 @@ export async function handleImagesPost(req: Request, deps: ImagesHandlerDeps = {
       store: deps.store ?? createBlobStore(),
       generate: deps.generate ?? createMetaClient(env.metaKey),
       env,
-      content: { ...content, reference },
+      content: {
+        ...content,
+        reference,
+        book: { id: book.id, title: book.title, author: book.author },
+      },
       ip,
       anonId,
       day: utcDay(),
